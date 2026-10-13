@@ -14,6 +14,8 @@ function trackedTarget(viewer) {
 export const OBLIQUE_PITCH = Cesium.Math.toRadians(-35);
 export const STRAIGHT_DOWN_PITCH = Cesium.Math.toRadians(-89);
 const OBLIQUE_THRESHOLD = Cesium.Math.toRadians(-60);
+const ZOOM_RANGE_FACTOR = 1.5;
+const MIN_TRACKED_RANGE = 150;
 
 function normalizedHeading(heading) {
   const wrapped = Cesium.Math.zeroToTwoPi(
@@ -72,11 +74,18 @@ export function pickViewTarget(viewer) {
 
 /** Describe the camera as an orbit around the current viewport center. */
 export function readCameraTargetFrame(viewer) {
-  const camera = viewer?.camera;
   const target = viewer?.trackedEntity
     ? trackedTarget(viewer)
     : pickViewTarget(viewer);
-  if (!camera || !target || !isPickedWorldPosition(camera.positionWC))
+  return readTargetFrame(viewer?.camera, target);
+}
+
+function readTargetFrame(camera, target) {
+  if (
+    !camera ||
+    !isPickedWorldPosition(target) ||
+    !isPickedWorldPosition(camera.positionWC)
+  )
     return null;
 
   const transform = Cesium.Transforms.eastNorthUpToFixedFrame(target);
@@ -105,11 +114,237 @@ export function readCameraTargetFrame(viewer) {
   return { target, range, heading, pitch };
 }
 
+function captureZoomPose(viewer, frame) {
+  const camera = viewer.camera;
+  const tracked = Boolean(viewer.trackedEntity);
+  const worldOffset = Cesium.Cartesian3.subtract(
+    camera.positionWC,
+    frame.target,
+    new Cesium.Cartesian3(),
+  );
+  const offset = tracked
+    ? Cesium.Matrix4.multiplyByPointAsVector(
+        Cesium.Matrix4.inverseTransformation(
+          camera.transform,
+          new Cesium.Matrix4(),
+        ),
+        worldOffset,
+        new Cesium.Cartesian3(),
+      )
+    : worldOffset;
+  return {
+    tracked,
+    offset: Cesium.Cartesian3.divideByScalar(
+      offset,
+      frame.range,
+      new Cesium.Cartesian3(),
+    ),
+    direction: Cesium.Cartesian3.clone(
+      tracked ? camera.direction : camera.directionWC,
+    ),
+    up: Cesium.Cartesian3.clone(tracked ? camera.up : camera.upWC),
+  };
+}
+
+function zoomView(camera, frame) {
+  const pose = frame.zoomPose;
+  const offset = Cesium.Cartesian3.multiplyByScalar(
+    pose.offset,
+    frame.range,
+    new Cesium.Cartesian3(),
+  );
+  if (pose.tracked) {
+    return {
+      destination: Cesium.Cartesian3.add(
+        frame.target,
+        Cesium.Matrix4.multiplyByPointAsVector(
+          camera.transform,
+          offset,
+          new Cesium.Cartesian3(),
+        ),
+        new Cesium.Cartesian3(),
+      ),
+      orientation: {
+        direction: Cesium.Matrix4.multiplyByPointAsVector(
+          camera.transform,
+          pose.direction,
+          new Cesium.Cartesian3(),
+        ),
+        up: Cesium.Matrix4.multiplyByPointAsVector(
+          camera.transform,
+          pose.up,
+          new Cesium.Cartesian3(),
+        ),
+      },
+    };
+  }
+  return {
+    destination: Cesium.Cartesian3.add(
+      frame.target,
+      offset,
+      new Cesium.Cartesian3(),
+    ),
+    orientation: { direction: pose.direction, up: pose.up },
+  };
+}
+
+function framePosition(viewer, frame) {
+  if (frame.zoomPose) return zoomView(viewer.camera, frame).destination;
+  if (frame.free) {
+    return Cesium.Cartesian3.subtract(
+      frame.target,
+      Cesium.Cartesian3.multiplyByScalar(
+        frame.direction,
+        frame.range,
+        new Cesium.Cartesian3(),
+      ),
+      new Cesium.Cartesian3(),
+    );
+  }
+  const cosine = Math.cos(frame.pitch);
+  const offset = new Cesium.Cartesian3(
+    -frame.range * Math.sin(frame.heading) * cosine,
+    -frame.range * Math.cos(frame.heading) * cosine,
+    -frame.range * Math.sin(frame.pitch),
+  );
+  return Cesium.Matrix4.multiplyByPoint(
+    Cesium.Transforms.eastNorthUpToFixedFrame(frame.target),
+    offset,
+    new Cesium.Cartesian3(),
+  );
+}
+
+function sampleGroundHeight(scene, cartographic) {
+  let height = 0;
+  for (const sample of [
+    () => scene?.globe?.getHeight?.(cartographic),
+    () => scene?.sampleHeight?.(cartographic),
+  ]) {
+    try {
+      const value = sample();
+      if (Number.isFinite(value)) height = Math.max(height, value);
+    } catch {
+      // Rendered terrain or tiles may not yet be ready to sample.
+    }
+  }
+  return height;
+}
+
+function freeFrameIsSafe(viewer, frame, groundCache) {
+  try {
+    const position = framePosition(viewer, frame);
+    const cartographic = Cesium.Cartographic.fromCartesian(position);
+    const initial = Cesium.Cartographic.fromCartesian(viewer.camera.positionWC);
+    if (!cartographic || !initial || !Number.isFinite(cartographic.height))
+      return false;
+    const controller = viewer.scene?.screenSpaceCameraController;
+    const minimum = Math.max(
+      1,
+      Number.isFinite(controller?.minimumZoomDistance)
+        ? controller.minimumZoomDistance
+        : 1,
+    );
+    const maximum = Number.isFinite(controller?.maximumZoomDistance)
+      ? controller.maximumZoomDistance
+      : Infinity;
+    // Depth-based sampleHeight draws a picking pass. Measure the floor once
+    // per action, then retain cheap height and segment checks while easing.
+    let ground = groundCache.height;
+    if (!Number.isFinite(ground)) {
+      ground = Math.max(
+        sampleGroundHeight(viewer.scene, initial),
+        sampleGroundHeight(viewer.scene, cartographic),
+      );
+      if (!frame.free) {
+        const target = Cesium.Cartographic.fromCartesian(frame.target);
+        ground = Math.max(
+          ground,
+          target.height,
+          sampleGroundHeight(viewer.scene, target),
+        );
+      }
+      groundCache.height = ground;
+    }
+    if (
+      cartographic.height < ground + minimum - 1e-5 ||
+      cartographic.height > maximum + 1e-5
+    )
+      return false;
+    const movement = Cesium.Cartesian3.subtract(
+      position,
+      viewer.camera.positionWC,
+      new Cesium.Cartesian3(),
+    );
+    const distance = Cesium.Cartesian3.magnitude(movement);
+    if (distance < Cesium.Math.EPSILON7) return true;
+    const direction = Cesium.Cartesian3.divideByScalar(
+      movement,
+      distance,
+      movement,
+    );
+    // Safe endpoints can still straddle the globe. Test the whole segment
+    // against an expanded ellipsoid so rapid fallback presses cannot tunnel.
+    const radii = Cesium.Ellipsoid.WGS84.radii;
+    const floor = ground + minimum + 1;
+    const clearanceEllipsoid = new Cesium.Ellipsoid(
+      radii.x + floor,
+      radii.y + floor,
+      radii.z + floor,
+    );
+    const intersection = Cesium.IntersectionTests.rayEllipsoid(
+      new Cesium.Ray(viewer.camera.positionWC, direction),
+      clearanceEllipsoid,
+    );
+    if (!intersection || intersection.start >= distance) return true;
+    // A camera just outside its limit may sit inside the extra metre of
+    // numerical margin. It must still be allowed to zoom away from the ground.
+    return (
+      intersection.start === 0 &&
+      Cesium.Cartesian3.dot(
+        Cesium.Ellipsoid.WGS84.geodeticSurfaceNormal(
+          viewer.camera.positionWC,
+          new Cesium.Cartesian3(),
+        ),
+        direction,
+      ) >= 0
+    );
+  } catch {
+    return false;
+  }
+}
+
 /** Apply an orbit frame, then return the camera to Cesium's fixed-world frame. */
 export function setCameraTargetFrame(viewer, frame) {
   const camera = viewer?.camera;
   if (!camera || !frame?.target || !Number.isFinite(frame.range)) return false;
   try {
+    if (frame.zoomPose) {
+      // A range change must retain roll as well as heading and pitch. EntityView
+      // carries local vectors in its own reference frame as the entity moves.
+      camera.setView(zoomView(camera, frame));
+      viewer.scene?.requestRender?.();
+      return true;
+    }
+    if (frame.free) {
+      // With the center looking into sky there is no surface to orbit. Move
+      // along the existing sight line and retain the world-space orientation.
+      const offset = Cesium.Cartesian3.multiplyByScalar(
+        frame.direction,
+        frame.range,
+        new Cesium.Cartesian3(),
+      );
+      const destination = Cesium.Cartesian3.subtract(
+        frame.target,
+        offset,
+        new Cesium.Cartesian3(),
+      );
+      camera.setView({
+        destination,
+        orientation: { direction: frame.direction, up: frame.up },
+      });
+      viewer.scene?.requestRender?.();
+      return true;
+    }
     const trackedTransform = viewer.trackedEntity
       ? Cesium.Matrix4.clone(camera.transform)
       : null;
@@ -194,15 +429,42 @@ export function createCameraOrientationAnimator(
     remove = null;
     pending = null;
   };
-  function animate(frame, destination) {
+  function animate(frame, destination = {}) {
     cancel();
+    if (!frame) return false;
+    const requested = {
+      ...frame,
+      heading: normalizedHeading(
+        Number.isFinite(destination.heading)
+          ? destination.heading
+          : frame.heading,
+      ),
+      pitch: Number.isFinite(destination.pitch)
+        ? destination.pitch
+        : frame.pitch,
+      range:
+        Number.isFinite(destination.range) && destination.range > 0
+          ? destination.range
+          : frame.range,
+    };
+    const changesAngle =
+      Math.abs(Cesium.Math.negativePiToPi(requested.heading - frame.heading)) >
+        Cesium.Math.EPSILON10 ||
+      Math.abs(requested.pitch - frame.pitch) > Cesium.Math.EPSILON10;
+    requested.zoomPose = changesAngle ? null : captureZoomPose(viewer, frame);
+    const groundCache = {};
+    if (
+      !viewer.trackedEntity &&
+      !freeFrameIsSafe(viewer, requested, groundCache)
+    )
+      return false;
     if (!viewer.scene?.preUpdate?.addEventListener || duration <= 0)
-      return setCameraTargetFrame(viewer, { ...frame, ...destination });
+      return setCameraTargetFrame(viewer, requested);
     const entity = viewer.trackedEntity;
-    pending = destination;
+    pending = requested;
     const start = now();
     const headingDelta = Cesium.Math.negativePiToPi(
-      destination.heading - frame.heading,
+      requested.heading - frame.heading,
     );
     remove = viewer.scene.preUpdate.addEventListener(() => {
       if (viewer.isDestroyed?.() || viewer.trackedEntity !== entity) {
@@ -212,14 +474,17 @@ export function createCameraOrientationAnimator(
       const progress = Cesium.Math.clamp((now() - start) / duration, 0, 1);
       const eased = Cesium.EasingFunction.CUBIC_IN_OUT(progress);
       const target = entity ? trackedTarget(viewer) : frame.target;
+      const next = {
+        ...requested,
+        target,
+        heading: frame.heading + headingDelta * eased,
+        pitch: Cesium.Math.lerp(frame.pitch, requested.pitch, eased),
+        range: Cesium.Math.lerp(frame.range, requested.range, eased),
+      };
       if (
         !isPickedWorldPosition(target) ||
-        !setCameraTargetFrame(viewer, {
-          ...frame,
-          target,
-          heading: frame.heading + headingDelta * eased,
-          pitch: Cesium.Math.lerp(frame.pitch, destination.pitch, eased),
-        })
+        (!entity && !freeFrameIsSafe(viewer, next, groundCache)) ||
+        !setCameraTargetFrame(viewer, next)
       ) {
         cancel();
         return;
@@ -238,7 +503,7 @@ export function createCameraOrientationAnimator(
   };
 }
 
-/** Bind the two map-orientation actions and keep their accessible state current. */
+/** Bind map angle, bearing and zoom actions and keep accessible state current. */
 export function bindCameraOrientationControls({
   viewer,
   elements,
@@ -246,6 +511,7 @@ export function bindCameraOrientationControls({
   showToast,
 }) {
   const tiltButton = elements?.tiltButton;
+  const tiltLabel = elements?.tiltLabel;
   const northButton = elements?.northButton;
   const removers = [];
   let destroyed = false;
@@ -285,20 +551,19 @@ export function bindCameraOrientationControls({
       return;
     if (!applied || applied.tilted !== next.tilted) {
       tiltButton?.setAttribute('aria-pressed', String(next.tilted));
-      tiltButton?.setAttribute(
-        'aria-label',
-        next.tilted
-          ? 'Return map to straight-down view'
-          : 'Tilt map to oblique view',
-      );
+      const action = next.tilted
+        ? 'Return map to straight-down view'
+        : 'Tilt map to oblique view';
+      tiltButton?.setAttribute('aria-label', action);
+      tiltButton?.setAttribute('title', action);
+      if (tiltLabel) tiltLabel.textContent = next.tilted ? '2D' : '3D';
     }
     if (!applied || applied.heading !== next.heading) {
       northButton?.setAttribute('data-north-up', String(next.heading === 0));
       northButton?.style?.setProperty('--camera-heading', `${next.heading}deg`);
-      northButton?.setAttribute(
-        'aria-label',
-        `Reset map to north up. Current heading ${next.heading} degrees`,
-      );
+      const action = `Reset map to north up. Current heading ${next.heading} degrees`;
+      northButton?.setAttribute('aria-label', action);
+      northButton?.setAttribute('title', action);
     }
     applied = next;
   }
@@ -308,16 +573,106 @@ export function bindCameraOrientationControls({
     element.addEventListener('click', handler);
     removers.push(() => element.removeEventListener('click', handler));
   };
+  const readOrbitFrame = (pending) =>
+    pending && !pending.free && !viewer.trackedEntity
+      ? readTargetFrame(viewer.camera, pending.target)
+      : readCameraTargetFrame(viewer);
+
+  const readZoomFrame = (pending) => {
+    if (pending?.free && !viewer.trackedEntity) {
+      return {
+        ...pending,
+        range: Cesium.Cartesian3.distance(
+          viewer.camera.positionWC,
+          pending.target,
+        ),
+      };
+    }
+    const frame = readOrbitFrame(pending);
+    if (frame || viewer.trackedEntity) return frame;
+    const camera = viewer?.camera;
+    if (
+      !isPickedWorldPosition(camera?.positionWC) ||
+      !camera.directionWC ||
+      !camera.upWC
+    )
+      return null;
+    const range = Math.max(1, camera.positionCartographic?.height || 1000);
+    const direction = Cesium.Cartesian3.clone(camera.directionWC);
+    const target = Cesium.Cartesian3.add(
+      camera.positionWC,
+      Cesium.Cartesian3.multiplyByScalar(
+        direction,
+        range,
+        new Cesium.Cartesian3(),
+      ),
+      new Cesium.Cartesian3(),
+    );
+    return {
+      target,
+      range,
+      heading: normalizedHeading(camera.heading),
+      pitch: camera.pitch,
+      direction,
+      up: Cesium.Cartesian3.clone(camera.upWC),
+      free: true,
+    };
+  };
+
+  for (const [button, factor, action] of [
+    [elements?.zoomInButton, 1 / ZOOM_RANGE_FACTOR, 'Zoom in'],
+    [elements?.zoomOutButton, ZOOM_RANGE_FACTOR, 'Zoom out'],
+  ]) {
+    button?.setAttribute('aria-label', action);
+    button?.setAttribute('title', action);
+    listen(button, () => {
+      // Navigation stamps cancel the old animation before running this
+      // callback. Capture its requested frame first so presses accumulate.
+      const pending = animator.destination;
+      runNavigation('camera', () => {
+        const frame = readZoomFrame(pending);
+        if (!frame) return false;
+        const controller = viewer.scene?.screenSpaceCameraController;
+        const minimum = viewer.trackedEntity
+          ? Math.max(
+              1,
+              Number.isFinite(controller?.minimumZoomDistance)
+                ? controller.minimumZoomDistance
+                : 1,
+              MIN_TRACKED_RANGE,
+            )
+          : 1;
+        const maximum = viewer.trackedEntity
+          ? Math.max(
+              minimum,
+              Number.isFinite(controller?.maximumZoomDistance)
+                ? controller.maximumZoomDistance
+                : Number.POSITIVE_INFINITY,
+            )
+          : Infinity;
+        return animator.animate(frame, {
+          heading: pending?.heading ?? frame.heading,
+          pitch: pending?.pitch ?? frame.pitch,
+          range: Cesium.Math.clamp(
+            (pending?.range ?? frame.range) * factor,
+            minimum,
+            maximum,
+          ),
+        });
+      });
+    });
+  }
   listen(tiltButton, () => {
     const pending = animator.destination;
     const result = runNavigation('camera', () => {
-      const frame = readCameraTargetFrame(viewer);
+      const frame = readOrbitFrame(pending);
       if (!frame) return false;
       const nextTilted = !frameIsTilted(pending || frame);
       const pitch = nextTilted ? OBLIQUE_PITCH : STRAIGHT_DOWN_PITCH;
       return animator.animate(frame, {
         heading: pending?.heading ?? frame.heading,
         pitch,
+        range: pending?.range ?? frame.range,
       })
         ? { tilted: nextTilted, pitch }
         : false;
@@ -333,12 +688,13 @@ export function bindCameraOrientationControls({
   listen(northButton, () => {
     const pending = animator.destination;
     const result = runNavigation('camera', () => {
-      const frame = readCameraTargetFrame(viewer);
+      const frame = readOrbitFrame(pending);
       return (
         frame &&
         animator.animate(frame, {
           heading: 0,
           pitch: pending?.pitch ?? frame.pitch,
+          range: pending?.range ?? frame.range,
         })
       );
     });

@@ -35,6 +35,12 @@
     transform: none;
   }
 
+  #globe-navigation {
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(140px, calc(env(safe-area-inset-bottom) + 140px));
+    gap: 6px;
+  }
+
   #style-indicator {
     display: none;
   }
@@ -183,14 +189,10 @@
   #right-context-rail {
     top: calc(50vh + 8px);
     right: 16px;
-    /* The rail goes edge-to-edge at this width, so its floor is what decides
-       whether the required Google/Cesium credit line survives. The credit's
-       top edge sits at calc(2vh + 5rem) plus its own 28px, so a flat 100px
-       floor cut into it at EVERY viewport height — the DISPLAY toggles were
-       drawn straight over the notice. Track the credit's own anchor instead
-       and the 12px of clear air holds regardless of height; the rail already
-       scrolls (overflow-y below), so it loses reach, not content. */
-    bottom: calc(2vh + 7.5rem);
+    /* Reserve a row for map navigation above the credits and command dock.
+       The rail scrolls within the remaining space, keeping every panel usable. */
+    bottom: calc(2vh + 11.5rem);
+    margin-bottom: env(safe-area-inset-bottom);
     left: 16px;
     width: auto;
     max-height: none;

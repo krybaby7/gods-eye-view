@@ -20,24 +20,44 @@
     <span class="indicator-value" id="active-style-name">NORMAL</span>
   </div>
 
-  <!-- Top-center camera and share actions -->
-  <nav id="top-center-actions" aria-label="Globe actions">
+  <!-- Share and layer actions -->
+  <nav id="top-center-actions" aria-label="Map tools">
     <button id="clear-selected-layers" type="button" aria-label="Clear selected data layers" title="Turn off all selected data layers">
       <span class="material-symbols-outlined" aria-hidden="true">layers_clear</span>
     </button>
     <button id="share-btn" type="button" aria-label="Copy share link" title="Copy share link">
       <span class="share-icon" aria-hidden="true">&#x1F517;</span>
     </button>
-    <button id="tilt-map-view" type="button" aria-label="Tilt map to oblique view" aria-pressed="false" title="Toggle straight-down and tilted map views">
-      <span class="material-symbols-outlined" aria-hidden="true">view_in_ar</span>
-    </button>
+  </nav>
+
+  <nav id="globe-navigation" aria-label="Globe navigation">
     <button id="north-up-view" type="button" aria-label="Reset map to north up" title="Reset map bearing to north">
       <span class="camera-compass-n" aria-hidden="true">N</span>
       <span class="camera-compass-needle material-symbols-outlined" aria-hidden="true">navigation</span>
     </button>
+    <button id="tilt-map-view" type="button" aria-label="Tilt map to oblique view" aria-pressed="false" title="Switch between overhead and tilted views">
+      <span id="map-view-mode-label" aria-hidden="true">3D</span>
+    </button>
     <button id="reset-globe-view" type="button" aria-label="Reset to full globe view" title="Reset camera and return to full globe view">
       <span class="material-symbols-outlined" aria-hidden="true">public</span>
     </button>
+    <div class="map-zoom-controls" role="group" aria-label="Map zoom">
+      <button id="zoom-map-out" type="button" aria-label="Zoom out" title="Zoom out"><span aria-hidden="true">−</span></button>
+      <button id="zoom-map-in" type="button" aria-label="Zoom in" title="Zoom in"><span aria-hidden="true">+</span></button>
+    </div>
+    <details id="map-navigation-help">
+      <summary aria-label="Navigation help" title="Navigation help"><span aria-hidden="true">?</span></summary>
+      <div class="map-navigation-help-card">
+        <strong>Explore the globe</strong>
+        <dl>
+          <div><dt>Move</dt><dd>Drag the map</dd></div>
+          <div><dt>Zoom</dt><dd>Scroll or pinch</dd></div>
+          <div><dt>Orbit</dt><dd>Ctrl + drag</dd></div>
+          <div><dt>North</dt><dd>Click the compass</dd></div>
+        </dl>
+        <p>While following a subject, zoom stays centered on it.</p>
+      </div>
+    </details>
   </nav>
   <div id="global-loading-status" role="status" aria-live="polite" aria-atomic="true" hidden>
     <span id="global-loading-label">LOADING LIVE DATA</span>

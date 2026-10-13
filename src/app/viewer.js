@@ -1,8 +1,8 @@
 import * as Cesium from 'cesium';
 import { applyModelAtmosphereWorkaround } from './atmosphereCompat.js';
 
-const PINCH_ZOOM_MULTIPLIER = 8;
-const MAX_PINCH_PIXEL_DELTA = 120;
+const PINCH_ZOOM_MULTIPLIER = 2;
+const MAX_PINCH_PIXEL_DELTA = 60;
 
 function boundedPinchDelta(delta) {
   if (!Number.isFinite(delta) || delta === 0) return delta;

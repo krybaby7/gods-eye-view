@@ -8,6 +8,7 @@ import { NavigationController } from './navigationController.js';
 import { ShareRestoration } from './shareRestoration.js';
 import { DisplayBindings } from './displayBindings.js';
 import { createStateChannel } from '../app/stateChannel.js';
+import { installRenderQuality } from '../app/renderQuality.js';
 import { setSplitFlapText } from '../splitFlap.js';
 import { UiLifetime } from './uiLifetime.js';
 import { RecordingControls } from './recordingControls.js';
@@ -576,6 +577,7 @@ export class StyleManager extends ShellFacade {
     this._initLocationBar();
     this._initShareButton();
     this._initCameraOrientationControls();
+    this._initRenderQualityControl();
     this._initClearSelectedLayersButton();
     this._initHUDToggle();
     this._initModels3dToggle();
@@ -1453,18 +1455,44 @@ export class StyleManager extends ShellFacade {
     );
   }
 
-  /** Wire Google Maps-style tilt and north-up camera actions. */
+  /** Wire tracking-aware zoom, viewing-angle and north-up actions. */
   _initCameraOrientationControls() {
     this._cameraOrientationControls?.destroy();
     this._cameraOrientationControls = bindCameraOrientationControls({
       viewer: this.viewer,
       elements: {
         tiltButton: this._tiltMapBtn,
+        tiltLabel: this._tiltMapLabel,
         northButton: this._northUpBtn,
+        zoomInButton: this._zoomMapInBtn,
+        zoomOutButton: this._zoomMapOutBtn,
       },
       runNavigation: (noun, navigate) =>
         this._navigation.runOrientation(noun, navigate),
       showToast: (message) => this._showToast(message),
+    });
+  }
+
+  /** Keep render detail independent of the map's imagery provider. */
+  _initRenderQualityControl() {
+    const storageKey = 'gev-map-render-quality';
+    let quality = 'sharp';
+    try {
+      if (localStorage.getItem(storageKey) === 'standard') quality = 'standard';
+    } catch {
+      /* Storage may be unavailable in an embedded view. */
+    }
+    this._renderQuality?.dispose();
+    this._renderQuality = installRenderQuality(this.viewer, { quality });
+    if (this._mapRenderQuality) this._mapRenderQuality.value = quality;
+    this._lifetime.listen(this._mapRenderQuality, 'change', () => {
+      const next = this._mapRenderQuality.value;
+      this._renderQuality.setQuality(next);
+      try {
+        localStorage.setItem(storageKey, next);
+      } catch {
+        /* The current choice still works without persistent storage. */
+      }
     });
   }
 
@@ -1584,6 +1612,7 @@ export class StyleManager extends ShellFacade {
     this._mapSourceControls?.destroy();
     this._cameraOrientationControls?.destroy();
     this._clearLayersControl?.destroy();
+    this._renderQuality?.dispose();
     this._cctvControls?.destroy();
     this.services?.streetLevelLayer?.attachNavigation?.(null);
     this._streetLevelControls?.destroy();

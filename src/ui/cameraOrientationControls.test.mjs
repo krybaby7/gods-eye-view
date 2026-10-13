@@ -688,3 +688,570 @@ test('rapid tilt presses reverse direction and north-up keeps the requested tilt
   controls.destroy();
   assert.equal(viewer.scene.preUpdate.numberOfListeners, 0);
 });
+
+function bindRealZoomControls(
+  t,
+  {
+    target = AUSTIN_GROUND,
+    range = 4500,
+    heading = 215,
+    pitch = OBLIQUE_PITCH,
+    minimum = 5,
+    maximum = 50_000_000,
+  } = {},
+) {
+  let time = 0;
+  t.mock.method(performance, 'now', () => time);
+  const { viewer } = createRealViewer(target);
+  orbit(viewer, target, heading, pitch, range);
+  viewer.scene.canvas = Object.assign(new EventTarget(), viewer.scene.canvas);
+  viewer.scene.preUpdate = new Cesium.Event();
+  viewer.scene.screenSpaceCameraController = {
+    minimumZoomDistance: minimum,
+    maximumZoomDistance: maximum,
+  };
+  const elements = {
+    zoomInButton: new FakeButton(),
+    zoomOutButton: new FakeButton(),
+    tiltButton: new FakeButton(),
+    tiltLabel: { textContent: '' },
+    northButton: new FakeButton(),
+  };
+  const navigations = [];
+  let controls;
+  const navigation = new NavigationController({
+    viewer,
+    tracking: {},
+    cancelOrientation: () => controls?.cancel(),
+    isCockpitActive: () => false,
+    interruptCameraMotion: () => {},
+    clearLocation: () => assert.fail('camera controls retain location'),
+    cancelShareSelection: () => assert.fail('camera controls retain selection'),
+    stopOrbit: () => {},
+    showToast: () => {},
+  });
+  controls = bindCameraOrientationControls({
+    viewer,
+    elements,
+    runNavigation: (noun, navigate) => {
+      navigations.push(noun);
+      return navigation.runOrientation(noun, navigate);
+    },
+  });
+  t.after(() => controls.destroy());
+  return {
+    viewer,
+    elements,
+    controls,
+    navigations,
+    advance(nextTime) {
+      time = nextTime;
+      viewer.scene.preUpdate.raiseEvent();
+    },
+  };
+}
+
+function assertOrbit(frame, { target = AUSTIN_GROUND, range, heading, pitch }) {
+  assert.ok(frame, 'camera still has a target frame');
+  assert.ok(Cesium.Cartesian3.distance(frame.target, target) < 1e-6);
+  assert.ok(
+    Math.abs(frame.range - range) < 1e-5,
+    `range ${frame.range}, expected ${range}`,
+  );
+  if (heading !== undefined) {
+    assert.ok(
+      Math.abs(Cesium.Math.negativePiToPi(frame.heading - heading)) < 1e-6,
+      `heading ${frame.heading}, expected ${heading}`,
+    );
+  }
+  if (pitch !== undefined) {
+    assert.ok(
+      Math.abs(frame.pitch - pitch) < 1e-6,
+      `pitch ${frame.pitch}, expected ${pitch}`,
+    );
+  }
+}
+
+test('range-only animation eases a real camera while retaining target and orientation', () => {
+  const { viewer } = createRealViewer(AUSTIN_GROUND);
+  orbit(viewer, AUSTIN_GROUND, 215, OBLIQUE_PITCH, 4500);
+  viewer.scene.preUpdate = new Cesium.Event();
+  let time = 0;
+  const animator = createCameraOrientationAnimator(viewer, {
+    now: () => time,
+    duration: 1000,
+  });
+  const frame = readCameraTargetFrame(viewer);
+  assert.equal(animator.animate(frame, { range: 3000 }), true);
+  assert.equal(animator.destination.heading, frame.heading);
+  assert.equal(animator.destination.pitch, frame.pitch);
+  assert.equal(animator.destination.range, 3000);
+  for (const step of [0, 250, 500, 750, 1000]) {
+    time = step;
+    viewer.scene.preUpdate.raiseEvent();
+    assertOrbit(readCameraTargetFrame(viewer), {
+      range: Cesium.Math.lerp(
+        4500,
+        3000,
+        Cesium.EasingFunction.CUBIC_IN_OUT(step / 1000),
+      ),
+      heading: frame.heading,
+      pitch: frame.pitch,
+    });
+  }
+  assert.equal(animator.destination, null);
+  assert.equal(viewer.scene.preUpdate.numberOfListeners, 0);
+});
+
+test('invalid optional animation coordinates retain the real camera frame', () => {
+  const { viewer } = createRealViewer(AUSTIN_GROUND);
+  orbit(viewer, AUSTIN_GROUND, 35, OBLIQUE_PITCH, 3000);
+  const frame = readCameraTargetFrame(viewer);
+  const animator = createCameraOrientationAnimator(viewer, { duration: 0 });
+  assert.equal(
+    animator.animate(frame, { heading: NaN, pitch: NaN, range: -1 }),
+    true,
+  );
+  assertOrbit(readCameraTargetFrame(viewer), frame);
+});
+
+test('zoom buttons ease reciprocal range changes without rotating or changing target', (t) => {
+  const { viewer, elements, advance, navigations } = bindRealZoomControls(t);
+  const before = readCameraTargetFrame(viewer);
+  elements.zoomInButton.click();
+  assert.deepEqual(navigations, ['camera']);
+  assertOrbit(readCameraTargetFrame(viewer), before);
+  advance(325);
+  assertOrbit(readCameraTargetFrame(viewer), { ...before, range: 3750 });
+  advance(650);
+  assertOrbit(readCameraTargetFrame(viewer), { ...before, range: 3000 });
+  elements.zoomOutButton.click();
+  advance(1300);
+  assertOrbit(readCameraTargetFrame(viewer), before);
+  assert.equal(viewer.scene.preUpdate.numberOfListeners, 0);
+});
+
+test('rapid zoom presses accumulate their destination and reverse from the requested range', (t) => {
+  const { viewer, elements, advance } = bindRealZoomControls(t);
+  const before = readCameraTargetFrame(viewer);
+  elements.zoomInButton.click();
+  advance(200);
+  elements.zoomInButton.click();
+  elements.zoomOutButton.click();
+  assert.equal(viewer.scene.preUpdate.numberOfListeners, 1);
+  advance(850);
+  assertOrbit(readCameraTargetFrame(viewer), { ...before, range: 3000 });
+  elements.zoomOutButton.click();
+  advance(1500);
+  assertOrbit(readCameraTargetFrame(viewer), before);
+});
+
+test('tracked zoom destinations obey range bounds and the readable minimum', (t) => {
+  const { viewer, elements, advance } = bindRealZoomControls(t, {
+    range: 900,
+    minimum: 700,
+    maximum: 1100,
+  });
+  const entity = new Cesium.Entity({ position: AUSTIN_GROUND });
+  entity.gevDisplayPosition = () => AUSTIN_GROUND;
+  viewer.trackedEntity = entity;
+  elements.zoomInButton.click();
+  elements.zoomInButton.click();
+  advance(650);
+  assertOrbit(readCameraTargetFrame(viewer), { range: 700 });
+  elements.zoomOutButton.click();
+  elements.zoomOutButton.click();
+  advance(1300);
+  assertOrbit(readCameraTargetFrame(viewer), { range: 1100 });
+  viewer.scene.screenSpaceCameraController.minimumZoomDistance = 5;
+  orbit(viewer, AUSTIN_GROUND, 215, OBLIQUE_PITCH, 180);
+  elements.zoomInButton.click();
+  elements.zoomInButton.click();
+  advance(1950);
+  assert.equal(viewer.trackedEntity, entity);
+  assertOrbit(readCameraTargetFrame(viewer), { range: 150 });
+});
+
+test('tilt and north retain a zoom destination across navigation cancellation', (t) => {
+  const { viewer, elements, advance } = bindRealZoomControls(t);
+  elements.zoomInButton.click();
+  advance(100);
+  elements.tiltButton.click();
+  elements.northButton.click();
+  elements.zoomInButton.click();
+  advance(750);
+  assertOrbit(readCameraTargetFrame(viewer), {
+    range: 2000,
+    heading: 0,
+    pitch: STRAIGHT_DOWN_PITCH,
+  });
+  assert.equal(elements.tiltLabel.textContent, '3D');
+  assert.equal(
+    elements.tiltButton.getAttribute('title'),
+    'Tilt map to oblique view',
+  );
+});
+
+test('the angle label and accessible action follow each commanded angle', (t) => {
+  const { elements, advance } = bindRealZoomControls(t, {
+    pitch: STRAIGHT_DOWN_PITCH,
+  });
+  assert.equal(elements.tiltLabel.textContent, '3D');
+  assert.equal(
+    elements.tiltButton.getAttribute('title'),
+    elements.tiltButton.getAttribute('aria-label'),
+  );
+  elements.tiltButton.click();
+  assert.equal(elements.tiltLabel.textContent, '2D');
+  assert.equal(
+    elements.tiltButton.getAttribute('title'),
+    'Return map to straight-down view',
+  );
+  advance(650);
+  elements.tiltButton.click();
+  assert.equal(elements.tiltLabel.textContent, '3D');
+});
+
+for (const gesture of ['pointerdown', 'wheel']) {
+  test(`${gesture} stops zoom animation and discards its requested range`, (t) => {
+    const { viewer, elements, advance } = bindRealZoomControls(t);
+    elements.zoomInButton.click();
+    advance(325);
+    const interrupted = readCameraTargetFrame(viewer);
+    viewer.scene.canvas.dispatchEvent(new Event(gesture));
+    assert.equal(viewer.scene.preUpdate.numberOfListeners, 0);
+    advance(650);
+    assertOrbit(readCameraTargetFrame(viewer), interrupted);
+    elements.zoomOutButton.click();
+    advance(1300);
+    assertOrbit(readCameraTargetFrame(viewer), {
+      ...interrupted,
+      range: interrupted.range * 1.5,
+    });
+  });
+}
+
+for (const [label, altitude, range] of [
+  ['aircraft', 10_000, 1500],
+  ['satellite', 400_000, 1_500_000],
+  ['high satellite', 35_786_000, 3_000_000],
+]) {
+  test(`${label}: range animation follows moving EntityView and preserves its reference frame`, (t) => {
+    t.mock.method(
+      Cesium.Transforms,
+      'computeFixedToIcrfMatrix',
+      () => undefined,
+    );
+    let target = Cesium.Cartesian3.fromDegrees(-97, 30, altitude);
+    const { viewer, elements, advance } = bindRealZoomControls(t, {
+      target,
+      range,
+      heading: 35,
+    });
+    viewer.clock = { currentTime: Cesium.JulianDate.now() };
+    const entity = new Cesium.Entity({
+      position: new Cesium.CallbackPositionProperty(() => target, false),
+      trackingReferenceFrame: Cesium.TrackingReferenceFrame.ENU,
+    });
+    entity.gevDisplayPosition = () => target;
+    viewer.trackedEntity = entity;
+    const follow = new Cesium.EntityView(entity, viewer.scene);
+    follow.update(viewer.clock.currentTime);
+    viewer.camera.lookAt(
+      target,
+      new Cesium.HeadingPitchRange(
+        Cesium.Math.toRadians(35),
+        OBLIQUE_PITCH,
+        range,
+      ),
+    );
+    const before = readCameraTargetFrame(viewer);
+    elements.zoomInButton.click();
+    for (const step of [0, 100, 325, 500, 650]) {
+      target = Cesium.Cartesian3.fromDegrees(
+        -97 + step / 100_000,
+        30,
+        altitude,
+      );
+      follow.update(viewer.clock.currentTime);
+      const transform = Cesium.Matrix4.clone(viewer.camera.transform);
+      advance(step);
+      assert.equal(viewer.trackedEntity, entity);
+      assert.ok(
+        Cesium.Matrix4.equalsEpsilon(viewer.camera.transform, transform, 1e-8),
+      );
+      assertOrbit(readCameraTargetFrame(viewer), {
+        ...before,
+        target,
+        range: Cesium.Math.lerp(
+          range,
+          range / 1.5,
+          Cesium.EasingFunction.CUBIC_IN_OUT(step / 650),
+        ),
+      });
+    }
+    target = Cesium.Cartesian3.fromDegrees(-96.9, 30.1, altitude);
+    follow.update(viewer.clock.currentTime);
+    assertOrbit(readCameraTargetFrame(viewer), {
+      ...before,
+      target,
+      range: range / 1.5,
+    });
+    assert.equal(viewer.scene.preUpdate.numberOfListeners, 0);
+  });
+}
+
+test('sky-facing free-view zoom remains usable when scene picking methods are absent', (t) => {
+  const { viewer, elements, advance } = bindRealZoomControls(t);
+  viewer.camera.setView({
+    destination: Cesium.Cartesian3.fromDegrees(0, 0, 10_000),
+    orientation: { heading: 0, pitch: Cesium.Math.toRadians(10), roll: 0 },
+  });
+  viewer.scene.globe.pick = undefined;
+  viewer.scene.pickPosition = undefined;
+  viewer.camera.pickEllipsoid = undefined;
+  viewer.camera.getPickRay = undefined;
+  assert.equal(readCameraTargetFrame(viewer), null);
+  const position = Cesium.Cartesian3.clone(viewer.camera.positionWC);
+  const direction = Cesium.Cartesian3.clone(viewer.camera.directionWC);
+  const up = Cesium.Cartesian3.clone(viewer.camera.upWC);
+  elements.zoomInButton.click();
+  advance(325);
+  const halfway = Cesium.Cartesian3.clone(viewer.camera.positionWC);
+  assert.ok(
+    Cesium.Cartesian3.distance(halfway, position) > 100,
+    'fallback zoom visibly moves the camera',
+  );
+  elements.zoomOutButton.click();
+  advance(975);
+  assert.ok(
+    Cesium.Cartesian3.distance(viewer.camera.positionWC, position) < 1e-5,
+    'reversing the pending zoom returns to its initial position',
+  );
+  assert.ok(
+    Cesium.Cartesian3.equalsEpsilon(
+      viewer.camera.directionWC,
+      direction,
+      1e-10,
+    ),
+  );
+  assert.ok(Cesium.Cartesian3.equalsEpsilon(viewer.camera.upWC, up, 1e-10));
+  assert.equal(viewer.scene.preUpdate.numberOfListeners, 0);
+});
+
+test('zoom retains a rolled free camera orientation from its first animation frame', (t) => {
+  const { viewer, elements, advance } = bindRealZoomControls(t);
+  viewer.camera.twistRight(Cesium.Math.toRadians(30));
+  const direction = Cesium.Cartesian3.clone(viewer.camera.directionWC);
+  const up = Cesium.Cartesian3.clone(viewer.camera.upWC);
+  elements.zoomInButton.click();
+  for (const step of [0, 100, 325, 650]) {
+    advance(step);
+    assert.ok(
+      Cesium.Cartesian3.equalsEpsilon(
+        viewer.camera.directionWC,
+        direction,
+        1e-10,
+      ),
+      `direction changed at ${step}`,
+    );
+    assert.ok(
+      Cesium.Cartesian3.equalsEpsilon(viewer.camera.upWC, up, 1e-10),
+      `roll changed at ${step}`,
+    );
+  }
+  assertOrbit(readCameraTargetFrame(viewer), { range: 3000 });
+});
+
+test('zoom retains tracked local direction and roll while EntityView moves', (t) => {
+  t.mock.method(Cesium.Transforms, 'computeFixedToIcrfMatrix', () => undefined);
+  let target = Cesium.Cartesian3.fromDegrees(-97, 30, 400_000);
+  const { viewer, elements, advance } = bindRealZoomControls(t, {
+    target,
+    range: 1_500_000,
+  });
+  viewer.clock = { currentTime: Cesium.JulianDate.now() };
+  const entity = new Cesium.Entity({
+    position: new Cesium.CallbackPositionProperty(() => target, false),
+    trackingReferenceFrame: Cesium.TrackingReferenceFrame.ENU,
+  });
+  entity.gevDisplayPosition = () => target;
+  viewer.trackedEntity = entity;
+  const follow = new Cesium.EntityView(entity, viewer.scene);
+  follow.update(viewer.clock.currentTime);
+  viewer.camera.lookAt(
+    target,
+    new Cesium.HeadingPitchRange(
+      Cesium.Math.toRadians(215),
+      OBLIQUE_PITCH,
+      1_500_000,
+    ),
+  );
+  viewer.camera.twistRight(Cesium.Math.toRadians(30));
+  const direction = Cesium.Cartesian3.clone(viewer.camera.direction);
+  const up = Cesium.Cartesian3.clone(viewer.camera.up);
+  elements.zoomInButton.click();
+  for (const step of [0, 100, 325, 650]) {
+    target = Cesium.Cartesian3.fromDegrees(-97 + step / 10_000, 30, 400_000);
+    follow.update(viewer.clock.currentTime);
+    const transform = Cesium.Matrix4.clone(viewer.camera.transform);
+    advance(step);
+    assert.ok(
+      Cesium.Matrix4.equalsEpsilon(viewer.camera.transform, transform, 1e-8),
+    );
+    assert.ok(
+      Cesium.Cartesian3.equalsEpsilon(
+        viewer.camera.direction,
+        direction,
+        1e-10,
+      ),
+      `tracked direction changed at ${step}`,
+    );
+    assert.ok(
+      Cesium.Cartesian3.equalsEpsilon(viewer.camera.up, up, 1e-10),
+      `tracked roll changed at ${step}`,
+    );
+  }
+  assertOrbit(readCameraTargetFrame(viewer), { target, range: 1_000_000 });
+});
+
+test('free oblique zoom respects minimum ellipsoid height throughout easing', (t) => {
+  const { viewer, elements, advance } = bindRealZoomControls(t, {
+    range: 1500,
+    minimum: 700,
+  });
+  elements.zoomInButton.click();
+  elements.zoomInButton.click();
+  for (const step of [0, 100, 325, 500, 650]) {
+    advance(step);
+    assert.ok(
+      viewer.camera.positionCartographic.height >= 700 - 1e-5,
+      `minimum height crossed at ${step}: ${viewer.camera.positionCartographic.height}`,
+    );
+  }
+  assert.ok(
+    readCameraTargetFrame(viewer).range > 700,
+    'oblique clearance is not an orbit range',
+  );
+});
+
+for (const source of ['terrain', 'rendered surface']) {
+  test(`free zoom clears elevated ${source} through every animation frame`, (t) => {
+    const target = Cesium.Cartesian3.fromDegrees(-97.7431, 30.2672, 1600);
+    const { viewer, elements, advance } = bindRealZoomControls(t, {
+      target,
+      range: 1500,
+      minimum: 700,
+    });
+    const surface = source === 'terrain' ? 1700 : 1750;
+    if (source === 'terrain') viewer.scene.globe.getHeight = () => surface;
+    else viewer.scene.sampleHeight = () => surface;
+    elements.zoomInButton.click();
+    for (const step of [0, 100, 325, 500, 650]) {
+      advance(step);
+      assert.ok(
+        viewer.camera.positionCartographic.height - surface >= 700 - 1e-5,
+        `surface clearance crossed at ${step}: ${viewer.camera.positionCartographic.height - surface}`,
+      );
+    }
+  });
+}
+
+test('free zoom uses maximum height without restricting an oblique orbit to that range', (t) => {
+  const { viewer, elements, advance } = bindRealZoomControls(t, {
+    range: 1800,
+    maximum: 2000,
+  });
+  elements.zoomOutButton.click();
+  for (const step of [0, 100, 325, 500, 650]) {
+    advance(step);
+    assert.ok(viewer.camera.positionCartographic.height <= 2000 + 1e-5);
+  }
+  assertOrbit(readCameraTargetFrame(viewer), { range: 2700 });
+});
+
+test('a free zoom-out near maximum height can decline without reversing into zoom-in', (t) => {
+  const { viewer, elements, advance } = bindRealZoomControls(t, {
+    range: 3000,
+    maximum: 2000,
+  });
+  elements.zoomOutButton.click();
+  for (const step of [0, 100, 325, 500, 650]) {
+    advance(step);
+    assert.ok(viewer.camera.positionCartographic.height <= 2000 + 1e-5);
+    assert.ok(
+      readCameraTargetFrame(viewer).range >= 3000 - 1e-5,
+      'zoom-out must not move closer',
+    );
+  }
+});
+
+test('repeated sky-facing zoom-out cannot cross the ellipsoid when surface picks miss', (t) => {
+  const { viewer, elements, advance } = bindRealZoomControls(t, {
+    minimum: 700,
+    maximum: Infinity,
+  });
+  viewer.camera.setView({
+    destination: Cesium.Cartesian3.fromDegrees(0, 0, 10_000),
+    orientation: { heading: 0, pitch: Cesium.Math.toRadians(10), roll: 0 },
+  });
+  viewer.scene.globe.pick = undefined;
+  viewer.camera.pickEllipsoid = undefined;
+  viewer.camera.getPickRay = undefined;
+  for (let presses = 0; presses < 20; presses += 1)
+    elements.zoomOutButton.click();
+  for (const step of [0, 100, 325, 500, 650]) {
+    advance(step);
+    assert.ok(
+      viewer.camera.positionCartographic.height >= 700 - 1e-5,
+      `fallback crossed the ground at ${step}: ${viewer.camera.positionCartographic.height}`,
+    );
+  }
+});
+
+test('sky-facing zoom-in respects maximum height when moving along the sight line', (t) => {
+  const { viewer, elements, advance } = bindRealZoomControls(t, {
+    maximum: 10_050,
+  });
+  viewer.camera.setView({
+    destination: Cesium.Cartesian3.fromDegrees(0, 0, 10_000),
+    orientation: { heading: 0, pitch: Cesium.Math.toRadians(10), roll: 0 },
+  });
+  viewer.scene.globe.pick = undefined;
+  viewer.camera.pickEllipsoid = undefined;
+  viewer.camera.getPickRay = undefined;
+  elements.zoomInButton.click();
+  for (const step of [0, 325, 650]) {
+    advance(step);
+    assert.ok(
+      viewer.camera.positionCartographic.height <= 10_050 + 1e-5,
+      `fallback crossed the maximum height at ${step}: ${viewer.camera.positionCartographic.height}`,
+    );
+  }
+});
+
+test('free zoom samples rendered ground once per action and keeps animation frames cheap', (t) => {
+  const { viewer, elements, advance } = bindRealZoomControls(t);
+  let samples = 0;
+  viewer.scene.sampleHeight = () => {
+    samples += 1;
+    return 0;
+  };
+  elements.zoomInButton.click();
+  const actionSamples = samples;
+  assert.ok(actionSamples > 0 && actionSamples <= 3);
+  for (let step = 0; step <= 650; step += 25) advance(step);
+  assert.equal(
+    samples,
+    actionSamples,
+    'rendered-ground sampling must not run on each animation frame',
+  );
+  assertOrbit(readCameraTargetFrame(viewer), { range: 3000 });
+  elements.zoomOutButton.click();
+  assert.ok(
+    samples > actionSamples && samples <= actionSamples + 3,
+    'the next action measures its own floor',
+  );
+  advance(1300);
+  assertOrbit(readCameraTargetFrame(viewer), { range: 4500 });
+});

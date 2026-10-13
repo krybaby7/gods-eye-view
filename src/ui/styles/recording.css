@@ -2,6 +2,7 @@
 body.recording-mode #title-bar,
 body.recording-mode #style-indicator,
 body.recording-mode #top-center-actions,
+body.recording-mode #globe-navigation,
 body.recording-mode #global-loading-status,
 body.recording-mode #traffic-sync-chip,
 body.recording-mode #cctv-sync-chip,
@@ -32,6 +33,7 @@ body.recording-mode #scene-runtime.active {
 body.scene-playback-mode
   :is(
     #clear-selected-layers,
+    #globe-navigation,
     #tilt-map-view,
     #north-up-view,
     #reset-globe-view

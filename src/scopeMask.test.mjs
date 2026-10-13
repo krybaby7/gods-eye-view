@@ -14,6 +14,7 @@ import {
   installScopeMask,
   destroyScopeMask,
   setScopeMaskEnabled,
+  isScopeMaskEnabled,
   setScopeMaskFeather,
   SCOPE_TERMINUS_MIN_PCT,
   SCOPE_TERMINUS_MAX_PCT,
@@ -27,7 +28,18 @@ import {
 } from './scopeMask.js';
 import { KEYHOLE_OUTER_RADIUS } from './celestialRing.js';
 
-beforeEach(() => _resetScopeMaskForTest());
+beforeEach(() => {
+  _resetScopeMaskForTest();
+  // The drawing tests below explicitly exercise the optional scope effect.
+  setScopeMaskEnabled(true);
+});
+
+test('a fresh normal view leaves the full rectangular viewport visible', () => {
+  _resetScopeMaskForTest();
+  assert.equal(isScopeMaskEnabled(), false);
+  setScopeMaskEnabled(true);
+  assert.equal(isScopeMaskEnabled(), true, 'the scope remains available');
+});
 
 test('geometry anchors the visible edge to the shared keyhole radius', () => {
   const geo = scopeMaskGeometry(1440, 860, 0.4);

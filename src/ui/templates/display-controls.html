@@ -7,6 +7,15 @@
     </div>
     <div class="pp-panel-body" data-rail-scroller>
     <div class="pp-toggle-group">
+      <div class="pp-slider-row visible render-quality-row">
+        <label class="pp-slider-mini-label" for="map-render-quality">Detail</label>
+        <select id="map-render-quality" class="pp-select" aria-label="Map rendering quality" title="Sharp renders more detail on high-density screens. Standard uses less graphics power.">
+          <option value="sharp">Sharp</option>
+          <option value="standard">Standard</option>
+        </select>
+      </div>
+    </div>
+    <div class="pp-toggle-group">
       <button class="pp-toggle-btn" id="hud-toggle" title="Intelligence HUD (H)">
         <span class="pp-icon">&#x25CE;</span>
         <span class="pp-label">HUD</span>
@@ -91,7 +100,7 @@
     <div class="pp-toggle-group">
       <!-- 3D aircraft is DEFAULT-ON in Proximity (owner directive 2026-08-22), so the
            button ships lit and the mode row ships open — the same markup-carries-the-default
-           convention as #scope-toggle. ui.js re-syncs both from durable layer state, which
+           convention as the other display toggles. ui.js re-syncs from durable layer state, which
            is what flips them back for a share link or a stored session carrying 3D off. -->
       <button class="pp-toggle-btn active" id="models3d-toggle" aria-pressed="true" title="3D aircraft — flat icons zoomed out, 3D models up close">
         <span class="pp-icon">&#x2708;</span>
@@ -106,7 +115,7 @@
       </div>
     </div>
     <div class="pp-toggle-group">
-      <button class="pp-toggle-btn active" id="scope-toggle" title="Scope — the circular viewport mask" aria-pressed="true">
+      <button class="pp-toggle-btn" id="scope-toggle" title="Scope — optional circular viewport mask" aria-pressed="false">
         <span class="pp-icon material-symbols-outlined" aria-hidden="true">adjust</span>
         <span class="pp-label">Scope</span>
       </button>

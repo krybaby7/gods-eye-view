@@ -297,7 +297,7 @@ test('trackpad pinch adds the Ctrl+wheel binding without replacing Cesium inputs
   assert.equal(f.handlers.size, 0);
 });
 
-test('trackpad pinch relays pixel deltas once with bounded amplification', () => {
+test('trackpad pinch relays pixel deltas once with gentle bounded amplification', () => {
   const f = pinchFixture({ zoomEventTypes: [1, 2, 3] });
   installTrackpadPinchZoom(f.viewer, {
     createWheelEvent: (_type, init) => f.createEvent(init),
@@ -308,13 +308,28 @@ test('trackpad pinch relays pixel deltas once with bounded amplification', () =>
   assert.equal(small.defaultPrevented, true);
   assert.equal(small.propagationStopped, true);
   assert.equal(f.relayed.length, 1);
-  assert.equal(f.relayed[0].deltaY, 16);
+  assert.equal(f.relayed[0].deltaY, 4);
   assert.equal(f.relayed[0].ctrlKey, true);
 
   const large = f.createEvent({ ctrlKey: true, deltaY: -100 });
   f.container.emit(large);
   assert.equal(f.relayed.length, 2);
-  assert.equal(f.relayed[1].deltaY, -120);
+  assert.equal(f.relayed[1].deltaY, -60);
+});
+
+test('disposing trackpad pinch stops relays without overwriting later Cesium bindings', () => {
+  const f = pinchFixture({ zoomEventTypes: [1, 2, 3] });
+  const dispose = installTrackpadPinchZoom(f.viewer, {
+    createWheelEvent: (_type, init) => f.createEvent(init),
+  });
+  const changedBindings = [2];
+  f.controller.zoomEventTypes = changedBindings;
+  dispose();
+  const event = f.createEvent({ ctrlKey: true, deltaY: 2 });
+  f.container.emit(event);
+  assert.equal(f.relayed.length, 0);
+  assert.equal(event.defaultPrevented, false);
+  assert.equal(f.controller.zoomEventTypes, changedBindings);
 });
 
 test('trackpad pinch falls back to the original event when relay construction fails', () => {

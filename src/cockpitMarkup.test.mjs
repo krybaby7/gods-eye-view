@@ -44,8 +44,11 @@ test('Cockpit has one reset action beside its bottom exit path', () => {
     /id="map-view-switch"[^>]*aria-label="Exit cockpit view"[^>]*aria-keyshortcuts="Escape C"[\s\S]*?close_fullscreen[\s\S]*?EXIT COCKPIT/,
   );
   const topCenterActions = html.match(/<nav id="top-center-actions"[\s\S]*?<\/nav>/);
-  assert.ok(topCenterActions, 'Top-center globe actions are missing');
-  assert.match(topCenterActions[0], /id="clear-selected-layers"[\s\S]*?id="share-btn"[\s\S]*?id="tilt-map-view"[\s\S]*?id="north-up-view"[\s\S]*?id="reset-globe-view"/);
+  assert.ok(topCenterActions, 'Top-center map tools are missing');
+  assert.match(topCenterActions[0], /id="clear-selected-layers"[\s\S]*?id="share-btn"/);
+  const globeNavigation = html.match(/<nav id="globe-navigation"[\s\S]*?<\/nav>/);
+  assert.ok(globeNavigation, 'Globe navigation controls are missing');
+  assert.match(globeNavigation[0], /id="north-up-view"[\s\S]*?id="tilt-map-view"[\s\S]*?id="reset-globe-view"[\s\S]*?id="zoom-map-out"[\s\S]*?id="zoom-map-in"/);
   assert.equal((html.match(/id="clear-selected-layers"/g) || []).length, 1, 'Clear Layers must have one DOM owner');
   assert.equal((html.match(/id="reset-globe-view"/g) || []).length, 1, 'Reset Globe must have one DOM owner');
   assert.equal((html.match(/id="cockpit-reset-globe"/g) || []).length, 1, 'Cockpit Reset must have one DOM owner');

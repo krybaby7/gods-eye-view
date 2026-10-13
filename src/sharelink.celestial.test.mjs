@@ -62,6 +62,27 @@ test('share links without cr default the celestial ring off', () => {
   assert.equal(manager.parseInitialHash().celestialRing, false);
 });
 
+test('share links use the full viewport by default and retain explicit scope choices', () => {
+  assert.equal(
+    makeManager('#lat=10&lon=20').parseInitialHash().scopeEnabled,
+    false,
+  );
+  assert.equal(
+    makeManager('#lat=10&lon=20&sc=1').parseInitialHash().scopeEnabled,
+    true,
+  );
+  assert.equal(
+    makeManager('#lat=10&lon=20&sc=0').parseInitialHash().scopeEnabled,
+    false,
+  );
+  const manager = makeManager();
+  manager._updateHash();
+  assert.equal(
+    new URLSearchParams(window.location.hash.slice(1)).get('sc'),
+    '0',
+  );
+});
+
 test('share links parse explicit celestial on and off states', () => {
   assert.equal(makeManager('#lat=10&lon=20&cr=1').parseInitialHash().celestialRing, true);
   assert.equal(makeManager('#lat=10&lon=20&cr=0').parseInitialHash().celestialRing, false);
