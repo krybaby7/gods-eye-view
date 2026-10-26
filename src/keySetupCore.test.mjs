@@ -376,3 +376,16 @@ test('key guidance can offer another source that works with a key already set', 
   );
   assert.equal(keySetupWithAlternatives('Needs X', []), 'Needs X');
 });
+
+test('the war monitor digest key is a metered Provider Settings row', () => {
+  const entry = KEY_SETUP_KEYS.find((key) => key.id === 'perplexity');
+  assert.deepEqual(entry.envVars, ['PERPLEXITY_API_KEY']);
+  assert.equal(entry.tier, 'metered');
+  assert.equal(entry.hidden, undefined);
+  assert.equal(entry.clientExposed, undefined);
+  assert.ok(knownKeySetupEnvVars().has('PERPLEXITY_API_KEY'));
+  assert.equal(
+    keySetupRequirement('perplexity'),
+    'Needs PERPLEXITY_API_KEY — add it in Provider Settings',
+  );
+});
