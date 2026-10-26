@@ -620,7 +620,40 @@ async function main() {
           'st_bandar',
         );
         assert.ok(s.pins.includes('st_bandar'));
+        assert.equal(
+          await page.$$eval(
+            '#situation-panel .situation-story-selected',
+            (rows) => rows.length,
+          ),
+          1,
+        );
         await shot(page, '02-story-expanded');
+        // Deselecting on the map drops the row highlight at once, and the
+        // shared selection follows the story.
+        const shared = await page.evaluate(() => {
+          const news = window.__godsEyeView.dataManager.layers.get('news');
+          news.module.clearSelection();
+          const cleared = window.__gevContextStore?.selectedEntityId ?? null;
+          news.module.selectStory('st_bandar', { focus: false });
+          return {
+            cleared,
+            reselected: window.__gevContextStore?.selectedEntityId ?? null,
+          };
+        });
+        assert.equal(shared.reselected, 'news:st_bandar');
+        assert.equal(shared.cleared, null);
+        await page.evaluate(() =>
+          window.__godsEyeView.dataManager.layers
+            .get('news')
+            .module.clearSelection(),
+        );
+        assert.equal(
+          await page.$$eval(
+            '#situation-panel .situation-story-selected',
+            (rows) => rows.length,
+          ),
+          0,
+        );
       },
     );
 

@@ -62,7 +62,6 @@ export function createSituationPanel({
   let timer = null;
   const openIds = new Set();
   const showOriginal = new Set();
-  const listeners = [];
   const storyRows = new Map();
 
   function h(tag, attributes = {}, ...children) {
@@ -71,8 +70,10 @@ export function createSituationPanel({
       if (value === null || value === undefined || value === false) continue;
       if (name === 'text') node.textContent = String(value);
       else if (name === 'className') node.className = value;
+      // Every node lives under root and is dropped with it (or with the
+      // section it was rebuilt out of), so handlers need no bookkeeping.
       else if (name.startsWith('on'))
-        listen(node, name.slice(2).toLowerCase(), value);
+        node.addEventListener(name.slice(2).toLowerCase(), value);
       else if (name === 'style') node.setAttribute('style', value);
       else node.setAttribute(name, value === true ? '' : String(value));
     }
@@ -83,11 +84,6 @@ export function createSituationPanel({
       );
     }
     return node;
-  }
-
-  function listen(target, type, handler, options) {
-    target.addEventListener(type, handler, options);
-    listeners.push([target, type, handler, options]);
   }
 
   /** Replace a section's children, keeping keyboard focus on the same control. */
@@ -727,7 +723,10 @@ export function createSituationPanel({
   /** A map selection opens its story row and brings it into view once. */
   function revealSelected() {
     const id = snapshot.selectedStoryId;
-    if (!id) return;
+    if (!id) {
+      render();
+      return;
+    }
     openIds.add(id);
     if (tab !== 'stories') tab = 'stories';
     render();
@@ -750,8 +749,6 @@ export function createSituationPanel({
       unsubscribe();
       if (timer !== null) clearIntervalImpl(timer);
       timer = null;
-      for (const [target, type, handler, options] of listeners.splice(0))
-        target.removeEventListener(type, handler, options);
       storyRows.clear();
       root.remove();
       if (count) count.textContent = '';

@@ -375,14 +375,14 @@ export function createNewsLayer({
         rev: force ? undefined : _snapshot?.revision || undefined,
       });
       if (request.signal.aborted || _request !== request || _destroyed)
-        return false;
+        return null;
       if (!result.unchanged) applySnapshot(result);
       _lastUpdate = now();
       _error = null;
       return true;
     } catch (error) {
       if (request.signal.aborted || _request !== request || _destroyed)
-        return false;
+        return null;
       console.warn('[Data:News] fetch error:', error?.message || error);
       _error = error?.message || 'News provider unavailable';
       return false;
@@ -428,6 +428,7 @@ export function createNewsLayer({
       _loading = false;
       _enabled = false;
       _hoverId = null;
+      _selectedId = null;
       if (_dataSource) _dataSource.show = false;
       removeHandlers();
       overlayHost.clearSource(NEWS_OVERLAY_SOURCE_ID);
@@ -439,7 +440,10 @@ export function createNewsLayer({
 
     async update() {
       if (!_enabled || _destroyed) return false;
-      return fetchSnapshot();
+      const ok = await fetchSnapshot();
+      // Replaced by a newer reload (Refresh, theater switch): that one reports.
+      if (ok === null) return _enabled && !_destroyed;
+      return ok;
     },
 
     destroy(viewer = _viewer) {
@@ -535,17 +539,18 @@ export function createNewsLayer({
       if (!story) return false;
       _selectedId = story.id;
       if (_enabled) {
-        const entity = _entities.get(story.id);
-        if (entity) {
-          try {
-            context.selectEntityContext?.(entity);
-          } catch {
-            /* context store unavailable */
-          }
-        }
         renderPins();
         renderCards();
         registerContexts();
+        // Select the rebuilt pin; a list-only story has none, so the shared
+        // selection must not keep pointing at the previous pin.
+        const entity = _entities.get(story.id);
+        try {
+          if (entity) context.selectEntityContext?.(entity);
+          else context.clearSelectedEntityContextForLayer?.('news');
+        } catch {
+          /* context store unavailable */
+        }
         if (fly && story.location)
           focus.requestWorldFocus?.({
             kind: 'story',
@@ -565,6 +570,7 @@ export function createNewsLayer({
       if (_enabled) {
         renderPins();
         renderCards();
+        registerContexts();
       }
       notify('select');
     },
@@ -688,6 +694,8 @@ export function createNewsLayer({
       const degraded = sources.filter((s) => s.health.degraded).length;
       const lastDigestAt = Date.parse(_snapshot?.lastDigest?.finishedAt || '');
       const budget = _snapshot?.budget || null;
+      // The feed loads without a key; only Refresh needs one. Reported apart
+      // from `keyRequired`, which the loading status reads as a failed load.
       const keyRequired = Boolean(_snapshot && !_snapshot.digest.keyConfigured);
       let loadingLabel = '';
       if (_loading && !_snapshot) loadingLabel = 'loading...';
@@ -734,7 +742,7 @@ export function createNewsLayer({
               exhausted: budget.exhausted,
             }
           : null,
-        keyRequired,
+        digestKeyRequired: keyRequired,
         lastUpdate: _lastUpdate,
         loading: _loading,
         error: _error,

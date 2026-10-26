@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import * as Cesium from 'cesium';
+import { normalizeLayerLoading } from '../../loadingFeedback.js';
 import { createNewsLayer } from './index.js';
 import { normalizeNewsSnapshot } from './records.js';
 
@@ -121,6 +122,7 @@ function harness({
   const actions = new Map();
   const focus = [];
   const contexts = new Map();
+  let selectedContext = null;
   let picked = null;
   let preRender = null;
   const viewer = {
@@ -153,13 +155,28 @@ function harness({
     },
     services: {
       context: {
-        registerEntityContext: (entity, meta) => contexts.set(meta.id, meta),
+        // Like the real store: the entity carries its context id, and only
+        // a registered id can be selected.
+        registerEntityContext: (entity, meta) => {
+          entity.__gevContextId = meta.id;
+          contexts.set(meta.id, meta);
+        },
         removeEntityContextsForLayer: (layerId, { retainIds }) => {
           for (const id of [...contexts.keys()])
             if (!retainIds.has(id)) contexts.delete(id);
+          if (selectedContext && !contexts.has(selectedContext))
+            selectedContext = null;
         },
-        selectEntityContext() {},
-        clearSelectedEntityContextForLayer() {},
+        selectEntityContext: (entity) => {
+          const id = entity?.__gevContextId;
+          if (!id || !contexts.has(id)) return null;
+          selectedContext = id;
+          return contexts.get(id);
+        },
+        clearSelectedEntityContextForLayer: (layerId) => {
+          if (selectedContext?.startsWith(`${layerId}:`))
+            selectedContext = null;
+        },
       },
       picking: {
         registerPickOwner() {},
@@ -184,6 +201,7 @@ function harness({
     actions,
     focus,
     contexts,
+    selectedContext: () => selectedContext,
     pick: (value) => (picked = value),
     runPreRender: () => preRender?.(),
     lastCards: () => overlay.at(-1)?.[1] ?? [],
@@ -200,7 +218,7 @@ test('one pin per located open story; list-only stories are counted, never drawn
   assert.equal(stats.listOnly, 1);
   assert.equal(stats.itemCount, 1);
   assert.equal(stats.degradedSources, 1);
-  assert.equal(stats.keyRequired, false);
+  assert.equal(stats.digestKeyRequired, false);
   assert.match(stats.loadingLabel, /^3 stories · 1 items$/);
   assert.match(
     stats.summary,
@@ -208,6 +226,55 @@ test('one pin per located open story; list-only stories are counted, never drawn
   );
   assert.deepEqual([...h.contexts.keys()], ['news:a', 'news:b']);
   assert.equal(h.contexts.get('news:a').layerId, 'news');
+});
+
+test('a missing digest key is not a load failure: the feed still loads', async () => {
+  const keyless = payload();
+  keyless.digest = { ...keyless.digest, keyConfigured: false };
+  const h = harness({
+    source: {
+      getSnapshot: async () => normalizeNewsSnapshot(keyless),
+      requestDigest: async () => ({ ok: true }),
+    },
+  });
+  assert.equal(await h.layer.update(), true);
+  const stats = h.layer.getStats();
+  assert.equal(stats.digestKeyRequired, true);
+  assert.notEqual(stats.keyRequired, true);
+  assert.match(stats.loadingLabel, /digest needs key$/);
+  assert.match(stats.summary, /digest needs key$/);
+  // The global loading status reads stats.keyRequired as a failed layer.
+  const record = normalizeLayerLoading({
+    id: 'news',
+    name: 'War Monitor',
+    enabled: true,
+    lifecycleState: 'enabled',
+    stats: { ...stats, refreshing: true },
+  });
+  assert.equal(record.keyRequired, false);
+  assert.equal(record.error, null);
+});
+
+test('a poll replaced by a forced reload is not a refresh failure', async () => {
+  const pending = [];
+  const h = harness({
+    source: {
+      getSnapshot: ({ signal }) =>
+        new Promise((resolve, reject) => {
+          pending.push(resolve);
+          signal.addEventListener('abort', () =>
+            reject(new DOMException('aborted', 'AbortError')),
+          );
+        }),
+      requestDigest: async () => ({ ok: true }),
+    },
+  });
+  const poll = h.layer.update();
+  const forced = h.layer.refresh();
+  pending[1](normalizeNewsSnapshot(payload()));
+  assert.equal(await poll, true, 'the layer reloaded; the poll is not failed');
+  assert.equal(await forced, true);
+  assert.deepEqual(h.layer._testing.pinIds(), ['a', 'b']);
 });
 
 test('markers: colour by category, ring for participant claims, dashes when model-placed', async () => {
@@ -297,6 +364,40 @@ test('clicking a pin selects it, shows its card and asks the UI for one flight',
     position: { x: 1, y: 1 },
   });
   assert.equal(h.layer.getSnapshot().selectedStoryId, null);
+});
+
+test('the shared selection follows the story: pin to pin, list-only, cleared, re-enabled', async () => {
+  const h = harness();
+  await h.layer.update();
+  const click = (id) => {
+    const [source] = h.added;
+    h.pick(id ? { id: source.entities.getById(`news:${id}`) } : null);
+    h.actions.get(Cesium.ScreenSpaceEventType.LEFT_CLICK)({
+      position: { x: 1, y: 1 },
+    });
+  };
+  click('a');
+  assert.equal(h.selectedContext(), 'news:a');
+  click(null);
+  assert.equal(h.selectedContext(), null);
+  // Pins rebuilt on deselect stay registered, so the next pick publishes.
+  click('b');
+  assert.equal(h.selectedContext(), 'news:b');
+  // A list-only story has no pin: the previous pin is no longer selected.
+  h.layer.selectStory('c');
+  assert.equal(h.layer.getSnapshot().selectedStoryId, 'c');
+  assert.equal(h.selectedContext(), null);
+  h.layer.selectStory('a');
+  assert.equal(h.selectedContext(), 'news:a');
+  // Disabling drops the selection; re-enabling does not restore a card
+  // without its context.
+  h.layer.disable();
+  h.layer.enable(h.viewer);
+  assert.equal(h.layer.getSnapshot().selectedStoryId, null);
+  assert.equal(
+    h.lastCards().some((card) => card.variant === 'selected'),
+    false,
+  );
 });
 
 test('hovering a pin shows its card with category, sources and verification', async () => {
