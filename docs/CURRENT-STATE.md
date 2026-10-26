@@ -17,6 +17,10 @@ responsive scrolling, Clean UI, recording and Cockpit contracts; its fixed
 height is reserved without taking part in panel auto-collapse. Each change
 uses the existing lifecycle with origin `user`, so Context and layer-state
 restoration retain their existing behavior.
+Space issues its launch-layer intent before the satellite companion so the
+Context entry snapshot does not capture that same batch as pre-existing state.
+Military handoff refreshes own their background promise and treat a later
+layer-disable cancellation as normal completion.
 
 Standalone startup supplies only non-secret configuration booleans for FIRMS,
 AIS vessels and configured local receiver feeds. The catalog combines these
@@ -25,6 +29,18 @@ without enabling layers or acquiring feed data. Embedders can supply the same
 optional `sourceConfiguration` to application catalog construction; omitted
 metadata preserves existing behavior. Provider Settings restart/rebuild rules
 also apply when these configuration booleans change.
+Inherited native key flags do not gate caller-supplied FIRMS or vessel sources;
+those sources can report their own availability.
+
+`scripts/qa-lenses.mjs` exercises the running app with deterministic transport
+fixtures, using narrow CDP request patterns so geometry-worker scripts load
+normally. It checks source skips without activation, layer persistence on a
+plain URL, hotkeys, shared-layer rules, Cyber and narrow-screen pointer access.
+It also measures matched-view rendering only after wind geometry and weather
+tiles are ready. `--full-hazards` includes fixture FIRMS data; `--skip-performance`
+runs behavior separately from the recorded renderer measurement. See the
+Lenses verification report under `docs/superpowers/plans/` for actual results
+and the distinction between fixture and live-provider validation.
 
 Vessel sources can report healthy empty coverage using a current, complete
 snapshot with zero raw rows, a healthy transport and a positive last-message
