@@ -296,6 +296,57 @@ function imageryPinOption(key, token) {
   });
 }
 
+/**
+ * War monitor categories hidden by the category toggles. Runtime value: the
+ * sorted, comma-separated hidden ids ('' = every category shown). URL form:
+ * one stable letter per category, so a link keeps its meaning if the theater
+ * config relabels a category.
+ */
+const NEWS_CATEGORY_CODES = Object.freeze({
+  'war-military': 'w',
+  'political-diplomatic': 'p',
+  'humanitarian-casualties': 'h',
+  environmental: 'e',
+  'infrastructure-shipping': 'i',
+  'cyber-information': 'c',
+});
+const NEWS_CODE_CATEGORIES = Object.freeze(
+  Object.fromEntries(
+    Object.entries(NEWS_CATEGORY_CODES).map(([id, code]) => [code, id]),
+  ),
+);
+
+function newsCategoryFilterOption(key, token) {
+  const normalize = (value) => {
+    const list = Array.isArray(value)
+      ? value
+      : typeof value === 'string'
+        ? value.split(',')
+        : null;
+    if (!list) return null;
+    const ids = list.map((entry) => String(entry).trim()).filter(Boolean);
+    if (ids.some((id) => !Object.hasOwn(NEWS_CATEGORY_CODES, id))) return null;
+    return [...new Set(ids)].sort().join(',');
+  };
+  return Object.freeze({
+    key,
+    token,
+    defaultValue: '',
+    normalize,
+    encode: (value) =>
+      value
+        .split(',')
+        .map((id) => NEWS_CATEGORY_CODES[id])
+        .sort()
+        .join(''),
+    decode: (value) => {
+      if (!/^[a-z]{1,6}$/.test(value)) return null;
+      const ids = [...value].map((code) => NEWS_CODE_CATEGORIES[code]);
+      return ids.every(Boolean) ? normalize(ids) : null;
+    },
+  });
+}
+
 const OPTION_GROUPS = Object.freeze({
   traffic: Object.freeze([
     enumOption('roadMode', 'r', null, ['tomtom', 'osm', 'hybrid'], {
@@ -432,6 +483,7 @@ const OPTION_GROUPS = Object.freeze({
     // MAX_SINCE_DAYS in streetLevel/policy.js (pinned by layerState.test).
     boundedIntegerOption('sinceDays', 's', 0, { min: 0, max: 36500 }),
   ]),
+  news: Object.freeze([newsCategoryFilterOption('hiddenCategories', 'h')]),
   radio: Object.freeze([
     Object.freeze({
       key: 'filter',
@@ -629,6 +681,12 @@ export const LAYER_STATE_REGISTRY = Object.freeze([
     id: 'military-installations',
     token: 'i',
     disposition: 'enabled-only',
+  }),
+  Object.freeze({
+    id: 'news',
+    token: '3',
+    disposition: 'enabled+options',
+    optionOwner: 'news',
   }),
   Object.freeze({
     id: 'radio',

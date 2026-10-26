@@ -151,6 +151,27 @@ const layers = [
     },
   },
   {
+    id: 'news',
+    aliases: ['situation', 'stories', 'headlines', 'war monitor'],
+    context: true,
+    query: {
+      fields: {
+        title: ['t'],
+        category: ['t'],
+        perspectives: ['t'],
+        verification: ['t'],
+        sourceCount: ['n'],
+        place: ['t'],
+        status: ['t'],
+        eventAt: ['ms'],
+        updatedAt: ['ms'],
+      },
+      timeField: 'updatedAt',
+      window: 'stories open after the last digest',
+      caveat: 'stories are reporting, not verified incidents or risk rankings',
+    },
+  },
+  {
     id: 'local-firms',
     aliases: ['fires', 'wildfires', 'active fires', 'firms'],
     context: true,
