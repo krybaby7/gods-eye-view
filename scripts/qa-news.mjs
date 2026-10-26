@@ -761,6 +761,41 @@ async function main() {
     });
 
     await step(
+      'clean view and recording hide the panel and keep the pins',
+      async () => {
+        for (const mode of ['ui-clean-view', 'recording-mode']) {
+          await page.evaluate(
+            (name) => document.body.classList.add(name),
+            mode,
+          );
+          await wait(600);
+          const view = await page.$eval('#situation-panel', (node) => {
+            const style = getComputedStyle(node);
+            return {
+              visibility: style.visibility,
+              opacity: style.opacity,
+              pointerEvents: style.pointerEvents,
+            };
+          });
+          assert.equal(view.visibility, 'hidden', `${mode}: panel visibility`);
+          assert.equal(view.pointerEvents, 'none', `${mode}: panel input`);
+          assert.ok((await newsState(page)).pins.length > 0, `${mode}: pins`);
+          await shot(page, `08-${mode}`);
+          await page.evaluate(
+            (name) => document.body.classList.remove(name),
+            mode,
+          );
+        }
+        await wait(400);
+        const restored = await page.$eval(
+          '#situation-panel',
+          (node) => getComputedStyle(node).visibility,
+        );
+        assert.equal(restored, 'visible');
+      },
+    );
+
+    await step(
       'entering Cockpit collapses the panel with the other map panels',
       async () => {
         const entered = await page.evaluate(
@@ -778,7 +813,7 @@ async function main() {
         }
         await wait(1200);
         assert.equal((await newsState(page)).panelCollapsed, true);
-        await shot(page, '08-cockpit');
+        await shot(page, '09-cockpit');
         if (entered)
           await page.evaluate(() =>
             window.__godsEyeView.styleManager.cockpitView.exit(),
