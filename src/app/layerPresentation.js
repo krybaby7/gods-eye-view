@@ -70,6 +70,11 @@ export class LayerPresentation {
   mount(container) {
     this.panel.mount(container);
   }
+  /** Hand the Situation panel factory to the layer panel (see LayerPanel). */
+  attachSituation(factory) {
+    if (factory) this.panel.attachSituation(factory);
+    else this._panel?.attachSituation(null);
+  }
   /** Hand the Recent Imagery readout factory to the panel (see LayerPanel). */
   attachRecentImagery(factory) {
     // Detaching never builds a panel that teardown already released.
