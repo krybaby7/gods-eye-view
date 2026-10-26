@@ -3,7 +3,8 @@
 Implemented on `feat/lenses` in `/workspace/gev-lenses`, based on the fork's
 unchanged `origin/main` at `c3758a734d9728db48e56cc8b6bcfe28541380cb`.
 The first branch commit contains the supplied design and prompt. The original
-checkout was left unchanged; nothing was pushed and no PR was opened.
+checkout was left unchanged. Publication targets `main` in the owner's fork,
+`krybaby7/gods-eye-view`.
 
 ## Result
 
@@ -166,12 +167,10 @@ than rewritten to hide earlier failures.
 
 - **City:** the owner answered "Drop both". Street Level and Directions remain
   expert-only, and City contains its five agreed data layers.
-- **Hazards:** the measured drop is noticeable in this controlled software
-  workload. A proposed six-layer list is `earthquakes`, `weather-cyclones`,
-  `local-firms`, `fire-perimeters`, `weather-radar`, and `weather-lightning`,
-  leaving Wind in the expert panel. This is a candidate, not a measured
-  guarantee of the improvement on a hardware GPU. **No trim was applied:** the
-  implemented catalog retains all seven layers pending the owner's decision.
+- **Hazards:** the owner decided to retain all seven specified layers,
+  including Wind, and will measure performance on real hardware. SwiftShader
+  measurements are not representative of hardware-GPU performance and do not
+  justify a trim. **No trim was applied.**
 - Conflict has no news layer. No section 7 features were started.
 - Live provider access, real provider credentials, physical local receiver
   operation, and hardware-GPU frame rates were not validated by fixture QA.

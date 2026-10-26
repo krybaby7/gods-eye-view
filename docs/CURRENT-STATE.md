@@ -8,7 +8,9 @@ preserves shared layers only when another lens is fully on. Missing sources,
 keys and local receivers are skipped, with the same guidance as the expert
 rows. DATA LAYERS and its groups are unchanged. City excludes Street Level and
 Directions; Conflict excludes news until the war monitor lands. Hazards keeps
-all seven specified layers pending measured performance and owner review.
+all seven specified layers, including Wind, by the owner's decision. The owner
+will measure performance on real hardware; SwiftShader results are not
+representative of hardware-GPU performance.
 
 Shift+Digit1–7 activates lenses; plain 1–7 keeps the existing visual styles.
 Shift is explicitly excluded from the style path for layouts such as AZERTY,
