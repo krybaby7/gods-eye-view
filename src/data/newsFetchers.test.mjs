@@ -419,3 +419,24 @@ test('language follows the dominant script, else the source language', () => {
   assert.equal(detectLanguage('Frappe signalée', 'fr'), 'fr');
   assert.equal(detectLanguage('', 'fr'), 'fr');
 });
+
+test('Telegram posts that open with the same header line stay separate items', async () => {
+  const post = (id, text) =>
+    `<div class="tgme_widget_message_wrap"><div class="tgme_widget_message js-widget_message" data-post="almasirahnet/${id}">
+<div class="tgme_widget_message_text js-message_text" dir="auto">${text}</div>
+<a class="tgme_widget_message_date" href="https://t.me/almasirahnet/${id}"><time datetime="2026-10-25T14:0${id}:00+00:00">14:0${id}</time></a></div></div>`;
+  const html = `<html><body>${post(1, '🔴 عاجل<br/>قصف على ميناء الحديدة')}${post(2, '🔴 عاجل<br/>غارات على صنعاء')}</body></html>`;
+  const almasirah = source(
+    'almasirah',
+    { type: 'telegram-public', channel: 'almasirahnet' },
+    { folder: 'armed-group', kind: 'participant', languages: ['ar'] },
+  );
+  const result = await fetchTelegramSource(almasirah, {
+    fetchImpl: async () =>
+      respond(html, { headers: { 'content-type': 'text/html' } }),
+  });
+  assert.deepEqual(
+    result.items.map((item) => item.title),
+    ['🔴 عاجل · قصف على ميناء الحديدة', '🔴 عاجل · غارات على صنعاء'],
+  );
+});

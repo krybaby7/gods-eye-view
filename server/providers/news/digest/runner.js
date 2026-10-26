@@ -37,7 +37,8 @@ export const CLAIM_TYPES = Object.freeze([
   'intent',
   'other',
 ]);
-const TIMEOUT_MS = 180_000;
+// Room for a full 16k-token answer; a slower call is charged an estimate.
+const TIMEOUT_MS = 300_000;
 const MAX_RESPONSE_CHARS = 2_000_000;
 
 const nullable = (schema) => ({ anyOf: [schema, { type: 'null' }] });
@@ -416,6 +417,26 @@ function digestError(code, message, extra = {}) {
   return Object.assign(new Error(message), { code, ...extra });
 }
 
+/**
+ * What a sent request may have cost when no usage came back (timed out or
+ * cut off mid-answer): the input at about three characters a token and a
+ * full-length answer, at list price, flagged as an estimate. Errs high so
+ * the daily budget still counts the call.
+ */
+export function worstCaseCost(body) {
+  const inputTokens = Math.ceil(JSON.stringify(body).length / 3);
+  const outputTokens = DIGEST_MAX_OUTPUT_TOKENS;
+  return {
+    costUsd:
+      (inputTokens * DIGEST_FALLBACK_PRICE_PER_MTOK.input +
+        outputTokens * DIGEST_FALLBACK_PRICE_PER_MTOK.output) /
+      1e6,
+    estimated: true,
+    inputTokens,
+    outputTokens,
+  };
+}
+
 function upstreamMessage(body) {
   const message = body?.error?.message ?? body?.detail?.[0]?.msg ?? '';
   return String(message)
@@ -453,14 +474,26 @@ export async function callDigestModel({
       body: JSON.stringify(body),
     });
   } catch (error) {
+    // A timeout means the request was sent and may be billed; a failed
+    // connection was not.
+    if (error?.name === 'TimeoutError')
+      throw digestError('timeout', 'digest request timed out', {
+        cost: worstCaseCost(body),
+      });
+    throw digestError('network', 'digest request failed to connect');
+  }
+  let raw;
+  try {
+    raw = await response.text();
+  } catch (error) {
     throw digestError(
       error?.name === 'TimeoutError' ? 'timeout' : 'network',
       error?.name === 'TimeoutError'
         ? 'digest request timed out'
-        : 'digest request failed to connect',
+        : 'digest response was cut off',
+      { cost: worstCaseCost(body) },
     );
   }
-  const raw = await response.text();
   if (raw.length > MAX_RESPONSE_CHARS)
     throw digestError('upstream', 'digest response too large');
   let payload = null;

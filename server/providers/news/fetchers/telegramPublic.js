@@ -15,6 +15,8 @@ import {
  * break it — so the status record marks the transport fragile.
  */
 
+const TELEGRAM_HEADER_MAX = 24;
+
 function messageText(html) {
   return decodeEntities(
     String(html || '')
@@ -72,6 +74,21 @@ export function parseTelegramPreview(html, channel) {
  * @param {object} source Registry source with transport.type 'telegram-public'.
  * @param {{fetchImpl?: Function, signal?: AbortSignal}} [options]
  */
+/**
+ * A post's headline: its first line, joined to the next one when the first is
+ * only a short header (channels open alerts with a fixed "🔴 Breaking" line).
+ */
+export function telegramTitle(text) {
+  const lines = String(text || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const [first = '', second] = lines;
+  return second && first.length < TELEGRAM_HEADER_MAX
+    ? `${first} · ${second}`
+    : first;
+}
+
 export async function fetchTelegramSource(source, options = {}) {
   const startedAt = Date.now();
   const channel = source.transport.channel;
@@ -98,15 +115,14 @@ export async function fetchTelegramSource(source, options = {}) {
       };
     const items = parseTelegramPreview(response.text, channel)
       .slice(-FETCHER_ITEM_CAP)
-      .map((message) => {
-        const [firstLine] = message.text.split('\n');
-        return candidate(source, {
-          title: clip(firstLine, TITLE_MAX),
+      .map((message) =>
+        candidate(source, {
+          title: clip(telegramTitle(message.text), TITLE_MAX),
           snippet: message.text,
           url: message.url,
           publishedAt: message.publishedAt,
-        });
-      });
+        }),
+      );
     return {
       items,
       status: sourceStatus(source, {

@@ -243,9 +243,11 @@ export function createNewsItemStore({
           rejected++;
           continue;
         }
+        // A Telegram post URL is its identity; channels reuse header lines.
         if (
           items.has(item.id) ||
-          titles.has(titleKey(item.title, item.sourceId))
+          (item.transport !== 'telegram-public' &&
+            titles.has(titleKey(item.title, item.sourceId)))
         ) {
           duplicates++;
           continue;

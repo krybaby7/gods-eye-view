@@ -215,3 +215,17 @@ test('concurrent saves never leave a torn cache', async (t) => {
   await again.load();
   assert.equal(again.size(), 6);
 });
+
+test('Telegram posts are told apart by their post URL, not their title', async (t) => {
+  const { store } = await withStore(t);
+  const post = (id) =>
+    candidate({
+      sourceId: 'idf',
+      title: 'Sirens sounded in the north.',
+      url: `https://t.me/idfofficial/${id}`,
+      transport: 'telegram-public',
+    });
+  const outcome = store.ingest([post(101), post(102), post(101)], sources);
+  assert.equal(outcome.added, 2);
+  assert.equal(outcome.duplicates, 1);
+});

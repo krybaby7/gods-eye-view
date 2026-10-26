@@ -54,9 +54,20 @@ export function createDigestStore({ theaterId, cacheDir, now = Date.now }) {
       next.length !== stories.length ||
       next.some((story, index) => story !== stories[index]);
     stories = next;
-    runs = runs
-      .filter((run) => nowMs - Date.parse(run.startedAt) < RUN_RETENTION_MS)
-      .slice(-RUN_LOG_CAP);
+    runs = runs.filter(
+      (run) => nowMs - Date.parse(run.startedAt) < RUN_RETENTION_MS,
+    );
+    if (runs.length > RUN_LOG_CAP) {
+      // Today's billed runs stay whatever the cap: the budget sums them.
+      const today = localDayKey(nowMs);
+      const newest = new Set(runs.slice(-RUN_LOG_CAP));
+      runs = runs.filter(
+        (run) =>
+          newest.has(run) ||
+          (Number(run.costUsd) > 0 &&
+            localDayKey(Date.parse(run.startedAt)) === today),
+      );
+    }
     const cited = new Set(stories.flatMap((story) => story.itemIds));
     for (const id of citations.keys()) if (!cited.has(id)) citations.delete(id);
     return changed;

@@ -393,12 +393,14 @@ export function createNewsService(options = {}) {
           status: 503,
           body: { error: 'no_key', keyRequired: true },
         };
+      // No await between the in-flight check and claiming the run below:
+      // two simultaneous requests must not both pass it.
+      const budgetState = await budget();
       if (ctx.inFlight)
         return {
           status: 409,
           body: { error: 'in_flight', startedAt: ctx.inFlight.startedAt },
         };
-      const budgetState = await budget();
       if (budgetState.exhausted)
         return {
           status: 429,

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   DIGEST_ENDPOINT,
+  DIGEST_FALLBACK_PRICE_PER_MTOK,
+  DIGEST_MAX_OUTPUT_TOKENS,
   buildDigestInstructions,
   digestSchema,
   parseDigestText,
@@ -416,5 +418,40 @@ test('open stories for the input are the most recently updated open ones', () =>
   assert.deepEqual(
     selectOpenStories(stories).map((s) => s.id),
     ['new', 'old'],
+  );
+});
+
+test('a timed-out or cut-off call is charged an estimate, so the budget still counts it', async () => {
+  const timedOut = async () => {
+    throw new DOMException('timed out', 'TimeoutError');
+  };
+  const cutOff = async () => ({
+    ok: true,
+    status: 200,
+    text: async () => {
+      throw new TypeError('terminated');
+    },
+  });
+  const refused = async () => {
+    throw new TypeError('fetch failed');
+  };
+  const worstOutput =
+    (DIGEST_MAX_OUTPUT_TOKENS * DIGEST_FALLBACK_PRICE_PER_MTOK.output) / 1e6;
+  for (const [fetchImpl, code] of [
+    [timedOut, 'timeout'],
+    [cutOff, 'network'],
+  ]) {
+    await assert.rejects(runDigest(runOptions(fetchImpl)), (error) => {
+      assert.equal(error.code, code);
+      assert.equal(error.cost.estimated, true);
+      assert.ok(error.cost.costUsd > worstOutput, String(error.cost.costUsd));
+      assert.ok(error.cost.inputTokens > 0);
+      return true;
+    });
+  }
+  // A connection that never opened was never billed.
+  await assert.rejects(
+    runDigest(runOptions(refused)),
+    (error) => error.code === 'network' && error.cost === undefined,
   );
 });

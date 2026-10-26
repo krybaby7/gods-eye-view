@@ -107,3 +107,17 @@ test('the digest file round-trips stories, runs and citations', async (t) => {
   assert.equal(again.runs().length, 1);
   assert.equal(again.citation('a').title, 'A');
 });
+
+test("the run log cap never drops today's billed runs", async (t) => {
+  const { digest } = await store(t);
+  digest.recordRun(run(new Date(NOW - 3 * 3600_000).toISOString(), 1.9));
+  for (let i = 0; i < 520; i++)
+    digest.recordRun(
+      run(
+        new Date(NOW - 3 * 3600_000 + (i + 1) * 1000).toISOString(),
+        0,
+        'skipped',
+      ),
+    );
+  assert.equal(Math.round(digest.spentOnDay(NOW) * 100) / 100, 1.9);
+});

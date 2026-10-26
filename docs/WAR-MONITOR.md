@@ -62,13 +62,13 @@ The Refresh control is disabled with a reason when:
 The server collects for the theater only after the first `/api/news` request.
 Starting the dev server alone fetches nothing.
 
-| Transport | Cadence | How |
-| --------- | ------- | --- |
-| `rss` | 10 min | RSS 2.0 and Atom, gzip/deflate, charset-aware, 4 MB cap. The parser is shared with the cockpit regional briefing (`server/providers/common/rss.js`). |
-| `gdelt-domain` | 15 min | GDELT DOC 2.0 `artlist` queries, `domainis:` OR-groups of up to 10 domains, 24 h window. One process-wide queue, 5.5 s between requests, doubling backoff after a 429 (up to 15 min). |
-| `telegram-public` | 5 min | The public web preview at `t.me/s/<channel>`. No account, bot or API. Flagged **fragile**: the markup can change. |
-| `reliefweb` | 30 min | ReliefWeb API v2 reports for the theater's countries. Off unless `RELIEFWEB_APPNAME` is set. |
-| `link-only` | never | Listed in the Raw feed folders as a link to the publisher. |
+| Transport         | Cadence | How                                                                                                                                                                                   |
+| ----------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rss`             | 10 min  | RSS 2.0 and Atom, gzip/deflate, charset-aware, 4 MB cap. The parser is shared with the cockpit regional briefing (`server/providers/common/rss.js`).                                  |
+| `gdelt-domain`    | 15 min  | GDELT DOC 2.0 `artlist` queries, `domainis:` OR-groups of up to 10 domains, 24 h window. One process-wide queue, 5.5 s between requests, doubling backoff after a 429 (up to 15 min). |
+| `telegram-public` | 5 min   | The public web preview at `t.me/s/<channel>`. No account, bot or API. Flagged **fragile**: the markup can change.                                                                     |
+| `reliefweb`       | 30 min  | ReliefWeb API v2 reports for the theater's countries. Off unless `RELIEFWEB_APPNAME` is set.                                                                                          |
+| `link-only`       | never   | Listed in the Raw feed folders as a link to the publisher.                                                                                                                            |
 
 Outlets whose feeds sit behind bot protection are never scraped. They arrive
 through GDELT with a link to the publisher.
@@ -134,16 +134,19 @@ undigested for the next Refresh, and the run records how many were left out.
 
 **Outcomes.** The route answers:
 
-| Status | Meaning | Recorded as a run? |
-| ------ | ------- | ------------------ |
-| 503 `no_key` | No key is configured. | — |
-| 409 `in_flight` | A digest is already running. | — |
-| 429 `over_budget` | Today's budget is used up. | — |
-| 200 `skipped` | Nothing new since the last digest. No call is made. | Yes, at $0 |
-| 200 `ok` | The digest ran. | Yes |
-| 502 | The call failed: `auth`, `rate_limited`, `upstream`, `model_error`, `malformed_output`, `network` or `timeout`. | Yes, with any reported cost |
+| Status            | Meaning                                                                                                         | Recorded as a run?                       |
+| ----------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| 503 `no_key`      | No key is configured.                                                                                           | —                                        |
+| 409 `in_flight`   | A digest is already running.                                                                                    | —                                        |
+| 429 `over_budget` | Today's budget is used up.                                                                                      | —                                        |
+| 200 `skipped`     | Nothing new since the last digest. No call is made.                                                             | Yes, at $0                               |
+| 200 `ok`          | The digest ran.                                                                                                 | Yes                                      |
+| 502               | The call failed: `auth`, `rate_limited`, `upstream`, `model_error`, `malformed_output`, `network` or `timeout`. | Yes, with its reported or estimated cost |
 
-A failed run that was still billed keeps its cost.
+A failed run that was still billed keeps its cost. A call that timed out (after
+5 minutes) or was cut off mid-answer returns no usage, so it is charged a
+worst-case estimate instead: the input size plus a full 16k-token answer, at
+list price.
 
 **Cost and budget.** Every run records `usage.cost.total_cost` from the
 response. If a response omits it, the cost is estimated from the token counts
@@ -163,21 +166,22 @@ server logs one line per run: counts and cost.
 - So do the oldest open stories beyond 60.
 - Closed stories, with snapshots of the items they cite, are kept until 7
   days after their last update.
-- Run records are kept for 30 days, at most 500.
+- Run records are kept for 30 days, at most 500. Today's billed runs are never
+  dropped by that cap, since the budget sums them.
 
 Story ids stay stable from run to run. The model updates an open story by
 returning its id. New stories get `st_` ids that code mints.
 
 ## Who owns what
 
-| The model writes | Code computes |
-| ---------------- | ------------- |
-| Story title and summary | **Location**: the gazetteer match for the model's place name first. Model coordinates are used only when nothing matches; the pin is then drawn with a dashed outline and labelled model-placed. Otherwise the story is list-only and counted. |
-| Category (one of six) | **Perspectives**: the distinct perspectives of the cited items. |
-| Place name and event time | **Source count**: the distinct publishers among the cited items. |
-| Which item ids it cites | **Verification label**, for the story and for each claim, from the cited items only. |
-| Claims (text, actor, type, ids) | Which cited ids are real (each is checked against the store). |
-| What's new and contradictions | Ids, open/closed status and retention. |
+| The model writes                | Code computes                                                                                                                                                                                                                                  |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Story title and summary         | **Location**: the gazetteer match for the model's place name first. Model coordinates are used only when nothing matches; the pin is then drawn with a dashed outline and labelled model-placed. Otherwise the story is list-only and counted. |
+| Category (one of six)           | **Perspectives**: the distinct perspectives of the cited items.                                                                                                                                                                                |
+| Place name and event time       | **Source count**: the distinct publishers among the cited items.                                                                                                                                                                               |
+| Which item ids it cites         | **Verification label**, for the story and for each claim, from the cited items only.                                                                                                                                                           |
+| Claims (text, actor, type, ids) | Which cited ids are real (each is checked against the store).                                                                                                                                                                                  |
+| What's new and contradictions   | Ids, open/closed status and retention.                                                                                                                                                                                                         |
 
 The model never returns URLs. Every link shown comes from a collected item.
 
@@ -237,11 +241,11 @@ usual vantage point, not any one article.
 
 ## Configuration
 
-| Setting | Default | Effect |
-| ------- | ------- | ------ |
-| `PERPLEXITY_API_KEY` | unset | Turns on the digest. Without it, collection and the Raw feed still work and Refresh is disabled with "no key". |
-| `NEWS_DIGEST_DAILY_BUDGET_USD` | `2.00` | Daily spend cap. |
-| `RELIEFWEB_APPNAME` | unset | Turns on the ReliefWeb source. |
+| Setting                        | Default | Effect                                                                                                         |
+| ------------------------------ | ------- | -------------------------------------------------------------------------------------------------------------- |
+| `PERPLEXITY_API_KEY`           | unset   | Turns on the digest. Without it, collection and the Raw feed still work and Refresh is disabled with "no key". |
+| `NEWS_DIGEST_DAILY_BUDGET_USD` | `2.00`  | Daily spend cap.                                                                                               |
+| `RELIEFWEB_APPNAME`            | unset   | Turns on the ReliefWeb source.                                                                                 |
 
 Sources live in `public/news/sources.json`. The theater lives in
 `public/news/theaters/<id>.json`: brief, categories, perspective groups,
@@ -258,24 +262,25 @@ spelling throws.
   - budget and digest state.
 
   If `rev` matches, it returns `{unchanged: true}`.
+
 - `POST /api/news/digest?theater=<id>`: same-site only and rate limited. See
   [Digest](#digest).
 - `GET /api/news/status`: collection health per theater.
 
 ## Code
 
-| Part | Path |
-| ---- | ---- |
-| Registry, gazetteer matcher | `server/providers/news/registry.js`, `geocode.js` |
-| Fetchers | `server/providers/news/fetchers/` |
-| Item store, collector, routes | `server/providers/news/store.js`, `collector.js`, `index.js` |
-| Digest call and validation | `server/providers/news/digest/runner.js` |
-| Code-owned story fields (pure) | `server/providers/news/digest/stories.js` |
-| Stories and run history | `server/providers/news/digest/store.js` |
-| Browser source and records | `src/layers/news/source.js`, `records.js` |
-| Layer: pins, cards, selection | `src/layers/news/index.js`, `model.js` |
-| Situation panel | `src/ui/situationPanel.js`, `situationPanelModel.js`, `styles/situation.css` |
-| Fixture QA | `npm run qa:news:fixtures` (`scripts/qa-news.mjs`) |
+| Part                           | Path                                                                         |
+| ------------------------------ | ---------------------------------------------------------------------------- |
+| Registry, gazetteer matcher    | `server/providers/news/registry.js`, `geocode.js`                            |
+| Fetchers                       | `server/providers/news/fetchers/`                                            |
+| Item store, collector, routes  | `server/providers/news/store.js`, `collector.js`, `index.js`                 |
+| Digest call and validation     | `server/providers/news/digest/runner.js`                                     |
+| Code-owned story fields (pure) | `server/providers/news/digest/stories.js`                                    |
+| Stories and run history        | `server/providers/news/digest/store.js`                                      |
+| Browser source and records     | `src/layers/news/source.js`, `records.js`                                    |
+| Layer: pins, cards, selection  | `src/layers/news/index.js`, `model.js`                                       |
+| Situation panel                | `src/ui/situationPanel.js`, `situationPanelModel.js`, `styles/situation.css` |
+| Fixture QA                     | `npm run qa:news:fixtures` (`scripts/qa-news.mjs`)                           |
 
 ## Known limits (Phase 1)
 

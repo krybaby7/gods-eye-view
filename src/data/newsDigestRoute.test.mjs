@@ -380,3 +380,20 @@ test('the digest route is POST-only, same-site gated and rate limited', async (t
     statuses.push((await request('/digest')).statusCode);
   assert.deepEqual(statuses, [503, 503, 503, 503, 429, 429]);
 });
+
+test('two Refreshes in the same moment make one paid call', async (t) => {
+  let modelCalls = 0;
+  const model = groupingModel();
+  const { news } = await setup(t, {
+    perplexity: async (body, init) => {
+      modelCalls++;
+      return model(body, init);
+    },
+  });
+  const results = await Promise.all([
+    news.requestDigest(),
+    news.requestDigest(),
+  ]);
+  assert.deepEqual(results.map((result) => result.status).sort(), [200, 409]);
+  assert.equal(modelCalls, 1);
+});
