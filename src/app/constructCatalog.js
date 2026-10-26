@@ -53,6 +53,7 @@ export const APPLICATION_LAYER_METADATA = Object.freeze([
 export function createApplicationCatalog({
   surface,
   sources,
+  sourceConfiguration,
   signal,
   metadata = APPLICATION_LAYER_METADATA,
   vesselOptions,
@@ -66,7 +67,7 @@ export function createApplicationCatalog({
   if (!surface?.groundFloor || !surface?.terrain)
     throw new TypeError('Application surface services are required');
 
-  const sourceComposition = resolveCatalogSources(sources);
+  const sourceComposition = resolveCatalogSources(sources, sourceConfiguration);
   sources = sourceComposition.sources;
   const militaryRegistry = createMilitaryRegistry();
   const weatherClock = createWeatherClock();
@@ -112,6 +113,7 @@ export function createApplicationCatalog({
         military,
         createApplicationLocalAdsb({
           surface,
+          configuredFeeds: sourceConfiguration?.localAdsb,
           enrichment: sources.flights,
           displayParams: () => flights.getParams(),
           ...(resolveAsset ? { resolveAsset } : {}),

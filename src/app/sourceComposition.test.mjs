@@ -9,11 +9,12 @@ import { createSurfaceServices } from './surfaceServices.js';
 import { createStandaloneLayerSources } from '../standalone/layerSources.js';
 import { LayerLifecycle } from '../data/lifecycle.js';
 
-function catalog(sources, t) {
+function catalog(sources, t, sourceConfiguration) {
   const lifetime = new AbortController();
   t.after(() => lifetime.abort());
   return createApplicationCatalog({
     sources,
+    sourceConfiguration,
     signal: lifetime.signal,
     surface: createSurfaceServices({
       terrainSource: { getHeights: async () => [] },
@@ -33,6 +34,91 @@ test('every acquisition source can be omitted without losing catalog membership'
       assert.equal(actual.getSourceAvailability(id).available, false, id);
     }
   }
+});
+
+test('cold keyless catalog rows share configuration reasons without initializing or acquiring', (t) => {
+  let acquisitions = 0;
+  t.mock.method(globalThis, 'fetch', async () => {
+    acquisitions++;
+    throw new Error('Availability must not acquire a feed');
+  });
+  const actual = catalog(createStandaloneLayerSources(), t, {
+    firms: false,
+    vessels: false,
+    localAdsb: false,
+  });
+  const manager = new LayerLifecycle(
+    {},
+    {
+      getSourceAvailability: actual.getSourceAvailability,
+    },
+  );
+  for (const layer of actual.layers) manager.register(layer);
+  for (const id of ['local-firms', 'ais-live-vessels', 'local-adsb']) {
+    const availability = actual.getSourceAvailability(id);
+    assert.equal(availability.available, false, id);
+    const row = manager.getAll().find((entry) => entry.id === id);
+    assert.equal(row.stats.sourceUnavailable, true, id);
+    assert.equal(row.stats.error, availability.reason, id);
+    assert.equal(manager.layers.get(id).initialized, false, id);
+  }
+  assert.match(
+    actual.getSourceAvailability('local-firms').reason,
+    /FIRMS_MAP_KEY/,
+  );
+  assert.match(
+    actual.getSourceAvailability('ais-live-vessels').reason,
+    /AISSTREAM_API_KEY/,
+  );
+  assert.equal(acquisitions, 0);
+});
+
+test('provider availability is live and omitted providers cannot be revived by configuration', (t) => {
+  let available = false;
+  let reads = 0;
+  const source = {
+    getSnapshot() {
+      throw new Error('Availability must not read a snapshot');
+    },
+    getSourceAvailability() {
+      reads++;
+      return {
+        available,
+        reason: available ? null : 'Provider not configured',
+      };
+    },
+  };
+  const actual = catalog(createStandaloneLayerSources({ firms: source }), t, {
+    firms: false,
+  });
+  assert.equal(actual.getSourceAvailability('local-firms').available, false);
+  available = true;
+  assert.equal(actual.getSourceAvailability('local-firms').available, true);
+  assert.equal(reads, 2);
+  const absent = catalog(createStandaloneLayerSources({ firms: null }), t, {
+    firms: true,
+  });
+  assert.equal(absent.getSourceAvailability('local-firms').available, false);
+  assert.match(
+    absent.getSourceAvailability('local-firms').reason,
+    /data source not configured/,
+  );
+});
+
+test('local receiver availability follows a connected device without selecting its mode', (t) => {
+  const actual = catalog(createStandaloneLayerSources(), t, {
+    localAdsb: false,
+  });
+  const layer = actual.get('local-adsb');
+  const initial = layer.receiver.getState();
+  let connected = false;
+  t.mock.method(layer.receiver, 'getState', () => ({ ...initial, connected }));
+  t.mock.method(layer.receiver, 'setMode', () => {
+    throw new Error('Must not tune while checking availability');
+  });
+  assert.equal(actual.getSourceAvailability('local-adsb').available, false);
+  connected = true;
+  assert.equal(actual.getSourceAvailability('local-adsb').available, true);
 });
 
 test('all acquisition sources may be absent, and enable fails before initializing or fetching', async (t) => {
