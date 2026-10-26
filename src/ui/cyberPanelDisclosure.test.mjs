@@ -98,3 +98,16 @@ test('opening a floating Cyber window leaves the docked rail panels open', () =>
     assert.ok(!f.saved.some(([id, collapsed]) => id === 'pp-toggles' && collapsed));
   } finally { globalThis.document = prior; }
 });
+
+test('fixed rail controls cannot be collapsed or gain persisted disclosure state', () => {
+  const f = fixture(), prior = globalThis.document;
+  globalThis.document = f.doc;
+  try {
+    f.display.dataset = { panelFixed: '' };
+    f.display.classList.remove('collapsed');
+    f.owner.setPanelCollapsed('pp-toggles', true, { explicit: true });
+    assert.equal(f.display.classList.contains('collapsed'), false);
+    assert.deepEqual(f.saved, []);
+    assert.deepEqual(f.claimed, []);
+  } finally { globalThis.document = prior; }
+});

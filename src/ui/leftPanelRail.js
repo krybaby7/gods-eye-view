@@ -38,6 +38,10 @@ export function layoutLeftPanelRail({
 
   const panels = [...stack.querySelectorAll(':scope > [data-panel-id]')];
   if (!panels.length) return;
+  const fixedPanels = panels.filter((panel) =>
+    Object.hasOwn(panel.dataset, 'panelFixed'),
+  );
+  const fixed = new Set(fixedPanels);
   if (!hud.visible || hud.variant !== 'tactical') {
     for (const panel of panels.filter((item) =>
       item.classList.contains('layout-auto-collapsed'),
@@ -131,7 +135,7 @@ export function layoutLeftPanelRail({
   }
 
   const expandedPanelsInDomOrder = panels.filter(
-    (panel) => !panel.classList.contains('collapsed'),
+    (panel) => !fixed.has(panel) && !panel.classList.contains('collapsed'),
   );
   const preferredExpandedPanel = expandedPanelsInDomOrder.find(
     (panel) => panel.id === preferredPanelId,
@@ -151,9 +155,21 @@ export function layoutLeftPanelRail({
   // Clear the prior pass before reading intrinsic heights. The allocated
   // outer height and the inner scroller otherwise feed their constrained
   // size back into the next HUD-mode calculation.
-  for (const panel of expandedPanels) {
+  for (const panel of [...fixedPanels, ...expandedPanels]) {
     panel.style.removeProperty('--left-panel-allocated-height');
   }
+  // Fixed controls remain available while an expert panel owns the lane.
+  // Reserve their natural height before sharing the rest among disclosures.
+  const fixedHeights = new Map(
+    fixedPanels.map((panel) => [
+      panel,
+      measurePanelNaturalHeight(panel, getComputedStyle),
+    ]),
+  );
+  const fixedHeight = [...fixedHeights.values()].reduce(
+    (sum, height) => sum + height,
+    0,
+  );
   const availableHeight = Math.max(0, safeBottom - safeTop);
   const naturalExpandedHeights = expandedPanels.map((panel) =>
     measurePanelNaturalHeight(panel, getComputedStyle),
@@ -163,6 +179,7 @@ export function layoutLeftPanelRail({
     0,
   );
   const siblingHeight = panels.reduce((total, panel) => {
+    if (fixed.has(panel)) return total + fixedHeights.get(panel);
     if (!panel.classList.contains('collapsed')) return total;
     const measured = collapsedHeights.get(panel.id);
     return total + (measured || panel.getBoundingClientRect().height || 0);
@@ -226,7 +243,8 @@ export function layoutLeftPanelRail({
         0,
         layoutBottom -
           layoutTop -
-          rowGap * Math.max(0, expandedPanels.length - 1),
+          fixedHeight -
+          rowGap * Math.max(0, expandedPanels.length + fixedPanels.length - 1),
       )
     : naturalExpandedHeight;
   const allocatedExpandedHeights = allocatePanelStackHeights({
@@ -260,6 +278,12 @@ export function layoutLeftPanelRail({
   stack.style.removeProperty('--left-stack-centered-height');
   for (const panel of panels)
     panel.style.removeProperty('--left-panel-allocated-height');
+  for (const [panel, height] of fixedHeights) {
+    panel.style.setProperty(
+      '--left-panel-allocated-height',
+      `${height.toFixed(1)}px`,
+    );
+  }
   expandedPanels.forEach((panel, index) => {
     panel.style.setProperty(
       '--left-panel-allocated-height',

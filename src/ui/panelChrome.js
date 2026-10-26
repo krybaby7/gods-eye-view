@@ -407,6 +407,7 @@ export class PanelChrome {
       this._cancelMapSourceFocus?.();
     const panelEl = document.getElementById(panelId);
     if (!panelEl) return;
+    if (Object.hasOwn(panelEl.dataset || {}, 'panelFixed')) return;
     if (explicit && !restore)
       this.shareLinkManager?.claimRestoreLane?.('panel', panelId);
     const nextCollapsed = Boolean(collapsed);

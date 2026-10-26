@@ -36,6 +36,17 @@ const manager = fs.readFileSync(path.join(ROOT, 'src', 'data', 'lifecycle.js'), 
 const contextLayer = readLayerSource(path.join(ROOT, 'src', 'data', 'militaryAwareness.js'), 'utf8');
 const voiceActions = fs.readFileSync(path.join(ROOT, 'src', 'voice', 'gevActions.js'), 'utf8');
 
+test('fixed rail controls do not conceal the Cockpit pitch rail like an open expert panel', () => {
+  const pitchRailRule = css.match(
+    /body\.cockpit-mode:has\([^{]+\.cockpit-pitch-rail-left\s*\{[^}]*\}/,
+  )?.[0];
+  assert.ok(pitchRailRule);
+  assert.match(
+    pitchRailRule,
+    /body\.cockpit-mode:has\(\s*#left-panel-stack\s*>\s*\.panel-collapsible:not\(\.collapsed\):not\(\[data-panel-fixed\]\)\s*\)\s*\.cockpit-pitch-rail-left\s*\{\s*opacity:\s*0;/,
+  );
+});
+
 test('Cockpit has one reset action beside its bottom exit path', () => {
   assert.doesNotMatch(html, /id="cockpit-quick-entry"/);
   assert.doesNotMatch(html, /id="cockpit-exit"/);
