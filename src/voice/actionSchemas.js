@@ -178,6 +178,7 @@ const schemas = [
             'global-context-panel',
             'weather-panel',
             'recent-imagery-panel',
+            'situation-panel',
           ],
         },
         open: {
@@ -865,6 +866,14 @@ const schemas = [
           maximum: 60,
         },
       },
+    },
+  },
+  {
+    name: 'refresh_news',
+    parameters: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {},
     },
   },
   {

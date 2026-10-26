@@ -615,6 +615,11 @@ export const ACTION_DESCRIPTIONS = {
       },
     },
   },
+  refresh_news: {
+    description:
+      'Run one war monitor digest now (the Situation panel Refresh): newly collected headlines become stories on the globe. Costs money and takes up to a minute; use only when the user asks to refresh or update the news, never on your own. Read back the returned summary, including any refusal (no key, budget used up, nothing new). For questions about existing stories use analyst_query with layer news.',
+    $position: 1,
+  },
   next_satellite_pass: {
     description:
       'Predict the next pass in 24 hours for one satellite in the loaded catalog, identified by exact NORAD ID or name. Ambiguous names return candidates: ask for a choice rather than selecting one. Defaults to geometric passes; visibleOnly requires estimated illumination and a dark observer sky, which does not guarantee naked-eye visibility. Uses camera location unless coordinates are supplied.',

@@ -674,11 +674,12 @@ test('the voice TOOL SCHEMA matches the pinned contract — the mission mapping 
   // schema, which may not carry top-level anyOf), and Contacts requested-radius
   // list descriptions; the missions still ride existing tools.
   // Street Level adds toggle enum values and the generated alias hint.
-  // The war monitor adds the news layer to the generated enums and hints.
-  assert.equal(block.length, 29945, 'serialized tool schema length drifted');
+  // The war monitor adds the news layer to the generated enums and hints,
+  // the Situation panel to set_panel_open and the refresh_news tool.
+  assert.equal(block.length, 30495, 'serialized tool schema length drifted');
   assert.equal(
     crypto.createHash('sha256').update(block).digest('hex'),
-    'be7fb6f5dc05194b37429f0fd0f5d389c860d66334cd1cfa8bd60c34a81487c0',
+    'a5464f67d6ab9e0b13a8746b61231a4285cd0fc2e60ef643ecf2c858774442e3',
     'the first-run missions must ride EXISTING tools: no schema edit, no cache bust',
   );
   const instructions = fs.readFileSync(new URL('../server/providers/openai/instructions.js', import.meta.url), 'utf8');

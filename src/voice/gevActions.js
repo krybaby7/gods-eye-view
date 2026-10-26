@@ -90,6 +90,10 @@ const PANEL_ALIASES = new Map([
   ['weather panel', 'weather-panel'],
   ['recent imagery', 'recent-imagery-panel'],
   ['imagery panel', 'recent-imagery-panel'],
+  ['situation', 'situation-panel'],
+  ['situation panel', 'situation-panel'],
+  ['news panel', 'situation-panel'],
+  ['war monitor', 'situation-panel'],
 ]);
 
 const PANEL_IDS = new Set([
@@ -103,6 +107,7 @@ const PANEL_IDS = new Set([
   'pp-toggles',
   'weather-panel',
   'recent-imagery-panel',
+  'situation-panel',
 ]);
 const CONTEXT_MODE_ALIASES = new Map([
   ['off', 'off'],
@@ -1001,6 +1006,10 @@ export function createGevActionRunner({
 
     if (name === 'next_satellite_pass') {
       return nextSatellitePass(viewer, dataManager, args);
+    }
+
+    if (name === 'refresh_news') {
+      return refreshNews(dataManager);
     }
 
     if (name === 'next_iss_pass') {
@@ -2760,6 +2769,46 @@ const COMPASS_16 = [
   'NW',
   'NNW',
 ];
+
+/**
+ * "Refresh news": run one war monitor digest (the Situation panel's Refresh)
+ * and read back its outcome. Turns the news layer on first so the stories it
+ * produces are on the globe. The provider enforces the key, the one-run
+ * limit and the daily budget; their refusals come back as the summary.
+ */
+export async function refreshNews(dataManager) {
+  const layer = dataManager?.layers?.get('news')?.module;
+  if (typeof layer?.requestDigest !== 'function')
+    return {
+      ok: false,
+      action: 'refresh_news',
+      error: 'The war monitor layer is not available.',
+    };
+  if (!dataManager.isEnabled?.('news'))
+    await dataManager.setEnabled('news', true, { origin: 'voice' });
+  const outcome = await layer.requestDigest();
+  const run = outcome?.run || {};
+  const stats = layer.getStats?.() || {};
+  return {
+    ok: outcome?.ok === true,
+    action: 'refresh_news',
+    summary: outcome?.summary || '',
+    ...(outcome?.skipped ? { skipped: true } : {}),
+    ...(outcome?.keyRequired ? { keyRequired: true } : {}),
+    ...(outcome?.ok
+      ? {
+          storiesCreated: run.storiesCreated ?? null,
+          storiesUpdated: run.storiesUpdated ?? null,
+          unassigned: run.unassignedCount ?? null,
+          costUsd: run.costUsd ?? null,
+        }
+      : { error: outcome?.error || 'failed' }),
+    openStories: stats.storyCount ?? null,
+    budgetLeftUsd: stats.budget?.remainingUsd ?? null,
+    caveat:
+      'Stories are reporting, not verified incidents; read the verification label.',
+  };
+}
 
 function compassDir(azDeg) {
   return COMPASS_16[Math.round((((azDeg % 360) + 360) % 360) / 22.5) % 16];

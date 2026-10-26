@@ -19,6 +19,14 @@ export * from './model.js';
 export { createNewsSource } from './source.js';
 
 const HOVER_THROTTLE_MS = 90;
+
+/** "4m", "2h", "3d" — digest age for the HUD line. */
+function formatAge(ms) {
+  const minutes = Math.max(0, Math.round(ms / 60_000));
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.round(minutes / 60);
+  return hours < 48 ? `${hours}h` : `${Math.round(hours / 24)}d`;
+}
 const ENTITY_PREFIX = 'news:';
 
 /**
@@ -686,7 +694,28 @@ export function createNewsLayer({
       else if (_error) loadingLabel = _error;
       else if (_snapshot)
         loadingLabel = `${open.length} ${open.length === 1 ? 'story' : 'stories'} · ${_snapshot.items.length} items${keyRequired ? ' · digest needs key' : ''}`;
+      const summary = !_snapshot
+        ? ''
+        : [
+            `${open.length} ${open.length === 1 ? 'story' : 'stories'}${visible.length - located ? ` (${visible.length - located} list-only)` : ''}`,
+            Number.isNaN(lastDigestAt)
+              ? 'no digest yet'
+              : `digest ${formatAge(now() - lastDigestAt)} ago`,
+            degraded
+              ? `${degraded} ${degraded === 1 ? 'source' : 'sources'} degraded`
+              : null,
+            keyRequired
+              ? 'digest needs key'
+              : budget?.exhausted
+                ? 'budget used up'
+                : Number.isFinite(budget?.remainingUsd)
+                  ? `budget $${budget.remainingUsd.toFixed(2)} left`
+                  : null,
+          ]
+            .filter(Boolean)
+            .join(' · ');
       return {
+        summary,
         count: located,
         storyCount: open.length,
         visibleStoryCount: visible.length,

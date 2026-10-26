@@ -202,6 +202,10 @@ test('one pin per located open story; list-only stories are counted, never drawn
   assert.equal(stats.degradedSources, 1);
   assert.equal(stats.keyRequired, false);
   assert.match(stats.loadingLabel, /^3 stories · 1 items$/);
+  assert.match(
+    stats.summary,
+    /^3 stories \(1 list-only\) · digest \d+[mhd] ago · 1 source degraded · budget \$1\.82 left$/,
+  );
   assert.deepEqual([...h.contexts.keys()], ['news:a', 'news:b']);
   assert.equal(h.contexts.get('news:a').layerId, 'news');
 });
