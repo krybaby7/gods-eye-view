@@ -979,5 +979,22 @@
   "src/tools/views.test.mjs",
   "src/app/embed.test.mjs",
   "src/tools/globePanel.test.mjs",
-  "src/costEndpointThrottle.test.mjs"
+  "src/costEndpointThrottle.test.mjs",
+  "scripts/qa-news.mjs",
+  "src/data/newsCredits.test.mjs",
+  "src/data/newsDigestRoute.test.mjs",
+  "src/data/newsDigestRunner.test.mjs",
+  "src/data/newsDigestStore.test.mjs",
+  "src/data/newsFetchers.test.mjs",
+  "src/data/newsGeocode.test.mjs",
+  "src/data/newsLayerState.test.mjs",
+  "src/data/newsProxy.test.mjs",
+  "src/data/newsRegistry.test.mjs",
+  "src/data/newsStore.test.mjs",
+  "src/data/newsStories.test.mjs",
+  "src/layers/news/ownership.test.mjs",
+  "src/layers/news/source.test.mjs",
+  "src/situationMarkup.test.mjs",
+  "src/ui/situationPanelModel.test.mjs",
+  "src/voice/refreshNews.test.mjs"
 ]

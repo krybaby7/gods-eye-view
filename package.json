@@ -108,6 +108,15 @@
     "./server/providers/firms": {
       "node": "./server/providers/firms.js"
     },
+    "./server/providers/news": {
+      "node": "./server/providers/news/index.js"
+    },
+    "./server/providers/news/digest": {
+      "node": "./server/providers/news/digest/runner.js"
+    },
+    "./server/providers/news/digest/stories": {
+      "node": "./server/providers/news/digest/stories.js"
+    },
     "./server/providers/gbfs": {
       "node": "./server/providers/gbfs.js"
     },
@@ -166,6 +175,8 @@
     "./layers/earthquakes": "./src/layers/earthquakes/index.js",
     "./layers/recent-imagery": "./src/layers/recentImagery/index.js",
     "./layers/recent-imagery/source": "./src/layers/recentImagery/source.js",
+    "./layers/news": "./src/layers/news/index.js",
+    "./ui/situation-panel": "./src/ui/situationPanel.js",
     "./layers/perimeters": "./src/layers/perimeters/index.js",
     "./sources/firms-csv": "./src/data/firmsCsv.js",
     "./layers/firms": "./src/layers/firms/index.js",
@@ -239,6 +250,7 @@
     "./layers/bikeshare/source": "./src/layers/bikeshare/source.js",
     "./layers/cctv/source": "./src/layers/cctv/source.js",
     "./layers/earthquakes/source": "./src/layers/earthquakes/source.js",
+    "./layers/news/source": "./src/layers/news/source.js",
     "./layers/perimeters/source": "./src/layers/perimeters/source.js",
     "./layers/firms/source": "./src/layers/firms/source.js",
     "./layers/installations/source": "./src/layers/installations/source.js",

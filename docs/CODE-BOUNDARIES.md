@@ -199,6 +199,23 @@ Browser terrain sampling, traffic matching/drawing, fire overlays and bike-share
 layer lifecycle remain in their current modules. This extraction changes no
 source defaults, credentials, quotas, data interpretation or visual behavior.
 
+## War monitor
+
+`gods-eye-view/server/providers/news` is a Node-only entry for the `/api/news`
+middleware: source registry, feed fetchers, item store, timed collector and the
+digest route. Importing it starts nothing; collection begins on the first
+request. `server/providers/news/digest` (the Perplexity call and output
+validation) and `server/providers/news/digest/stories` (code-owned story fields:
+location, perspectives, source count, verification) are separate Node entries
+that import no application, browser or route code. The RSS/Atom parser is shared
+with the regional provider through `server/providers/common/rss.js`.
+
+`gods-eye-view/layers/news/source` is portable: snapshot requests, the digest
+request and snapshot normalization, with no Cesium, DOM or Node. `layers/news`
+adds pins and overlay cards over Cesium. `ui/situation-panel` owns the Situation
+panel and its pure presentation helpers; it reads the layer through
+`getSnapshot()` / `subscribe()` and does not import the layer controller.
+
 ## Local search, regional context, voice and setup
 
 Node-only exports `server/providers/overpass`, `server/providers/military-installations`,
