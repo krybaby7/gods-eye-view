@@ -85,3 +85,13 @@
     scroll-padding-inline: 3px;
   }
 }
+
+@media (min-width: 961px) and (min-height: 650px) {
+  /* The Cyber rail's gutter sits outside the seven-control topic row.
+     Expert panels retain their own existing widths within this lane. */
+  :root[data-ui-theme='cyber']
+    body:not(.cockpit-mode)
+    #left-panel-stack:has(> #lens-bar) {
+    width: 370px;
+  }
+}
