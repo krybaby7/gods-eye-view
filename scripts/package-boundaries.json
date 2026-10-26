@@ -266,6 +266,7 @@
       "server/providers/common/http.js",
       "server/providers/common/query.js",
       "server/providers/common/rate-limit.js",
+      "server/providers/common/rss.js",
       "server/providers/regional.js",
       "server/providers/regional/briefing.js",
       "server/providers/regional/http.js",

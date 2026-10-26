@@ -53,8 +53,16 @@ export function normalizeRegionalPlace(payload) {
   };
 }
 
-/** Normalize and deduplicate GDELT ArticleList output without trusting article HTML. */
-export function normalizeRegionalArticles(payload, limit = MAX_ARTICLES) {
+/**
+ * Normalize and deduplicate GDELT ArticleList output without trusting article
+ * HTML. The cockpit keeps its five-article cap; the war monitor's domain
+ * queries pass a larger `cap`.
+ */
+export function normalizeRegionalArticles(
+  payload,
+  limit = MAX_ARTICLES,
+  { cap = MAX_ARTICLES } = {},
+) {
   const rows = Array.isArray(payload?.articles) ? payload.articles : [];
   const seen = new Set();
   const articles = [];
@@ -82,7 +90,7 @@ export function normalizeRegionalArticles(payload, limit = MAX_ARTICLES) {
       publishedAt,
       sourceCountry: cleanText(row?.sourcecountry, 60) || null,
     });
-    if (articles.length >= Math.max(1, Math.min(MAX_ARTICLES, limit))) break;
+    if (articles.length >= Math.max(1, Math.min(cap, limit))) break;
   }
   return articles;
 }

@@ -1,61 +1,6 @@
 import { fetchRegionalText, fetchRegionalJson } from './http.js';
 import { normalizeRegionalArticles } from '../../../src/data/regionalModel.js';
-
-function decodeRssText(value) {
-  return String(value || '')
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function rssTag(block, tag) {
-  return decodeRssText(
-    new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tag}>`, 'i').exec(
-      block,
-    )?.[1] || '',
-  );
-}
-
-function normalizeRssArticles(xml, limit = 5) {
-  const seen = new Set();
-  const articles = [];
-  for (const match of String(xml || '').matchAll(
-    /<item>([\s\S]*?)<\/item>/gi,
-  )) {
-    const item = match[1];
-    const title = rssTag(item, 'title').slice(0, 180);
-    const url = rssTag(item, 'link');
-    let parsedUrl;
-    try {
-      parsedUrl = new URL(url);
-    } catch {
-      continue;
-    }
-    if (!title || !['http:', 'https:'].includes(parsedUrl.protocol)) continue;
-    const source = rssTag(item, 'source');
-    const signature = `${title.toLowerCase()}|${source.toLowerCase() || parsedUrl.hostname}`;
-    if (seen.has(signature)) continue;
-    seen.add(signature);
-    const rawDate = rssTag(item, 'pubDate');
-    articles.push({
-      title,
-      url: parsedUrl.href,
-      domain: source || parsedUrl.hostname.replace(/^www\./, ''),
-      publishedAt: Number.isNaN(Date.parse(rawDate))
-        ? null
-        : new Date(rawDate).toISOString(),
-      sourceCountry: null,
-    });
-    if (articles.length >= limit) break;
-  }
-  return articles;
-}
+import { normalizeRssArticles } from '../common/rss.js';
 
 async function fetchRegionalNews(place) {
   const query = place?.locality || place?.region || place?.country;
