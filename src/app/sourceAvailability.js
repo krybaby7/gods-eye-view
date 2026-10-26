@@ -3,6 +3,17 @@ import { localAdsbStatus } from '../layers/localAdsb/status.js';
 
 const SOURCE_KEY_IDS = Object.freeze({ firms: 'firms', vessels: 'aisstream' });
 
+/** Native credential flags do not describe a caller-supplied source transport. */
+export function standaloneSourceConfiguration(defaults, sources, explicit) {
+  if (explicit !== undefined) return explicit;
+  if (defaults === undefined) return undefined;
+  const configuration = { ...defaults };
+  for (const name of Object.keys(SOURCE_KEY_IDS)) {
+    if (Object.hasOwn(sources || {}, name)) delete configuration[name];
+  }
+  return configuration;
+}
+
 /** Read non-secret key-presence metadata without starting source acquisition. */
 export function configuredSourceAvailability(source, configuration) {
   const requiresKeyId = SOURCE_KEY_IDS[source];

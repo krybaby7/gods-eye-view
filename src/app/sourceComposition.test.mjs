@@ -8,6 +8,7 @@ import { createApplicationCatalog } from './constructCatalog.js';
 import { createSurfaceServices } from './surfaceServices.js';
 import { createStandaloneLayerSources } from '../standalone/layerSources.js';
 import { LayerLifecycle } from '../data/lifecycle.js';
+import { standaloneSourceConfiguration } from './sourceAvailability.js';
 
 function catalog(sources, t, sourceConfiguration) {
   const lifetime = new AbortController();
@@ -103,6 +104,44 @@ test('provider availability is live and omitted providers cannot be revived by c
     absent.getSourceAvailability('local-firms').reason,
     /data source not configured/,
   );
+});
+
+test('custom standalone transports retain availability despite missing native keys', (t) => {
+  const source = {
+    getSnapshot() {
+      throw new Error('Availability must not acquire a snapshot');
+    },
+  };
+  const overrides = { firms: source, vessels: source };
+  const defaults = { firms: false, vessels: false, localAdsb: false };
+  const actual = catalog(
+    createStandaloneLayerSources(overrides),
+    t,
+    standaloneSourceConfiguration(defaults, overrides),
+  );
+  assert.equal(actual.getSourceAvailability('local-firms').available, true);
+  assert.equal(
+    actual.getSourceAvailability('ais-live-vessels').available,
+    true,
+  );
+  assert.equal(actual.getSourceAvailability('local-adsb').available, false);
+  const removed = { firms: null };
+  const absent = catalog(
+    createStandaloneLayerSources(removed),
+    t,
+    standaloneSourceConfiguration(defaults, removed),
+  );
+  assert.equal(absent.getSourceAvailability('local-firms').available, false);
+  assert.match(
+    absent.getSourceAvailability('local-firms').reason,
+    /data source not configured/,
+  );
+  const explicit = catalog(
+    createStandaloneLayerSources(overrides),
+    t,
+    standaloneSourceConfiguration(defaults, overrides, { firms: false }),
+  );
+  assert.equal(explicit.getSourceAvailability('local-firms').available, false);
 });
 
 test('local receiver availability follows a connected device without selecting its mode', (t) => {

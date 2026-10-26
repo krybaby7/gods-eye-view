@@ -3,8 +3,46 @@ import assert from 'node:assert/strict';
 import {
   configuredSourceAvailability,
   localReceiverAvailability,
+  standaloneSourceConfiguration,
 } from './sourceAvailability.js';
 import { keySetupRequirement } from '../keySetupCore.mjs';
+
+test('standalone defaults describe native providers, not supplied source replacements', () => {
+  const defaults = Object.freeze({
+    firms: false,
+    vessels: false,
+    localAdsb: false,
+  });
+  const source = {
+    getSnapshot() {
+      throw new Error('Must not acquire a source');
+    },
+  };
+  assert.deepEqual(standaloneSourceConfiguration(defaults, { firms: source }), {
+    vessels: false,
+    localAdsb: false,
+  });
+  assert.deepEqual(
+    standaloneSourceConfiguration(defaults, { firms: null, vessels: source }),
+    {
+      localAdsb: false,
+    },
+  );
+  assert.deepEqual(defaults, {
+    firms: false,
+    vessels: false,
+    localAdsb: false,
+  });
+  assert.equal(
+    standaloneSourceConfiguration(undefined, { firms: source }),
+    undefined,
+  );
+  const explicit = { firms: false, vessels: true };
+  assert.equal(
+    standaloneSourceConfiguration(defaults, { firms: source }, explicit),
+    explicit,
+  );
+});
 
 test('absent configuration preserves provider and receiver availability', () => {
   assert.equal(configuredSourceAvailability('firms'), null);
