@@ -124,3 +124,49 @@ test('controls bind catalog instances rather than similarly named defaults', () 
     /Control layer missing/,
   );
 });
+
+test('receiver availability refreshes cold layer controls without enabling or polling and releases subscriptions', async (t) => {
+  const previous = globalThis.document;
+  globalThis.document = { getElementById: () => null };
+  t.after(() => {
+    if (previous === undefined) delete globalThis.document;
+    else globalThis.document = previous;
+  });
+  const listeners = new Set();
+  const session = {
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    start() {
+      assert.fail('availability must not start a receiver feed');
+    },
+  };
+  const local = {
+    id: 'local-adsb',
+    receiver: session,
+    feeds: session,
+    init() {
+      assert.fail('availability must not initialize a layer');
+    },
+  };
+  const releases = [];
+  const { dataManager } = createApplicationData({
+    scene: { viewer: {} },
+    controls: { styleManager: { attachDataManager() {} } },
+    catalog: createLayerCatalog([local], metadata([local])),
+    defer: (release) => releases.push(release),
+  });
+  const changes = [];
+  const unsubscribe = dataManager.subscribeActivity((change) =>
+    changes.push(change.type),
+  );
+  assert.equal(listeners.size, 2);
+  for (const listener of listeners) listener();
+  assert.deepEqual(changes, ['status', 'status']);
+  assert.equal(dataManager.isEffectivelyEnabled('local-adsb'), false);
+  assert.equal(dataManager.layers.get('local-adsb').initialized, false);
+  unsubscribe();
+  for (const release of releases.reverse()) await release();
+  assert.equal(listeners.size, 0);
+});

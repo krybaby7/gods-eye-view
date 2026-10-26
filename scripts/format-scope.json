@@ -979,5 +979,12 @@
   "src/tools/views.test.mjs",
   "src/app/embed.test.mjs",
   "src/tools/globePanel.test.mjs",
-  "src/costEndpointThrottle.test.mjs"
+  "src/costEndpointThrottle.test.mjs",
+  "src/lenses/catalog.test.mjs",
+  "src/lenses/rules.test.mjs",
+  "src/ui/lensBar.test.mjs",
+  "src/app/lensLayers.test.mjs",
+  "src/app/sourceAvailability.test.mjs",
+  "src/ui/styles/lens-bar.css",
+  "scripts/qa-lenses.mjs"
 ]

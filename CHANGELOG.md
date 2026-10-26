@@ -1,5 +1,10 @@
 # Changelog
 
+- Add Air, Sea, Space, Conflict, Hazards, City and Signals lenses above DATA
+  LAYERS, with derived status, shared-layer protection and Shift+1–7 shortcuts.
+  Missing keys and local receivers are skipped using catalog configuration;
+  lenses retain the existing layer persistence and lifecycle behavior.
+
 - Treat explicitly current, complete empty vessel coverage as a successful update,
   clearing obsolete contacts while retaining stale or incomplete snapshots.
 

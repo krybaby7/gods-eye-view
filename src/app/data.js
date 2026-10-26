@@ -1,6 +1,9 @@
 import { LayerLifecycle } from '../data/lifecycle.js';
 import { LayerPresentation } from './layerPresentation.js';
 import { createCyberSonarScene } from '../cyberSonarScene.js';
+import { LENSES } from '../lenses/catalog.js';
+import { createLensBar } from '../ui/lensBar.js';
+import { lensLayerSnapshots } from './lensLayers.js';
 /** Register the application layer catalog before allowing state restoration. */
 export function createApplicationData({
   scene: { viewer, mapStackController },
@@ -56,8 +59,28 @@ export function createApplicationData({
     });
   }
   presentation.mount(document.getElementById('data-toggles'));
+  const lensBar = createLensBar({
+    container: document.getElementById('lens-bar'),
+    getLayers: () => lensLayerSnapshots(dataManager, catalog),
+    setEnabled: (id, enabled, options) =>
+      dataManager.setEnabled(id, enabled, options),
+    subscribeActivity: (listener) => dataManager.subscribeActivity(listener),
+    onLayout: () =>
+      styleManager._scheduleLeftPanelLayout?.({ reconsiderAutoCollapse: true }),
+  });
+  defer(() => lensBar.destroy());
+  const localAdsb = catalog.get?.('local-adsb');
+  for (const session of [localAdsb?.receiver, localAdsb?.feeds]) {
+    if (typeof session?.subscribe === 'function')
+      defer(session.subscribe(() => dataManager.refreshLayerStats()));
+  }
+  styleManager.setLensShortcutHandler?.((hotkey) => {
+    const lens = LENSES.find((candidate) => candidate.hotkey === hotkey);
+    if (lens) return lensBar.click(lens.id);
+  });
+  defer(() => styleManager.setLensShortcutHandler?.(null));
   styleManager.attachDataManager(dataManager);
   defer(createCyberSonarScene(viewer, dataManager));
 
-  return { dataManager, catalog, presentation };
+  return { dataManager, catalog, presentation, lensBar };
 }
