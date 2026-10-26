@@ -3,6 +3,64 @@ import assert from 'node:assert/strict';
 import { LENSES } from './catalog.js';
 import { createApplicationCatalog } from '../app/constructCatalog.js';
 import { createSurfaceServices } from '../app/surfaceServices.js';
+import { LayerLifecycle } from '../data/lifecycle.js';
+import { ContextControls } from '../ui/contextControls.js';
+import { planLensClick } from './rules.js';
+
+function spaceContext(t) {
+  const manager = new LayerLifecycle({});
+  for (const id of ['satellites', 'rocket-launches']) {
+    manager.register({
+      id,
+      name: id,
+      init: async () => true,
+      enable: async () => true,
+      update: async () => true,
+      disable: async () => true,
+      destroy: async () => true,
+    });
+  }
+  manager.finalizeRegistrations(
+    [...manager.layers.keys()].map((id) => ({
+      id,
+      disposition: 'enabled-only',
+    })),
+  );
+  const controls = new ContextControls({
+    elements: {},
+    installations: {},
+    actions: {
+      getCockpit: () => null,
+      claimVisualAuthority() {},
+      showToast() {},
+      setClearBusy() {},
+      syncDetection() {},
+      scheduleLayout() {},
+      refreshRadio() {},
+      setPanelCollapsed() {},
+    },
+  });
+  controls.connect(manager);
+  t.after(async () => {
+    controls.stop();
+    controls.disconnect();
+    await manager.destroyAll();
+  });
+  const space = LENSES.find(({ id }) => id === 'space');
+  const click = () => {
+    const layers = manager.getAll().map((layer) => ({
+      ...layer,
+      available: true,
+      enabled: manager.isEffectivelyEnabled(layer.id),
+    }));
+    return Promise.all(
+      planLensClick(space, LENSES, layers).map(({ layerId, enabled }) =>
+        manager.setEnabled(layerId, enabled, { origin: 'user' }),
+      ),
+    );
+  };
+  return { manager, controls, click };
+}
 
 test('the seven lenses have unique ids and the ordered hotkeys 1 through 7', () => {
   assert.deepEqual(
@@ -46,7 +104,10 @@ test('lens membership preserves the owner decisions and shared layers', () => {
     'ais-live-vessels',
     'telegeography-submarine-cables',
   ]);
-  assert.deepEqual(byId.space.layerIds, ['satellites', 'rocket-launches']);
+  assert.deepEqual(
+    new Set(byId.space.layerIds),
+    new Set(['satellites', 'rocket-launches']),
+  );
   assert.deepEqual(byId.conflict.layerIds, [
     'military',
     'military-installations',
@@ -96,4 +157,30 @@ test('the lens catalog and its nested memberships are frozen', () => {
   assert.throws(() => {
     LENSES[0].label = 'Another';
   }, TypeError);
+});
+
+test('Space captures the existing Context baseline before its satellite enable intent', async (t) => {
+  const { manager, controls, click } = spaceContext(t);
+  const pending = click();
+  assert.deepEqual(
+    [...controls._contextSessionSnapshot.enabledLayerIds],
+    [],
+    'this lens satellite intent must not become a pre-entry layer to restore',
+  );
+  assert.deepEqual(await pending, [true, true]);
+  assert.deepEqual(
+    new Set(manager.getEnabledLayerIds()),
+    new Set(['satellites', 'rocket-launches']),
+  );
+});
+
+test('Space turns both layers off after the existing Context restoration settles', async (t) => {
+  const { manager, controls, click } = spaceContext(t);
+  assert.deepEqual(await click(), [true, true]);
+  await controls._waitForContextLayerSettlement();
+  assert.equal(controls.getContextModeState().mode, 'space-missions');
+  await click();
+  await controls._waitForContextLayerSettlement();
+  assert.deepEqual([...manager.getEnabledLayerIds()], []);
+  assert.equal(controls.getContextModeState().mode, null);
 });

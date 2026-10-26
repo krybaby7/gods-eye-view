@@ -15,7 +15,9 @@ export const LENSES = Object.freeze([
     'ais-live-vessels',
     'telegeography-submarine-cables',
   ]),
-  lens('space', 'Space', '◎', 3, ['satellites', 'rocket-launches']),
+  // Capture the existing Context baseline before publishing this lens's
+  // satellite intent, so leaving Space does not restore that new intent.
+  lens('space', 'Space', '◎', 3, ['rocket-launches', 'satellites']),
   lens('conflict', 'Conflict', '⌖', 4, [
     'military',
     'military-installations',
