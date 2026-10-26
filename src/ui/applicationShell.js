@@ -608,6 +608,11 @@ export class StyleManager extends ShellFacade {
     this._layerBindings.observeCamera();
   }
 
+  /** Supply the application-owned lens action to the existing keyboard bindings. */
+  setLensShortcutHandler(handler) {
+    this._displayBindings.setLensShortcutHandler(handler);
+  }
+
   // Compatibility reads for existing controls, scene snapshots and Cockpit.
 
   /** Advance camera authority and settle any older search UI immediately. */

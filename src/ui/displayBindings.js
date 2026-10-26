@@ -47,6 +47,10 @@ export class DisplayBindings {
   get _detectionAllocationBtns() {
     return this.readState()._detectionAllocationBtns;
   }
+  /** Borrow the current lens action without owning lens state or its controller. */
+  setLensShortcutHandler(handler) {
+    this._lensShortcutHandler = typeof handler === 'function' ? handler : null;
+  }
   _initUI() {
     const {
       cycleDetectionMode,
@@ -65,6 +69,7 @@ export class DisplayBindings {
       searchInput: this._locationSearch,
       actions: {
         setStyle: (style) => this.setStyle(style, { userInitiated: true }),
+        toggleLens: (hotkey) => this._lensShortcutHandler?.(hotkey),
         dismissSearch: () => {
           if (this._locationSearch.classList.contains('expanded')) {
             this._locationSearch.classList.remove('expanded');
@@ -220,6 +225,7 @@ export class DisplayBindings {
     });
   }
   destroy() {
+    this._lensShortcutHandler = null;
     this._applicationShortcuts?.destroy();
     this._applicationShortcuts = null;
     this._frameRateMonitor?.destroy();
