@@ -4,6 +4,10 @@
   min-width: 0;
 }
 
+#left-panel-stack > #lens-bar {
+  flex: 0 0 auto;
+}
+
 #lens-bar > [data-panel-surface] {
   gap: 0;
   padding: 6px;
