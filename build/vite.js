@@ -54,6 +54,7 @@ export function createBrowserViteConfig({
   googleApiKey,
   cesiumToken,
   mapillaryToken,
+  sourceConfiguration,
   host = 'localhost',
   port = 4173,
   allowedHosts = DEFAULT_ALLOWED_HOSTS,
@@ -112,6 +113,20 @@ export function createBrowserViteConfig({
       'import.meta.env.MAPILLARY_CLIENT_TOKEN': JSON.stringify(
         mapillaryToken ?? '',
       ),
+      // Configuration presence is safe to expose; credential values never are.
+      ...(sourceConfiguration === undefined
+        ? {}
+        : {
+            'import.meta.env.GEV_SOURCE_CONFIGURATION': JSON.stringify(
+              Object.fromEntries(
+                ['firms', 'vessels', 'localAdsb']
+                  .filter(
+                    (name) => typeof sourceConfiguration?.[name] === 'boolean',
+                  )
+                  .map((name) => [name, sourceConfiguration[name]]),
+              ),
+            ),
+          }),
     },
     build: { chunkSizeWarningLimit: 1500 },
   };

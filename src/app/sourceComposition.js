@@ -1,3 +1,5 @@
+import { configuredSourceAvailability } from './sourceAvailability.js';
+
 const contract = (layers, methods) =>
   Object.freeze({
     layers: Object.freeze(layers),
@@ -62,7 +64,7 @@ export class SourceUnavailableError extends Error {
 }
 
 /** Validate supplied contracts and keep omitted sources inert during construction. */
-export function resolveCatalogSources(supplied = {}) {
+export function resolveCatalogSources(supplied = {}, sourceConfiguration) {
   if (!supplied || typeof supplied !== 'object' || Array.isArray(supplied))
     throw new TypeError('Catalog sources must be an object');
   const sources = { ...supplied };
@@ -106,8 +108,20 @@ export function resolveCatalogSources(supplied = {}) {
           );
         }
       }
-      return (id) =>
-        availability.get(id) ?? byId.get(id)?.getSourceAvailability?.();
+      return (id) => {
+        const configured = availability.get(id);
+        if (configured?.available === false) return configured;
+        const provided = sources[configured?.source]?.getSourceAvailability?.();
+        return (
+          provided ??
+          configuredSourceAvailability(
+            configured?.source,
+            sourceConfiguration,
+          ) ??
+          byId.get(id)?.getSourceAvailability?.() ??
+          configured
+        );
+      };
     },
   };
 }

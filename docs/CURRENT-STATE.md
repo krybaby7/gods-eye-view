@@ -1,5 +1,49 @@
 # God's Eye View Current State
 
+The Lenses bar is the first left-rail surface: Air, Sea, Space, Conflict,
+Hazards, City and Signals switch groups of existing data layers. Its status is
+derived from effective layer intent, including transitions; there is no lens
+storage. A partial lens completes its available layers. Turning an on lens off
+preserves shared layers only when another lens is fully on. Missing sources,
+keys and local receivers are skipped, with the same guidance as the expert
+rows. DATA LAYERS and its groups are unchanged. City excludes Street Level and
+Directions; Conflict excludes news until the war monitor lands. Hazards keeps
+all seven specified layers, including Wind, by the owner's decision. The owner
+will measure performance on real hardware; SwiftShader results are not
+representative of hardware-GPU performance.
+
+Shift+Digit1–7 activates lenses; plain 1–7 keeps the existing visual styles.
+Shift is explicitly excluded from the style path for layouts such as AZERTY,
+and form fields retain native input. The bar follows the rail surface,
+responsive scrolling, Clean UI, recording and Cockpit contracts; its fixed
+height is reserved without taking part in panel auto-collapse. Each change
+uses the existing lifecycle with origin `user`, so Context and layer-state
+restoration retain their existing behavior.
+Space issues its launch-layer intent before the satellite companion so the
+Context entry snapshot does not capture that same batch as pre-existing state.
+Military handoff refreshes own their background promise and treat a later
+layer-disable cancellation as normal completion.
+
+Standalone startup supplies only non-secret configuration booleans for FIRMS,
+AIS vessels and configured local receiver feeds. The catalog combines these
+with supplied source availability and the current connected receiver snapshot,
+without enabling layers or acquiring feed data. Embedders can supply the same
+optional `sourceConfiguration` to application catalog construction; omitted
+metadata preserves existing behavior. Provider Settings restart/rebuild rules
+also apply when these configuration booleans change.
+Inherited native key flags do not gate caller-supplied FIRMS or vessel sources;
+those sources can report their own availability.
+
+`scripts/qa-lenses.mjs` exercises the running app with deterministic transport
+fixtures, using narrow CDP request patterns so geometry-worker scripts load
+normally. It checks source skips without activation, layer persistence on a
+plain URL, hotkeys, shared-layer rules, Cyber and narrow-screen pointer access.
+It also measures matched-view rendering only after wind geometry and weather
+tiles are ready. `--full-hazards` includes fixture FIRMS data; `--skip-performance`
+runs behavior separately from the recorded renderer measurement. See the
+Lenses verification report under `docs/superpowers/plans/` for actual results
+and the distinction between fixture and live-provider validation.
+
 Vessel sources can report healthy empty coverage using a current, complete
 snapshot with zero raw rows, a healthy transport and a positive last-message
 time. This clears obsolete contacts and settles startup without manufacturing

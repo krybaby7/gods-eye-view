@@ -1098,7 +1098,11 @@ export function createTracking({
       flightState.feed._count = flightState._billboards.size;
     } else if (flightState._billboardCollection.show) {
       // Fire-and-forget refresh; only while the layer is actually enabled.
-      void flightsLayer.update(flightState._viewer);
+      void flightsLayer.update(flightState._viewer).catch((error) => {
+        // A later layer disable owns cancellation of this background request.
+        if (error?.name === 'AbortError') return;
+        console.warn('[Data:Flights] Military handoff refresh error:', error);
+      });
     }
   }
 

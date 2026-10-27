@@ -4,6 +4,7 @@ import {
   bindApplicationShortcuts,
   createStyleParameters,
 } from './visualInput.js';
+import { DisplayBindings } from './displayBindings.js';
 
 class Element {
   constructor(tagName = 'DIV', ownerDocument) {
@@ -59,6 +60,7 @@ function shortcuts() {
     'toggleLayers',
     'cycleDetection',
     'toggleCctv',
+    'toggleLens',
   ];
   const actions = Object.fromEntries(
     names.map((name) => [name, (...args) => calls.push([name, ...args])]),
@@ -85,6 +87,65 @@ test('number keys retain the seven style mappings', () => {
   );
 });
 
+test('Shift plus physical digit keys toggles each lens without selecting a style', () => {
+  const f = shortcuts();
+  const shiftedKeys = ['!', '@', '#', '$', '%', '^', '&'];
+  for (let index = 0; index < shiftedKeys.length; index++) {
+    f.press(shiftedKeys[index], new Element(), {
+      code: `Digit${index + 1}`,
+      shiftKey: true,
+    });
+  }
+  assert.deepEqual(
+    f.calls,
+    shiftedKeys.map((_, index) => ['toggleLens', index + 1]),
+  );
+});
+
+test('AZERTY Shift digits toggle lenses without also changing the visual style', () => {
+  const f = shortcuts();
+  for (let hotkey = 1; hotkey <= 7; hotkey++) {
+    f.press(String(hotkey), new Element(), {
+      code: `Digit${hotkey}`,
+      shiftKey: true,
+    });
+  }
+  assert.deepEqual(
+    f.calls,
+    Array.from({ length: 7 }, (_, index) => ['toggleLens', index + 1]),
+  );
+});
+
+test('lens shortcuts require Shift and a supported physical digit key', () => {
+  const f = shortcuts();
+  f.press('!', new Element(), { code: 'Digit1' });
+  for (const code of ['Digit0', 'Digit8', 'Numpad1', 'KeyA', undefined]) {
+    f.press('1', new Element(), { code, shiftKey: true });
+  }
+  assert.deepEqual(f.calls, []);
+  f.press('1', new Element(), { code: 'Digit1' });
+  assert.deepEqual(f.calls, [['setStyle', 'normal']]);
+});
+
+test('lens shortcuts leave repeated, composed, handled and modified presses alone', () => {
+  const f = shortcuts();
+  for (const modifier of [
+    'repeat',
+    'isComposing',
+    'defaultPrevented',
+    'ctrlKey',
+    'altKey',
+    'metaKey',
+  ]) {
+    f.press('!', new Element(), {
+      code: 'Digit1',
+      shiftKey: true,
+      [modifier]: true,
+    });
+  }
+  assert.deepEqual(f.calls, []);
+});
+
 test('letter shortcuts retain uppercase handling and existing actions', () => {
   const f = shortcuts();
   for (const key of ['H', 'o', 'V', 'f', 'D', 'c']) f.press(key);
@@ -106,6 +167,9 @@ for (const tag of ['INPUT', 'SELECT', 'TEXTAREA']) {
     const f = shortcuts();
     for (const key of ['1', 'h', 'o', 'v', 'f', 'd', 'c'])
       f.press(key, new Element(tag));
+    for (const key of ['!', '1']) {
+      f.press(key, new Element(tag), { code: 'Digit1', shiftKey: true });
+    }
     assert.deepEqual(f.calls, []);
     f.press('Escape', new Element(tag));
     assert.deepEqual(f.calls, [['dismissSearch']]);
@@ -115,6 +179,7 @@ for (const tag of ['INPUT', 'SELECT', 'TEXTAREA']) {
 test('the supplied search target retains editing even without form markup', () => {
   const f = shortcuts();
   f.press('1', f.searchInput);
+  f.press('!', f.searchInput, { code: 'Digit1', shiftKey: true });
   f.press('Escape', f.searchInput);
   assert.deepEqual(f.calls, [['dismissSearch']]);
 });
@@ -130,6 +195,7 @@ test('destroy synchronously removes shortcuts and a replacement binds once', () 
   f.controller.destroy();
   f.controller.destroy();
   f.press('h');
+  f.press('!', new Element(), { code: 'Digit1', shiftKey: true });
   assert.deepEqual(f.calls, []);
   assert.equal(f.documentRef.listeners.get('keydown').size, 0);
   const replacement = bindApplicationShortcuts({
@@ -140,6 +206,48 @@ test('destroy synchronously removes shortcuts and a replacement binds once', () 
   f.press('h');
   assert.deepEqual(f.calls, ['new']);
   replacement.destroy();
+});
+
+test('Display bindings use the current borrowed lens action and release it on detach', () => {
+  const previousDocument = globalThis.document;
+  const documentRef = new Element();
+  documentRef.getElementById = () => null;
+  documentRef.querySelectorAll = () => [];
+  globalThis.document = documentRef;
+  const calls = [];
+  const bindings = new DisplayBindings({
+    viewer: {},
+    services: {},
+    elements: { _locationSearch: new Element('INPUT') },
+    operations: { setStyle: (style) => calls.push(['style', style]) },
+    readState: () => ({}),
+  });
+  const press = (key, rest = {}) =>
+    documentRef.emit('keydown', { key, target: new Element(), ...rest });
+  try {
+    bindings._initUI();
+    press('!', { code: 'Digit1', shiftKey: true });
+    bindings.setLensShortcutHandler((hotkey) => calls.push(['first', hotkey]));
+    press('!', { code: 'Digit1', shiftKey: true });
+    bindings.setLensShortcutHandler((hotkey) => calls.push(['next', hotkey]));
+    press('@', { code: 'Digit2', shiftKey: true });
+    bindings.setLensShortcutHandler(null);
+    press('!', { code: 'Digit1', shiftKey: true });
+    press('1', { code: 'Digit1' });
+    assert.deepEqual(calls, [
+      ['first', 1],
+      ['next', 2],
+      ['style', 'normal'],
+    ]);
+    bindings.setLensShortcutHandler((hotkey) => calls.push(['late', hotkey]));
+    bindings.destroy();
+    press('!', { code: 'Digit1', shiftKey: true });
+    assert.equal(calls.length, 3);
+    assert.equal(documentRef.listeners.get('keydown').size, 0);
+  } finally {
+    bindings.destroy();
+    globalThis.document = previousDocument;
+  }
 });
 
 function parameters() {

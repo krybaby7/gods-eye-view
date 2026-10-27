@@ -84,6 +84,81 @@ test('build helper does not discover environment values or construct local provi
   }
 });
 
+test('source configuration defines expose a fixed set of booleans and no credential values', () => {
+  const config = createBrowserViteConfig({
+    sourceConfiguration: {
+      firms: false,
+      vessels: true,
+      localAdsb: false,
+      FIRMS_MAP_KEY: 'secret-fixture',
+      AISSTREAM_API_KEY: 'secret-fixture',
+    },
+  });
+  assert.deepEqual(
+    JSON.parse(config.define['import.meta.env.GEV_SOURCE_CONFIGURATION']),
+    {
+      firms: false,
+      vessels: true,
+      localAdsb: false,
+    },
+  );
+  assert.ok(!JSON.stringify(config.define).includes('secret-fixture'));
+  assert.deepEqual(
+    JSON.parse(
+      createBrowserViteConfig({
+        sourceConfiguration: {
+          firms: 'secret-fixture',
+          vessels: 1,
+          localAdsb: null,
+        },
+      }).define['import.meta.env.GEV_SOURCE_CONFIGURATION'],
+    ),
+    {},
+  );
+});
+
+test('standalone source metadata parses receiver configuration without requesting feeds', (t) => {
+  const values = {
+    FIRMS_MAP_KEY: 'firms-secret-fixture',
+    AISSTREAM_API_KEY: 'ais-secret-fixture',
+    LOCAL_RECEIVER_FEEDS: '1090=http://127.0.0.1:8080/data/aircraft.json',
+  };
+  const before = Object.fromEntries(
+    Object.keys(values).map((name) => [name, process.env[name]]),
+  );
+  t.after(() => {
+    for (const [name, value] of Object.entries(before)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  });
+  Object.assign(process.env, values);
+  t.mock.method(globalThis, 'fetch', () => {
+    throw new Error('Configuration must not fetch');
+  });
+  const config = standaloneConfig({ mode: 'test' });
+  assert.deepEqual(
+    JSON.parse(config.define['import.meta.env.GEV_SOURCE_CONFIGURATION']),
+    {
+      firms: true,
+      vessels: true,
+      localAdsb: true,
+    },
+  );
+  for (const value of Object.values(values))
+    assert.ok(!JSON.stringify(config.define).includes(value));
+  process.env.LOCAL_RECEIVER_FEEDS =
+    '1090=https://public.example/data/aircraft.json';
+  assert.equal(
+    JSON.parse(
+      standaloneConfig({ mode: 'test' }).define[
+        'import.meta.env.GEV_SOURCE_CONFIGURATION'
+      ],
+    ).localAdsb,
+    false,
+  );
+});
+
 test('root config retains existing named exports and standalone provider order', () => {
   for (const [name, value] of Object.entries(providers))
     assert.equal(compatibility[name], value, name);
