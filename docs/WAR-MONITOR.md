@@ -69,16 +69,64 @@ The Refresh control is disabled with a reason when:
 The server collects for the theater only after the first `/api/news` request.
 Starting the dev server alone fetches nothing.
 
-| Transport         | Cadence | How                                                                                                                                                                                                                                |
-| ----------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `rss`             | 10 min  | RSS 2.0 and Atom, gzip/deflate, charset-aware, 4 MB cap. The parser is shared with the cockpit regional briefing (`server/providers/common/rss.js`).                                                                               |
-| `gdelt-domain`    | 15 min  | GDELT DOC 2.0 `artlist` queries, `domainis:` OR-groups of up to 10 domains, at most 239 query characters with the terms, 24 h window. One process-wide queue, 5.5 s between requests, doubling backoff after a 429 (up to 15 min). |
-| `telegram-public` | 5 min   | The public web preview at `t.me/s/<channel>`. No account, bot or API. Flagged **fragile**: the markup can change.                                                                                                                  |
-| `reliefweb`       | 30 min  | ReliefWeb API v2 reports for the theater's countries. Off unless `RELIEFWEB_APPNAME` is set.                                                                                                                                       |
-| `link-only`       | never   | Listed in the Raw feed folders as a link to the publisher.                                                                                                                                                                         |
+| Transport         | Cadence | How                                                                                                                                                  |
+| ----------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rss`             | 10 min  | RSS 2.0 and Atom, gzip/deflate, charset-aware, 4 MB cap. The parser is shared with the cockpit regional briefing (`server/providers/common/rss.js`). |
+| `gdelt-domain`    | 15 min  | GDELT 2.0's 15-minute data files by default; the DOC 2.0 search API with `NEWS_GDELT_FILES=off`. See [GDELT outlets](#gdelt-outlets).                |
+| `telegram-public` | 5 min   | The public web preview at `t.me/s/<channel>`. No account, bot or API. Flagged **fragile**: the markup can change.                                    |
+| `reliefweb`       | 30 min  | ReliefWeb API v2 reports for the theater's countries. Off unless `RELIEFWEB_APPNAME` is set.                                                         |
+| `link-only`       | never   | Listed in the Raw feed folders as a link to the publisher.                                                                                           |
 
 Outlets whose feeds sit behind bot protection are never scraped. They arrive
 through GDELT with a link to the publisher.
+
+### GDELT outlets
+
+By default these outlets come from GDELT 2.0's Global Knowledge Graph (GKG)
+files: one zipped table of articles every 15 minutes, with no search API and
+no per-IP query limit.
+
+- Each cycle reads `lastupdate.txt` and downloads every GKG file newer than the
+  last one read: at most the last four (one hour) on first start or after a
+  long gap. The last file read is kept in the theater's item cache, so a
+  restart does not read it again.
+- One reader serves every theater. It downloads each file once and keeps only
+  the rows from registered outlets (in any theater) for the newest eight
+  files.
+- A file is capped at 32 MB zipped and 192 MB unzipped; above the cap the
+  cycle fails cleanly. It is unzipped in memory by a small single-entry zip
+  reader (`fetchers/zip.js`), one file at a time.
+- A row is kept when its URL host is, or is under, a source's
+  `transport.domain`. Its title is the page title GDELT records; a row without
+  one is dropped. The theater's GDELT terms filter the titles (any case, at the
+  start of a word). A row is dated by its file's 15-minute stamp, but never
+  later than when it was read: GDELT names files about ten minutes ahead.
+- Each source reports ok and its count. A failed download or parse gives every
+  GDELT source the same `GDELT files: ...` error. A missing older file is
+  skipped; a missing newest file is an error. A file that failed is tried
+  again on the next cycle, until it is more than an hour old.
+- Each download is logged with its size, for example
+  `[news] GDELT files: 1 file, 5.4 MB, 1310 rows, 0 kept`. Measured on
+  2026-10-28: 5.35 MB a file on average (2.7 to 8.5 MB), so about 514 MB a day
+  when the app runs 24 hours.
+- The translation stream (`lastupdate-translation.txt`, articles GDELT
+  translated into English) is not read. It would add about 9 MB a file (about
+  870 MB a day), and a day of it held none of the registered outlets.
+
+`NEWS_GDELT_FILES=off` switches back to the DOC 2.0 search API: `domainis:`
+OR-groups of up to 10 domains, at most 239 query characters with the terms, a
+24 h window, and one process-wide queue with 5.5 s between requests. After a
+429 the whole queue sends nothing for at least 15 minutes, doubling up to an
+hour while 429s continue; requests that reach it during the pause are not sent
+and their sources show rate limited. Each group's query is sent at most once
+per cycle. Neither path retries in a loop.
+
+**Coverage on 2026-10-28.** A full day of GKG files (96 files, 119,874 articles
+from 6,426 sites) held no article from any of the 15 registered GDELT outlets
+(Reuters, AP, Times of Israel, CENTCOM and the others), and the DOC API
+answered with 429s, timeouts and empty results. Until GDELT carries them
+again, these outlets deliver nothing; their sources still show ok, with 0
+items.
 
 Each source reports its health: ok, error, blocked (401/403/451), rate
 limited, disabled, link-only, fragile, loading or stale. Stale means the last
@@ -423,6 +471,7 @@ usual vantage point, not any one article.
 | `PERPLEXITY_API_KEY`           | unset   | Turns on the digest. Without it, collection and the Raw feed still work and Refresh is disabled with "no key". |
 | `NEWS_DIGEST_DAILY_BUDGET_USD` | `2.00`  | Daily spend cap.                                                                                               |
 | `RELIEFWEB_APPNAME`            | unset   | Turns on the ReliefWeb source.                                                                                 |
+| `NEWS_GDELT_FILES`             | on      | `off` reads GDELT outlets through the DOC 2.0 search API instead of the 15-minute files.                       |
 
 Sources live in `public/news/sources.json`. The theater lives in
 `public/news/theaters/<id>.json`: a short scope note (`brief`; it names the
@@ -487,7 +536,11 @@ whom is never written into the actor list.
   blocks those hosts. A feed that moved shows as degraded, not as an empty
   panel.
 - **Fragile Telegram previews.** They depend on Telegram's public preview
-  markup.
+  markup. A channel whose preview redirects to its contact page (gone, renamed
+  or private) shows "no public preview". On 2026-10-28 that was
+  `almasirahnet`.
+- **GDELT coverage.** See [Coverage on 2026-10-28](#gdelt-outlets): GDELT
+  currently carries none of the 15 GDELT outlets.
 - **Out of scope:**
   - evidence-nearby counts;
   - per-story deep dives with search;
