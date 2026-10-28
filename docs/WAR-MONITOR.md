@@ -74,8 +74,11 @@ Outlets whose feeds sit behind bot protection are never scraped. They arrive
 through GDELT with a link to the publisher.
 
 Each source reports its health: ok, error, blocked (401/403/451), rate
-limited, disabled, link-only, fragile, loading or stale. The panel header
-shows a "N sources degraded" indicator with the reasons.
+limited, disabled, link-only, fragile, loading or stale. Stale means the last
+success is older than two poll cadences, or the source is quiet: it answers,
+but its newest entry is older than the 72 h retention, so it delivers nothing
+(the panel says "nothing new since" that date). The panel header shows a "N
+sources degraded" indicator with the reasons.
 
 Items are deduplicated on the canonical URL and on title plus publisher. Each
 source keeps at most 60 items. Items are kept for 72 hours in

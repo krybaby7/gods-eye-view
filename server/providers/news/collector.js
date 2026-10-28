@@ -6,6 +6,7 @@ import {
   groupGdeltSources,
 } from './fetchers/gdeltDomain.js';
 import { fetchReliefwebSource } from './fetchers/reliefweb.js';
+import { ITEM_RETENTION_MS } from './store.js';
 
 /**
  * Timed collection for one theater. Collect is free and runs on timers; it
@@ -52,7 +53,17 @@ function initialHealth(source) {
     loading: false,
     lastAttemptAt: null,
     lastOkAt: null,
+    newestItemAt: null,
   };
+}
+
+/** The later of a stored ISO time and a time in ms, as ISO. */
+function laterIso(iso, ms) {
+  if (ms === undefined) return iso;
+  const stored = Date.parse(iso || '');
+  return !Number.isNaN(stored) && stored >= ms
+    ? iso
+    : new Date(ms).toISOString();
 }
 
 /**
@@ -136,6 +147,17 @@ export function createNewsCollector({
     } finally {
       for (const source of list) health.get(source.id).loading = false;
     }
+    // Newest entry per source, from what the feed returned before retention
+    // drops old entries. A GDELT group returns its items on its first status,
+    // so this goes by the item's source, not the status row.
+    const newestBySource = new Map();
+    for (const { items: found } of results)
+      for (const item of found) {
+        const ms = Date.parse(item.publishedAt || '');
+        if (Number.isNaN(ms) || ms > attemptAt + 24 * 3600_000) continue;
+        if (ms > (newestBySource.get(item.sourceId) ?? -Infinity))
+          newestBySource.set(item.sourceId, ms);
+      }
     const items = [];
     for (const { items: found, status } of results) {
       for (const item of found) items.push(item);
@@ -154,6 +176,10 @@ export function createNewsCollector({
         lastOkAt: status.ok
           ? new Date(attemptAt).toISOString()
           : previous.lastOkAt,
+        newestItemAt: laterIso(
+          previous.newestItemAt,
+          newestBySource.get(status.sourceId),
+        ),
       });
     }
     const outcome = store.ingest(items, sourcesById);
@@ -219,7 +245,9 @@ export function createNewsCollector({
 
     /**
      * Per-source health. `stale` means the last success is older than two
-     * cadences; the source's earlier items are still served.
+     * cadences, or the source is `quiet`: it answers, but its newest entry
+     * is older than the item retention, so it delivers nothing. The source's
+     * earlier items are still served.
      */
     health() {
       const nowMs = now();
@@ -227,14 +255,20 @@ export function createNewsCollector({
         const entry = health.get(source.id);
         const cadence = NEWS_POLL_CADENCE_MS[source.transport.type];
         const lastOk = Date.parse(entry.lastOkAt || '');
+        const newest = Date.parse(entry.newestItemAt || '');
+        const watched = !entry.linkOnly && !entry.disabled;
+        const quiet =
+          watched &&
+          entry.ok &&
+          !Number.isNaN(newest) &&
+          nowMs - newest > ITEM_RETENTION_MS;
         const stale =
-          !entry.linkOnly &&
-          !entry.disabled &&
-          !Number.isNaN(lastOk) &&
-          nowMs - lastOk > 2 * cadence;
+          watched &&
+          ((!Number.isNaN(lastOk) && nowMs - lastOk > 2 * cadence) || quiet);
         return {
           sourceId: source.id,
           ...entry,
+          quiet,
           stale,
           degraded:
             !entry.linkOnly &&

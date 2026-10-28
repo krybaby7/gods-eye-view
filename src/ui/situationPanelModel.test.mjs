@@ -173,11 +173,21 @@ test('degraded sources name the reason; cited items come from items then snapsho
       health: { degraded: true, error: 'preview markup not found' },
     },
     { name: 'IRNA', health: { degraded: false } },
+    {
+      name: 'US Central Command',
+      health: {
+        degraded: true,
+        stale: true,
+        quiet: true,
+        newestItemAt: '2026-02-05T17:47:00.000Z',
+      },
+    },
+    { name: 'Ynetnews', health: { degraded: true, stale: true } },
   ]);
-  assert.equal(degraded.text, '2 sources degraded');
+  assert.equal(degraded.text, '4 sources degraded');
   assert.equal(
     degraded.detail,
-    'Middle East Eye: blocked\nAl Masirah: preview markup not found',
+    'Middle East Eye: blocked\nAl Masirah: preview markup not found\nUS Central Command: nothing new since 2026-02-05\nYnetnews: stale',
   );
   assert.equal(degradedSources([]).text, '');
   const story = { itemIds: ['x', '1', 'gone'] };
