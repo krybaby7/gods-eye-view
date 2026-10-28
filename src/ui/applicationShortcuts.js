@@ -29,7 +29,23 @@ export function bindApplicationShortcuts({
       event.target === searchInput;
     if (isFormControl && event.key !== 'Escape') return;
 
-    if (STYLE_KEYS[event.key]) actions.setStyle(STYLE_KEYS[event.key]);
+    if (event.shiftKey && /^Digit[1-7]$/.test(event.code)) {
+      if (
+        event.repeat ||
+        event.isComposing ||
+        event.defaultPrevented ||
+        event.ctrlKey ||
+        event.altKey ||
+        event.metaKey
+      )
+        return;
+      event.preventDefault?.();
+      actions.toggleLens?.(Number(event.code.slice(-1)));
+      return;
+    }
+    // AZERTY emits a digit in event.key with Shift held; that is a lens, not a style.
+    if (!event.shiftKey && STYLE_KEYS[event.key])
+      actions.setStyle(STYLE_KEYS[event.key]);
     if (event.key === 'Escape') actions.dismissSearch();
     const key = event.key.toLowerCase();
     if (key === 'h') actions.toggleHud();

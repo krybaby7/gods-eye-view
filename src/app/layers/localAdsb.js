@@ -8,6 +8,7 @@ import * as trails from '../../data/trailRenderer.js';
 import * as geoid from '../../data/geoid.js';
 import { markDetectionSourcesChanged } from '../../data/detection.js';
 import { refreshTrackedReadout } from '../../data/trackedReadout.js';
+import { localReceiverAvailability } from '../sourceAvailability.js';
 
 /**
  * Construct the Local ADS-B layer, the browser RTL-SDR session it shares with
@@ -22,13 +23,14 @@ import { refreshTrackedReadout } from '../../data/trackedReadout.js';
 export function createApplicationLocalAdsb({
   receiver = new SdrController(),
   feeds = createLocalReceiverFeeds(),
+  configuredFeeds,
   surface = null,
   enrichment = null,
   displayParams = null,
   resolveAsset = (url) =>
     `${import.meta.env?.BASE_URL || '/'}${url.replace(/^\//, '')}`,
 } = {}) {
-  return createLocalAdsbLayer({
+  const layer = createLocalAdsbLayer({
     receiver,
     feeds,
     resolveAsset,
@@ -45,4 +47,11 @@ export function createApplicationLocalAdsb({
       overlays: { refreshReadout: refreshTrackedReadout },
     },
   });
+  layer.getSourceAvailability = () =>
+    localReceiverAvailability(
+      configuredFeeds,
+      receiver.getState(),
+      feeds?.getState?.(),
+    ) ?? undefined;
+  return layer;
 }

@@ -6,6 +6,7 @@ import { localProviderPlugins } from '../providers/local.js';
 import { localMcpPlugin } from '../mcp/plugin.js';
 import { apiNotFoundPlugin } from './api-not-found.js';
 import { standaloneVoiceTools } from './voiceTools.js';
+import { parseLocalReceiverFeeds } from '../providers/local-receivers.js';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 
@@ -24,6 +25,13 @@ export default defineConfig(({ command, mode }) => {
     googleApiKey: process.env.GOOGLE_MAPS_API_KEY,
     cesiumToken: process.env.CESIUM_ION_TOKEN,
     mapillaryToken: process.env.MAPILLARY_CLIENT_TOKEN,
+    sourceConfiguration: {
+      firms: Boolean(String(process.env.FIRMS_MAP_KEY || '').trim()),
+      vessels: Boolean(process.env.AISSTREAM_API_KEY),
+      localAdsb: parseLocalReceiverFeeds(
+        process.env.LOCAL_RECEIVER_FEEDS,
+      ).feeds.some((feed) => !feed.reason),
+    },
     host: process.env.HOST,
     port: process.env.PORT,
     allowedHosts: resolveAllowedHosts(process.env.GEV_ALLOWED_HOSTS),

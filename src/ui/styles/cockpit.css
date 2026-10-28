@@ -130,7 +130,10 @@
   text-align: left;
   transform: rotateY(-24deg) translateZ(-18px);
 }
-body.cockpit-mode:has(#left-panel-stack > .panel-collapsible:not(.collapsed))
+body.cockpit-mode:has(
+    #left-panel-stack
+      > .panel-collapsible:not(.collapsed):not([data-panel-fixed])
+  )
   .cockpit-pitch-rail-left {
   opacity: 0;
   transition: opacity 0.25s;

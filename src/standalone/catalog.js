@@ -1,6 +1,7 @@
 import { createSurfaceServices } from '../app/surfaceServices.js';
 import { createApplicationRequestServices } from '../services/requests.js';
 import { createApplicationCatalog } from '../app/constructCatalog.js';
+import { standaloneSourceConfiguration } from '../app/sourceAvailability.js';
 import { createStandaloneLayerSources } from './layerSources.js';
 export { createStandaloneReferenceSources } from './layerSources.js';
 
@@ -8,6 +9,7 @@ export { createStandaloneReferenceSources } from './layerSources.js';
 export function createStandaloneCatalog({
   nepalBoundaryResolver,
   sources = {},
+  sourceConfiguration,
   streetLevelProviders,
   signal = new AbortController().signal,
   surface = createSurfaceServices({
@@ -19,6 +21,11 @@ export function createStandaloneCatalog({
     nepalBoundaryResolver,
     surface,
     sources: createStandaloneLayerSources(sources),
+    sourceConfiguration: standaloneSourceConfiguration(
+      import.meta.env?.GEV_SOURCE_CONFIGURATION,
+      sources,
+      sourceConfiguration,
+    ),
     streetLevelProviders,
     signal,
     vesselOptions: {

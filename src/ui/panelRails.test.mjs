@@ -207,6 +207,70 @@ test('left layout records collapsed heights and aligns the right rail without ch
   assert.equal(f.stack.dataset.layoutMode, 'normal');
 });
 
+test('left fixed panels reserve their natural height without competing with the preferred panel', () => {
+  const f = fixture('left');
+  f.first.dataset.panelFixed = '';
+  f.expand(f.first, 100);
+  f.expand(f.second, 900);
+  f.options.preferredPanelId = f.second.id;
+  f.run();
+  assert.equal(f.first.classList.contains('collapsed'), false);
+  assert.equal(f.second.classList.contains('collapsed'), false);
+  assert.deepEqual(f.collapsed, []);
+  assert.equal(f.retries(), 0);
+  assert.equal(f.first.getAttribute('aria-hidden'), undefined);
+  assert.equal(
+    f.first.style.getPropertyValue('--left-panel-allocated-height'),
+    '100.0px',
+  );
+  assert.equal(
+    f.second.style.getPropertyValue('--left-panel-allocated-height'),
+    '716.0px',
+  );
+});
+
+test('left focus collapses ordinary competitors while keeping the fixed bar visible', () => {
+  const f = fixture('left');
+  f.first.dataset.panelFixed = '';
+  f.expand(f.first, 100);
+  f.expand(f.second, 900);
+  const preferred = element('preferred', { height: 900 });
+  preferred.parentElement = f.stack;
+  f.stack.children.push(preferred);
+  f.options.preferredPanelId = preferred.id;
+  f.run();
+  assert.deepEqual(f.collapsed, ['second']);
+  assert.equal(f.first.classList.contains('collapsed'), false);
+  assert.equal(preferred.classList.contains('collapsed'), false);
+  f.run();
+  assert.equal(f.first.getAttribute('aria-hidden'), undefined);
+  assert.equal(f.second.getAttribute('aria-hidden'), 'true');
+  assert.equal(
+    f.first.style.getPropertyValue('--left-panel-allocated-height'),
+    '100.0px',
+  );
+  assert.equal(
+    preferred.style.getPropertyValue('--left-panel-allocated-height'),
+    '716.0px',
+  );
+});
+
+test('left mobile layout releases fixed-panel desktop allocation without hiding it', () => {
+  const f = fixture('left', { mobile: true });
+  f.first.dataset.panelFixed = '';
+  f.expand(f.first, 100);
+  f.first.style.setProperty('--left-panel-allocated-height', '100px');
+  f.first.setAttribute('aria-hidden', 'true');
+  f.run();
+  assert.equal(f.first.classList.contains('collapsed'), false);
+  assert.equal(f.first.getAttribute('aria-hidden'), undefined);
+  assert.equal(
+    f.first.style.getPropertyValue('--left-panel-allocated-height'),
+    '',
+  );
+  assert.deepEqual(f.collapsed, []);
+});
+
 test('left corridor respects a lower obstacle but ignores an obstacle hidden by its parent', () => {
   const f = fixture('left');
   const blocker = element('blocker', { top: 600, height: 80 });
