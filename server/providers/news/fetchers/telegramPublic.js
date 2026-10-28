@@ -105,6 +105,17 @@ export async function fetchTelegramSource(source, options = {}) {
           durationMs: Date.now() - startedAt,
         }),
       };
+    // Telegram sends t.me/s/<channel> to the plain t.me/<channel> contact
+    // page when the username has no public preview (gone, renamed or
+    // private); fetch follows that redirect.
+    if (!new URL(response.url).pathname.startsWith('/s/'))
+      return {
+        items: [],
+        status: sourceStatus(source, {
+          error: `no public preview: t.me/s/${channel} redirects to a contact page`,
+          durationMs: Date.now() - startedAt,
+        }),
+      };
     if (!/tgme_widget_message/.test(response.text))
       return {
         items: [],
