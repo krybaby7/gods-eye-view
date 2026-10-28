@@ -381,7 +381,7 @@ What is kept: the headline (up to 220 characters), a snippet of at most 300 char
 | `iranwire` | [IranWire](https://iranwire.com/en/) | local | iran-diaspora | `rss` — iranwire.com | IranWire |
 | `mondoweiss` | [Mondoweiss](https://mondoweiss.net/) | local | palestinian | `rss` — mondoweiss.net | Mondoweiss |
 | `dropsite` | [Drop Site News](https://www.dropsitenews.com/) | reporting | international-regional | `rss` — www.dropsitenews.com | Drop Site News |
-| `centcom` | [US Central Command](https://www.centcom.mil/MEDIA/PRESS-RELEASES/) | official | us-mil | `rss` — www.centcom.mil | US Central Command |
+| `centcom` | [US Central Command](https://www.centcom.mil/MEDIA/PRESS-RELEASES/) | official | us-mil | `gdelt-domain` — `domainis:centcom.mil` | US Central Command |
 | `whitehouse` | [The White House](https://www.whitehouse.gov/news/) | official | us-gov | `rss` — www.whitehouse.gov | The White House |
 | `statedept` | [US Department of State](https://www.state.gov/press-releases/) | official | us-gov | `link-only` — not fetched | — |
 | `idf` | [Israel Defense Forces (Telegram)](https://t.me/s/idfofficial) | official | israel-mil | `telegram-public` — t.me/s/idfofficial | Israel Defense Forces |

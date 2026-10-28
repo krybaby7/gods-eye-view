@@ -28,13 +28,20 @@ function groupOf(item, perspectiveGroups) {
   return perspectiveGroups.get(item.perspective) ?? item.perspective;
 }
 
-/** Identity of a primary source: its canonical URL, else its issuer. */
-function primaryKey(item) {
-  const primary = item?.primarySource;
-  if (!primary) return null;
+/**
+ * Two items relay one primary source when its canonical URLs match or its
+ * issuers match: two CENTCOM releases about one strike are still CENTCOM.
+ */
+function sharePrimarySource(a, b) {
+  const first = a?.primarySource;
+  const second = b?.primarySource;
+  if (!first || !second) return false;
+  const url = canonicalizeUrl(first.url);
+  if (url && url === canonicalizeUrl(second.url)) return true;
   return (
-    canonicalizeUrl(primary.url) ||
-    (primary.issuer ? `issuer:${String(primary.issuer).toLowerCase()}` : null)
+    Boolean(first.issuer) &&
+    String(first.issuer).toLowerCase() ===
+      String(second.issuer || '').toLowerCase()
   );
 }
 
@@ -46,8 +53,7 @@ function corroborates(a, b, perspectiveGroups) {
     !CORROBORATING_KINDS.includes(b.kind)
   )
     return false;
-  const keyA = primaryKey(a);
-  return keyA === null || keyA !== primaryKey(b);
+  return !sharePrimarySource(a, b);
 }
 
 /**

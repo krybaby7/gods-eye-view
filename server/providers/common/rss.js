@@ -123,6 +123,23 @@ function feedFieldText(raw) {
     .trim();
 }
 
+/**
+ * Absolute http(s) links in one feed field's markup, read before
+ * feedFieldText strips the tags.
+ * @param {string} raw Inner markup of the element.
+ */
+function feedFieldLinks(raw) {
+  const value = String(raw || '').trim();
+  const cdata = /^<!\[CDATA\[([\s\S]*?)\]\]>$/.exec(value);
+  const markup = cdata ? cdata[1] : decodeEntities(value);
+  const links = [];
+  for (const match of markup.matchAll(/<a\b[^>]*>/gi)) {
+    const href = httpUrl(attribute(match[0], 'href'));
+    if (href) links.push(href);
+  }
+  return links;
+}
+
 function firstElement(block, tags) {
   for (const tag of tags) {
     const match = new RegExp(
@@ -176,7 +193,7 @@ function atomLink(block) {
 /**
  * Parse RSS 2.0 items and Atom entries into plain records.
  * @param {string} xml Feed body.
- * @returns {{language: ?string, entries: Array<{title: string, url: string, description: string, publishedAt: ?string, source: ?string, guid: ?string}>}}
+ * @returns {{language: ?string, entries: Array<{title: string, url: string, description: string, links: string[], publishedAt: ?string, source: ?string, guid: ?string}>}}
  */
 function parseFeedEntries(xml) {
   const text = String(xml || '');
@@ -199,18 +216,22 @@ function parseFeedEntries(xml) {
       : httpUrl(feedFieldText(firstElement(block, ['link']))) ||
         httpUrl(feedFieldText(firstElement(block, ['guid'])));
     if (!title || !url) continue;
-    const description = feedFieldText(
-      firstElement(
-        block,
-        atom
-          ? ['summary', 'content']
-          : ['description', 'content:encoded', 'summary'],
+    const bodyTags = atom
+      ? ['summary', 'content']
+      : ['description', 'content:encoded', 'summary'];
+    const description = feedFieldText(firstElement(block, bodyTags));
+    // Links from every body field: the short description often omits the
+    // statement the full content links to.
+    const links = [
+      ...new Set(
+        bodyTags.flatMap((tag) => feedFieldLinks(firstElement(block, [tag]))),
       ),
-    );
+    ];
     entries.push({
       title,
       url,
       description,
+      links,
       publishedAt: isoDate(
         firstElement(
           block,

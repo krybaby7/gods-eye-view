@@ -8,16 +8,18 @@ import { placeNamesForPrompt } from '../geocode.js';
  *
  * Request fields verified against the official Perplexity SDK types and
  * OpenAPI spec (perplexity-node src/generated/api.ts, 2026-10-22):
- * POST /v1/responses, `instructions`, `input` message items, `tools`,
+ * `instructions`, `input` message items, `tools`,
  * `max_steps`, `max_output_tokens`,
  * `response_format: {type: "json_schema", json_schema: {name, schema, strict}}`,
  * and `usage.cost.total_cost` on the response. No `effort`/`preset` is sent,
- * so no preset tools attach.
+ * so no preset tools attach. The endpoint is POST /v1/agent, as
+ * docs.perplexity.ai documents it on 2026-10-28; the older /v1/responses
+ * path is no longer documented for creating a response.
  *
  * The key and the request/response bodies are never logged.
  */
 
-export const DIGEST_ENDPOINT = 'https://api.perplexity.ai/v1/responses';
+export const DIGEST_ENDPOINT = 'https://api.perplexity.ai/v1/agent';
 export const DIGEST_MODEL = 'anthropic/claude-sonnet-5-5';
 /**
  * Hidden reasoning counts toward this limit. Two live runs (249 and 334

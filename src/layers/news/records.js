@@ -246,9 +246,11 @@ export function normalizeNewsSnapshot(payload) {
           linkOnly: s.health?.linkOnly === true,
           fragile: s.health?.fragile === true,
           loading: s.health?.loading === true,
+          quiet: s.health?.quiet === true,
           stale: s.health?.stale === true,
           degraded: s.health?.degraded === true,
           lastOkAt: isoOrNull(s.health?.lastOkAt),
+          newestItemAt: isoOrNull(s.health?.newestItemAt),
         },
       })),
     budget: {

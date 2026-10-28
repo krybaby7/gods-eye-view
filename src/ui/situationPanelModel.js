@@ -151,7 +151,9 @@ export function degradedSources(sources) {
           : health.rateLimited
             ? 'rate limited'
             : health.stale
-              ? 'stale'
+              ? health.quiet && health.newestItemAt
+                ? `nothing new since ${health.newestItemAt.slice(0, 10)}`
+                : 'stale'
               : health.error || 'failing';
         return `${source.name}: ${why}`;
       })

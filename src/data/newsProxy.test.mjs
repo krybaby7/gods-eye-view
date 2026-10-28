@@ -136,6 +136,34 @@ test('first snapshot starts collection; items, sources and health follow', async
   assert.equal(intervals[0].cleared, true);
 });
 
+test('a feed that answers with only old entries is quiet, stale and degraded', async (t) => {
+  const upstream = fakeUpstream();
+  const { news } = await service(t, {
+    fetchImpl: async (raw) =>
+      new URL(raw).hostname === 'www.aljazeera.com'
+        ? new Response(
+            '<rss><channel><item><title>Old one</title><link>https://www.aljazeera.com/old</link><pubDate>Thu, 05 Feb 2026 17:47:00 GMT</pubDate></item></channel></rss>',
+          )
+        : upstream(raw),
+  });
+  await news.snapshot('iran-israel-us');
+  await (await news.context('iran-israel-us')).collector.collectAll();
+  const rows = new Map(
+    (await news.snapshot('iran-israel-us')).sources.map((row) => [row.id, row]),
+  );
+  const quiet = rows.get('aljazeera').health;
+  assert.equal(quiet.ok, true);
+  assert.equal(quiet.quiet, true);
+  assert.equal(quiet.stale, true);
+  assert.equal(quiet.degraded, true);
+  assert.equal(quiet.newestItemAt, '2026-02-05T17:47:00.000Z');
+  const fresh = rows.get('haaretz').health;
+  assert.equal(fresh.quiet, false);
+  assert.equal(fresh.degraded, false);
+  assert.equal(fresh.newestItemAt, '2026-10-26T09:00:00.000Z');
+  await news.stop();
+});
+
 test('a restart serves cached items before any upstream answers', async (t) => {
   const { news, cacheDir } = await service(t);
   await news.snapshot('iran-israel-us');

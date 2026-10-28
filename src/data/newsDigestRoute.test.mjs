@@ -20,17 +20,27 @@ function upstream({ perplexity, calls }) {
     calls.push(url.hostname);
     if (url.hostname === 'api.perplexity.ai')
       return perplexity(JSON.parse(init.body), init);
+    // CENTCOM has no current feed and arrives through GDELT.
     if (url.hostname === 'api.gdeltproject.org')
-      return Response.json({ articles: [] });
+      return Response.json({
+        articles: url.searchParams.get('query').includes('domainis:centcom.mil')
+          ? [
+              {
+                url: 'https://www.centcom.mil/story',
+                title: 'CENTCOM strikes drone storage site near Bandar Abbas',
+                seendate: '20261026T080000Z',
+                language: 'English',
+              },
+            ]
+          : [],
+      });
     if (url.hostname === 't.me') return new Response('<html></html>');
     const title =
-      url.hostname === 'www.centcom.mil'
-        ? 'CENTCOM strikes drone storage site near Bandar Abbas'
-        : url.hostname === 'en.irna.ir'
-          ? 'Explosion at Bandar Abbas port warehouse, officials say'
-          : url.hostname === 'www.aljazeera.com'
-            ? 'Blast reported at Iranian port of Bandar Abbas'
-            : `${url.hostname} unrelated headline`;
+      url.hostname === 'en.irna.ir'
+        ? 'Explosion at Bandar Abbas port warehouse, officials say'
+        : url.hostname === 'www.aljazeera.com'
+          ? 'Blast reported at Iranian port of Bandar Abbas'
+          : `${url.hostname} unrelated headline`;
     return new Response(
       `<rss><channel><item><title>${title}</title><link>https://${url.hostname}/story</link><pubDate>Mon, 26 Oct 2026 08:00:00 GMT</pubDate></item></channel></rss>`,
     );

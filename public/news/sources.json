@@ -45,7 +45,7 @@
       "caution": "English edition of Yedioth Ahronoth's site; operates under Israeli military censorship like all Israeli outlets.",
       "transport": {
         "type": "rss",
-        "url": "https://www.ynetnews.com/Integration/StoryRss3089.xml"
+        "url": "https://www.ynetnews.com/Integration/StoryRss3082.xml"
       },
       "credit": "Ynetnews"
     },
@@ -324,11 +324,8 @@
       "perspective": "us-mil",
       "languages": ["en"],
       "starred": true,
-      "caution": "Party to the conflict; statements are participant claims.",
-      "transport": {
-        "type": "rss",
-        "url": "https://www.centcom.mil/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=808&max=20"
-      },
+      "caution": "Party to the conflict; statements are participant claims. Its press-release RSS stopped updating in February 2026, so it arrives through GDELT.",
+      "transport": { "type": "gdelt-domain", "domain": "centcom.mil" },
       "credit": "US Central Command"
     },
     {

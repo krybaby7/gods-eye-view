@@ -22,6 +22,7 @@ export const LENSES = Object.freeze([
     'military',
     'military-installations',
     'local-firms',
+    'news',
   ]),
   lens('hazards', 'Hazards', '⚠', 5, [
     'earthquakes',

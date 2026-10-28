@@ -74,8 +74,11 @@ Outlets whose feeds sit behind bot protection are never scraped. They arrive
 through GDELT with a link to the publisher.
 
 Each source reports its health: ok, error, blocked (401/403/451), rate
-limited, disabled, link-only, fragile, loading or stale. The panel header
-shows a "N sources degraded" indicator with the reasons.
+limited, disabled, link-only, fragile, loading or stale. Stale means the last
+success is older than two poll cadences, or the source is quiet: it answers,
+but its newest entry is older than the 72 h retention, so it delivers nothing
+(the panel says "nothing new since" that date). The panel header shows a "N
+sources degraded" indicator with the reasons.
 
 Items are deduplicated on the canonical URL and on title plus publisher. Each
 source keeps at most 60 items. Items are kept for 72 hours in
@@ -95,7 +98,8 @@ The digest runs only on an explicit Refresh: the panel button, the
 
 **The call.** One request to the Perplexity Agent API:
 
-- `POST https://api.perplexity.ai/v1/responses`;
+- `POST https://api.perplexity.ai/v1/agent` (the documented endpoint; the
+  earlier `/v1/responses` path is no longer documented for creating one);
 - `model: "anthropic/claude-sonnet-5-5"`;
 - `tools: []` and `max_steps: 1`, so it does no search and takes one step;
 - no `preset` and no `effort`;
@@ -208,8 +212,11 @@ Code applies the first rule that holds:
 1. **Corroborated.** Two cited items that:
    - come from different perspective groups;
    - include at least one independent, humanitarian or verification outlet;
-   - do not trace to the same primary document. Official and armed-group
-     posts are their own primary source. ReliefWeb reports carry their
+   - do not trace to the same primary source: the same statement URL or the
+     same issuer. Official and armed-group posts are their own primary
+     source. An RSS entry whose text links to an official or armed-group
+     website (not a shared platform such as Telegram or X) records that
+     statement as its primary source. ReliefWeb reports carry their
      authoring body.
 2. **Disputed.** The digest recorded contradictions and nothing corroborates.
 3. **Participant claim.** Every cited item comes from a party to the conflict

@@ -28,7 +28,7 @@ Layer ids are the ones registered in the app catalog and grouped in `src/ui/laye
 | Shift+1 | Air | `flights`, `military`, `local-adsb` | `local-adsb` needs a local receiver; skipped when absent |
 | Shift+2 | Sea | `ais-live-vessels`, `telegeography-submarine-cables` | |
 | Shift+3 | Space | `satellites`, `rocket-launches` | |
-| Shift+4 | Conflict | `military`, `military-installations`, `local-firms` | Add `news` once the war monitor (fork PR krybaby7/gods-eye-view#1) is merged |
+| Shift+4 | Conflict | `military`, `military-installations`, `local-firms`, `news` | `news` added 2026-10-28, after the war monitor (fork PR krybaby7/gods-eye-view#1) merged |
 | Shift+5 | Hazards | `earthquakes`, `weather-cyclones`, `local-firms`, `fire-perimeters`, `weather-radar`, `weather-lightning`, `wind` | The draft said "Weather"; radar and lightning are the hazard-relevant weather layers. See 6.2 |
 | Shift+6 | City | `traffic`, `transit`, `bikeshare`, `cctv`, `alpr-cameras` | `street-level` and `directions` dropped (owner, 2026-10-26). See 6.1 |
 | Shift+7 | Signals | `radio`, `cctv` | |

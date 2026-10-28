@@ -49,6 +49,61 @@ export function primarySourceFor(source, url) {
   return null;
 }
 
+// Platforms many issuers post on; a link there names no single issuer.
+const SHARED_HOSTS = new Set([
+  't.me',
+  'telegram.me',
+  'x.com',
+  'twitter.com',
+  'youtube.com',
+  'youtu.be',
+  'facebook.com',
+  'instagram.com',
+  'tiktok.com',
+]);
+
+function bareHost(url) {
+  try {
+    return new URL(url).hostname.toLowerCase().replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Website host of every official and armed-group source, mapped to its name,
+ * so an item that links to one of their statements can record it.
+ * @param {Array<object>} sources Registry sources.
+ * @returns {Map<string, string>}
+ */
+export function statementHosts(sources) {
+  const hosts = new Map();
+  for (const source of sources) {
+    if (source.folder !== 'official' && source.folder !== 'armed-group')
+      continue;
+    const host = bareHost(source.homepage);
+    if (host && !SHARED_HOSTS.has(host) && !hosts.has(host))
+      hosts.set(host, source.name);
+  }
+  return hosts;
+}
+
+/**
+ * The first link to an official or armed-group website, as the statement
+ * the item relays; null when it links to none.
+ * @param {string[]} links
+ * @param {Map<string, string>} hosts From statementHosts.
+ */
+export function linkedStatement(links, hosts) {
+  for (const url of links || []) {
+    const host = bareHost(url);
+    for (const [issuerHost, issuer] of hosts)
+      if (host === issuerHost || host.endsWith(`.${issuerHost}`))
+        return { kind: 'statement', issuer, url };
+  }
+  return null;
+}
+
 /**
  * Shape one collected headline. Collect never translates: `title` and
  * `titleOriginal` are both the published title; the digest writes the
