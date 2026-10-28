@@ -21,6 +21,24 @@ sentence must cite stories; code drops any sentence that does not. The map still
 - Lenses stay as they are: a lens only turns layers on and off. Conflict gains the `news` layer
   once PR #1 is merged (already planned in the lenses spec).
 - PR #1's must-fixes are done and PR #1 is merged before the Brief is built.
+- **Actor roles come from the stories, checked by code** (decided 2026-10-28, during the Phase A
+  build, replacing a hand-set list). The first draft marked Saudi Arabia "external" because the
+  theater description did not name it a party, although the collected stories showed it fighting
+  the Houthis; a fixed list goes out of date as the war moves. So the theater file now says only
+  who each actor is and its starting role, and each Brief proposes roles with cited stories. Four
+  rules, all code-enforced (section 3.4):
+  1. A role changes only when a cited story is corroborated **and** tagged with that actor. A
+     corroborated story about something else does not count.
+  2. No duplicate actors. A proposed new actor gets an id that code makes from its name, after its
+     name is checked against every existing name and alias; the model never chooses ids.
+  3. Actors are never deleted, only hidden. One with no open stories leaves the visible strip but
+     keeps its id, so older stories stay tagged correctly. The strip's cap applies to what is
+     shown, not what is stored.
+  4. The same bar in both directions: a downgrade needs the same evidence as an upgrade. The panel
+     shows when each role last changed and the stories behind it.
+
+  The theater description becomes a neutral scope note: it no longer names the parties or frames
+  the war as two sides.
 
 ## 2. The screen: eight questions, who answers each
 
@@ -28,7 +46,7 @@ sentence must cite stories; code drops any sentence that does not. The map still
 |---|---|---|---|
 | 1 | What changed? | Headline sentence and up to three change lines; a "new since your last visit" marker on stories and pins | Model (cited); the marker is code |
 | 2 | Where? | The existing pins, plus a **Frame theater** button that flies to all located open stories | Code |
-| 3 | Who is involved? | Actor strip: one chip per actor with its type and role; clicking a chip filters stories and pins to that actor | Curated actor list; story tagging by the model |
+| 3 | Who is involved? | Actor strip: one chip per actor with its type, grouped by current role; clicking a chip filters stories and pins to that actor; recent role changes with their stories | Actor identities: theater file. Roles and new actors: model (cited), accepted by code (section 3.4). Story tagging: model |
 | 4 | Why now? | One trigger line, then up to three deeper drivers | Trigger: model (cited). Drivers: curated in the theater file |
 | 5 | Who is affected? | Up to three lines on civilians, displacement, access and services | Model (cited), from the humanitarian stories |
 | 6 | Which way is it moving? | One named state per track: military, diplomatic, humanitarian | Model (cited), states from a fixed list |
@@ -62,13 +80,16 @@ without expanding anything.
 ```
 
 - `type`: state | armed-group | institution | population.
-- `role`: party | mediator | institution | affected | external. Curated roles only record what is
-  not in dispute. Who backs whom is contested and changes, so it is left to cited relationships
-  (section 9, Phase B), never written into the actor list.
+- `role`: party | mediator | institution | affected | external. In the theater file this is only
+  the **starting role**, used until the stories set one (section 3.4). Who backs whom is contested
+  and changes, so it is left to cited relationships (section 9, Phase B); an actor's cited role
+  line can mention it meanwhile.
+- The file says who each actor is (id, name, aliases, type). Aliases matter: they are how a
+  proposed new actor is recognised as an existing one.
 - Drivers change slowly and are opinion-prone, so they are curated with a source link, not
   generated. At most three.
-- Claude drafts the Iran / Israel / US actor list and drivers during the build; the owner reviews
-  them before merge.
+- Claude drafted the Iran / Israel / US actor identities and drivers during the build; the owner
+  reviews them before merge. Roles are no longer reviewed by hand: they follow the stories.
 
 ### 3.2 Story additions (digest output)
 
@@ -101,18 +122,38 @@ without expanding anything.
     }
   ],
   "unknowns": [{ "text": "...", "storyIds": ["..."] }],
-  "actorNotes": [{ "actorId": "oman", "text": "...", "storyIds": ["..."] }]
+  "actorRoles": [
+    {
+      "actorId": "saudi-arabia",
+      "role": "party",
+      "text": "Why, in one sentence.",
+      "storyIds": ["..."]
+    }
+  ],
+  "newActors": [
+    {
+      "name": "Egypt",
+      "type": "state",
+      "role": "external",
+      "aliases": ["Cairo"],
+      "text": "...",
+      "storyIds": ["..."]
+    }
+  ]
 }
 ```
+
+`actorRoles` and `newActors` are proposals. Whether a role or an actor is accepted is decided
+afterwards by code (section 3.4) and stored with the actors, not in the Brief.
 
 - Track `state`: escalating | easing | stalled | shifting | unclear. `unclear` is the honest answer
   when the stories do not show a direction, and the model is told so.
 - `horizon`: days | weeks | months. No probabilities anywhere.
 - Limits: changes 3, affected 3, unknowns 3, scenarios 2 to 3, signposts 4 per scenario, one
-  actor note per actor. Code enforces them.
+  role line per actor, 3 new actors per Brief. Code enforces them.
 
-**The model owns:** all text, track states, scenario horizons, which stories each line cites and
-which signposts it marks seen.
+**The model owns:** all text, track states, scenario horizons, which stories each line cites,
+which signposts it marks seen, and the roles and new actors it proposes.
 
 **Code owns, and the model cannot set:**
 - Citations: every `storyIds` and `seenIn` entry is checked against the open and recently closed
@@ -123,6 +164,36 @@ which signposts it marks seen.
   with no item in 24 h ("No Iranian state media in 24 h"); open stories without a location.
 - The "new since your last visit" marker, the AI-analysis label and the Brief's age.
 - Verification labels stay exactly as the war monitor computes them.
+- Which proposed roles and actors are accepted (section 3.4).
+
+### 3.4 Actor roles over time (code)
+
+Each Brief proposes, per involved actor, a role from the fixed list and one cited sentence on
+why, and may propose actors the list lacks. The model is told to set roles only from what the
+stories report, not from its own knowledge. Code then:
+
+- **Changes a role** only when at least one cited story is `corroborated` (the war monitor's
+  label) **and** lists that actor in its `actorIds`. A corroborated story about something else, or
+  a story only one side reports, does not count. Upgrades and downgrades need the same evidence,
+  so a role does not flip back on weaker evidence. Restating the current role changes nothing,
+  including its date.
+- **Adds an actor** only when at least one cited story is corroborated and names it (its name or
+  an alias, in the title, summary or claims). Code makes the id from the name (a stable slug, with
+  a suffix if taken). A proposal whose name matches an existing name or alias, or whose alias
+  matches an existing name, is that actor. A proposal whose alias matches another actor's alias is
+  refused as a possible duplicate ("US Central Command", also "CENTCOM"), neither merged nor added.
+- **Never deletes** an actor. Learned actors join the digest's actor list, so later stories can be
+  tagged with them.
+- **Records** each accepted role with when it changed, from what, and the evidence stories. The
+  run records what changed, what was held for lack of evidence, what was added, merged or refused.
+
+The panel groups chips by current role, says on each chip where its role comes from ("Party
+since 14:03, on 2 corroborated stories", or "starting role from the theater file"), and lists the
+latest role changes, each opening its evidence. The strip shows actors with open stories (and the
+active filter), at most 16, those with the most stories first, and says how many are hidden.
+
+Because corroboration needs two independent perspectives, roles change cautiously, more so when
+feeds are thin (GDELT returned nothing on 2026-10-28). That is the intended trade-off.
 
 ## 4. Brief run protocol
 
@@ -133,7 +204,8 @@ Input assembled by code:
 1. Fixed instructions (cacheable): role; the rules in section 8 in model-facing form; "cite story
    ids only; a sentence you cannot cite, leave out; use `unclear` rather than guess a direction;
    describe what parties say as their claims".
-2. Theater brief, actor list, drivers and tracks (cacheable).
+2. Theater scope note, actor list with each actor's current role, drivers and tracks
+   (cacheable; changes only when a role or actor does).
 3. The previous Brief, so "changes" are relative to it.
 4. Open stories and stories closed in the last 72 h: id, kind, title, summary, category, place,
    eventAt, updatedAt, whatsNew, claims (text, actor, type, status), contradictions,
@@ -156,8 +228,10 @@ Failure: stories from the digest are kept. The previous Brief stays on screen, m
 age ("Brief from 14:02, one digest behind"), and a **Retry brief** button appears. It is the only
 way to run a brief without a digest.
 
-Storage: the current and previous Brief live in the theater's digest file next to the stories.
-`GET /api/news` adds `brief` and `briefRun` to its snapshot.
+Storage: the current and previous Brief, the accepted roles and the learned actors live in the
+theater's digest file next to the stories. `GET /api/news` adds `brief` and `briefRun` to its
+snapshot, and its theater actors carry each current role with when and on which stories it was
+set.
 
 ## 5. UI
 
@@ -172,9 +246,11 @@ The Brief is a section in `#situation-panel` between the Refresh controls and th
   has a location) and highlights the others in the Stories tab.
 - **Track badges:** the state as a word plus a small direction glyph. Colours stay neutral; red
   and green are not used to mean bad and good.
-- **Actor strip:** chips in the theater's order, grouped by role. Each actor has its own identity;
-  sides are never colour-coded. Clicking a chip filters the Stories list and the `news` pins to
-  stories tagged with that actor, alongside the category toggles; clicking again clears it.
+- **Actor strip:** chips grouped by current role, in list order within a role. Each actor has its
+  own identity; sides are never colour-coded. Clicking a chip filters the Stories list and the
+  `news` pins to stories tagged with that actor, alongside the category toggles; clicking again
+  clears it. Each chip says where its role comes from; the latest role changes are listed, each
+  opening its evidence. Actors with no open stories are hidden, not deleted (section 3.4).
 - **Scenario cards:** title, horizon, two sentences, signposts with a "seen" tick when a story
   cites them. The tick opens that story.
 - **New since your last visit:** stories updated after the digest the viewer last saw get a quiet
@@ -199,7 +275,8 @@ rule from the war monitor design. Lenses and the DATA LAYERS panel.
    something happened in Doha. Recommendation: no pin for developments; revisit after a week of
    use.
 3. **Actor list size.** Recommendation: 12 to 16 actors for this theater, so the strip fits one
-   or two rows.
+   or two rows. Settled as: the theater file starts with 16; actors learned from the stories are
+   stored without limit, and the strip shows at most 16 at a time.
 
 ## 8. Rules the Brief never breaks
 
@@ -219,8 +296,8 @@ From the research's pitfalls list, cut to what applies here:
 - **Before:** PR #1 must-fixes (GDELT query length, `qa-news.mjs` main guard on Windows,
   digest output headroom), merge PR #1, add `news` to the Conflict lens.
 - **Phase A (one PR):** theater `actors`, `drivers`, `tracks`; story `kind` and `actorIds`;
-  brief runner, validation, storage and route fields; the Brief section, actor filter, new-since
-  marker and Frame theater; tests and QA.
+  brief runner, validation, storage and route fields; roles set from the stories (section 3.4);
+  the Brief section, actor filter, new-since marker and Frame theater; tests and QA.
 - **Phase B:** quiet event cards over the globe for major developments (once per development, no
   sound, "Fly there" and "Open story"); typed, cited actor relationships (backs, supplies,
   mediates, sanctions) with optional arcs, off by default; human-impact figures from ReliefWeb
@@ -238,12 +315,20 @@ From the research's pitfalls list, cut to what applies here:
 - Brief validation: unknown story ids dropped; uncited lines dropped; signposts may be empty;
   limits enforced; track states and horizons clamped; a Brief with no headline is rejected and
   the previous one kept.
+- Actor roles: a change needs a corroborated story tagged with that actor (a corroborated story
+  about something else, a one-sided claim or a single outlet does not count); downgrades need the
+  same; restating a role keeps its date; a new actor needs a corroborated story naming it, gets a
+  code-made id, and a proposal naming an existing actor (by name or alias, any case) is that
+  actor; a proposal using another actor's alias is refused; learned actors are never deleted and
+  can be tagged by the next digest; roles survive a restart.
 - Run protocol: brief runs only after a successful digest; brief failure keeps the stories;
   budget counts brief runs; over-budget skip shows its reason; Retry brief works only after a
   failure.
 - Coverage line from source health and item timestamps.
 - Panel DOM: collapsed and expanded states; every line opens its stories; the actor filter
-  combines with category toggles; the new-since marker follows the stored last-seen digest.
+  combines with category toggles; chips grouped by current role with where it came from; role
+  changes open their evidence; actors without open stories are hidden but still filterable; the
+  new-since marker follows the stored last-seen digest.
 - Browser QA with a fixture Brief: Cyber theme, 720 px and 390 px widths, no horizontal scroll.
 
 ## 11. Research basis

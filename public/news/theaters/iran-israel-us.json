@@ -2,8 +2,8 @@
   "id": "iran-israel-us",
   "name": "Iran · Israel · US",
   "brief": [
-    "The theater covers the war between Israel and the United States on one side and Iran and its allied armed groups on the other, together with its regional fronts: Gaza and the West Bank, Lebanon and Hezbollah, Yemen and the Houthis with Red Sea shipping, Syria, Iraq and its militias, and the Gulf states and waterways (Strait of Hormuz, Persian Gulf, Gulf of Oman). Iran, Israel, the United States, Hezbollah, the Houthis, Hamas and the Iraqi militias are parties; their governments, militaries and media outlets speak as participants.",
-    "Expect fast-moving strike and interception claims, casualty counts from health ministries and humanitarian agencies, shipping and energy incidents, nuclear-site assessments from the IAEA, ceasefire and negotiation news from Washington, Doha, Muscat, Cairo and Vienna, and information operations. Many outlets repeat the same official statement; treat repetitions as one source. Claims from one side are frequently denied by the other, and early casualty and damage figures change. Prefer place names as written in the gazetteer."
+    "The theater covers the conflicts centred on Iran, Israel and the United States and the fronts linked to them: Gaza and the West Bank, Lebanon, Yemen and Red Sea shipping, the fighting between Saudi Arabia and the Houthis, Syria, Iraq, and the Gulf states and waterways (Strait of Hormuz, Persian Gulf, Gulf of Oman). Who takes part, and in what role, is read from the stories, not from this note. The governments, militaries and media outlets of states and armed groups that are fighting speak as participants.",
+    "Expect fast-moving strike and interception claims, casualty counts from health ministries and humanitarian agencies, shipping and energy incidents, nuclear-site assessments from the IAEA, ceasefire and negotiation news from Washington, Doha, Islamabad, Muscat, Cairo and Vienna, and information operations. Many outlets repeat the same official statement; treat repetitions as one source. Claims from one side are frequently denied by the other, and early casualty and damage figures change. Prefer place names as written in the gazetteer."
   ],
   "sourceIds": [
     "aljazeera",
@@ -300,7 +300,9 @@
       "role": "external",
       "aliases": [
         "Riyadh",
-        "Saudi-led coalition"
+        "Saudi-led coalition",
+        "KSA",
+        "Kingdom of Saudi Arabia"
       ]
     },
     {

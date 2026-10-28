@@ -297,6 +297,7 @@
       "server/providers/common/same-site.js",
       "server/providers/common/source-root.js",
       "server/providers/news/collector.js",
+      "server/providers/news/digest/actors.js",
       "server/providers/news/digest/brief.js",
       "server/providers/news/digest/runner.js",
       "server/providers/news/digest/stories.js",

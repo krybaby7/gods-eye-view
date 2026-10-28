@@ -208,8 +208,9 @@ request. `server/providers/news/digest` (the Perplexity call and output
 validation) and `server/providers/news/digest/stories` (code-owned story fields:
 location, perspectives, source count, verification) are separate Node entries
 that import no application, browser or route code. The Situation Brief call
-(`digest/brief.js`) reuses the digest's call and is owned by the provider
-entry. The RSS/Atom parser is shared with the regional provider through
+(`digest/brief.js`) reuses the digest's call; it and the pure actor-role rules
+(`digest/actors.js`) are owned by the provider entry. The RSS/Atom parser is
+shared with the regional provider through
 `server/providers/common/rss.js`; the Brief's Coverage line is computed by the
 portable `src/layers/news/coverage.js`, shared by the provider and the panel.
 

@@ -197,8 +197,9 @@ returning its id. New stories get `st_` ids that code mints.
   list, marked "development · no pin", and in the Brief.
 
 It tags each story with the theater actors it involves (`actorIds`), chosen
-from the actor list only. Code drops unknown ids and counts them. A story from
-before kinds existed reads as an event with no actors.
+from the actor list only, which includes actors learned from earlier briefs
+(see [Actor roles](#actor-roles)). Code drops unknown ids and counts them. A
+story from before kinds existed reads as an event with no actors.
 
 ## Situation Brief
 
@@ -225,11 +226,16 @@ known. The choice is remembered per viewer.
 - **Every line opens its stories.** Clicking a line selects the first story
   it cites (a located event flies there) and highlights the others in the
   Stories tab.
-- **Actor chips** are grouped by role (parties, mediators, institutions,
-  affected, external), in the theater's order, each with its type and the
-  number of open stories tagged with it. Clicking a chip shows only those
-  stories, in the list and as pins, on top of the category chips. Clicking
-  it again, or "Show all", clears it. It is not kept in share links.
+- **Actor chips** are grouped by each actor's current role (parties,
+  mediators, external, institutions, affected), each with its type and the
+  number of open stories tagged with it. Hovering a chip says where its role
+  comes from. Clicking a chip shows only those stories, in the list and as
+  pins, on top of the category chips, and shows the actor's cited role line.
+  Clicking it again, or "Show all", clears it. It is not kept in share links.
+  Actors with no open stories are hidden (never deleted), at most 16 show,
+  and the panel says how many are hidden. The latest **role changes** are
+  listed ("Saudi Arabia: external → party · 14:03"), each opening the stories
+  behind it.
 - **New since your last visit.** Stories updated after the digest you last
   saw get a quiet "new since your last visit" marker on the row and a small
   dot on the pin, apart from the verification ring. "Last seen" is stored in
@@ -250,8 +256,8 @@ tools, one step, strict JSON schema) and `max_output_tokens: 16000` (hidden
 reasoning counts toward it). It sends:
 
 - fixed instructions with the rules above;
-- the theater brief, the actor list (with types and roles), the drivers and
-  the tracks;
+- the theater scope note, the actor list (with types and current roles),
+  the drivers and the tracks;
 - the previous brief, so the change lines are relative to it;
 - the open stories and those closed in the last 72 hours, most recently
   updated first, at most 80: their ids, kind, titles, summaries, claims,
@@ -262,14 +268,17 @@ reasoning counts toward it). It sends:
 A skipped or failed digest runs no brief.
 
 **What code checks.** The model writes the text, the track states, the
-horizons, the citations and which signposts it has seen. Code then:
+horizons, the citations, which signposts it has seen, and a role line per
+involved actor (plus actors the list lacks). Code then:
 
 - drops every cited story id that was not sent, and counts it;
 - drops every line left citing no story (a signpost may cite none: not seen
   yet);
 - rejects a brief without a cited headline: the previous brief stays;
 - keeps at most 3 change, affected and unknown lines, 3 scenarios, 4
-  signposts each and one note per actor;
+  signposts each, one role line per actor and 3 proposed new actors;
+- decides which proposed roles and actors to accept (see
+  [Actor roles](#actor-roles));
 - holds track states and horizons to their lists (an unknown state reads
   "unclear");
 - removes a scenario that states odds, a probability or a percentage, and
@@ -279,6 +288,33 @@ horizons, the citations and which signposts it has seen. Code then:
 
 The Coverage line, the AI-analysis label, the brief's age, the
 new-since marker and the verification labels are all code.
+
+### Actor roles
+
+The theater file says who each actor is (name, aliases, type) and its
+starting role. After that, roles come from the stories. Each brief proposes a
+role per involved actor (party, mediator, institution, affected or external)
+with one cited sentence on why, and may propose actors the list lacks. The
+model is told to use only what the stories report, not what it knows. Code
+decides:
+
+- **A role changes** only when at least one cited story is corroborated
+  **and** tagged with that actor. A corroborated story about something else,
+  one side's claim or a single outlet does not count. A downgrade needs the
+  same evidence as an upgrade, so roles do not flip back and forth.
+  Restating the current role changes nothing, including its date.
+- **A new actor joins** only when a cited story is corroborated and names it.
+  Code makes its id from the name. A proposal that names an existing actor
+  (by name or alias, in any case: "KSA", "Saudi-led coalition") is that
+  actor. A proposal using another actor's alias is refused as a possible
+  duplicate.
+- **Actors are never deleted.** Learned actors join the list the digest tags
+  stories with. One the stories stop mentioning is only hidden from the strip.
+
+Each brief run records what changed (`roleChanges`), what was held for lack
+of evidence (`roleChangesHeld`), and what was added, merged or refused. With
+few corroborated stories (for example when GDELT returns nothing), roles move
+slowly; that is intended.
 
 **Coverage line.** Computed from source health and item times, never by the
 model: sources down (blocked, failing or stale), grouped by perspective;
@@ -381,15 +417,17 @@ usual vantage point, not any one article.
 | `RELIEFWEB_APPNAME`            | unset   | Turns on the ReliefWeb source.                                                                                 |
 
 Sources live in `public/news/sources.json`. The theater lives in
-`public/news/theaters/<id>.json`: brief, categories, perspective groups,
-GDELT terms, gazetteer, and the Brief's actors, drivers and tracks. Both are
+`public/news/theaters/<id>.json`: a short scope note (`brief`; it names the
+fronts, not the parties or sides), categories, perspective groups, GDELT
+terms, gazetteer, and the Brief's actors, drivers and tracks. Both are
 validated at load. An unknown folder, kind, transport or category, a
 duplicate id, or an ambiguous gazetteer spelling throws. So does an actor
 with a type or role outside the lists (types: state, armed-group,
 institution, population; roles: party, mediator, institution, affected,
 external), a duplicate actor or track, or more than three drivers or a
-driver without a source link. Actor roles record only what is not in
-dispute; who backs whom is never written there.
+driver without a source link. An actor's role there is only its starting
+role; the stories set it after that ([Actor roles](#actor-roles)). Who backs
+whom is never written into the actor list.
 
 ## Routes
 
@@ -422,6 +460,7 @@ dispute; who backs whom is never written there.
 | Item store, collector, routes  | `server/providers/news/store.js`, `collector.js`, `index.js`                 |
 | Digest call and validation     | `server/providers/news/digest/runner.js`                                     |
 | Brief call and checks          | `server/providers/news/digest/brief.js`                                      |
+| Actor roles over time (pure)   | `server/providers/news/digest/actors.js`                                     |
 | Code-owned story fields (pure) | `server/providers/news/digest/stories.js`                                    |
 | Stories, briefs, run history   | `server/providers/news/digest/store.js`                                      |
 | Coverage line (pure, shared)   | `src/layers/news/coverage.js`                                                |

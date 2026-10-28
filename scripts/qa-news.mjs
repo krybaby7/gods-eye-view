@@ -201,15 +201,23 @@ export function fixtureBrief({ digested = false } = {}) {
         'st_cyber',
       ]),
     ],
-    actorNotes: [
+    actorRoles: [
       {
         actorId: 'iran',
+        role: 'party',
         text: 'Iranian state media describe the site as a civilian warehouse.',
         storyIds: ['st_bandar'],
       },
     ],
+    newActors: [],
   };
   if (digested) {
+    brief.actorRoles.push({
+      actorId: 'saudi-arabia',
+      role: 'party',
+      text: 'The Saudi-led coalition says it struck Houthi launchers near Sanaa.',
+      storyIds: ['st_yemen'],
+    });
     brief.headline = line(
       'Envoys meet in Doha while strike claims continue at Bandar Abbas and over the Galilee.',
       ['st_talks', 'st_bandar', 'st_north'],
@@ -228,6 +236,42 @@ export function fixtureBrief({ digested = false } = {}) {
     };
   }
   return brief;
+}
+
+/**
+ * The theater's actors as the snapshot serves them. After the Refresh's
+ * brief, the stories have moved Saudi Arabia to party and added Egypt.
+ */
+function fixtureActors(rolesSet) {
+  const actors = THEATER.actors.map((actor) => ({
+    ...actor,
+    startingRole: actor.role,
+    roleSince: null,
+    roleStoryIds: [],
+    changedFrom: null,
+    learned: false,
+  }));
+  if (!rolesSet) return actors;
+  const saudi = actors.find((actor) => actor.id === 'saudi-arabia');
+  Object.assign(saudi, {
+    role: 'party',
+    changedFrom: 'external',
+    roleSince: iso(1),
+    roleStoryIds: ['st_yemen'],
+  });
+  actors.push({
+    id: 'egypt',
+    name: 'Egypt',
+    type: 'state',
+    role: 'external',
+    aliases: ['Cairo'],
+    startingRole: 'external',
+    roleSince: iso(1),
+    roleStoryIds: ['st_yemen'],
+    changedFrom: null,
+    learned: true,
+  });
+  return actors;
 }
 
 const at = (name, lat, lon, method = 'gazetteer') => ({
@@ -399,6 +443,47 @@ export function fixtureSnapshot({
         },
       ),
     );
+    // A corroborated Saudi-Houthi exchange: the evidence for Saudi Arabia's
+    // role, and the story that names Egypt.
+    items.push(
+      item(
+        'i-new3',
+        'almasirah',
+        'armed-group',
+        'participant',
+        'houthi',
+        'Houthis say coalition jets struck Sanaa',
+        { digested: true, storyId: 'st_yemen', age: 20 },
+      ),
+      item(
+        'i-new4',
+        'airwars',
+        'verification',
+        'verification',
+        'verification',
+        'Airwars logs coalition strikes near Sanaa',
+        { digested: true, storyId: 'st_yemen', age: 25 },
+      ),
+    );
+    stories.splice(
+      1,
+      0,
+      story(
+        'st_yemen',
+        'Saudi-led coalition and Houthis trade strikes',
+        'war-military',
+        at('Sanaa', 15.3694, 44.191),
+        ['i-new3', 'i-new4'],
+        {
+          updated: 2,
+          verification: 'corroborated',
+          perspectives: ['houthi', 'verification'],
+          summary:
+            'The coalition says it struck Houthi launchers near Sanaa; the Houthis report the strikes. Egypt has pledged military support to Saudi Arabia.',
+          actorIds: ['saudi-arabia', 'houthis', 'egypt'],
+        },
+      ),
+    );
   }
   const brief = fixtureBrief({ digested: digested && !briefFailed });
   const briefRun = briefFailed
@@ -426,7 +511,7 @@ export function fixtureSnapshot({
       name: 'Iran · Israel · US',
       categories: CATEGORIES,
       perspectives: THEATER.perspectives,
-      actors: THEATER.actors,
+      actors: fixtureActors(digested && !briefFailed),
       drivers: THEATER.drivers,
       tracks: THEATER.tracks,
     },
@@ -680,6 +765,21 @@ function briefState(page) {
       ),
       roles: all('.situation-actor-role').map((node) => node.textContent),
       actors: all('.situation-actor').length,
+      parties: [
+        ...(all('.situation-actor-group')
+          .find(
+            (group) =>
+              group.querySelector('.situation-actor-role')?.textContent ===
+              'Parties',
+          )
+          ?.querySelectorAll('.situation-actor') || []),
+      ].map((chip) => chip.dataset.actorId),
+      hiddenActors:
+        brief.querySelector('.situation-actors')?.nextElementSibling
+          ?.textContent ?? null,
+      roleChanges: all('.situation-role-change').map(
+        (node) => node.textContent,
+      ),
       drivers: all('.situation-drivers li').length,
       scenarios: all('.situation-scenario').length,
       signposts: all('.situation-signposts li').map((node) => node.textContent),
@@ -1083,14 +1183,19 @@ async function main() {
             'What could happen next',
             'What we know poorly',
           ]);
+          // Only actors in open stories show: 7 of the 16; the rest are
+          // hidden, not deleted.
           assert.deepEqual(brief.roles, [
             'Parties',
-            'Mediators',
-            'External',
             'Institutions',
             'Affected',
           ]);
-          assert.equal(brief.actors, THEATER.actors.length);
+          assert.equal(brief.actors, 7);
+          assert.match(
+            brief.hiddenActors,
+            /^9 more actors have no open stories and are not shown\.$/,
+          );
+          assert.deepEqual(brief.roleChanges, []);
           assert.equal(brief.drivers, 3);
           assert.equal(brief.scenarios, 2);
           assert.deepEqual(brief.signposts, [
@@ -1177,11 +1282,23 @@ async function main() {
             ),
             /development · no pin/,
           );
-          assert.match(
-            (await briefState(page)).headline,
-            /^Envoys meet in Doha/,
+          const refreshed = await briefState(page);
+          assert.match(refreshed.headline, /^Envoys meet in Doha/);
+          // The brief's corroborated Saudi-Houthi story moved Saudi Arabia to
+          // party and added Egypt; both are listed, newest first.
+          assert.ok(refreshed.parties.includes('saudi-arabia'));
+          assert.deepEqual(
+            refreshed.roleChanges.map((line) =>
+              line.replace(/\d\d:\d\d$/, 'T'),
+            ),
+            [
+              'Saudi Arabia: external → party · T',
+              'Egypt: added as external · T',
+            ],
           );
           await shot(page, '04-after-refresh');
+          await showBrief(page, '.situation-actors');
+          await shot(page, '04b-roles-after-refresh');
         },
       );
 
@@ -1311,7 +1428,7 @@ async function main() {
           await wait(300);
           s = await newsState(page);
           assert.equal(s.params.hiddenCategories, '');
-          assert.equal(s.rows.length, 5);
+          assert.equal(s.rows.length, 6);
           assert.equal(
             await page.$('#situation-panel .situation-brief-filter'),
             null,
