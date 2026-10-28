@@ -131,7 +131,7 @@ test('the request uses the agreed model, no tools, one step and strict schema ou
     }),
   );
   assert.equal(request.url, DIGEST_ENDPOINT);
-  assert.equal(request.url, 'https://api.perplexity.ai/v1/responses');
+  assert.equal(request.url, 'https://api.perplexity.ai/v1/agent');
   assert.equal(request.init.method, 'POST');
   assert.equal(request.init.headers.Authorization, 'Bearer pplx-test-secret');
   const body = request.body;

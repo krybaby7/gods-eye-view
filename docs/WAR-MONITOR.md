@@ -98,7 +98,8 @@ The digest runs only on an explicit Refresh: the panel button, the
 
 **The call.** One request to the Perplexity Agent API:
 
-- `POST https://api.perplexity.ai/v1/responses`;
+- `POST https://api.perplexity.ai/v1/agent` (the documented endpoint; the
+  earlier `/v1/responses` path is no longer documented for creating one);
 - `model: "anthropic/claude-sonnet-5-5"`;
 - `tools: []` and `max_steps: 1`, so it does no search and takes one step;
 - no `preset` and no `effort`;
