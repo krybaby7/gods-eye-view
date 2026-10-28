@@ -2,7 +2,11 @@ import * as Cesium from 'cesium';
 import { isPointerFree } from '../../data/inputOwnership.js';
 import {
   filterNewsStories,
+  filterStoriesByActor,
+  formatBriefOutcome,
   formatDigestOutcome,
+  isNewSince,
+  isPinnedStory,
   mapNewsAnalystRecord,
   newsCategoryColor,
   normalizeHiddenCategories,
@@ -30,9 +34,11 @@ function formatAge(ms) {
 const ENTITY_PREFIX = 'news:';
 
 /**
- * War monitor layer: one pin per located story, never per item. Stories
- * without a location are list-only and counted. Category toggles filter the
- * pins and the Situation panel's stories together.
+ * War monitor layer: one pin per located event story, never per item.
+ * Stories without a location, and developments, are list-only and counted.
+ * Category toggles and the Situation Brief's actor filter narrow the pins
+ * and the Situation panel's stories together; the actor filter is a passing
+ * view, not a share-link parameter.
  *
  * @param {{
  *   source: {getSnapshot: Function, requestDigest: Function},
@@ -72,6 +78,9 @@ export function createNewsLayer({
   let _lastUpdate = null;
   let _digestRunning = null;
   let _digestOutcome = null;
+  let _briefRunning = null;
+  let _actorId = null;
+  let _newSinceMs = null;
   let _handler = null;
   let _lastHoverAt = 0;
   let _removeCull = null;
@@ -110,7 +119,17 @@ export function createNewsLayer({
   }
 
   function visibleStories() {
-    return filterNewsStories(openStories(), _hidden);
+    return filterStoriesByActor(
+      filterNewsStories(openStories(), _hidden),
+      _actorId,
+    );
+  }
+
+  function isVisible(story) {
+    return (
+      !_hidden.has(story.category) &&
+      (!_actorId || (story.actorIds || []).includes(_actorId))
+    );
   }
 
   function storyById(id) {
@@ -135,14 +154,19 @@ export function createNewsLayer({
     _dataSource.entities.removeAll();
     _entities.clear();
     for (const story of visibleStories()) {
-      if (!story.location) continue;
+      if (!isPinnedStory(story)) continue;
       const color = newsCategoryColor(story.category, categories());
       const entity = new Cesium.Entity({
         id: `${ENTITY_PREFIX}${story.id}`,
         position: positionOf(story),
         billboard: {
           image: newsMarkerImage(
-            newsMarkerStyle(story, color, story.id === _selectedId),
+            newsMarkerStyle(
+              story,
+              color,
+              story.id === _selectedId,
+              isNewSince(story, _newSinceMs),
+            ),
           ),
           verticalOrigin: Cesium.VerticalOrigin.CENTER,
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
@@ -200,7 +224,7 @@ export function createNewsLayer({
     ]) {
       if (!id || (!selected && id === _selectedId)) continue;
       const story = storyById(id);
-      if (!story?.location || _hidden.has(story.category)) continue;
+      if (!isPinnedStory(story) || !isVisible(story)) continue;
       entries.push({
         ...buildNewsStoryCard(story, {
           position: positionOf(story),
@@ -224,7 +248,7 @@ export function createNewsLayer({
     const next = new Set();
     try {
       for (const story of visibleStories()) {
-        if (!story.location) continue;
+        if (!isPinnedStory(story)) continue;
         const id = `${ENTITY_PREFIX}${story.id}`;
         const entity = _entities.get(story.id);
         if (!entity) continue;
@@ -504,6 +528,63 @@ export function createNewsLayer({
       publishFilter();
     },
 
+    /**
+     * Show only stories tagged with one theater actor, alongside the
+     * category toggles; null (or an unknown actor) clears it. Not a share
+     * parameter: it is a passing view from the Situation Brief.
+     * @param {?string} actorId
+     */
+    setActorFilter(actorId) {
+      const known = (_snapshot?.theater.actors || []).some(
+        (actor) => actor.id === actorId,
+      );
+      const next = known ? actorId : null;
+      if (next === _actorId) return;
+      _actorId = next;
+      applyFilter();
+    },
+
+    /**
+     * The viewer's last-seen digest time: stories updated after it get a
+     * quiet marker on their pin. The Situation panel owns the stored value.
+     * @param {?number} sinceMs
+     */
+    setNewSince(sinceMs) {
+      const next = Number.isFinite(sinceMs) ? sinceMs : null;
+      if (next === _newSinceMs) return;
+      _newSinceMs = next;
+      if (_enabled) renderPins();
+      notify('state');
+    },
+
+    /**
+     * Frame theater: one flight over every visible pin, through the same
+     * world-focus request as a story click. False when there is no pin.
+     */
+    frameTheater() {
+      const pinned = visibleStories().filter(isPinnedStory);
+      if (!pinned.length || !_enabled) return false;
+      const lats = pinned.map((story) => story.location.lat);
+      const lons = pinned.map((story) => story.location.lon);
+      const centre = Cesium.Cartesian3.fromDegrees(
+        (Math.min(...lons) + Math.max(...lons)) / 2,
+        (Math.min(...lats) + Math.max(...lats)) / 2,
+      );
+      const radiusM = Math.max(
+        ...pinned.map((story) =>
+          Cesium.Cartesian3.distance(centre, positionOf(story)),
+        ),
+      );
+      focus.requestWorldFocus?.({
+        kind: 'theater',
+        id: `news-theater:${_theaterId}`,
+        label: 'THEATER',
+        position: centre,
+        radiusM,
+      });
+      return true;
+    },
+
     /** Category chips for the data-panel row. */
     getRowControls() {
       if (!categories().length) return null;
@@ -551,7 +632,7 @@ export function createNewsLayer({
         } catch {
           /* context store unavailable */
         }
-        if (fly && story.location)
+        if (fly && isPinnedStory(story))
           focus.requestWorldFocus?.({
             kind: 'story',
             id: `${ENTITY_PREFIX}${story.id}`,
@@ -581,6 +662,7 @@ export function createNewsLayer({
       _theaterId = theaterId;
       _selectedId = null;
       _hoverId = null;
+      _actorId = null;
       return fetchSnapshot({ force: true });
     },
 
@@ -595,7 +677,7 @@ export function createNewsLayer({
      * @returns {Promise<object>} The outcome, with a readable `summary`.
      */
     async requestDigest() {
-      if (_digestRunning)
+      if (_digestRunning || _briefRunning)
         return {
           ok: false,
           error: 'in_flight',
@@ -628,6 +710,45 @@ export function createNewsLayer({
       return _digestOutcome;
     },
 
+    /**
+     * Retry brief: rerun the Situation Brief for the latest digest after its
+     * brief failed, then reload. Never runs a digest; never throws.
+     * @returns {Promise<object>} The outcome, with a readable `summary`.
+     */
+    async requestBrief() {
+      if (_digestRunning || _briefRunning)
+        return {
+          ok: false,
+          error: 'in_flight',
+          summary: formatBriefOutcome({ error: 'in_flight' }),
+        };
+      _briefRunning = { startedAt: now() };
+      _digestOutcome = null;
+      notify('digest');
+      let outcome;
+      try {
+        outcome = await source.requestBrief({
+          theater: _theaterId || undefined,
+        });
+      } catch (error) {
+        outcome = {
+          ok: false,
+          error: 'network',
+          message: error?.message || 'News provider unavailable',
+        };
+      }
+      _briefRunning = null;
+      if (_destroyed) return outcome;
+      await fetchSnapshot({ force: true });
+      _digestOutcome = {
+        ...outcome,
+        at: now(),
+        summary: formatBriefOutcome(outcome),
+      };
+      notify('digest');
+      return _digestOutcome;
+    },
+
     /** Everything the Situation panel renders. */
     getSnapshot() {
       const stories = [...(_snapshot?.stories || [])].sort(
@@ -636,6 +757,7 @@ export function createNewsLayer({
           Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0),
       );
       const server = _snapshot?.digest || null;
+      const local = _digestRunning || _briefRunning;
       return {
         enabled: _enabled,
         loading: _loading,
@@ -646,19 +768,32 @@ export function createNewsLayer({
         theaters: _snapshot?.theaters || [],
         categories: categories(),
         hiddenCategories: [..._hidden].sort(),
+        actorFilter: _actorId,
+        newSinceMs: _newSinceMs,
         stories,
-        visibleStories: filterNewsStories(stories, _hidden),
+        visibleStories: filterStoriesByActor(
+          filterNewsStories(stories, _hidden),
+          _actorId,
+        ),
         items: _snapshot?.items || [],
         citations: _snapshot?.citations || [],
         sources: _snapshot?.sources || [],
         budget: _snapshot?.budget || null,
         lastRun: _snapshot?.lastRun || null,
         lastDigest: _snapshot?.lastDigest || null,
+        brief: _snapshot?.brief || null,
+        briefRun: _snapshot?.briefRun || null,
+        briefStatus: _snapshot?.briefStatus || null,
         digest: {
           ...(server || {}),
-          running: Boolean(_digestRunning || server?.running),
-          startedAt: _digestRunning
-            ? new Date(_digestRunning.startedAt).toISOString()
+          running: Boolean(local || server?.running),
+          phase: _briefRunning
+            ? 'brief'
+            : _digestRunning
+              ? 'digest'
+              : server?.phase || null,
+          startedAt: local
+            ? new Date(local.startedAt).toISOString()
             : server?.startedAt || null,
           outcome: _digestOutcome,
         },
@@ -689,7 +824,7 @@ export function createNewsLayer({
     getStats() {
       const open = openStories();
       const visible = visibleStories();
-      const located = visible.filter((story) => story.location).length;
+      const located = visible.filter(isPinnedStory).length;
       const sources = _snapshot?.sources || [];
       const degraded = sources.filter((s) => s.health.degraded).length;
       const lastDigestAt = Date.parse(_snapshot?.lastDigest?.finishedAt || '');

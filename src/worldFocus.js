@@ -11,7 +11,19 @@ export const WORLD_FOCUS_FRAMING = Object.freeze({
   fire: Object.freeze({ radiusM: 400, rangeM: 3000, pitchDeg: -35 }),
   // A story's place is a city or region, not one object: a regional standoff.
   story: Object.freeze({ radiusM: 4000, rangeM: 90_000, pitchDeg: -55 }),
+  // Frame theater: every located open story. The request carries the radius
+  // that encloses them; these are its floor and nearest standoff.
+  theater: Object.freeze({
+    radiusM: 150_000,
+    rangeM: 450_000,
+    pitchDeg: -65,
+    fitToRequest: true,
+  }),
 });
+/** Largest sphere a fitted request may frame (a theater, not a hemisphere). */
+const MAX_FIT_RADIUS_M = 3_000_000;
+/** Standoff per metre of fitted radius, so the whole sphere stays in view. */
+const FIT_RANGE_PER_RADIUS = 3;
 
 /** Validate a layer-owned focus target before camera policy can release tracking. */
 export function isValidWorldFocusTarget(detail) {
@@ -81,14 +93,19 @@ export function flyToWorldTarget(viewer, target = {}) {
     target.durationSec > 0
       ? target.durationSec
       : WORLD_CLICK_FOCUS_DURATION_SEC;
+  let { radiusM, rangeM } = framing;
+  if (framing.fitToRequest && Number.isFinite(target.radiusM)) {
+    radiusM = Math.min(MAX_FIT_RADIUS_M, Math.max(radiusM, target.radiusM));
+    rangeM = Math.max(rangeM, radiusM * FIT_RANGE_PER_RADIUS);
+  }
   camera.cancelFlight?.();
   camera.flyToBoundingSphere(
-    new Cesium.BoundingSphere(target.position, framing.radiusM),
+    new Cesium.BoundingSphere(target.position, radiusM),
     {
       offset: new Cesium.HeadingPitchRange(
         heading,
         Cesium.Math.toRadians(framing.pitchDeg),
-        framing.rangeM,
+        rangeM,
       ),
       duration,
       easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,

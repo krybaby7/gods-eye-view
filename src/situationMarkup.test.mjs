@@ -16,6 +16,7 @@ const layoutController = read('src/ui/panelLayoutController.js');
 const sharelink = read('src/sharelink.js');
 const panelCss = read('src/ui/styles/situation.css');
 const panelJs = read('src/ui/situationPanel.js');
+const briefJs = read('src/ui/situationBrief.js');
 
 test('the Situation panel is a panel-surface rail panel, hidden until the layer is on', () => {
   assert.match(
@@ -64,4 +65,16 @@ test('panel styles stay inside the surface contract; feed text is never markup',
   assert.doesNotMatch(panelCss, /position:\s*fixed/);
   assert.doesNotMatch(panelJs, /innerHTML|insertAdjacentHTML|outerHTML/);
   assert.match(panelJs, /rel: 'noopener noreferrer'/);
+  // The Situation Brief writes model text as text too, and stays neutral:
+  // no colour per actor or per track state.
+  assert.doesNotMatch(briefJs, /innerHTML|insertAdjacentHTML|outerHTML/);
+  assert.match(briefJs, /rel: 'noopener noreferrer'/);
+  assert.doesNotMatch(briefJs, /style:|color/);
+  const briefCss = panelCss.slice(panelCss.indexOf('/* Situation Brief.'));
+  assert.ok(briefCss.length > 100, 'the brief styles are present');
+  assert.doesNotMatch(
+    briefCss,
+    /#[0-9a-f]{3,6}\b|rgba?\(|\b(?:red|green)\b/i,
+    'brief styles use the theme tokens only',
+  );
 });

@@ -121,3 +121,100 @@ test("the run log cap never drops today's billed runs", async (t) => {
     );
   assert.equal(Math.round(digest.spentOnDay(NOW) * 100) / 100, 1.9);
 });
+
+const briefRun = (startedAt, costUsd, digestRunId, status = 'ok') => ({
+  ...run(startedAt, costUsd, status),
+  id: `brief_${startedAt}`,
+  kind: 'brief',
+  digestRunId,
+});
+const brief = (id, digestRunId) => ({
+  id,
+  digestRunId,
+  createdAt: new Date(NOW).toISOString(),
+  headline: { text: `Headline ${id}`, storyIds: ['st_1'] },
+});
+
+test('brief runs share the run log and budget; old records read as digests', async (t) => {
+  const { digest } = await store(t);
+  const at = (minutes) => new Date(NOW + minutes * 60_000).toISOString();
+  // A record from before run kinds existed has no kind: it is a digest.
+  digest.commit({ stories: [], run: run(at(0), 0.34), citedItems: [] });
+  digest.commitBrief({
+    brief: brief('br_1', `run_${at(0)}`),
+    run: briefRun(at(1), 0.12, `run_${at(0)}`),
+  });
+  assert.equal(digest.lastRun().id, `run_${at(0)}`, 'the last digest run');
+  assert.equal(digest.lastCompletedRun().id, `run_${at(0)}`);
+  assert.equal(digest.lastBriefRun().id, `brief_${at(1)}`);
+  assert.equal(Math.round(digest.spentOnDay(NOW) * 100) / 100, 0.46);
+  assert.equal(digest.brief().id, 'br_1');
+  assert.equal(digest.previousBrief(), null);
+  assert.equal(digest.digestsSince(`run_${at(0)}`), 0);
+  // A second digest whose brief fails: the first brief stays, one behind.
+  digest.commit({
+    stories: [],
+    run: { ...run(at(5), 0.4), kind: 'digest' },
+    citedItems: [],
+  });
+  digest.recordRun(briefRun(at(6), 0.05, `run_${at(5)}`, 'failed'));
+  assert.equal(digest.brief().id, 'br_1');
+  assert.equal(digest.lastBriefRun().status, 'failed');
+  assert.equal(digest.digestsSince(digest.brief().digestRunId), 1);
+  assert.equal(digest.digestsSince('run_unknown'), null);
+  digest.commitBrief({
+    brief: brief('br_2', `run_${at(5)}`),
+    run: briefRun(at(7), 0.1, `run_${at(5)}`),
+  });
+  assert.equal(digest.brief().id, 'br_2');
+  assert.equal(digest.previousBrief().id, 'br_1');
+});
+
+test('the current and previous brief survive a restart', async (t) => {
+  const { digest, cacheDir } = await store(t);
+  const at = new Date(NOW).toISOString();
+  digest.commit({ stories: [], run: run(at, 0.3), citedItems: [] });
+  digest.commitBrief({
+    brief: brief('br_1', `run_${at}`),
+    run: briefRun(at, 0.1, `run_${at}`),
+  });
+  assert.deepEqual(digest.actorState(), { roles: {}, learned: [] });
+  const actors = {
+    roles: {
+      'saudi-arabia': {
+        role: 'party',
+        since: at,
+        storyIds: ['st_1'],
+        changedFrom: 'external',
+        briefId: 'br_2',
+      },
+    },
+    learned: [
+      {
+        id: 'egypt',
+        name: 'Egypt',
+        type: 'state',
+        role: 'external',
+        aliases: [],
+        addedAt: at,
+        briefId: 'br_2',
+      },
+    ],
+  };
+  digest.commitBrief({
+    brief: brief('br_2', `run_${at}`),
+    run: briefRun(at, 0.1, `run_${at}`),
+    actors,
+  });
+  await digest.save();
+  const again = createDigestStore({
+    theaterId: 'fixture',
+    cacheDir,
+    now: () => NOW,
+  });
+  await again.load();
+  assert.equal(again.brief().id, 'br_2');
+  assert.equal(again.previousBrief().id, 'br_1');
+  assert.equal(again.lastBriefRun().kind, 'brief');
+  assert.deepEqual(again.actorState(), actors, 'roles and learned actors too');
+});

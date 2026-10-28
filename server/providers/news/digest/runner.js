@@ -47,6 +47,12 @@ export const CLAIM_TYPES = Object.freeze([
   'intent',
   'other',
 ]);
+/**
+ * An event happened at a place (a strike, a protest) and gets a pin; a
+ * development is a change with no meaningful point (a sanction, talks, a
+ * ruling) and appears only in the Stories list and the Brief.
+ */
+export const STORY_KINDS = Object.freeze(['event', 'development']);
 // The live runs wrote about 95 tokens a second, so a full 64k-token answer
 // takes about 11 minutes; a slower call is charged an estimate.
 const TIMEOUT_MS = 900_000;
@@ -59,8 +65,9 @@ const nullable = (schema) => ({ anyOf: [schema, { type: 'null' }] });
  * `additionalProperties: false` but no numeric or length constraints, so the
  * bounds are enforced by validateDigestOutput instead.
  * @param {string[]} categoryIds
+ * @param {string[]} [actorIds] The theater's actor ids.
  */
-export function digestSchema(categoryIds) {
+export function digestSchema(categoryIds, actorIds = []) {
   return {
     type: 'object',
     additionalProperties: false,
@@ -85,6 +92,8 @@ export function digestSchema(categoryIds) {
             'whatsNew',
             'contradictions',
             'status',
+            'kind',
+            'actorIds',
           ],
           properties: {
             id: nullable({ type: 'string' }),
@@ -113,6 +122,13 @@ export function digestSchema(categoryIds) {
             whatsNew: { type: 'string' },
             contradictions: { type: 'array', items: { type: 'string' } },
             status: { type: 'string', enum: ['open', 'closed'] },
+            kind: { type: 'string', enum: [...STORY_KINDS] },
+            actorIds: {
+              type: 'array',
+              items: actorIds.length
+                ? { type: 'string', enum: [...actorIds] }
+                : { type: 'string' },
+            },
           },
         },
       },
@@ -144,7 +160,9 @@ Output rules:
 - whatsNew: one short sentence on what this digest's new items add; "" for a new story.
 - claims: at most ${DIGEST_CLAIM_CAP} per story, the most important first.
 - contradictions: one sentence per conflict between sources ("IRNA says X; CENTCOM says Y."), else [].
-- claims[].itemIds: the cited items that carry that claim.`;
+- claims[].itemIds: the cited items that carry that claim.
+- kind: "event" for something that happened at a place (a strike, an interception, a protest); "development" for a change with no meaningful point on a map (a sanction, talks, a ruling, a statement of policy, a mobilisation order).
+- actorIds: ids from the actor list of the actors the story involves, [] when none applies. Use the list's ids only.`;
 
 /**
  * Fixed instructions: rules, theater brief, categories and gazetteer names.
@@ -160,8 +178,22 @@ export function buildDigestInstructions(theater) {
     HANDLING_RULES,
     `Theater: ${theater.name}\n${theater.brief.join('\n\n')}`,
     `Categories:\n${categories}`,
+    `Actors (id: name, aliases in parentheses):\n${actorListForPrompt(theater.actors) || '(none)'}`,
     `Gazetteer place names (aliases in parentheses):\n${placeNamesForPrompt(theater.gazetteer).join('\n')}`,
   ].join('\n\n');
+}
+
+/**
+ * "- iran: Iran (Tehran, IRGC)" per actor, with " — state, party" appended
+ * for the brief prompt.
+ */
+export function actorListForPrompt(actors = [], { withRole = false } = {}) {
+  return actors
+    .map(
+      (actor) =>
+        `- ${actor.id}: ${actor.name}${actor.aliases?.length ? ` (${actor.aliases.join(', ')})` : ''}${withRole ? ` — ${actor.type}, ${actor.role}` : ''}`,
+    )
+    .join('\n');
 }
 
 function itemTime(item) {
@@ -213,6 +245,8 @@ export function buildDigestInput({ openStories, items, sourcesById, nowIso }) {
       actor,
       type,
     })),
+    kind: story.kind === 'development' ? 'development' : 'event',
+    actorIds: story.actorIds || [],
   }));
   const newItems = items.map((item) => ({
     id: item.id,
@@ -233,7 +267,12 @@ ${JSON.stringify(newItems)}`;
 }
 
 /** The Agent API request body. */
-export function buildDigestRequest({ instructions, input, categoryIds }) {
+export function buildDigestRequest({
+  instructions,
+  input,
+  categoryIds,
+  actorIds = [],
+}) {
   return {
     model: DIGEST_MODEL,
     instructions,
@@ -245,7 +284,7 @@ export function buildDigestRequest({ instructions, input, categoryIds }) {
       type: 'json_schema',
       json_schema: {
         name: 'war_monitor_digest',
-        schema: digestSchema(categoryIds),
+        schema: digestSchema(categoryIds, actorIds),
         strict: true,
       },
     },
@@ -288,6 +327,18 @@ export function responseCost(body) {
   };
 }
 
+/**
+ * Hidden reasoning tokens (counted inside output_tokens) when the response
+ * reports them, else null.
+ */
+export function responseReasoningTokens(body) {
+  const usage = body?.usage || {};
+  const value = Number(
+    usage.output_tokens_details?.reasoning_tokens ?? usage.reasoning_tokens,
+  );
+  return Number.isFinite(value) && value >= 0 ? value : null;
+}
+
 /** Parse the model's JSON text; tolerate a code fence, nothing else. */
 export function parseDigestText(text) {
   const trimmed = String(text || '')
@@ -303,7 +354,8 @@ export function parseDigestText(text) {
 
 const URL_PATTERN = /\b(?:https?:\/\/|www\.)\S+/gi;
 
-function cleanText(value, max) {
+/** Model text without URLs or runs of whitespace, cut to `max` characters. */
+export function cleanText(value, max) {
   const text = String(value ?? '')
     .replace(URL_PATTERN, '')
     .replace(/\s+/g, ' ')
@@ -322,13 +374,15 @@ function validEventAt(value, nowMs) {
  * Validate model output against the store. Unknown item ids are dropped and
  * counted, an item cited by two stories stays with the first, stories left
  * with no valid ids are rejected, unknown story ids become new stories and
- * categories are clamped to the theater list. Text fields lose URLs.
+ * categories are clamped to the theater list. Kind defaults to event and
+ * actor ids outside the theater list are dropped and counted. Text fields
+ * lose URLs.
  * @param {unknown} output Parsed JSON.
- * @param {{knownItemIds: Set<string>, openStories: Map<string, object>, categoryIds: string[], nowMs: number}} context
+ * @param {{knownItemIds: Set<string>, openStories: Map<string, object>, categoryIds: string[], actorIds?: string[], nowMs: number}} context
  */
 export function validateDigestOutput(
   output,
-  { knownItemIds, openStories, categoryIds, nowMs },
+  { knownItemIds, openStories, categoryIds, actorIds = [], nowMs },
 ) {
   if (!Array.isArray(output?.stories)) {
     const error = new Error('digest output has no stories array');
@@ -341,7 +395,9 @@ export function validateDigestOutput(
     rejectedStories: 0,
     unknownStoryIds: 0,
     clampedCategories: 0,
+    droppedActorIds: 0,
   };
+  const knownActors = new Set(actorIds);
   const assigned = new Set();
   const usedStoryIds = new Set();
   const stories = [];
@@ -384,6 +440,12 @@ export function validateDigestOutput(
     const lon =
       Number.isFinite(raw.lon) && Math.abs(raw.lon) <= 180 ? raw.lon : null;
     const storyItems = new Set(itemIds);
+    const storyActors = [];
+    for (const actorId of Array.isArray(raw.actorIds) ? raw.actorIds : []) {
+      if (typeof actorId !== 'string' || !knownActors.has(actorId))
+        counts.droppedActorIds++;
+      else if (!storyActors.includes(actorId)) storyActors.push(actorId);
+    }
     stories.push({
       id,
       title: cleanText(raw.title, 160) || 'Untitled story',
@@ -422,6 +484,8 @@ export function validateDigestOutput(
         .filter(Boolean)
         .slice(0, 8),
       status: raw.status === 'closed' ? 'closed' : 'open',
+      kind: raw.kind === 'development' ? 'development' : 'event',
+      actorIds: storyActors,
     });
   }
   return { stories, counts };
@@ -434,12 +498,13 @@ function digestError(code, message, extra = {}) {
 /**
  * What a sent request may have cost when no usage came back (timed out or
  * cut off mid-answer): the input at about three characters a token and a
- * full-length answer, at list price, flagged as an estimate. Errs high so
- * the daily budget still counts the call.
+ * full-length answer (the request's own output limit), at list price,
+ * flagged as an estimate. Errs high so the daily budget still counts the
+ * call.
  */
 export function worstCaseCost(body) {
   const inputTokens = Math.ceil(JSON.stringify(body).length / 3);
-  const outputTokens = DIGEST_MAX_OUTPUT_TOKENS;
+  const outputTokens = body?.max_output_tokens ?? DIGEST_MAX_OUTPUT_TOKENS;
   return {
     costUsd:
       (inputTokens * DIGEST_FALLBACK_PRICE_PER_MTOK.input +
@@ -461,9 +526,10 @@ function upstreamMessage(body) {
 }
 
 /**
- * Call the Agent API once.
- * @param {{apiKey: string, body: object, fetchImpl?: Function, signal?: AbortSignal}} options
- * @returns {Promise<{text: string, model: ?string, status: string, cost: ReturnType<typeof responseCost>, responseId: ?string}>}
+ * Call the Agent API once. The digest and the Situation Brief share it;
+ * `label` names the call in error messages.
+ * @param {{apiKey: string, body: object, fetchImpl?: Function, signal?: AbortSignal, label?: string}} options
+ * @returns {Promise<{text: string, model: ?string, status: string, cost: ReturnType<typeof responseCost>, reasoningTokens: ?number, responseId: ?string}>}
  *   Throws an error with `code` and, when the provider billed the call, `cost`.
  */
 export async function callDigestModel({
@@ -471,6 +537,7 @@ export async function callDigestModel({
   body,
   fetchImpl = (...args) => globalThis.fetch(...args),
   signal,
+  label = 'digest',
 }) {
   if (!apiKey) throw digestError('no_key', 'PERPLEXITY_API_KEY is not set');
   const timeout = AbortSignal.timeout(TIMEOUT_MS);
@@ -491,10 +558,10 @@ export async function callDigestModel({
     // A timeout means the request was sent and may be billed; a failed
     // connection was not.
     if (error?.name === 'TimeoutError')
-      throw digestError('timeout', 'digest request timed out', {
+      throw digestError('timeout', `${label} request timed out`, {
         cost: worstCaseCost(body),
       });
-    throw digestError('network', 'digest request failed to connect');
+    throw digestError('network', `${label} request failed to connect`);
   }
   let raw;
   try {
@@ -503,13 +570,13 @@ export async function callDigestModel({
     throw digestError(
       error?.name === 'TimeoutError' ? 'timeout' : 'network',
       error?.name === 'TimeoutError'
-        ? 'digest request timed out'
-        : 'digest response was cut off',
+        ? `${label} request timed out`
+        : `${label} response was cut off`,
       { cost: worstCaseCost(body) },
     );
   }
   if (raw.length > MAX_RESPONSE_CHARS)
-    throw digestError('upstream', 'digest response too large');
+    throw digestError('upstream', `${label} response too large`);
   let payload = null;
   try {
     payload = JSON.parse(raw);
@@ -529,20 +596,20 @@ export async function callDigestModel({
     );
   }
   if (!payload || typeof payload !== 'object')
-    throw digestError('upstream', 'digest response was not JSON');
+    throw digestError('upstream', `${label} response was not JSON`);
   const cost = responseCost(payload);
   // An answer cut off at max_output_tokens is billed but unusable JSON.
   if (payload.status === 'incomplete')
     throw digestError(
       'truncated',
-      `the digest hit the ${DIGEST_MAX_OUTPUT_TOKENS.toLocaleString('en-US')}-token output limit before finishing`,
+      `the ${label} hit the ${(body?.max_output_tokens ?? DIGEST_MAX_OUTPUT_TOKENS).toLocaleString('en-US')}-token output limit before finishing`,
       { cost, model: payload.model ?? null },
     );
   if (payload.status !== 'completed') {
     const detail = upstreamMessage(payload);
     throw digestError(
       'model_error',
-      `digest run ${payload.status || 'failed'}${detail ? `: ${detail}` : ''}`,
+      `${label} run ${payload.status || 'failed'}${detail ? `: ${detail}` : ''}`,
       { cost, model: payload.model ?? null },
     );
   }
@@ -551,6 +618,7 @@ export async function callDigestModel({
     model: typeof payload.model === 'string' ? payload.model : null,
     status: payload.status,
     cost,
+    reasoningTokens: responseReasoningTokens(payload),
     responseId: typeof payload.id === 'string' ? payload.id : null,
   };
 }
@@ -583,6 +651,7 @@ export async function runDigest({
   const selected = selectDigestItems(newItems, sourcesById);
   const open = selectOpenStories(openStories);
   const categoryIds = theater.categories.map((category) => category.id);
+  const actorIds = (theater.actors || []).map((actor) => actor.id);
   const body = buildDigestRequest({
     instructions: buildDigestInstructions(theater),
     input: buildDigestInput({
@@ -592,6 +661,7 @@ export async function runDigest({
       nowIso: new Date(nowMs).toISOString(),
     }),
     categoryIds,
+    actorIds,
   });
   const result = await callDigestModel({ apiKey, body, fetchImpl, signal });
   const parsed = parseDigestText(result.text);
@@ -606,6 +676,7 @@ export async function runDigest({
       knownItemIds,
       openStories: new Map(open.map((story) => [story.id, story])),
       categoryIds,
+      actorIds,
       nowMs,
     });
   } catch (error) {
@@ -621,6 +692,7 @@ export async function runDigest({
     leftOut: selected.leftOut,
     model: result.model,
     cost: result.cost,
+    reasoningTokens: result.reasoningTokens,
     responseId: result.responseId,
   };
 }

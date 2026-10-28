@@ -228,6 +228,34 @@ test('one pin per located open story; list-only stories are counted, never drawn
   assert.equal(h.contexts.get('news:a').layerId, 'news');
 });
 
+test('a development gets no pin and no flight, even when it names a place', async () => {
+  const withTalks = payload();
+  withTalks.stories.push(
+    story('talks', { kind: 'development', actorIds: ['oman', 7] }),
+  );
+  const h = harness({
+    source: {
+      getSnapshot: async () => normalizeNewsSnapshot(withTalks),
+      requestDigest: async () => ({ ok: true }),
+    },
+  });
+  await h.layer.update();
+  assert.deepEqual(h.layer._testing.pinIds(), ['a', 'b']);
+  const talks = h.layer.getSnapshot().stories.find((s) => s.id === 'talks');
+  assert.deepEqual([talks.kind, talks.actorIds], ['development', ['oman']]);
+  assert.equal(
+    h.layer.getSnapshot().stories.find((s) => s.id === 'a').kind,
+    'event',
+    'a story from before kinds existed reads as an event',
+  );
+  const stats = h.layer.getStats();
+  assert.equal(stats.count, 2);
+  assert.equal(stats.listOnly, 2);
+  assert.equal(h.layer.selectStory('talks'), true);
+  assert.equal(h.focus.length, 0);
+  assert.ok(!h.contexts.has('news:talks'));
+});
+
 test('a missing digest key is not a load failure: the feed still loads', async () => {
   const keyless = payload();
   keyless.digest = { ...keyless.digest, keyConfigured: false };
@@ -560,6 +588,7 @@ test('analyst records cover visible open stories, located or not', async () => {
     lat: 31.35,
     lon: 34.3,
     modelPlaced: true,
+    kind: 'event',
     status: 'open',
     eventAt: Date.parse('2026-10-26T03:00:00Z'),
     updatedAt: Date.parse('2026-10-26T11:00:00Z'),
@@ -577,4 +606,123 @@ test('destroy releases the data source, cards and context records', async () => 
   assert.equal(h.added.length, 0);
   assert.equal(h.contexts.size, 0);
   assert.deepEqual(h.overlay.at(-1), ['news', []]);
+});
+
+/** The standard payload with actors on its stories and one story newer. */
+function briefPayload() {
+  const withActors = payload();
+  withActors.theater.actors = [
+    { id: 'iran', name: 'Iran', type: 'state', role: 'party', aliases: [] },
+    { id: 'oman', name: 'Oman', type: 'state', role: 'mediator', aliases: [] },
+  ];
+  const tags = { a: ['iran'], b: ['iran', 'oman'], c: ['oman'], d: [] };
+  for (const entry of withActors.stories) entry.actorIds = tags[entry.id];
+  withActors.stories[0].updatedAt = '2026-10-26T11:30:00Z';
+  return withActors;
+}
+
+function briefHarness(extra = {}) {
+  return harness({
+    source: {
+      getSnapshot: async () => normalizeNewsSnapshot(briefPayload()),
+      requestDigest: async () => ({ ok: true }),
+      ...extra,
+    },
+  });
+}
+
+test('the actor filter combines with category toggles and is never a share param', async () => {
+  const h = briefHarness();
+  await h.layer.update();
+  const reasons = [];
+  h.layer.subscribe((snapshot, reason) => reasons.push(reason));
+  h.layer.setActorFilter('oman');
+  assert.deepEqual(h.layer._testing.pinIds(), ['b']);
+  assert.deepEqual(
+    h.layer.getSnapshot().visibleStories.map((s) => s.id),
+    ['b', 'c'],
+  );
+  assert.equal(h.layer.getSnapshot().actorFilter, 'oman');
+  assert.deepEqual(reasons, ['filter']);
+  h.layer.toggleCategory('humanitarian-casualties');
+  assert.deepEqual(h.layer._testing.pinIds(), []);
+  assert.deepEqual(
+    h.layer.getSnapshot().visibleStories.map((s) => s.id),
+    ['c'],
+  );
+  assert.deepEqual(h.layer.getParams(), {
+    hiddenCategories: 'humanitarian-casualties',
+  });
+  assert.equal(h.layer.getStats().visibleStoryCount, 1);
+  h.layer.setActorFilter(null);
+  assert.deepEqual(h.layer._testing.pinIds(), ['a']);
+  h.layer.toggleCategory('humanitarian-casualties');
+  assert.deepEqual(h.layer._testing.pinIds(), ['a', 'b']);
+  // An actor the theater does not list filters nothing.
+  h.layer.setActorFilter('hamas');
+  assert.equal(h.layer.getSnapshot().actorFilter, null);
+});
+
+test('stories updated after the last-seen digest get a quiet pin marker', async () => {
+  const h = briefHarness();
+  await h.layer.update();
+  const [source] = h.added;
+  const image = (id) =>
+    decodeURIComponent(
+      source.entities.getById(`news:${id}`).billboard.image.getValue(),
+    );
+  assert.doesNotMatch(image('a'), /data-fresh/);
+  h.layer.setNewSince(Date.parse('2026-10-26T11:00:00Z'));
+  assert.equal(
+    h.layer.getSnapshot().newSinceMs,
+    Date.parse('2026-10-26T11:00:00Z'),
+  );
+  assert.match(image('a'), /data-fresh/, 'updated 11:30, after 11:00');
+  assert.doesNotMatch(image('b'), /data-fresh/, 'updated at 11:00 exactly');
+  // The marker is its own mark, not the participant-claim ring.
+  assert.match(image('b'), /stroke-width="3"/);
+  h.layer.setNewSince(null);
+  assert.doesNotMatch(image('a'), /data-fresh/);
+});
+
+test('Frame theater asks for one flight over every visible pin', async () => {
+  const h = briefHarness();
+  await h.layer.update();
+  assert.equal(h.layer.frameTheater(), true);
+  assert.equal(h.focus.length, 1);
+  const [request] = h.focus;
+  assert.equal(request.kind, 'theater');
+  assert.equal(request.id, 'news-theater:iran-israel-us');
+  // Pins a (27.18, 56.27) and b (31.35, 34.3): the sphere reaches both.
+  const centre = Cesium.Cartographic.fromCartesian(request.position);
+  assert.ok(Math.abs(Cesium.Math.toDegrees(centre.latitude) - 29.265) < 0.01);
+  assert.ok(Math.abs(Cesium.Math.toDegrees(centre.longitude) - 45.285) < 0.01);
+  assert.ok(request.radiusM > 1_000_000 && request.radiusM < 1_200_000);
+  h.layer.setActorFilter('oman');
+  h.layer.toggleCategory('humanitarian-casualties');
+  assert.equal(h.layer.frameTheater(), false, 'no pin, no flight');
+  assert.equal(h.focus.length, 1);
+});
+
+test('Retry brief runs one brief, reloads and reports; it never overlaps a digest', async () => {
+  let briefs = 0;
+  let release;
+  const h = briefHarness({
+    requestDigest: () => new Promise((resolve) => (release = resolve)),
+    async requestBrief() {
+      briefs++;
+      return { ok: true, briefRun: { status: 'ok', costUsd: 0.11 } };
+    },
+  });
+  await h.layer.update();
+  const outcome = await h.layer.requestBrief();
+  assert.equal(briefs, 1);
+  assert.equal(outcome.summary, 'Brief written, 11¢.');
+  assert.equal(h.layer.getSnapshot().digest.outcome.summary, outcome.summary);
+  const digest = h.layer.requestDigest();
+  assert.equal(h.layer.getSnapshot().digest.running, true);
+  assert.equal((await h.layer.requestBrief()).error, 'in_flight');
+  assert.equal(briefs, 1);
+  release({ ok: true, run: {} });
+  await digest;
 });

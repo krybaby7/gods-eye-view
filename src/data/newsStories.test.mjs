@@ -432,6 +432,8 @@ test('mergeDigest updates open stories in place and computes every code-owned fi
       whatsNew: 'CENTCOM confirmed.',
       contradictions: [],
       status: 'open',
+      kind: 'event',
+      actorIds: ['united-states', 'iran'],
     },
     {
       id: null,
@@ -483,6 +485,12 @@ test('mergeDigest updates open stories in place and computes every code-owned fi
   assert.equal(created.location, null, 'unknown place stays list-only');
   assert.deepEqual(created.place, { name: 'Nowhere listed' });
   assert.equal(created.verification, 'reported');
+  // kind and actorIds pass through; a story without them reads as an event.
+  assert.deepEqual(
+    [updated.kind, updated.actorIds],
+    ['event', ['united-states', 'iran']],
+  );
+  assert.deepEqual([created.kind, created.actorIds], ['event', []]);
   assert.equal(
     stories.find((s) => s.id === 'st_untouched').updatedAt,
     '2026-10-26T06:00:00.000Z',

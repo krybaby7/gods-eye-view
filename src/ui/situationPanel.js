@@ -1,8 +1,10 @@
 /**
- * Situation panel (right rail): the war monitor's Refresh control, digest
- * line, category toggles, and the Stories and Raw feed tabs. Driven only by
- * the news layer's getSnapshot()/subscribe(); every feed string is written
- * as text, never markup.
+ * Situation panel (right rail): the war monitor's Refresh and Frame theater
+ * controls, digest line, the Situation Brief, category toggles, and the
+ * Stories and Raw feed tabs. Driven only by the news layer's
+ * getSnapshot()/subscribe(); every feed string is written as text, never
+ * markup. The panel owns the viewer's last-seen digest (stored per theater),
+ * which marks stories new since the last visit.
  */
 import {
   SITUATION_DISCLAIMER,
@@ -20,7 +22,14 @@ import {
   tabCounts,
   verificationLabel,
 } from './situationPanelModel.js';
-import { NEWS_FOLDERS, newsCategoryColor } from '../layers/news/records.js';
+import {
+  NEWS_FOLDERS,
+  isNewSince,
+  isPinnedStory,
+  newsCategoryColor,
+} from '../layers/news/records.js';
+import { createSituationBrief } from './situationBrief.js';
+import { lastSeenKey } from './situationBriefModel.js';
 
 const PANEL_ID = 'situation-panel';
 const RAW_ITEM_LIMIT = 200;
@@ -38,8 +47,16 @@ const CLAIM_LABELS = Object.freeze({
 // Remounting must not reopen a panel the user already collapsed.
 const appearedDocuments = new WeakSet();
 
+function defaultStorage() {
+  try {
+    return globalThis.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * @param {{container: HTMLElement, layer: object, now?: () => number, setIntervalImpl?: Function, clearIntervalImpl?: Function}} options
+ * @param {{container: HTMLElement, layer: object, now?: () => number, setIntervalImpl?: Function, clearIntervalImpl?: Function, storage?: ?Storage, MutationObserverImpl?: ?Function}} options
  * @returns {?{root: HTMLElement, destroy: () => void}}
  */
 export function createSituationPanel({
@@ -48,6 +65,8 @@ export function createSituationPanel({
   now = Date.now,
   setIntervalImpl = (fn, ms) => globalThis.setInterval(fn, ms),
   clearIntervalImpl = (id) => globalThis.clearInterval(id),
+  storage = defaultStorage(),
+  MutationObserverImpl = globalThis.MutationObserver ?? null,
 } = {}) {
   const document = container?.ownerDocument;
   if (!document || typeof layer?.getSnapshot !== 'function') return null;
@@ -60,9 +79,12 @@ export function createSituationPanel({
   let perspective = '';
   let language = '';
   let timer = null;
+  let seenTheaterId = null;
   const openIds = new Set();
   const showOriginal = new Set();
   const storyRows = new Map();
+  // Stories the last clicked brief line cites, highlighted in the list.
+  const citedIds = new Set();
 
   function h(tag, attributes = {}, ...children) {
     const node = document.createElement(tag);
@@ -116,11 +138,12 @@ export function createSituationPanel({
     'aria-labelledby': 'situation-tab-stories',
   });
   const storiesNote = h('p', { className: 'situation-note' });
+  const citedNote = h('p', { className: 'situation-cited-note', hidden: true });
   const storiesList = h('ul', {
     className: 'situation-stories',
     'aria-label': 'Stories',
   });
-  storiesPanel.append(storiesNote, storiesList);
+  storiesPanel.append(storiesNote, citedNote, storiesList);
   const rawPanel = h('div', {
     id: 'situation-tabpanel-raw',
     className: 'situation-tabpanel',
@@ -134,10 +157,26 @@ export function createSituationPanel({
     h('p', { text: SITUATION_DISCLAIMER }),
     h('p', {
       className: 'situation-credit',
-      text: 'Digest: Claude Sonnet 5.5 (Anthropic) through the Perplexity Agent API. Items: the publishers named on each item, GDELT, Telegram public previews and ReliefWeb.',
+      text: 'Digest and Situation Brief: Claude Sonnet 5.5 (Anthropic) through the Perplexity Agent API. Items: the publishers named on each item, GDELT, Telegram public previews and ReliefWeb.',
     }),
   );
-  root.append(controls, chips, tabs, storiesPanel, rawPanel, footer);
+  const brief = createSituationBrief({
+    h,
+    replaceChildren,
+    layer,
+    now,
+    storage,
+    onOpenStories: openCitedStories,
+  });
+  root.append(
+    controls,
+    brief.root,
+    chips,
+    tabs,
+    storiesPanel,
+    rawPanel,
+    footer,
+  );
   container.append(root);
 
   // ---- controls --------------------------------------------------------
@@ -156,6 +195,16 @@ export function createSituationPanel({
       void layer.requestDigest();
     },
   });
+  const frameButton = h('button', {
+    type: 'button',
+    className: 'panel-surface-control situation-frame',
+    'data-focus-key': 'frame',
+    text: 'Frame theater',
+    onClick: () => {
+      if (frameButton.disabled) return;
+      layer.frameTheater?.();
+    },
+  });
   const reasonLine = h('p', {
     className: 'situation-reason',
     id: 'situation-refresh-reason',
@@ -168,7 +217,13 @@ export function createSituationPanel({
     'aria-live': 'polite',
   });
   controls.append(
-    h('div', { className: 'situation-row' }, theaterSelect, refreshButton),
+    h(
+      'div',
+      { className: 'situation-row' },
+      theaterSelect,
+      frameButton,
+      refreshButton,
+    ),
     reasonLine,
     digestLine,
     degradedLine,
@@ -192,6 +247,13 @@ export function createSituationPanel({
     }
     if (snapshot.theater) theaterSelect.value = snapshot.theater.id;
     theaterSelect.disabled = theaters.length < 2;
+    const framable = (snapshot.visibleStories || []).some(
+      (story) => story.status === 'open' && isPinnedStory(story),
+    );
+    frameButton.disabled = !framable;
+    frameButton.title = framable
+      ? 'Fly to every located open story'
+      : 'No located open stories to frame';
     renderRefresh();
     digestLine.textContent = formatDigestLine(snapshot, now());
     const degraded = degradedSources(snapshot.sources);
@@ -328,6 +390,8 @@ export function createSituationPanel({
       snapshot.selectedStoryId === story.id,
       [...showOriginal].filter((id) => story.itemIds.includes(id)),
       story.itemIds.length,
+      citedIds.has(story.id),
+      isNewSince(story, snapshot.newSinceMs),
     ]);
   }
 
@@ -418,7 +482,8 @@ export function createSituationPanel({
       (snapshot.categories || []).find((c) => c.id === story.category)?.label ||
       story.category;
     const flags = [];
-    if (!story.location) flags.push('no location · list only');
+    if (story.kind === 'development') flags.push('development · no pin');
+    else if (!story.location) flags.push('no location · list only');
     else if (story.location.method === 'model') flags.push('model-placed');
     if (story.status === 'closed') flags.push('closed');
     const items = citedItems(story, snapshot.items, snapshot.citations);
@@ -452,6 +517,13 @@ export function createSituationPanel({
       h(
         'p',
         { className: 'situation-story-meta' },
+        isNewSince(story, snapshot.newSinceMs)
+          ? h('span', {
+              className: 'situation-marker situation-marker-fresh',
+              title: 'Updated since the digest you last saw',
+              text: 'new since your last visit',
+            })
+          : null,
         h('span', { className: 'situation-category', text: categoryLabel }),
         ` · ${story.sourceCount} ${story.sourceCount === 1 ? 'source' : 'sources'} · `,
         h('span', {
@@ -538,12 +610,13 @@ export function createSituationPanel({
       ? ''
       : stories.length
         ? listOnly
-          ? `${listOnly} ${listOnly === 1 ? 'story has' : 'stories have'} no location and appear only here.`
+          ? `${listOnly === 1 ? '1 story has no pin and appears' : `${listOnly} stories have no pin and appear`} only here.`
           : ''
         : snapshot.lastDigest
           ? 'No stories under these categories.'
           : 'No stories yet. Collected items are in the Raw feed; press Refresh to digest them.';
     storiesNote.hidden = !storiesNote.textContent;
+    renderCitedNote(stories);
     const seen = new Set();
     let previous = null;
     for (const story of stories) {
@@ -569,6 +642,10 @@ export function createSituationPanel({
           'situation-story-closed',
           story.status === 'closed',
         );
+        row.li.classList.toggle(
+          'situation-story-cited',
+          citedIds.has(story.id),
+        );
         replaceChildren(row.li, buildStoryRow(story));
       }
       const expected = previous ? previous.nextSibling : storiesList.firstChild;
@@ -582,6 +659,108 @@ export function createSituationPanel({
         storyRows.delete(id);
       }
   }
+
+  /** "Highlighted: the 3 stories this line cites · Clear", with filter hints. */
+  function renderCitedNote(stories) {
+    const shown = stories.filter((story) => citedIds.has(story.id)).length;
+    const hidden = citedIds.size - shown;
+    const key = `${citedIds.size}|${shown}`;
+    citedNote.hidden = !citedIds.size;
+    if (citedNote.dataset.key === key) return;
+    citedNote.dataset.key = key;
+    if (!citedIds.size) {
+      replaceChildren(citedNote);
+      return;
+    }
+    replaceChildren(
+      citedNote,
+      `Highlighted: the ${citedIds.size === 1 ? 'story' : `${citedIds.size} stories`} this brief line cites`,
+      hidden ? `; ${hidden} hidden by the category or actor filter` : '',
+      ' · ',
+      h('button', {
+        type: 'button',
+        className: 'situation-link-button',
+        'data-focus-key': 'cited-clear',
+        text: 'Clear',
+        onClick: () => {
+          citedIds.clear();
+          render();
+        },
+      }),
+    );
+  }
+
+  /**
+   * A brief line opens its stories: select the first (a located event flies
+   * there) and highlight the others in the Stories tab.
+   */
+  function openCitedStories(storyIds) {
+    const ids = (storyIds || []).filter(Boolean);
+    if (!ids.length) return;
+    citedIds.clear();
+    for (const id of ids) citedIds.add(id);
+    tab = 'stories';
+    openIds.add(ids[0]);
+    if (!layer.selectStory(ids[0], { focus: true })) render();
+    storyRows.get(ids[0])?.li.scrollIntoView?.({ block: 'nearest' });
+  }
+
+  // ---- last seen -------------------------------------------------------
+  /** Apply the stored last-seen digest when the theater first appears. */
+  function applyLastSeen() {
+    const theaterId = snapshot.theater?.id;
+    if (!theaterId || theaterId === seenTheaterId) return;
+    seenTheaterId = theaterId;
+    let stored = null;
+    try {
+      stored = JSON.parse(storage?.getItem(lastSeenKey(theaterId)) || 'null');
+    } catch {
+      stored = null;
+    }
+    const at = Date.parse(stored?.at || '');
+    layer.setNewSince?.(Number.isNaN(at) ? null : at);
+  }
+
+  /**
+   * The viewer has seen the current digest: store it, so the next visit
+   * marks only what changes after it. Called when the panel closes or the
+   * page is hidden.
+   */
+  function markSeen() {
+    const digest = snapshot.lastDigest;
+    const theaterId = snapshot.theater?.id;
+    const at = Date.parse(digest?.finishedAt || '');
+    if (!theaterId || Number.isNaN(at)) return;
+    try {
+      storage?.setItem(
+        lastSeenKey(theaterId),
+        JSON.stringify({ runId: digest.id, at: digest.finishedAt }),
+      );
+    } catch {
+      // storage unavailable: markers reset with the page
+    }
+    layer.setNewSince?.(at);
+  }
+
+  const onVisibility = () => {
+    if (document.visibilityState === 'hidden') markSeen();
+  };
+  document.addEventListener?.('visibilitychange', onVisibility);
+  let wasOpen = Boolean(
+    panel && !panel.hidden && !panel.classList.contains('collapsed'),
+  );
+  const collapseObserver =
+    panel && MutationObserverImpl
+      ? new MutationObserverImpl(() => {
+          const open = !panel.hidden && !panel.classList.contains('collapsed');
+          if (wasOpen && !open) markSeen();
+          wasOpen = open;
+        })
+      : null;
+  collapseObserver?.observe(panel, {
+    attributes: true,
+    attributeFilter: ['class', 'hidden'],
+  });
 
   // ---- raw feed --------------------------------------------------------
   function renderRaw() {
@@ -712,8 +891,10 @@ export function createSituationPanel({
 
   function render() {
     if (destroyed) return;
+    applyLastSeen();
     renderPanel();
     renderControls();
+    brief.render(snapshot);
     renderChips();
     renderTabs();
     renderStories();
@@ -723,6 +904,8 @@ export function createSituationPanel({
   /** A map selection opens its story row and brings it into view once. */
   function revealSelected() {
     const id = snapshot.selectedStoryId;
+    // Selecting a story the brief line did not cite ends the highlight.
+    if (!citedIds.has(id)) citedIds.clear();
     if (!id) {
       render();
       return;
@@ -747,6 +930,8 @@ export function createSituationPanel({
       if (destroyed) return;
       destroyed = true;
       unsubscribe();
+      document.removeEventListener?.('visibilitychange', onVisibility);
+      collapseObserver?.disconnect();
       if (timer !== null) clearIntervalImpl(timer);
       timer = null;
       storyRows.clear();

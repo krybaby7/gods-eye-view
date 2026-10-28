@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  NEWS_ACTOR_ROLES,
+  NEWS_ACTOR_TYPES,
   NEWS_FOLDERS,
   NEWS_KINDS,
   NEWS_TRANSPORTS,
@@ -176,6 +178,167 @@ test('theater validation refuses unknown sources, perspectives and categories', 
   assert.throws(
     () => validateNewsTheater(theater({ categories: [] }), sourcesById(list)),
     /category/,
+  );
+});
+
+test('the real theater carries 12 to 16 actors, three drivers and three tracks', async () => {
+  const { theater: real } = await loadNewsRegistry({
+    theaterId: 'iran-israel-us',
+  });
+  assert.ok(real.actors.length >= 12 && real.actors.length <= 16);
+  assert.equal(real.drivers.length, 3);
+  for (const driver of real.drivers) {
+    assert.ok(driver.text.length > 20);
+    assert.match(driver.source.url, /^https:\/\//);
+  }
+  assert.deepEqual(
+    real.tracks.map((track) => track.id),
+    ['military', 'diplomatic', 'humanitarian'],
+  );
+  for (const actor of real.actors) {
+    assert.ok(NEWS_ACTOR_TYPES.includes(actor.type), actor.id);
+    assert.ok(NEWS_ACTOR_ROLES.includes(actor.role), actor.id);
+  }
+});
+
+test('actors, drivers and tracks are optional and default to empty', () => {
+  const loaded = validateNewsTheater(theater(), sourcesById([source()]));
+  assert.deepEqual(
+    [loaded.actors, loaded.drivers, loaded.tracks],
+    [[], [], []],
+  );
+});
+
+test('actor validation: unique ids, types and roles from the lists', () => {
+  const list = sourcesById([source()]);
+  const actor = (overrides = {}) => ({
+    id: 'oman',
+    name: 'Oman',
+    type: 'state',
+    role: 'mediator',
+    aliases: ['Muscat', '', 7],
+    ...overrides,
+  });
+  const loaded = validateNewsTheater(theater({ actors: [actor()] }), list);
+  assert.deepEqual(loaded.actors, [
+    {
+      id: 'oman',
+      name: 'Oman',
+      type: 'state',
+      role: 'mediator',
+      aliases: ['Muscat'],
+    },
+  ]);
+  assert.ok(Object.isFrozen(loaded.actors[0]));
+  assert.throws(
+    () => validateNewsTheater(theater({ actors: [actor(), actor()] }), list),
+    /duplicate actor oman/,
+  );
+  assert.throws(
+    () =>
+      validateNewsTheater(theater({ actors: [actor({ type: 'team' })] }), list),
+    /actor oman has unknown type team/,
+  );
+  assert.throws(
+    () =>
+      validateNewsTheater(theater({ actors: [actor({ role: 'ally' })] }), list),
+    /actor oman has unknown role ally/,
+  );
+  assert.throws(
+    () =>
+      validateNewsTheater(theater({ actors: [actor({ id: 'O M' })] }), list),
+    /actor id/,
+  );
+  assert.throws(
+    () =>
+      validateNewsTheater(theater({ actors: [actor({ name: ' ' })] }), list),
+    /actor oman needs a name/,
+  );
+  assert.throws(
+    () => validateNewsTheater(theater({ actors: {} }), list),
+    /actors must be an array/,
+  );
+});
+
+test('driver validation: at most three, each with text and a source link', () => {
+  const list = sourcesById([source()]);
+  const driver = (overrides = {}) => ({
+    text: 'A long-running cause.',
+    source: { name: 'Crisis Group', url: 'https://www.crisisgroup.org/' },
+    ...overrides,
+  });
+  const loaded = validateNewsTheater(
+    theater({ drivers: [driver(), driver(), driver()] }),
+    list,
+  );
+  assert.equal(loaded.drivers.length, 3);
+  assert.deepEqual(loaded.drivers[0], driver());
+  assert.throws(
+    () =>
+      validateNewsTheater(
+        theater({ drivers: [driver(), driver(), driver(), driver()] }),
+        list,
+      ),
+    /at most 3 drivers/,
+  );
+  assert.throws(
+    () =>
+      validateNewsTheater(theater({ drivers: [driver({ text: '' })] }), list),
+    /driver 0 needs text/,
+  );
+  assert.throws(
+    () =>
+      validateNewsTheater(
+        theater({
+          drivers: [
+            driver({ source: { name: 'X', url: 'javascript:alert(1)' } }),
+          ],
+        }),
+        list,
+      ),
+    /driver 0 needs a source/,
+  );
+  assert.throws(
+    () =>
+      validateNewsTheater(
+        theater({ drivers: [driver({ source: { url: 'https://x.org/' } })] }),
+        list,
+      ),
+    /driver 0 needs a source/,
+  );
+});
+
+test('track validation: unique ids with labels', () => {
+  const list = sourcesById([source()]);
+  const loaded = validateNewsTheater(
+    theater({
+      tracks: [
+        { id: 'military', label: 'Military' },
+        { id: 'diplomatic', label: 'Diplomatic' },
+      ],
+    }),
+    list,
+  );
+  assert.deepEqual(
+    loaded.tracks.map((track) => track.id),
+    ['military', 'diplomatic'],
+  );
+  assert.throws(
+    () =>
+      validateNewsTheater(
+        theater({
+          tracks: [
+            { id: 'military', label: 'Military' },
+            { id: 'military', label: 'Again' },
+          ],
+        }),
+        list,
+      ),
+    /duplicate track military/,
+  );
+  assert.throws(
+    () => validateNewsTheater(theater({ tracks: [{ id: 'military' }] }), list),
+    /track military needs a label/,
   );
 });
 

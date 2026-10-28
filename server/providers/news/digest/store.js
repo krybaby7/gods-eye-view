@@ -1,13 +1,17 @@
 import path from 'node:path';
 import { promises as fsp } from 'node:fs';
 
+import { EMPTY_ACTOR_STATE } from './actors.js';
 import { closeStaleStories } from './stories.js';
 
 /**
- * Stories and the digest run log for one theater, on disk at
+ * Stories, the current and previous Situation Brief, the actors' roles and
+ * learned actors, and the run log for one theater, on disk at
  * .gev-cache/news/<theater>-digest.json. Cited items are snapshotted next to
- * the stories so every story can still expand to its sources after the
- * item store's 72 h retention drops them.
+ * the stories so every story can still expand to its sources after the item
+ * store's 72 h retention drops them. Digest and brief runs share one log
+ * (and so one daily budget); a record without a `kind` predates briefs and
+ * is a digest. Learned actors are never dropped.
  */
 
 const CACHE_VERSION = 1;
@@ -19,6 +23,11 @@ const RUN_LOG_CAP = 500;
 export function localDayKey(ms) {
   const date = new Date(ms);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+/** "digest" or "brief"; records from before briefs existed are digests. */
+export function runKind(run) {
+  return run?.kind === 'brief' ? 'brief' : 'digest';
 }
 
 /** Daily budget in USD from NEWS_DIGEST_DAILY_BUDGET_USD (default 2.00). */
@@ -38,6 +47,9 @@ export function createDigestStore({ theaterId, cacheDir, now = Date.now }) {
   let runs = [];
   /** @type {Map<string, object>} */
   let citations = new Map();
+  let brief = null;
+  let previousBrief = null;
+  let actors = EMPTY_ACTOR_STATE;
   let revision = 0;
   let loaded = null;
   let saving = Promise.resolve();
@@ -88,6 +100,19 @@ export function createDigestStore({ theaterId, cacheDir, now = Date.now }) {
               .filter((item) => typeof item?.id === 'string')
               .map((item) => [item.id, item]),
           );
+          brief = parsed.brief ?? null;
+          previousBrief = parsed.previousBrief ?? null;
+          actors = {
+            roles:
+              parsed.actors?.roles && typeof parsed.actors.roles === 'object'
+                ? parsed.actors.roles
+                : {},
+            learned: Array.isArray(parsed.actors?.learned)
+              ? parsed.actors.learned.filter(
+                  (actor) => typeof actor?.id === 'string',
+                )
+              : [],
+          };
           retain();
           revision++;
         } catch {
@@ -106,6 +131,9 @@ export function createDigestStore({ theaterId, cacheDir, now = Date.now }) {
           stories,
           runs,
           citations: [...citations.values()],
+          brief,
+          previousBrief,
+          actors,
         });
         try {
           await fsp.mkdir(cacheDir, { recursive: true });
@@ -134,15 +162,48 @@ export function createDigestStore({ theaterId, cacheDir, now = Date.now }) {
       return [...runs];
     },
 
+    /** The most recent digest run (brief runs are read separately). */
     lastRun() {
-      return runs.at(-1) ?? null;
+      return runs.findLast((run) => runKind(run) === 'digest') ?? null;
     },
 
     /** The most recent run that produced stories (for the digest line). */
     lastCompletedRun() {
-      for (let i = runs.length - 1; i >= 0; i--)
-        if (runs[i].status === 'ok') return runs[i];
-      return null;
+      return (
+        runs.findLast(
+          (run) => runKind(run) === 'digest' && run.status === 'ok',
+        ) ?? null
+      );
+    },
+
+    lastBriefRun() {
+      return runs.findLast((run) => runKind(run) === 'brief') ?? null;
+    },
+
+    brief() {
+      return brief;
+    },
+
+    previousBrief() {
+      return previousBrief;
+    },
+
+    /** Roles set from the stories and actors learned from them. */
+    actorState() {
+      return actors;
+    },
+
+    /**
+     * Successful digests since the one with this id (how far a brief is
+     * behind), or null when that run is no longer in the log.
+     */
+    digestsSince(digestRunId) {
+      const index = runs.findIndex((run) => run.id === digestRunId);
+      if (index < 0) return null;
+      return runs
+        .slice(index + 1)
+        .filter((run) => runKind(run) === 'digest' && run.status === 'ok')
+        .length;
     },
 
     /** Snapshot of a cited item the item store may already have dropped. */
@@ -158,7 +219,7 @@ export function createDigestStore({ theaterId, cacheDir, now = Date.now }) {
         .reduce((sum, run) => sum + (Number(run.costUsd) || 0), 0);
     },
 
-    /** Record a run that did not change stories (skipped or failed). */
+    /** Record a run that changed nothing (skipped, or a failed digest or brief). */
     recordRun(run) {
       runs.push(run);
       retain();
@@ -173,6 +234,19 @@ export function createDigestStore({ theaterId, cacheDir, now = Date.now }) {
     commit({ stories: next, run, citedItems }) {
       stories = next;
       for (const item of citedItems) citations.set(item.id, item);
+      runs.push(run);
+      retain();
+      revision++;
+    },
+
+    /**
+     * Keep a checked brief (the one it replaces becomes the previous) and
+     * the actor roles it moved.
+     */
+    commitBrief({ brief: next, run, actors: nextActors }) {
+      previousBrief = brief;
+      brief = next;
+      if (nextActors) actors = nextActors;
       runs.push(run);
       retain();
       revision++;

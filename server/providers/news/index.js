@@ -9,7 +9,10 @@ import { createNewsCollector } from './collector.js';
 import { loadNewsRegistry } from './registry.js';
 import { createNewsItemStore } from './store.js';
 import { DIGEST_MODEL, runDigest } from './digest/runner.js';
+import { prepareBrief, runBrief } from './digest/brief.js';
+import { applyActorUpdates, effectiveActors } from './digest/actors.js';
 import { mergeDigest, storyByItem, unassignedItems } from './digest/stories.js';
+import { newsCoverage } from '../../../src/layers/news/coverage.js';
 import {
   createDigestStore,
   dailyBudgetUsd,
@@ -29,11 +32,21 @@ import {
  * refresh_news voice action), never on a timer. One run in flight at a
  * time; today's run costs are capped by NEWS_DIGEST_DAILY_BUDGET_USD.
  *
+ * Situation Brief: a successful digest is followed, in the same Refresh, by
+ * one brief call over the finished stories when the remaining budget covers
+ * a worst-case brief. A failed brief keeps the stories and the previous
+ * brief; POST /api/news/brief (Retry brief) reruns it only after a failure.
+ * Brief runs share the run log, so the daily budget covers both.
+ *
  * Routes:
- *   GET  /api/news?theater=&rev=  → items, stories, lastRun, sources, budget
+ *   GET  /api/news?theater=&rev=  → items, stories, lastRun, sources, budget,
+ *                                   brief, briefRun, briefStatus
  *                                   ({unchanged:true} when rev matches)
- *   POST /api/news/digest?theater= → run summary; 409 in flight, 429 over
- *                                   budget, 503 no_key, 200 skipped
+ *   POST /api/news/digest?theater= → run summary and briefRun; 409 in
+ *                                   flight, 429 over budget, 503 no_key,
+ *                                   200 skipped
+ *   POST /api/news/brief?theater=  → Retry brief; 409 nothing to retry or
+ *                                   in flight, 429 over budget, 503 no_key
  *   GET  /api/news/status         → per-theater collection health
  */
 
@@ -55,6 +68,7 @@ function roundUsd(value) {
  *   gdeltQueue?: object,
  *   timers?: {setInterval: Function, clearInterval: Function},
  *   digestRunner?: typeof runDigest,
+ *   briefRunner?: typeof runBrief,
  * }} [options]
  */
 export function createNewsService(options = {}) {
@@ -67,6 +81,7 @@ export function createNewsService(options = {}) {
     gdeltQueue = defaultGdeltQueue,
     timers = globalThis,
     digestRunner = runDigest,
+    briefRunner = runBrief,
   } = options;
   /** @type {Map<string, Promise<object>>} */
   const contexts = new Map();
@@ -154,6 +169,8 @@ export function createNewsService(options = {}) {
     let spent = 0;
     let lastRunCostUsd = null;
     let lastAt = -Infinity;
+    let lastBriefCostUsd = null;
+    let lastBriefAt = -Infinity;
     for (const pending of contexts.values()) {
       const ctx = await pending.catch(() => null);
       if (!ctx) continue;
@@ -167,6 +184,15 @@ export function createNewsService(options = {}) {
         lastAt = Date.parse(last.startedAt);
         lastRunCostUsd = Number(last.costUsd) || 0;
       }
+      const brief = ctx.digest.lastBriefRun();
+      if (
+        brief &&
+        brief.status !== 'skipped' &&
+        Date.parse(brief.startedAt) > lastBriefAt
+      ) {
+        lastBriefAt = Date.parse(brief.startedAt);
+        lastBriefCostUsd = Number(brief.costUsd) || 0;
+      }
     }
     return {
       dailyUsd,
@@ -174,6 +200,7 @@ export function createNewsService(options = {}) {
       remainingUsd: roundUsd(Math.max(0, dailyUsd - spent)),
       exhausted: spent >= dailyUsd,
       lastRunCostUsd,
+      lastBriefCostUsd,
       day: localDayKey(nowMs),
     };
   }
@@ -192,7 +219,7 @@ export function createNewsService(options = {}) {
       ctx.store.revision(),
       ctx.digest.revision(),
       ctx.healthRevision,
-      ctx.inFlight ? 1 : 0,
+      ctx.inFlight?.phase ?? 0,
       apiKey() ? 1 : 0,
       budgetState.day,
     ].join('.');
@@ -222,6 +249,38 @@ export function createNewsService(options = {}) {
     });
   }
 
+  /**
+   * How the current brief stands: how many digests it is behind, and whether
+   * Retry brief applies (the latest digest's brief failed, or was skipped
+   * because the budget could not cover it).
+   */
+  function briefStatus(ctx, budgetState) {
+    const latest = ctx.digest.lastCompletedRun();
+    const brief = ctx.digest.brief();
+    const last = ctx.digest.lastBriefRun();
+    const retryable = Boolean(
+      latest &&
+      last?.digestRunId === latest.id &&
+      brief?.digestRunId !== latest.id &&
+      (last.status === 'failed' ||
+        (last.status === 'skipped' && last.reason === 'over_budget')),
+    );
+    let retryDisabledReason = null;
+    if (retryable)
+      retryDisabledReason = !apiKey()
+        ? 'no_key'
+        : ctx.inFlight
+          ? 'in_flight'
+          : budgetState.exhausted
+            ? 'over_budget'
+            : null;
+    return {
+      digestsBehind: brief ? ctx.digest.digestsSince(brief.digestRunId) : null,
+      retryable,
+      retryDisabledReason,
+    };
+  }
+
   function runId(nowMs) {
     runSerial = (runSerial + 1) % 1296;
     return `run_${nowMs.toString(36)}${runSerial.toString(36).padStart(2, '0')}`;
@@ -243,21 +302,45 @@ export function createNewsService(options = {}) {
     };
   }
 
-  /** Run one digest for a context already admitted by requestDigest. */
-  async function digestOnce(ctx, base) {
-    const { theater, sourcesById } = ctx.registry;
-    const nowMs = now();
-    const previous = ctx.digest.stories();
+  /**
+   * The theater with its actors as they stand: the theater file's actors
+   * with the roles the stories have set, plus actors learned from them.
+   */
+  function withActors(ctx) {
+    return {
+      ...ctx.registry.theater,
+      actors: effectiveActors(
+        ctx.registry.theater.actors,
+        ctx.digest.actorState(),
+      ),
+    };
+  }
+
+  /**
+   * Items by id: the stories' cited-item snapshots (kept after the item
+   * store drops them), then the live items.
+   */
+  function itemsFor(ctx, stories) {
     const itemsById = new Map();
-    for (const story of previous)
+    for (const story of stories)
       for (const id of story.itemIds) {
         const snapshot = ctx.digest.citation(id);
         if (snapshot) itemsById.set(id, snapshot);
       }
     for (const item of ctx.store.list()) itemsById.set(item.id, item);
+    return itemsById;
+  }
+
+  /** Run one digest for a context already admitted by requestDigest. */
+  async function digestOnce(ctx, base) {
+    const { theater, sourcesById } = ctx.registry;
+    const nowMs = now();
+    const previous = ctx.digest.stories();
+    const itemsById = itemsFor(ctx, previous);
     const result = await digestRunner({
       apiKey: apiKey(),
-      theater,
+      // Learned actors can be tagged too.
+      theater: withActors(ctx),
       sourcesById,
       openStories: previous,
       newItems: ctx.store.undigested(),
@@ -302,6 +385,7 @@ export function createNewsService(options = {}) {
       costEstimated: result.cost.estimated,
       inputTokens: result.cost.inputTokens,
       outputTokens: result.cost.outputTokens,
+      reasoningTokens: result.reasoningTokens ?? null,
       model: result.model,
       responseId: result.responseId,
     };
@@ -318,6 +402,127 @@ export function createNewsService(options = {}) {
       finishedIso,
     );
     await Promise.all([ctx.digest.save(), ctx.store.save()]);
+    return run;
+  }
+
+  /**
+   * Write the brief for a finished digest. Never throws: a skipped or
+   * failed brief is recorded and the previous brief stays.
+   * @param {object} ctx Theater context, already holding the in-flight slot.
+   * @param {object} digestRun The successful digest run it explains.
+   */
+  async function briefOnce(ctx, digestRun) {
+    const theater = withActors(ctx);
+    const startedMs = now();
+    const base = {
+      id: runId(startedMs),
+      kind: 'brief',
+      theater: ctx.theaterId,
+      digestRunId: digestRun.id,
+      startedAt: new Date(startedMs).toISOString(),
+    };
+    if (ctx.inFlight) ctx.inFlight.phase = 'brief';
+    const skip = async (reason, message) => {
+      const run = {
+        ...base,
+        status: 'skipped',
+        reason,
+        finishedAt: base.startedAt,
+        durationMs: 0,
+        message,
+        costUsd: 0,
+      };
+      ctx.digest.recordRun(run);
+      await ctx.digest.save();
+      return run;
+    };
+    let run;
+    try {
+      const stories = ctx.digest.stories();
+      const prepared = prepareBrief({
+        theater,
+        stories,
+        previousBrief: ctx.digest.brief(),
+        coverage: newsCoverage({
+          sources: sourceRows(ctx),
+          perspectives: theater.perspectives,
+          items: ctx.store.list(),
+          stories,
+          nowMs: startedMs,
+        }),
+        nowMs: startedMs,
+      });
+      if (!prepared.storyIds.length)
+        return await skip('no_stories', 'No stories to brief');
+      const budgetState = await budget();
+      if (budgetState.remainingUsd < prepared.worstCase.costUsd)
+        return await skip(
+          'over_budget',
+          `Brief skipped: $${budgetState.remainingUsd.toFixed(2)} of today's budget left; a brief can cost up to $${prepared.worstCase.costUsd.toFixed(2)}`,
+        );
+      const result = await briefRunner({
+        apiKey: apiKey(),
+        prepared,
+        theater,
+        digestRunId: digestRun.id,
+        runId: base.id,
+        nowMs: startedMs,
+        fetchImpl,
+      });
+      const finishedMs = now();
+      const finishedIso = new Date(finishedMs).toISOString();
+      // Roles move only on corroborated stories about that actor, and new
+      // actors join only on corroborated stories that name them; either
+      // way their items must name the actor from two perspective groups.
+      const update = applyActorUpdates({
+        actors: theater.actors,
+        state: ctx.digest.actorState(),
+        actorRoles: result.brief.actorRoles,
+        newActors: result.brief.newActors,
+        storiesById: new Map(stories.map((story) => [story.id, story])),
+        itemsById: itemsFor(ctx, stories),
+        perspectiveGroups: ctx.perspectiveGroups,
+        nowIso: finishedIso,
+        briefId: result.brief.id,
+      });
+      run = {
+        ...base,
+        status: 'ok',
+        finishedAt: finishedIso,
+        durationMs: finishedMs - startedMs,
+        briefId: result.brief.id,
+        storiesSent: result.storiesSent,
+        ...result.counts,
+        roleChanges: update.changed,
+        roleChangesHeld: update.held,
+        actorsAdded: update.added,
+        actorsMerged: update.merged,
+        actorsRefused: update.refused,
+        costUsd: roundUsd(result.cost.costUsd),
+        costEstimated: result.cost.estimated,
+        inputTokens: result.cost.inputTokens,
+        outputTokens: result.cost.outputTokens,
+        reasoningTokens: result.reasoningTokens ?? null,
+        model: result.model,
+        responseId: result.responseId,
+      };
+      ctx.digest.commitBrief({
+        brief: result.brief,
+        run,
+        actors: update.state,
+      });
+      await ctx.digest.save();
+      console.log(
+        `[news] brief ${ctx.theaterId}: ${run.storiesSent} stories, ${run.droppedLines} lines dropped, ${run.droppedStoryIds} ids dropped, ${update.changed.length} roles changed, ${update.held.length} held, ${update.added.length} actors added, $${run.costUsd.toFixed(4)}`,
+      );
+    } catch (error) {
+      run = failedRun(base, error, now());
+      ctx.digest.recordRun(run);
+      await ctx.digest.save();
+      console.warn(
+        `[news] brief ${ctx.theaterId} failed: ${run.error} ($${run.costUsd.toFixed(4)})`,
+      );
+    }
     return run;
   }
 
@@ -360,6 +565,9 @@ export function createNewsService(options = {}) {
           name: theater.name,
           categories: theater.categories,
           perspectives: theater.perspectives,
+          actors: withActors(ctx).actors,
+          drivers: theater.drivers,
+          tracks: theater.tracks,
         },
         theaters: await listTheaters(),
         items,
@@ -367,6 +575,9 @@ export function createNewsService(options = {}) {
         stories,
         lastRun: ctx.digest.lastRun(),
         lastDigest: ctx.digest.lastCompletedRun(),
+        brief: ctx.digest.brief(),
+        briefRun: ctx.digest.lastBriefRun(),
+        briefStatus: briefStatus(ctx, budgetState),
         sources: sourceRows(ctx),
         budget: budgetState,
         digest: {
@@ -374,6 +585,7 @@ export function createNewsService(options = {}) {
           model: DIGEST_MODEL,
           keyConfigured: Boolean(apiKey()),
           running: Boolean(ctx.inFlight),
+          phase: ctx.inFlight?.phase ?? null,
           startedAt: ctx.inFlight?.startedAt ?? null,
           disabledReason: disabledReason(ctx, budgetState),
           undigestedCount: ctx.store.undigested().length,
@@ -413,6 +625,7 @@ export function createNewsService(options = {}) {
       const startedMs = now();
       const base = {
         id: runId(startedMs),
+        kind: 'digest',
         theater: ctx.theaterId,
         startedAt: new Date(startedMs).toISOString(),
       };
@@ -432,23 +645,99 @@ export function createNewsService(options = {}) {
           body: { skipped: true, message: run.message, run },
         };
       }
-      ctx.inFlight = { startedAt: base.startedAt };
+      ctx.inFlight = { startedAt: base.startedAt, phase: 'digest' };
       try {
-        const run = await digestOnce(ctx, base);
+        let run;
+        try {
+          run = await digestOnce(ctx, base);
+        } catch (error) {
+          // A skipped or failed digest runs no brief.
+          const failed = failedRun(base, error, now());
+          ctx.digest.recordRun(failed);
+          await ctx.digest.save();
+          console.warn(
+            `[news] digest ${ctx.theaterId} failed: ${failed.error} ($${failed.costUsd.toFixed(4)})`,
+          );
+          return {
+            status: error?.code === 'no_key' ? 503 : 502,
+            body: { error: failed.error, message: failed.message, run: failed },
+          };
+        }
         console.log(
           `[news] digest ${ctx.theaterId}: ${run.storiesCreated} new, ${run.storiesUpdated} updated, ${run.unassignedCount} unassigned, $${run.costUsd.toFixed(4)}`,
         );
-        return { status: 200, body: { ok: true, run, budget: await budget() } };
-      } catch (error) {
-        const run = failedRun(base, error, now());
-        ctx.digest.recordRun(run);
-        await ctx.digest.save();
-        console.warn(
-          `[news] digest ${ctx.theaterId} failed: ${run.error} ($${run.costUsd.toFixed(4)})`,
-        );
+        // The stories are already saved; a failed brief cannot cost them.
+        const briefRun = await briefOnce(ctx, run);
         return {
-          status: error?.code === 'no_key' ? 503 : 502,
-          body: { error: run.error, message: run.message, run },
+          status: 200,
+          body: { ok: true, run, briefRun, budget: await budget() },
+        };
+      } finally {
+        ctx.inFlight = null;
+      }
+    },
+
+    /**
+     * Retry brief: rerun the brief for the latest digest after its brief
+     * failed (or was skipped for budget). Never runs a digest; never throws.
+     * @param {string} theaterId
+     */
+    async requestBrief(theaterId) {
+      const ctx = await context(theaterId);
+      if (!ctx) return { status: 404, body: { error: 'unknown_theater' } };
+      if (!apiKey())
+        return {
+          status: 503,
+          body: { error: 'no_key', keyRequired: true },
+        };
+      // As in requestDigest: no await between the checks and the claim.
+      const budgetState = await budget();
+      if (ctx.inFlight)
+        return {
+          status: 409,
+          body: { error: 'in_flight', startedAt: ctx.inFlight.startedAt },
+        };
+      if (!briefStatus(ctx, budgetState).retryable)
+        return {
+          status: 409,
+          body: {
+            error: 'nothing_to_retry',
+            message: 'Retry brief works only after a failed brief',
+          },
+        };
+      if (budgetState.exhausted)
+        return {
+          status: 429,
+          body: {
+            error: 'over_budget',
+            reason: `Today's runs cost $${budgetState.spentTodayUsd.toFixed(2)} of the $${budgetState.dailyUsd.toFixed(2)} daily budget`,
+            budget: budgetState,
+          },
+        };
+      const digestRun = ctx.digest.lastCompletedRun();
+      ctx.inFlight = {
+        startedAt: new Date(now()).toISOString(),
+        phase: 'brief',
+      };
+      try {
+        const briefRun = await briefOnce(ctx, digestRun);
+        if (briefRun.status === 'ok')
+          return {
+            status: 200,
+            body: { ok: true, briefRun, budget: await budget() },
+          };
+        if (briefRun.status === 'skipped')
+          return {
+            status: briefRun.reason === 'over_budget' ? 429 : 409,
+            body: {
+              error: briefRun.reason,
+              reason: briefRun.message,
+              briefRun,
+            },
+          };
+        return {
+          status: 502,
+          body: { error: briefRun.error, message: briefRun.message, briefRun },
         };
       } finally {
         ctx.inFlight = null;
@@ -543,6 +832,16 @@ export function newsProxy(options = {}) {
           if (!allowDigest(clientKey(req)))
             return sendJson(res, 429, { error: 'rate_limited' });
           const { status, body } = await service.requestDigest(theaterId);
+          return sendJson(res, status, body);
+        }
+        if (subPath === '/brief') {
+          if (req.method !== 'POST')
+            return sendJson(res, 405, { error: 'method_not_allowed' });
+          if (admitSameSite(req, res)) return undefined;
+          // Retry brief spends from the same budget and shares the limit.
+          if (!allowDigest(clientKey(req)))
+            return sendJson(res, 429, { error: 'rate_limited' });
+          const { status, body } = await service.requestBrief(theaterId);
           return sendJson(res, status, body);
         }
         if (subPath === '/') {

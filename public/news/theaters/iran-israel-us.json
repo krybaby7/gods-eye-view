@@ -2,8 +2,8 @@
   "id": "iran-israel-us",
   "name": "Iran · Israel · US",
   "brief": [
-    "The theater covers the war between Israel and the United States on one side and Iran and its allied armed groups on the other, together with its regional fronts: Gaza and the West Bank, Lebanon and Hezbollah, Yemen and the Houthis with Red Sea shipping, Syria, Iraq and its militias, and the Gulf states and waterways (Strait of Hormuz, Persian Gulf, Gulf of Oman). Iran, Israel, the United States, Hezbollah, the Houthis, Hamas and the Iraqi militias are parties; their governments, militaries and media outlets speak as participants.",
-    "Expect fast-moving strike and interception claims, casualty counts from health ministries and humanitarian agencies, shipping and energy incidents, nuclear-site assessments from the IAEA, ceasefire and negotiation news from Washington, Doha, Muscat, Cairo and Vienna, and information operations. Many outlets repeat the same official statement; treat repetitions as one source. Claims from one side are frequently denied by the other, and early casualty and damage figures change. Prefer place names as written in the gazetteer."
+    "The theater covers the conflicts centred on Iran, Israel and the United States and the fronts linked to them: Gaza and the West Bank, Lebanon, Yemen and Red Sea shipping, the fighting between Saudi Arabia and the Houthis, Syria, Iraq, and the Gulf states and waterways (Strait of Hormuz, Persian Gulf, Gulf of Oman). Who takes part, and in what role, is read from the stories, not from this note. The governments, militaries and media outlets of states and armed groups that are fighting speak as participants.",
+    "Expect fast-moving strike and interception claims, casualty counts from health ministries and humanitarian agencies, shipping and energy incidents, nuclear-site assessments from the IAEA, ceasefire and negotiation news from Washington, Doha, Islamabad, Muscat, Cairo and Vienna, and information operations. Many outlets repeat the same official statement; treat repetitions as one source. Claims from one side are frequently denied by the other, and early casualty and damage figures change. Prefer place names as written in the gazetteer."
   ],
   "sourceIds": [
     "aljazeera",
@@ -194,6 +194,203 @@
       "id": "analysis-crisis",
       "label": "Crisis analysis",
       "group": "analysis"
+    }
+  ],
+  "actors": [
+    {
+      "id": "iran",
+      "name": "Iran",
+      "type": "state",
+      "role": "party",
+      "aliases": [
+        "Tehran",
+        "Islamic Republic",
+        "IRGC",
+        "Islamic Revolutionary Guard Corps"
+      ]
+    },
+    {
+      "id": "israel",
+      "name": "Israel",
+      "type": "state",
+      "role": "party",
+      "aliases": [
+        "IDF",
+        "Israel Defense Forces",
+        "Israeli government"
+      ]
+    },
+    {
+      "id": "united-states",
+      "name": "United States",
+      "type": "state",
+      "role": "party",
+      "aliases": [
+        "US",
+        "USA",
+        "Washington",
+        "White House",
+        "Pentagon",
+        "CENTCOM"
+      ]
+    },
+    {
+      "id": "hezbollah",
+      "name": "Hezbollah",
+      "type": "armed-group",
+      "role": "party",
+      "aliases": [
+        "Hizbullah",
+        "Islamic Resistance in Lebanon"
+      ]
+    },
+    {
+      "id": "hamas",
+      "name": "Hamas",
+      "type": "armed-group",
+      "role": "party",
+      "aliases": [
+        "Qassam Brigades",
+        "Izz ad-Din al-Qassam Brigades"
+      ]
+    },
+    {
+      "id": "houthis",
+      "name": "Houthis",
+      "type": "armed-group",
+      "role": "party",
+      "aliases": [
+        "Ansar Allah",
+        "Ansarallah"
+      ]
+    },
+    {
+      "id": "iraqi-armed-groups",
+      "name": "Iraqi armed groups",
+      "type": "armed-group",
+      "role": "party",
+      "aliases": [
+        "Islamic Resistance in Iraq",
+        "Kataib Hezbollah",
+        "Harakat al-Nujaba"
+      ]
+    },
+    {
+      "id": "qatar",
+      "name": "Qatar",
+      "type": "state",
+      "role": "mediator",
+      "aliases": [
+        "Doha"
+      ]
+    },
+    {
+      "id": "pakistan",
+      "name": "Pakistan",
+      "type": "state",
+      "role": "mediator",
+      "aliases": [
+        "Islamabad"
+      ]
+    },
+    {
+      "id": "saudi-arabia",
+      "name": "Saudi Arabia",
+      "type": "state",
+      "role": "external",
+      "aliases": [
+        "Riyadh",
+        "Saudi-led coalition",
+        "KSA",
+        "Kingdom of Saudi Arabia"
+      ]
+    },
+    {
+      "id": "iaea",
+      "name": "IAEA",
+      "type": "institution",
+      "role": "institution",
+      "aliases": [
+        "International Atomic Energy Agency"
+      ]
+    },
+    {
+      "id": "united-nations",
+      "name": "United Nations",
+      "type": "institution",
+      "role": "institution",
+      "aliases": [
+        "UN",
+        "UN Security Council",
+        "OCHA",
+        "UNRWA",
+        "UNIFIL"
+      ]
+    },
+    {
+      "id": "civilians-gaza-west-bank",
+      "name": "Civilians in Gaza and the West Bank",
+      "type": "population",
+      "role": "affected",
+      "aliases": []
+    },
+    {
+      "id": "civilians-lebanon",
+      "name": "Civilians in Lebanon",
+      "type": "population",
+      "role": "affected",
+      "aliases": []
+    },
+    {
+      "id": "civilians-israel",
+      "name": "Civilians in Israel",
+      "type": "population",
+      "role": "affected",
+      "aliases": []
+    },
+    {
+      "id": "civilians-iran",
+      "name": "Civilians in Iran",
+      "type": "population",
+      "role": "affected",
+      "aliases": []
+    }
+  ],
+  "drivers": [
+    {
+      "text": "Iran's nuclear programme has been disputed for two decades: the 2015 deal that limited it lost force after the US left it in 2018, and Iran then enriched uranium beyond the deal's limits.",
+      "source": {
+        "name": "Council on Foreign Relations",
+        "url": "https://www.cfr.org/backgrounder/what-iran-nuclear-deal"
+      }
+    },
+    {
+      "text": "Iran has long backed armed groups across the region, including Hezbollah, Hamas, the Houthis and Iraqi militias; the US and Israel cite that network and the nuclear programme as threats.",
+      "source": {
+        "name": "Council on Foreign Relations",
+        "url": "https://www.cfr.org/global-conflict-tracker/conflict/confrontation-between-united-states-and-iran"
+      }
+    },
+    {
+      "text": "The Gaza war that followed the Hamas-led attack on Israel on 7 October 2023 spread across the region: Hezbollah, the Houthis and Iraqi armed groups joined in, and Israel and Iran fought a twelve-day war in June 2025.",
+      "source": {
+        "name": "Council on Foreign Relations",
+        "url": "https://www.cfr.org/global-conflict-tracker/conflict/israeli-palestinian-conflict"
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "military",
+      "label": "Military"
+    },
+    {
+      "id": "diplomatic",
+      "label": "Diplomatic"
+    },
+    {
+      "id": "humanitarian",
+      "label": "Humanitarian"
     }
   ],
   "gdeltTerms": [

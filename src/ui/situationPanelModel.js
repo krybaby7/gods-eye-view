@@ -6,7 +6,9 @@ import {
   NEWS_FOLDERS,
   NEWS_VERIFICATION_LABELS,
   formatUsdShort,
+  isPinnedStory,
 } from '../layers/news/records.js';
+import { sourceHealthReason } from '../layers/news/coverage.js';
 
 export const SITUATION_FOLDER_LABELS = Object.freeze({
   reporting: 'Reporting',
@@ -79,7 +81,7 @@ export function refreshState(snapshot, nowMs) {
     return {
       running: true,
       disabled: true,
-      label: `Digesting… ${formatElapsed(Number.isNaN(started) ? 0 : nowMs - started)}`,
+      label: `${digest.phase === 'brief' ? 'Writing brief…' : 'Digesting…'} ${formatElapsed(Number.isNaN(started) ? 0 : nowMs - started)}`,
       reason: REFRESH_DISABLED_REASONS.in_flight,
       reasonCode: 'in_flight',
     };
@@ -120,6 +122,8 @@ export function formatDigestLine(snapshot, nowMs, options = {}) {
   const tail = [];
   if (Number.isFinite(budget.lastRunCostUsd))
     tail.push(`last run ${formatUsdShort(budget.lastRunCostUsd)}`);
+  if (Number.isFinite(budget.lastBriefCostUsd))
+    tail.push(`brief ${formatUsdShort(budget.lastBriefCostUsd)}`);
   if (Number.isFinite(budget.remainingUsd))
     tail.push(`budget $${budget.remainingUsd.toFixed(2)} left`);
   const lastDigest = snapshot.lastDigest;
@@ -144,19 +148,7 @@ export function degradedSources(sources) {
       ? `${list.length} ${list.length === 1 ? 'source' : 'sources'} degraded`
       : '',
     detail: list
-      .map((source) => {
-        const health = source.health;
-        const why = health.blocked
-          ? 'blocked'
-          : health.rateLimited
-            ? 'rate limited'
-            : health.stale
-              ? health.quiet && health.newestItemAt
-                ? `nothing new since ${health.newestItemAt.slice(0, 10)}`
-                : 'stale'
-              : health.error || 'failing';
-        return `${source.name}: ${why}`;
-      })
+      .map((source) => `${source.name}: ${sourceHealthReason(source.health)}`)
       .join('\n'),
   };
 }
@@ -229,9 +221,12 @@ export function citedItems(story, items, citations) {
   return (story?.itemIds || []).map((id) => byId.get(id)).filter(Boolean);
 }
 
-/** Stories without a location: list-only, counted in the panel. */
+/**
+ * Open stories without a pin (no location, or a development): list-only,
+ * counted in the panel.
+ */
 export function listOnlyCount(stories) {
   return (stories || []).filter(
-    (story) => story.status === 'open' && !story.location,
+    (story) => story.status === 'open' && !isPinnedStory(story),
   ).length;
 }

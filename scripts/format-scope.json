@@ -1003,5 +1003,11 @@
   "src/layers/news/source.test.mjs",
   "src/situationMarkup.test.mjs",
   "src/ui/situationPanelModel.test.mjs",
+  "src/data/newsActors.test.mjs",
+  "src/data/newsBrief.test.mjs",
+  "src/layers/news/coverage.test.mjs",
+  "src/ui/situationBrief.test.mjs",
+  "src/ui/situationBriefModel.test.mjs",
+  "src/testSupport/fakeDocument.mjs",
   "src/voice/refreshNews.test.mjs"
 ]
