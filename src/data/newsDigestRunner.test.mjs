@@ -138,7 +138,7 @@ test('the request uses the agreed model, no tools, one step and strict schema ou
   assert.equal(body.model, 'anthropic/claude-sonnet-5-5');
   assert.deepEqual(body.tools, []);
   assert.equal(body.max_steps, 1);
-  assert.equal(body.max_output_tokens, 16000);
+  assert.equal(body.max_output_tokens, 64000);
   assert.equal(body.stream, false);
   assert.equal('effort' in body, false);
   assert.equal('preset' in body, false);
@@ -334,7 +334,7 @@ test('an answer cut off at the output limit fails as truncated and keeps its cos
     runDigest(runOptions(async () => Response.json(body))),
     (error) => {
       assert.equal(error.code, 'truncated');
-      assert.match(error.message, /16,000-token output limit/);
+      assert.match(error.message, /64,000-token output limit/);
       assert.equal(error.cost.costUsd, 0.122);
       assert.equal(error.model, 'anthropic/claude-sonnet-5-5');
       return true;

@@ -171,7 +171,8 @@ Input assembled by code:
    record how many were left out.
 
 Request: Perplexity Agent API, `model: "anthropic/claude-sonnet-5-5"`, no effort preset (so no
-preset tools attach), `tools` empty, `max_steps: 1`, `max_output_tokens: 16000`, strict JSON
+preset tools attach), `tools` empty, `max_steps: 1`, `max_output_tokens: 64000` (raised from 16000 on 2026-10-28:
+hidden reasoning counts toward it and two live runs used about 14,300), strict JSON
 schema output. The implementer verifies the exact field names for schema output and tool
 disabling against docs.perplexity.ai before coding.
 

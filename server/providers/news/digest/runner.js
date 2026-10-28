@@ -19,14 +19,16 @@ import { placeNamesForPrompt } from '../geocode.js';
 
 export const DIGEST_ENDPOINT = 'https://api.perplexity.ai/v1/responses';
 export const DIGEST_MODEL = 'anthropic/claude-sonnet-5-5';
-export const DIGEST_MAX_OUTPUT_TOKENS = 16000;
+/**
+ * Hidden reasoning counts toward this limit. Two live runs (249 and 334
+ * items, no open stories) used about 14,300 tokens each, 3,100 to 3,700 of
+ * them reasoning, so 64,000 leaves room for the design caps of 400 items and
+ * 60 open stories. Only tokens actually written are billed.
+ */
+export const DIGEST_MAX_OUTPUT_TOKENS = 64000;
 export const DIGEST_ITEM_CAP = 400;
 export const DIGEST_OPEN_STORY_CAP = 60;
-/**
- * Claims kept per story. The first live run (249 items, no open stories)
- * used 14,273 of the 16,000 output tokens, so the rules keep each story
- * short enough for the design caps of 400 items and 60 open stories.
- */
+/** Claims kept per story, so each story stays short. */
 export const DIGEST_CLAIM_CAP = 5;
 /** List price per million tokens, used only when a response omits its cost. */
 export const DIGEST_FALLBACK_PRICE_PER_MTOK = Object.freeze({
@@ -43,8 +45,9 @@ export const CLAIM_TYPES = Object.freeze([
   'intent',
   'other',
 ]);
-// Room for a full 16k-token answer; a slower call is charged an estimate.
-const TIMEOUT_MS = 300_000;
+// The live runs wrote about 95 tokens a second, so a full 64k-token answer
+// takes about 11 minutes; a slower call is charged an estimate.
+const TIMEOUT_MS = 900_000;
 const MAX_RESPONSE_CHARS = 2_000_000;
 
 const nullable = (schema) => ({ anyOf: [schema, { type: 'null' }] });

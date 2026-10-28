@@ -507,7 +507,7 @@ test('a missing key, a refusal or a network failure become readable outcomes', a
     {
       ok: false,
       error: 'truncated',
-      message: 'the digest hit the 16,000-token output limit before finishing',
+      message: 'the digest hit the 64,000-token output limit before finishing',
       run: { costUsd: 0.34 },
     },
   ];
