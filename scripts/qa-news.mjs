@@ -4,15 +4,16 @@
  * against a running app server. `npm run qa:news -- --fixtures` (or
  * `node scripts/qa-news.mjs --fixtures --url http://127.0.0.1:5173`).
  *
- * `--fixtures` answers /api/news and /api/news/digest in the page from
- * fixture snapshots and a stubbed digest, so nothing reaches a feed or
- * Perplexity. Without it the run uses the server's real provider and only
- * reads (it never presses Refresh, which would spend money).
+ * `--fixtures` answers /api/news, /api/news/digest and /api/news/brief in the
+ * page from fixture snapshots, a stubbed digest and a fixture Situation
+ * Brief, so nothing reaches a feed or Perplexity. Without it the run uses
+ * the server's real provider and only reads (it never presses Refresh or
+ * Retry brief, which would spend money).
  *
  * Screenshots land in qa-artifacts/news/.
  */
 import assert from 'node:assert/strict';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
@@ -50,6 +51,16 @@ const CATEGORIES = [
 
 const iso = (minutesAgo) =>
   new Date(Date.now() - minutesAgo * 60_000).toISOString();
+
+// The Brief fixtures use the real theater's actors, drivers and tracks.
+const THEATER = JSON.parse(
+  readFileSync(
+    new URL('../public/news/theaters/iran-israel-us.json', import.meta.url),
+    'utf8',
+  ),
+);
+const LAST_SEEN_KEY = 'godsEyeView.v1.situationLastSeen.iran-israel-us';
+const BRIEF_EXPANDED_KEY = 'godsEyeView.v1.situationBriefExpanded';
 
 function item(id, sourceId, folder, kind, perspective, title, extra = {}) {
   return {
@@ -103,7 +114,120 @@ function story(id, title, category, location, itemIds, extra = {}) {
     perspectives: extra.perspectives || ['international-wire'],
     verification: extra.verification || 'reported',
     sourceCount: extra.sourceCount ?? itemIds.length,
+    kind: extra.kind || 'event',
+    actorIds: extra.actorIds || [],
   };
+}
+
+const line = (text, storyIds) => ({ text, storyIds });
+
+/** A checked Situation Brief over the fixture stories. */
+export function fixtureBrief({ digested = false } = {}) {
+  const brief = {
+    id: digested ? 'br_2' : 'br_1',
+    theater: 'iran-israel-us',
+    digestRunId: digested ? 'run_2' : 'run_1',
+    createdAt: iso(digested ? 1 : 9),
+    headline: line(
+      'Strike claims at Bandar Abbas and interception reports over the Galilee lead the latest stories.',
+      ['st_bandar', 'st_north'],
+    ),
+    changes: [
+      line(
+        'IRNA and CENTCOM give different accounts of what was hit at Bandar Abbas.',
+        ['st_bandar'],
+      ),
+      line('An aid convoy was halted near Khan Younis, the UN reported.', [
+        'st_convoy',
+      ]),
+    ],
+    trigger: line(
+      'The Bandar Abbas strike came after interceptions over the Galilee, the IDF and Al-Manar reported.',
+      ['st_north', 'st_bandar'],
+    ),
+    tracks: [
+      {
+        id: 'military',
+        state: 'escalating',
+        reason: 'Strike and interception claims in two places.',
+        storyIds: ['st_bandar', 'st_north'],
+      },
+      {
+        id: 'diplomatic',
+        state: 'unclear',
+        reason: 'The stories report statements, not talks.',
+        storyIds: ['st_bandar'],
+      },
+      {
+        id: 'humanitarian',
+        state: 'stalled',
+        reason: 'The UN reports an aid convoy halted near Khan Younis.',
+        storyIds: ['st_convoy'],
+      },
+    ],
+    affected: [
+      line('Aid access near Khan Younis is blocked, according to the UN.', [
+        'st_convoy',
+      ]),
+    ],
+    scenarios: [
+      {
+        title: 'Exchanges widen',
+        horizon: 'days',
+        text: 'Strike and interception claims spread to more places.',
+        storyIds: ['st_bandar', 'st_north'],
+        signposts: [
+          { text: 'Interceptions over northern Israel', seenIn: ['st_north'] },
+          { text: 'A second Gulf port reported struck', seenIn: [] },
+        ],
+      },
+      {
+        title: 'Mediators reopen talks',
+        horizon: 'weeks',
+        text: 'Envoys meet while strike claims pause.',
+        storyIds: ['st_bandar'],
+        signposts: [
+          {
+            text: 'Envoys meet in Doha',
+            seenIn: digested ? ['st_talks'] : [],
+          },
+          { text: 'Both sides confirm a pause', seenIn: [] },
+        ],
+      },
+    ],
+    unknowns: [
+      line('What was hit at Bandar Abbas is disputed.', ['st_bandar']),
+      line('Who is behind the reported port outage is not known.', [
+        'st_cyber',
+      ]),
+    ],
+    actorNotes: [
+      {
+        actorId: 'iran',
+        text: 'Iranian state media describe the site as a civilian warehouse.',
+        storyIds: ['st_bandar'],
+      },
+    ],
+  };
+  if (digested) {
+    brief.headline = line(
+      'Envoys meet in Doha while strike claims continue at Bandar Abbas and over the Galilee.',
+      ['st_talks', 'st_bandar', 'st_north'],
+    );
+    brief.changes = [
+      line('Envoys met in Doha as talks resumed, Reuters reported.', [
+        'st_talks',
+      ]),
+      ...brief.changes.slice(0, 2),
+    ];
+    brief.tracks[1] = {
+      id: 'diplomatic',
+      state: 'shifting',
+      reason: 'Envoys met in Doha.',
+      storyIds: ['st_talks'],
+    };
+  }
+  return brief;
 }
 
 const at = (name, lat, lon, method = 'gazetteer') => ({
@@ -114,7 +238,10 @@ const at = (name, lat, lon, method = 'gazetteer') => ({
   name,
 });
 
-export function fixtureSnapshot({ digested = false } = {}) {
+export function fixtureSnapshot({
+  digested = false,
+  briefFailed = false,
+} = {}) {
   const items = [
     item(
       'i-centcom',
@@ -185,7 +312,7 @@ export function fixtureSnapshot({ digested = false } = {}) {
       'reporting',
       'independent',
       'international-wire',
-      'Talks resume in Muscat as envoys meet',
+      'Talks resume in Doha as envoys meet',
       { age: 10 },
     ),
     item(
@@ -212,6 +339,10 @@ export function fixtureSnapshot({ digested = false } = {}) {
           'IRNA says a civilian warehouse; CENTCOM says a drone storage site.',
         ],
         whatsNew: 'Al Jazeera reports the blast independently.',
+        // Updated by the latest digest (10 min ago, so just before it):
+        // new since the stored last visit (20 min ago).
+        updated: 11,
+        actorIds: ['united-states', 'iran'],
       },
     ),
     story(
@@ -222,6 +353,7 @@ export function fixtureSnapshot({ digested = false } = {}) {
       ['i-ocha'],
       {
         perspectives: ['un'],
+        actorIds: ['civilians-gaza-west-bank', 'united-nations'],
       },
     ),
     story(
@@ -233,6 +365,7 @@ export function fixtureSnapshot({ digested = false } = {}) {
       {
         verification: 'participant-claim',
         perspectives: ['hezbollah', 'israel-mil'],
+        actorIds: ['israel', 'hezbollah', 'civilians-israel'],
       },
     ),
     story(
@@ -243,6 +376,7 @@ export function fixtureSnapshot({ digested = false } = {}) {
       ['i-crisis'],
       {
         perspectives: ['analysis-crisis'],
+        actorIds: ['iran'],
       },
     ),
   ];
@@ -253,14 +387,37 @@ export function fixtureSnapshot({ digested = false } = {}) {
     stories.unshift(
       story(
         'st_talks',
-        'Envoys meet in Muscat as talks resume',
+        'Envoys meet in Doha as talks resume',
         'political-diplomatic',
-        at('Muscat', 23.588, 58.3829),
+        at('Doha', 25.2854, 51.531),
         ['i-new1'],
-        { updated: 1 },
+        {
+          updated: 1,
+          // Talks are a development: no pin, even with a place.
+          kind: 'development',
+          actorIds: ['qatar', 'iran', 'united-states'],
+        },
       ),
     );
   }
+  const brief = fixtureBrief({ digested: digested && !briefFailed });
+  const briefRun = briefFailed
+    ? {
+        id: 'run_b2',
+        kind: 'brief',
+        status: 'failed',
+        digestRunId: 'run_2',
+        error: 'truncated',
+        message: 'the brief hit the 16,000-token output limit',
+        costUsd: 0.09,
+      }
+    : {
+        id: digested ? 'run_b2' : 'run_b1',
+        kind: 'brief',
+        status: 'ok',
+        digestRunId: brief.digestRunId,
+        costUsd: 0.12,
+      };
   return {
     revision: digested ? 'fixture-2' : 'fixture-1',
     retrievedAt: new Date().toISOString(),
@@ -268,7 +425,10 @@ export function fixtureSnapshot({ digested = false } = {}) {
       id: 'iran-israel-us',
       name: 'Iran · Israel · US',
       categories: CATEGORIES,
-      perspectives: [],
+      perspectives: THEATER.perspectives,
+      actors: THEATER.actors,
+      drivers: THEATER.drivers,
+      tracks: THEATER.tracks,
     },
     theaters: [{ id: 'iran-israel-us', name: 'Iran · Israel · US' }],
     items,
@@ -277,18 +437,25 @@ export function fixtureSnapshot({ digested = false } = {}) {
     lastRun: {
       id: digested ? 'run_2' : 'run_1',
       status: 'ok',
-      startedAt: iso(digested ? 1 : 30),
-      finishedAt: iso(digested ? 1 : 30),
+      startedAt: iso(digested ? 1 : 10),
+      finishedAt: iso(digested ? 1 : 10),
       itemCount: 7,
       costUsd: 0.18,
     },
     lastDigest: {
       id: digested ? 'run_2' : 'run_1',
       status: 'ok',
-      startedAt: iso(digested ? 1 : 30),
-      finishedAt: iso(digested ? 1 : 30),
+      startedAt: iso(digested ? 1 : 10),
+      finishedAt: iso(digested ? 1 : 10),
       itemCount: 7,
       costUsd: 0.18,
+    },
+    brief,
+    briefRun,
+    briefStatus: {
+      digestsBehind: briefFailed ? 1 : 0,
+      retryable: briefFailed,
+      retryDisabledReason: null,
     },
     sources: [
       {
@@ -327,6 +494,7 @@ export function fixtureSnapshot({ digested = false } = {}) {
       remainingUsd: digested ? 1.64 : 1.82,
       exhausted: false,
       lastRunCostUsd: 0.18,
+      lastBriefCostUsd: briefFailed ? 0.09 : 0.12,
     },
     digest: {
       provider: 'Perplexity Agent API',
@@ -372,13 +540,40 @@ async function serveFixtures(page, state) {
             unassignedCount: 1,
             costUsd: 0.18,
           },
+          briefRun: fixtureSnapshot({ digested: true }).briefRun,
           budget: fixtureSnapshot({ digested: true }).budget,
         });
       }, 1500);
       return;
     }
+    if (url.pathname === '/api/news/brief' && request.method() === 'POST') {
+      state.briefPosts++;
+      if (!state.briefFailed) {
+        void json(409, {
+          error: 'nothing_to_retry',
+          message: 'Retry brief works only after a failed brief',
+        });
+        return;
+      }
+      setTimeout(() => {
+        state.briefFailed = false;
+        const after = fixtureSnapshot({ digested: true });
+        void json(200, {
+          ok: true,
+          briefRun: { ...after.briefRun, costUsd: 0.11 },
+          budget: after.budget,
+        });
+      }, 800);
+      return;
+    }
     if (url.pathname === '/api/news' || url.pathname === '/api/news/') {
-      void json(200, fixtureSnapshot({ digested: state.digested }));
+      void json(
+        200,
+        fixtureSnapshot({
+          digested: state.digested,
+          briefFailed: state.briefFailed,
+        }),
+      );
       return;
     }
     void json(404, { error: 'not_found' });
@@ -449,6 +644,134 @@ function newsState(page) {
   });
 }
 
+/** What the Situation Brief section shows. */
+function briefState(page) {
+  return page.evaluate(() => {
+    const panel = document.getElementById('situation-panel');
+    const brief = panel.querySelector('.situation-brief');
+    const text = (selector) =>
+      brief.querySelector(selector)?.textContent ?? null;
+    const all = (selector) => [...brief.querySelectorAll(selector)];
+    return {
+      order: [...panel.querySelector('.situation-panel-root').children].map(
+        (node) => node.classList[0],
+      ),
+      headline: text('.situation-brief-headline'),
+      changes: [
+        ...(brief
+          .querySelector('.situation-brief-lines')
+          ?.querySelectorAll('.situation-brief-line') || []),
+      ].map((node) => node.textContent),
+      tracks: all('.situation-track').map((node) =>
+        node.getAttribute('aria-label'),
+      ),
+      coverage: text('.situation-brief-coverage'),
+      meta: text('.situation-brief-meta'),
+      age: text('.situation-brief-age'),
+      failure: text('.situation-brief-failure'),
+      retry: Boolean(brief.querySelector('.situation-brief-retry')),
+      expanded:
+        brief
+          .querySelector('.situation-brief-toggle')
+          ?.getAttribute('aria-expanded') ?? null,
+      moreHidden: document.getElementById('situation-brief-more')?.hidden,
+      headings: all('.situation-brief-more > .situation-subhead').map(
+        (node) => node.textContent,
+      ),
+      roles: all('.situation-actor-role').map((node) => node.textContent),
+      actors: all('.situation-actor').length,
+      drivers: all('.situation-drivers li').length,
+      scenarios: all('.situation-scenario').length,
+      signposts: all('.situation-signposts li').map((node) => node.textContent),
+    };
+  });
+}
+
+/**
+ * Click every Brief line and track badge in the page: each must select its
+ * first cited story and highlight all of them in the Stories tab.
+ */
+async function clickEveryBriefLine(page, expected) {
+  const results = await page.evaluate(() => {
+    const news = window.__godsEyeView.dataManager.layers.get('news').module;
+    const controls = [
+      ...document.querySelectorAll(
+        '#situation-panel .situation-brief-line, #situation-panel .situation-track:not([disabled])',
+      ),
+    ];
+    return controls.map((control) => {
+      control.click();
+      const ids = control.dataset.storyIds.split(' ');
+      const cited = [
+        ...document.querySelectorAll('#situation-panel .situation-story-cited'),
+      ].map((row) => row.dataset.storyId);
+      return {
+        text: control.textContent,
+        selected: news.getSnapshot().selectedStoryId,
+        first: ids[0],
+        highlighted: ids.every((id) => cited.includes(id)),
+      };
+    });
+  });
+  assert.equal(results.length, expected);
+  for (const result of results) {
+    assert.equal(result.selected, result.first, result.text);
+    assert.ok(result.highlighted, result.text);
+  }
+}
+
+/** Scroll the panel back to the Brief (or a part of it) for a screenshot. */
+async function showBrief(page, selector = '.situation-brief') {
+  await page.evaluate(
+    (target) =>
+      document
+        .querySelector(`#situation-panel ${target}`)
+        .scrollIntoView({ block: 'start' }),
+    selector,
+  );
+  await wait(300);
+}
+
+/** Story rows and pins carrying the new-since-your-last-visit marker. */
+function freshMarks(page) {
+  return page.evaluate(() => {
+    const rows = [
+      ...document.querySelectorAll('#situation-panel .situation-story'),
+    ]
+      .filter((row) => row.querySelector('.situation-marker-fresh'))
+      .map((row) => row.dataset.storyId);
+    const { dataSources } = window.__godsEyeView.viewer;
+    let source = null;
+    for (let i = 0; i < dataSources.length; i++)
+      if (dataSources.get(i).name === 'news') source = dataSources.get(i);
+    const pins = source.entities.values
+      .filter((entity) =>
+        decodeURIComponent(entity.billboard.image.getValue()).includes(
+          'data-fresh',
+        ),
+      )
+      .map((entity) => entity.id.replace('news:', ''));
+    return { rows, pins };
+  });
+}
+
+/** Horizontal overflow of the page, the panel body and the Brief, in px. */
+function overflow(page) {
+  return page.evaluate(() => {
+    const panel = document.getElementById('situation-panel');
+    const body = panel.querySelector('[data-panel-body]') || panel;
+    const brief = panel.querySelector('.situation-brief');
+    const rect = panel.getBoundingClientRect();
+    return {
+      page: document.documentElement.scrollWidth - window.innerWidth,
+      body: body.scrollWidth - body.clientWidth,
+      brief: brief.scrollWidth - brief.clientWidth,
+      panelWidth: Math.round(rect.width),
+      panelRight: Math.round(rect.right),
+    };
+  });
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const urlIndex = args.indexOf('--url');
@@ -482,8 +805,23 @@ async function main() {
       if (message.type() === 'error' && /news|situation/i.test(text))
         errors.push(`console: ${text}`);
     });
-    const state = { digested: false, digestPosts: 0 };
-    if (fixtures) await serveFixtures(page, state);
+    const state = {
+      digested: false,
+      digestPosts: 0,
+      briefFailed: false,
+      briefPosts: 0,
+    };
+    if (fixtures) {
+      await serveFixtures(page, state);
+      // The viewer last saw a digest 20 minutes ago: only st_bandar (updated
+      // 11 minutes ago) is new since then.
+      await page.evaluateOnNewDocument(
+        (key, at) =>
+          localStorage.setItem(key, JSON.stringify({ runId: 'run_0', at })),
+        LAST_SEEN_KEY,
+        iso(20),
+      );
+    }
     const params = new URLSearchParams([['v', '2']]);
     encodeLayerStateParams(
       params,
@@ -573,7 +911,7 @@ async function main() {
         if (fixtures) {
           assert.match(
             s.digestLine,
-            /^Digest \d\d:\d\d · 4 stories from 7 items · 1 unassigned · last run 18¢ · budget \$1\.82 left$/,
+            /^Digest \d\d:\d\d · 4 stories from 7 items · 1 unassigned · last run 18¢ · brief 12¢ · budget \$1\.82 left$/,
           );
           assert.equal(s.refresh, 'Refresh');
           assert.equal(s.refreshDisabled, false);
@@ -660,6 +998,139 @@ async function main() {
 
     if (fixtures) {
       await step(
+        'the Situation Brief sits above the chips, collapsed: headline, changes, tracks, coverage, AI label',
+        async () => {
+          const brief = await briefState(page);
+          assert.deepEqual(brief.order.slice(0, 3), [
+            'situation-controls',
+            'situation-brief',
+            'situation-chips',
+          ]);
+          assert.match(brief.headline, /^Strike claims at Bandar Abbas/);
+          assert.equal(brief.changes.length, 2);
+          assert.deepEqual(brief.tracks, [
+            'Military: escalating',
+            'Diplomatic: unclear',
+            'Humanitarian: stalled',
+          ]);
+          assert.match(
+            brief.coverage,
+            /^Coverage: 2 sources down · no Houthi items in 24 h · 1 open story without a location$/,
+          );
+          assert.match(
+            brief.meta,
+            /^AI analysis · \d\d:\d\d · cites 4 stories$/,
+          );
+          assert.equal(brief.moreHidden, true);
+          assert.equal(brief.expanded, 'false');
+          await showBrief(page);
+          await shot(page, '10-brief-collapsed');
+        },
+      );
+
+      await step(
+        'stories new since the last visit are marked on the row and the pin',
+        async () => {
+          const marks = await freshMarks(page);
+          assert.deepEqual(marks.rows, ['st_bandar']);
+          assert.deepEqual(marks.pins, ['st_bandar']);
+          // Hiding the page moves "last seen" to the digest on screen.
+          const stored = await page.evaluate((key) => {
+            Object.defineProperty(document, 'visibilityState', {
+              value: 'hidden',
+              configurable: true,
+            });
+            document.dispatchEvent(new Event('visibilitychange'));
+            delete document.visibilityState;
+            return JSON.parse(localStorage.getItem(key));
+          }, LAST_SEEN_KEY);
+          assert.equal(stored.runId, 'run_1');
+          const after = await freshMarks(page);
+          assert.deepEqual(after, { rows: [], pins: [] });
+        },
+      );
+
+      await step(
+        'every Brief line opens its stories: the first selected, the rest highlighted',
+        async () => {
+          // Collapsed: the headline, two change lines and three track badges.
+          await clickEveryBriefLine(page, 6);
+          await shot(page, '11-brief-line-opened');
+          await page.evaluate(() =>
+            window.__godsEyeView.dataManager.layers
+              .get('news')
+              .module.clearSelection(),
+          );
+        },
+      );
+
+      await step(
+        'Show more adds actors, why now, the affected, scenarios and unknowns',
+        async () => {
+          await page.click('#situation-panel .situation-brief-toggle');
+          await waitFor(
+            page,
+            () => !document.getElementById('situation-brief-more')?.hidden,
+            null,
+            'the expanded brief',
+          );
+          const brief = await briefState(page);
+          assert.equal(brief.expanded, 'true');
+          assert.deepEqual(brief.headings, [
+            'Who is involved',
+            'Why now',
+            'Who is affected',
+            'What could happen next',
+            'What we know poorly',
+          ]);
+          assert.deepEqual(brief.roles, [
+            'Parties',
+            'Mediators',
+            'External',
+            'Institutions',
+            'Affected',
+          ]);
+          assert.equal(brief.actors, THEATER.actors.length);
+          assert.equal(brief.drivers, 3);
+          assert.equal(brief.scenarios, 2);
+          assert.deepEqual(brief.signposts, [
+            '✓ seen Interceptions over northern Israel',
+            'not yet seen A second Gulf port reported struck',
+            'not yet seen Envoys meet in Doha',
+            'not yet seen Both sides confirm a pause',
+          ]);
+          assert.equal(
+            await page.evaluate(
+              (key) => localStorage.getItem(key),
+              BRIEF_EXPANDED_KEY,
+            ),
+            '1',
+          );
+          // A tall window lets the whole expanded Brief show in one shot.
+          await page.setViewport({ width: VIEWPORT.width, height: 2000 });
+          await wait(1200);
+          await showBrief(page);
+          await shot(page, '12-brief-expanded');
+          await page.setViewport(VIEWPORT);
+          await wait(800);
+          // Expanded: 12 lines (headline, 2 changes, 3 track reasons,
+          // trigger, 1 affected, 2 scenarios, 2 unknowns) and 3 badges.
+          await clickEveryBriefLine(page, 15);
+          // The seen tick opens the story that reported it.
+          await page.click('#situation-panel .situation-signpost-seen');
+          assert.equal(
+            await page.evaluate(
+              () =>
+                window.__godsEyeView.dataManager.layers
+                  .get('news')
+                  .module.getSnapshot().selectedStoryId,
+            ),
+            'st_north',
+          );
+        },
+      );
+
+      await step(
         'Refresh runs one digest, shows the running state, then the outcome',
         async () => {
           await page.click('#situation-panel .situation-refresh');
@@ -695,10 +1166,76 @@ async function main() {
           assert.equal(reason, 'Nothing new since the last digest');
           assert.match(
             s.notice,
-            /^Digest done: 1 new and 0 updated story from 2 items, 1 left unassigned\. Cost 18¢\./,
+            /^Digest done: 1 new and 0 updated story from 2 items, 1 left unassigned\. Cost 18¢\. Brief written, 12¢\./,
           );
-          assert.ok(s.pins.includes('st_talks'));
+          // Talks are a development: listed, never pinned.
+          assert.ok(!s.pins.includes('st_talks'));
+          assert.match(
+            await page.$eval(
+              '#situation-panel .situation-story[data-story-id="st_talks"] .situation-story-times',
+              (n) => n.textContent,
+            ),
+            /development · no pin/,
+          );
+          assert.match(
+            (await briefState(page)).headline,
+            /^Envoys meet in Doha/,
+          );
           await shot(page, '04-after-refresh');
+        },
+      );
+
+      await step(
+        'a failed Brief keeps the previous one with its age, and Retry brief rewrites it',
+        async () => {
+          state.briefFailed = true;
+          await page.evaluate(() =>
+            window.__godsEyeView.dataManager.layers
+              .get('news')
+              .module.refresh(),
+          );
+          await waitFor(
+            page,
+            () =>
+              Boolean(
+                document.querySelector(
+                  '#situation-panel .situation-brief-retry',
+                ),
+              ),
+            null,
+            'the Retry brief button',
+          );
+          const failed = await briefState(page);
+          assert.match(
+            failed.headline,
+            /^Strike claims at Bandar Abbas/,
+            'the previous brief stays',
+          );
+          assert.match(failed.age, /^Brief from \d\d:\d\d, one digest behind$/);
+          assert.equal(
+            failed.failure,
+            'The latest brief failed: it hit its output limit (cost 9¢).',
+          );
+          await showBrief(page);
+          await shot(page, '13-brief-failed');
+          await page.click('#situation-panel .situation-brief-retry');
+          await waitFor(
+            page,
+            () =>
+              /^Brief written, 11¢\.$/.test(
+                document.querySelector('#situation-panel .situation-notice')
+                  ?.textContent || '',
+              ),
+            null,
+            'the Retry brief outcome',
+          );
+          const after = await briefState(page);
+          assert.equal(state.briefPosts, 1);
+          assert.equal(after.failure, null);
+          assert.equal(after.retry, false);
+          assert.match(after.headline, /^Envoys meet in Doha/);
+          await showBrief(page);
+          await shot(page, '14-brief-retried');
         },
       );
     }
@@ -725,6 +1262,97 @@ async function main() {
         assert.equal((await newsState(page)).params.hiddenCategories, '');
       },
     );
+
+    if (fixtures)
+      await step(
+        'the Brief actor filter narrows stories and pins on top of the category chips',
+        async () => {
+          await page.click('#situation-panel [data-actor-id="iran"]');
+          await wait(300);
+          let s = await newsState(page);
+          assert.deepEqual(s.rows, ['st_talks', 'st_bandar', 'st_cyber']);
+          assert.deepEqual(s.pins, ['st_bandar']);
+          assert.match(
+            await page.$eval(
+              '#situation-panel .situation-brief-filter',
+              (n) => n.textContent,
+            ),
+            /^Showing stories involving Iran · Show all$/,
+          );
+          assert.equal(
+            await page.$eval(
+              '#situation-panel .situation-actor-note',
+              (n) => n.textContent,
+            ),
+            'Iranian state media describe the site as a civilian warehouse.',
+          );
+          await showBrief(page, '.situation-actors');
+          await shot(page, '15-actor-filter');
+          // Hide War & military too: both filters apply.
+          await page.click('#situation-panel .situation-chip:first-child');
+          await wait(300);
+          s = await newsState(page);
+          assert.deepEqual(s.rows, ['st_talks', 'st_cyber']);
+          assert.deepEqual(s.pins, []);
+          assert.equal(s.params.hiddenCategories, 'war-military');
+          assert.equal(
+            await page.$eval(
+              '#situation-panel .situation-frame',
+              (n) => n.disabled,
+            ),
+            true,
+            'nothing located to frame',
+          );
+          await showBrief(page, '.situation-chips');
+          await shot(page, '16-actor-and-category');
+          // Clicking the chip again clears the actor; the category stays.
+          await page.click('#situation-panel [data-actor-id="iran"]');
+          await page.click('#situation-panel .situation-chip:first-child');
+          await wait(300);
+          s = await newsState(page);
+          assert.equal(s.params.hiddenCategories, '');
+          assert.equal(s.rows.length, 5);
+          assert.equal(
+            await page.$('#situation-panel .situation-brief-filter'),
+            null,
+          );
+        },
+      );
+
+    if (fixtures)
+      await step(
+        'Frame theater flies once over every visible pin',
+        async () => {
+          const requests = await page.evaluate(
+            () =>
+              new Promise((resolve) => {
+                const seen = [];
+                const listener = (event) => seen.push(event.detail);
+                window.addEventListener('gev:world-request-focus', listener);
+                document
+                  .querySelector('#situation-panel .situation-frame')
+                  .click();
+                setTimeout(() => {
+                  window.removeEventListener(
+                    'gev:world-request-focus',
+                    listener,
+                  );
+                  resolve(
+                    seen.map((detail) => ({
+                      kind: detail.kind,
+                      radiusM: Math.round(detail.radiusM),
+                    })),
+                  );
+                }, 200);
+              }),
+          );
+          assert.equal(requests.length, 1);
+          assert.equal(requests[0].kind, 'theater');
+          assert.ok(requests[0].radiusM > 500_000, String(requests[0].radiusM));
+          await wait(2500);
+          await shot(page, '17-frame-theater');
+        },
+      );
 
     await step(
       'the Raw feed tab groups items by folder with markers',
@@ -786,6 +1414,18 @@ async function main() {
       });
       assert.ok(box.width > 200 && box.height > 40, JSON.stringify(box));
       await shot(page, '07-cyber');
+      if (fixtures) {
+        assert.equal((await briefState(page)).expanded, 'true');
+        const fit = await overflow(page);
+        assert.ok(fit.brief <= 1 && fit.body <= 1, JSON.stringify(fit));
+        await page.evaluate(() =>
+          document
+            .querySelector('#situation-panel .situation-brief')
+            .scrollIntoView({ block: 'start' }),
+        );
+        await wait(300);
+        await shot(page, '18-brief-cyber');
+      }
       await page.evaluate(() => {
         const select = document.getElementById('hud-layout-select');
         select.value = 'tactical';
@@ -793,6 +1433,47 @@ async function main() {
       });
       await wait(500);
     });
+
+    if (fixtures)
+      await step(
+        'at 720 px and 390 px the panel and the Brief fit without horizontal scroll',
+        async () => {
+          for (const [width, height, name] of [
+            [720, 900, '19-brief-720'],
+            [390, 844, '20-brief-390'],
+          ]) {
+            await page.setViewport({ width, height });
+            await wait(1200);
+            await page.evaluate(() =>
+              document
+                .querySelector('#situation-panel .situation-brief')
+                .scrollIntoView({ block: 'start' }),
+            );
+            await wait(400);
+            const fit = await overflow(page);
+            assert.ok(fit.page <= 0, `${width}px page: ${JSON.stringify(fit)}`);
+            assert.ok(
+              fit.body <= 1,
+              `${width}px panel: ${JSON.stringify(fit)}`,
+            );
+            assert.ok(
+              fit.brief <= 1,
+              `${width}px brief: ${JSON.stringify(fit)}`,
+            );
+            assert.ok(
+              fit.panelWidth > 200,
+              `${width}px: ${JSON.stringify(fit)}`,
+            );
+            assert.ok(
+              fit.panelRight <= width + 1,
+              `${width}px: ${JSON.stringify(fit)}`,
+            );
+            await shot(page, name);
+          }
+          await page.setViewport(VIEWPORT);
+          await wait(800);
+        },
+      );
 
     await step(
       'clean view and recording hide the panel and keep the pins',

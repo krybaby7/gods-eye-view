@@ -429,6 +429,7 @@ export function createSituationBrief({
           brief.unknowns.length
             ? lineList(brief.unknowns, 'unknown', 'What we know poorly')
             : muted('The brief named no unknowns.'),
+          coverageLine,
           coverage.details.length
             ? h(
                 'ul',
@@ -443,6 +444,8 @@ export function createSituationBrief({
           .flat()
           .filter(Boolean),
       );
+    // The label, the age and a failure stay right under the badges, so they
+    // are seen without scrolling in either view.
     replaceChildren(
       root,
       head,
@@ -451,6 +454,8 @@ export function createSituationBrief({
         ? lineList(brief.changes, 'change', 'What changed')
         : null,
       trackRow(badges),
+      status,
+      expanded ? null : coverageLine,
       expanded
         ? h(
             'ul',
@@ -477,8 +482,6 @@ export function createSituationBrief({
         : null,
       actorFilterLine(snapshot),
       more,
-      coverageLine,
-      status,
     );
   }
 

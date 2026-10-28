@@ -467,11 +467,17 @@
   text-transform: uppercase;
 }
 
+/* Names must read at a glance, so actor chips use body text rather than the
+   small monospace of the shared toggle chip; type and count stay muted. */
 .situation-actor {
   display: inline-flex;
   align-items: baseline;
   gap: 4px;
   max-width: 100%;
+  color: var(--text-primary);
+  font: 11px/1.3 var(--panel-surface-font);
+  letter-spacing: 0;
+  text-align: left;
   cursor: pointer;
 }
 
@@ -483,8 +489,8 @@
 
 .situation-actor-type,
 .situation-actor-count {
-  color: var(--text-secondary);
-  font-size: 10px;
+  color: var(--text-dim, var(--text-secondary));
+  font-size: 9px;
 }
 
 .situation-actor-note {

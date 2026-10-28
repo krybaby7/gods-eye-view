@@ -74,7 +74,7 @@ test('panel styles stay inside the surface contract; feed text is never markup',
   assert.ok(briefCss.length > 100, 'the brief styles are present');
   assert.doesNotMatch(
     briefCss,
-    /#[0-9a-f]{3,6}\b|rgb|red|green/i,
+    /#[0-9a-f]{3,6}\b|rgba?\(|\b(?:red|green)\b/i,
     'brief styles use the theme tokens only',
   );
 });
