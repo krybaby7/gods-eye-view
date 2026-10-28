@@ -152,9 +152,10 @@ export function hasPromptFlags(gazetteer) {
 
 /**
  * Gazetteer names for the digest instructions: each canonical name with its
- * Latin-script aliases. When some rows carry `prompt: true` (a worldwide
- * gazetteer would cost tens of thousands of input tokens), only those rows
- * are listed, by name alone; matching still uses every row and alias.
+ * Latin-script aliases. When some rows carry `prompt: true` (World's
+ * gazetteer with its aliases would add about 21,000 characters to every
+ * digest), only those rows are listed, by name alone; matching still uses
+ * every row and alias.
  * Coordinates never leave the server's code path.
  * @param {Array<{name: string, aliases?: string[], prompt?: boolean}>} gazetteer
  * @returns {string[]}
