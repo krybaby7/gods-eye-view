@@ -99,9 +99,11 @@ The digest runs only on an explicit Refresh: the panel button, the
 - `model: "anthropic/claude-sonnet-5-5"`;
 - `tools: []` and `max_steps: 1`, so it does no search and takes one step;
 - no `preset` and no `effort`;
-- `max_output_tokens: 16000`. The first live run used 14,273 of them, so the
-  rules ask for short stories with at most five claims each, and code keeps
-  only the first five;
+- `max_output_tokens: 64000`. Hidden reasoning counts toward it. Two live runs
+  used about 14,300 tokens each, 3,100 to 3,700 of them reasoning, so the
+  limit leaves room for the 400-item and 60-open-story caps. Only tokens
+  actually written are billed. The rules ask for short stories with at most
+  five claims each, and code keeps only the first five;
 - `response_format: {type: "json_schema", json_schema: {name, schema, strict: true}}`.
 
 These field names were checked against the official Perplexity SDK types and
@@ -146,8 +148,8 @@ undigested for the next Refresh, and the run records how many were left out.
 | 502               | The call failed: `auth`, `rate_limited`, `upstream`, `model_error`, `malformed_output`, `truncated` (the answer hit the output limit), `network` or `timeout`. | Yes, with its reported or estimated cost |
 
 A failed run that was still billed keeps its cost. A call that timed out (after
-5 minutes) or was cut off mid-answer returns no usage, so it is charged a
-worst-case estimate instead: the input size plus a full 16k-token answer, at
+15 minutes, room for a full answer at the measured 95 tokens a second) or was cut off mid-answer returns no usage, so it is charged a
+worst-case estimate instead: the input size plus a full 64k-token answer, at
 list price.
 
 **Cost and budget.** Every run records `usage.cost.total_cost` from the
