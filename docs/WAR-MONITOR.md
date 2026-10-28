@@ -62,13 +62,13 @@ The Refresh control is disabled with a reason when:
 The server collects for the theater only after the first `/api/news` request.
 Starting the dev server alone fetches nothing.
 
-| Transport         | Cadence | How                                                                                                                                                                                   |
-| ----------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `rss`             | 10 min  | RSS 2.0 and Atom, gzip/deflate, charset-aware, 4 MB cap. The parser is shared with the cockpit regional briefing (`server/providers/common/rss.js`).                                  |
-| `gdelt-domain`    | 15 min  | GDELT DOC 2.0 `artlist` queries, `domainis:` OR-groups of up to 10 domains, 24 h window. One process-wide queue, 5.5 s between requests, doubling backoff after a 429 (up to 15 min). |
-| `telegram-public` | 5 min   | The public web preview at `t.me/s/<channel>`. No account, bot or API. Flagged **fragile**: the markup can change.                                                                     |
-| `reliefweb`       | 30 min  | ReliefWeb API v2 reports for the theater's countries. Off unless `RELIEFWEB_APPNAME` is set.                                                                                          |
-| `link-only`       | never   | Listed in the Raw feed folders as a link to the publisher.                                                                                                                            |
+| Transport         | Cadence | How                                                                                                                                                                                                                                |
+| ----------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rss`             | 10 min  | RSS 2.0 and Atom, gzip/deflate, charset-aware, 4 MB cap. The parser is shared with the cockpit regional briefing (`server/providers/common/rss.js`).                                                                               |
+| `gdelt-domain`    | 15 min  | GDELT DOC 2.0 `artlist` queries, `domainis:` OR-groups of up to 10 domains, at most 239 query characters with the terms, 24 h window. One process-wide queue, 5.5 s between requests, doubling backoff after a 429 (up to 15 min). |
+| `telegram-public` | 5 min   | The public web preview at `t.me/s/<channel>`. No account, bot or API. Flagged **fragile**: the markup can change.                                                                                                                  |
+| `reliefweb`       | 30 min  | ReliefWeb API v2 reports for the theater's countries. Off unless `RELIEFWEB_APPNAME` is set.                                                                                                                                       |
+| `link-only`       | never   | Listed in the Raw feed folders as a link to the publisher.                                                                                                                                                                         |
 
 Outlets whose feeds sit behind bot protection are never scraped. They arrive
 through GDELT with a link to the publisher.

@@ -108,7 +108,7 @@ export function createNewsCollector({
         );
       case 'gdelt-domain': {
         const results = [];
-        for (const group of groupGdeltSources(list)) {
+        for (const group of groupGdeltSources(list, theater.gdeltTerms)) {
           const { items, statuses } = await fetchGdeltDomainGroup(group, {
             ...options,
             terms: theater.gdeltTerms,

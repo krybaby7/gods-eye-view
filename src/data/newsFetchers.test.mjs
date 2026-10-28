@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import test from 'node:test';
 import {
@@ -12,6 +13,7 @@ import {
   parseTelegramPreview,
 } from '../../server/providers/news/fetchers/telegramPublic.js';
 import {
+  GDELT_MAX_QUERY_CHARS,
   buildGdeltDomainQuery,
   createGdeltQueue,
   fetchGdeltDomainGroup,
@@ -22,6 +24,11 @@ import {
   reliefwebRequestBody,
 } from '../../server/providers/news/fetchers/reliefweb.js';
 import { detectLanguage } from '../../server/providers/news/fetchers/text.js';
+
+const readJson = (relative) =>
+  JSON.parse(readFileSync(new URL(relative, import.meta.url), 'utf8'));
+const registry = readJson('../../public/news/sources.json');
+const theaterFile = readJson('../../public/news/theaters/iran-israel-us.json');
 
 const source = (id, transport, overrides = {}) => ({
   id,
@@ -241,6 +248,49 @@ test('GDELT domain queries group ten domains and quote multiword terms', () => {
   );
 });
 
+test('GDELT groups keep every query, terms included, within the length limit', () => {
+  const sources = Array.from({ length: 14 }, (_, i) =>
+    source(`s${i}`, {
+      type: 'gdelt-domain',
+      domain: `outlet-number-${i}.example.com`,
+    }),
+  );
+  const terms = ['Iran', 'Israel', 'Red Sea', 'Hormuz'];
+  const groups = groupGdeltSources(sources, terms, { maxChars: 200 });
+  assert.ok(groups.length > 2);
+  assert.deepEqual(
+    groups.flat().map((s) => s.id),
+    sources.map((s) => s.id),
+  );
+  for (const group of groups)
+    assert.ok(
+      buildGdeltDomainQuery(
+        group.map((s) => s.transport.domain),
+        terms,
+      ).length <= 200,
+    );
+  const tooLong = groupGdeltSources(sources.slice(0, 2), terms, {
+    maxChars: 20,
+  });
+  assert.deepEqual(
+    tooLong.map((group) => group.length),
+    [1, 1],
+    'a domain that cannot fit still gets its own query',
+  );
+});
+
+test('the live theater and registry fit GDELT in groups under the limit', () => {
+  const groups = groupGdeltSources(registry.sources, theaterFile.gdeltTerms);
+  assert.ok(groups.length > 1);
+  for (const group of groups)
+    assert.ok(
+      buildGdeltDomainQuery(
+        group.map((s) => s.transport.domain),
+        theaterFile.gdeltTerms,
+      ).length <= GDELT_MAX_QUERY_CHARS,
+    );
+});
+
 test('the GDELT queue spaces requests and backs off after 429', async () => {
   let clock = 0;
   const sleeps = [];
@@ -334,6 +384,18 @@ test('GDELT domain results are attributed to sources by hostname', async () => {
       new Response('Your search contained an invalid term'),
   });
   assert.match(text.statuses[0].error, /^GDELT: Your search/);
+  const tooLong = await fetchGdeltDomainGroup(group, {
+    queue,
+    fetchImpl: async () =>
+      new Response('Your query was too short or too long.'),
+  });
+  assert.deepEqual(
+    tooLong.statuses.map((s) => [s.sourceId, s.ok, s.error]),
+    [
+      ['alarabiya', false, 'GDELT: Your query was too short or too long.'],
+      ['tasnim', false, 'GDELT: Your query was too short or too long.'],
+    ],
+  );
 });
 
 test('ReliefWeb stays disabled without an appname and parses v2 reports', async () => {

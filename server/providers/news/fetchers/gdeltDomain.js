@@ -15,6 +15,12 @@ import {
  */
 
 export const GDELT_DOMAINS_PER_QUERY = 10;
+/**
+ * GDELT documents no length limit, but answers a longer query with HTTP 200
+ * and "Your query was too short or too long." Probed on 2026-10-28: queries
+ * of 162, 215 and 239 characters were accepted; 260, 262 and 396 were not.
+ */
+export const GDELT_MAX_QUERY_CHARS = 239;
 export const GDELT_SPACING_MS = 5_500;
 const GDELT_BACKOFF_MS = 60_000;
 const GDELT_MAX_BACKOFF_MS = 15 * 60_000;
@@ -105,12 +111,36 @@ export function buildGdeltDomainQuery(domains, terms = []) {
   return quoted.length ? `${domainPart} ${orGroup(quoted)}` : domainPart;
 }
 
-/** Split gdelt-domain sources into query groups of up to ten domains. */
-export function groupGdeltSources(sources, size = GDELT_DOMAINS_PER_QUERY) {
+/**
+ * Split gdelt-domain sources into query groups of up to ten domains whose
+ * query with `terms` stays within GDELT's length limit. A domain too long to
+ * fit even alone keeps a group of its own, so its rejection is reported.
+ * @param {Array<object>} sources
+ * @param {string[]} [terms]
+ * @param {{size?: number, maxChars?: number}} [limits]
+ */
+export function groupGdeltSources(
+  sources,
+  terms = [],
+  { size = GDELT_DOMAINS_PER_QUERY, maxChars = GDELT_MAX_QUERY_CHARS } = {},
+) {
   const groups = [];
-  const eligible = sources.filter((s) => s.transport.type === 'gdelt-domain');
-  for (let i = 0; i < eligible.length; i += size)
-    groups.push(eligible.slice(i, i + size));
+  let group = [];
+  const fits = (candidates) =>
+    candidates.length <= size &&
+    buildGdeltDomainQuery(
+      candidates.map((s) => s.transport.domain),
+      terms,
+    ).length <= maxChars;
+  for (const source of sources) {
+    if (source.transport.type !== 'gdelt-domain') continue;
+    if (group.length && !fits([...group, source])) {
+      groups.push(group);
+      group = [];
+    }
+    group.push(source);
+  }
+  if (group.length) groups.push(group);
   return groups;
 }
 
