@@ -132,6 +132,19 @@ test('counts: tabs follow the category filter, folders include zeros, list-only 
     analysis: 0,
   });
   assert.equal(listOnlyCount(snapshot().stories), 1);
+  // A development has no pin even with a place, so it is list-only too.
+  assert.equal(
+    listOnlyCount([
+      ...snapshot().stories,
+      {
+        id: 'd',
+        status: 'open',
+        kind: 'development',
+        location: { lat: 1, lon: 1 },
+      },
+    ]),
+    2,
+  );
 });
 
 test('raw feed filters by folder, perspective and language', () => {

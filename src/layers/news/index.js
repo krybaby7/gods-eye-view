@@ -3,6 +3,7 @@ import { isPointerFree } from '../../data/inputOwnership.js';
 import {
   filterNewsStories,
   formatDigestOutcome,
+  isPinnedStory,
   mapNewsAnalystRecord,
   newsCategoryColor,
   normalizeHiddenCategories,
@@ -135,7 +136,7 @@ export function createNewsLayer({
     _dataSource.entities.removeAll();
     _entities.clear();
     for (const story of visibleStories()) {
-      if (!story.location) continue;
+      if (!isPinnedStory(story)) continue;
       const color = newsCategoryColor(story.category, categories());
       const entity = new Cesium.Entity({
         id: `${ENTITY_PREFIX}${story.id}`,
@@ -200,7 +201,7 @@ export function createNewsLayer({
     ]) {
       if (!id || (!selected && id === _selectedId)) continue;
       const story = storyById(id);
-      if (!story?.location || _hidden.has(story.category)) continue;
+      if (!isPinnedStory(story) || _hidden.has(story.category)) continue;
       entries.push({
         ...buildNewsStoryCard(story, {
           position: positionOf(story),
@@ -224,7 +225,7 @@ export function createNewsLayer({
     const next = new Set();
     try {
       for (const story of visibleStories()) {
-        if (!story.location) continue;
+        if (!isPinnedStory(story)) continue;
         const id = `${ENTITY_PREFIX}${story.id}`;
         const entity = _entities.get(story.id);
         if (!entity) continue;
@@ -551,7 +552,7 @@ export function createNewsLayer({
         } catch {
           /* context store unavailable */
         }
-        if (fly && story.location)
+        if (fly && isPinnedStory(story))
           focus.requestWorldFocus?.({
             kind: 'story',
             id: `${ENTITY_PREFIX}${story.id}`,
@@ -689,7 +690,7 @@ export function createNewsLayer({
     getStats() {
       const open = openStories();
       const visible = visibleStories();
-      const located = visible.filter((story) => story.location).length;
+      const located = visible.filter(isPinnedStory).length;
       const sources = _snapshot?.sources || [];
       const degraded = sources.filter((s) => s.health.degraded).length;
       const lastDigestAt = Date.parse(_snapshot?.lastDigest?.finishedAt || '');

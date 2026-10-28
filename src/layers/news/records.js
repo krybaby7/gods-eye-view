@@ -134,6 +134,9 @@ function normalizeStory(raw) {
     sourceCount: Number.isInteger(raw.sourceCount)
       ? Math.max(0, raw.sourceCount)
       : 0,
+    // Stories from before kinds existed read as events.
+    kind: raw.kind === 'development' ? 'development' : 'event',
+    actorIds: stringList(raw.actorIds, 40),
   };
 }
 
@@ -280,6 +283,15 @@ export function newsCategoryColor(categoryId, categories = []) {
   );
 }
 
+/**
+ * A story gets a pin when it has a location and is an event. A development
+ * (talks, a sanction, a ruling) gets none: a pin would suggest something
+ * happened at that place.
+ */
+export function isPinnedStory(story) {
+  return Boolean(story?.location) && story.kind !== 'development';
+}
+
 /** Stories visible under a category filter (`hidden` is a Set of ids). */
 export function filterNewsStories(stories, hidden) {
   if (!hidden?.size) return stories;
@@ -330,6 +342,7 @@ export function mapNewsAnalystRecord(story, index = 0) {
     lat: finiteOrNull(story?.location?.lat),
     lon: finiteOrNull(story?.location?.lon),
     modelPlaced: story?.location?.method === 'model',
+    kind: textOrNull(story?.kind, 16),
     status: textOrNull(story?.status, 16),
     eventAt: ms(story?.eventAt),
     updatedAt: ms(story?.updatedAt),

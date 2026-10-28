@@ -40,6 +40,16 @@ const theater = {
       aliases: ['Khan Yunis'],
     },
   ],
+  actors: [
+    {
+      id: 'iran',
+      name: 'Iran',
+      type: 'state',
+      role: 'party',
+      aliases: ['Tehran', 'IRGC'],
+    },
+    { id: 'oman', name: 'Oman', type: 'state', role: 'mediator', aliases: [] },
+  ],
 };
 const sourcesById = new Map([
   ['centcom', { id: 'centcom', name: 'US Central Command', starred: true }],
@@ -83,6 +93,8 @@ const storyOut = (overrides = {}) => ({
   whatsNew: '',
   contradictions: [],
   status: 'open',
+  kind: 'event',
+  actorIds: ['iran'],
   ...overrides,
 });
 const completed = (stories, extra = {}) => ({
@@ -179,6 +191,10 @@ test('instructions carry rules, brief, categories and place names but no coordin
   assert.match(text, /Second paragraph\./);
   assert.match(text, /- humanitarian-casualties: Humanitarian/);
   assert.match(text, /^Khan Younis \(Khan Yunis\)$/m);
+  assert.match(text, /^- iran: Iran \(Tehran, IRGC\)$/m);
+  assert.match(text, /^- oman: Oman$/m);
+  assert.match(text, /kind: "event"/);
+  assert.match(text, /actorIds:/);
   assert.doesNotMatch(text, /27\.18|56\.27/);
   assert.equal(buildDigestInstructions(theater), text, 'stable across runs');
 });
@@ -222,6 +238,7 @@ test('unknown ids are dropped and counted; stories without valid ids are rejecte
       knownItemIds: new Set(['a', 'b']),
       openStories: new Map(),
       categoryIds: ['war-military'],
+      actorIds: ['iran'],
       nowMs: NOW,
     },
   );
@@ -233,7 +250,88 @@ test('unknown ids are dropped and counted; stories without valid ids are rejecte
     rejectedStories: 3,
     unknownStoryIds: 0,
     clampedCategories: 0,
+    droppedActorIds: 0,
   });
+});
+
+test('kind defaults to event; unknown actor ids are dropped and counted', () => {
+  const { stories, counts } = validateDigestOutput(
+    {
+      stories: [
+        storyOut({
+          itemIds: ['a'],
+          kind: 'development',
+          actorIds: ['oman', 'iran', 'oman'],
+        }),
+        storyOut({ itemIds: ['b'], kind: 'rumour', actorIds: ['hamas', 7] }),
+        storyOut({ itemIds: ['c'], kind: undefined, actorIds: undefined }),
+      ],
+    },
+    {
+      knownItemIds: new Set(['a', 'b', 'c']),
+      openStories: new Map(),
+      categoryIds: ['war-military'],
+      actorIds: ['iran', 'oman'],
+      nowMs: NOW,
+    },
+  );
+  assert.deepEqual(
+    stories.map((story) => [story.kind, story.actorIds]),
+    [
+      ['development', ['oman', 'iran']],
+      ['event', []],
+      ['event', []],
+    ],
+  );
+  assert.equal(counts.droppedActorIds, 2);
+});
+
+test('the schema offers the two kinds and only the theater actor ids', () => {
+  const story = digestSchema(['war-military'], ['iran', 'oman']).properties
+    .stories.items;
+  assert.deepEqual(story.properties.kind, {
+    type: 'string',
+    enum: ['event', 'development'],
+  });
+  assert.deepEqual(story.properties.actorIds.items.enum, ['iran', 'oman']);
+  assert.ok(story.required.includes('kind'));
+  assert.ok(story.required.includes('actorIds'));
+  // A theater with no actors still gets a valid (empty-enum-free) schema.
+  assert.deepEqual(
+    digestSchema(['war-military']).properties.stories.items.properties.actorIds
+      .items,
+    { type: 'string' },
+  );
+});
+
+test('open stories in the input carry their kind and actor ids', async () => {
+  let input;
+  await runDigest(
+    runOptions(
+      async (url, init) => {
+        input = JSON.parse(init.body).input[0].content;
+        return Response.json(completed([storyOut()]));
+      },
+      {
+        openStories: [
+          {
+            id: 'st_talks',
+            title: 'Talks in Muscat',
+            category: 'war-military',
+            place: { name: 'Muscat' },
+            eventAt: null,
+            itemIds: ['a'],
+            claims: [],
+            status: 'open',
+            updatedAt: new Date(NOW).toISOString(),
+            kind: 'development',
+            actorIds: ['oman'],
+          },
+        ],
+      },
+    ),
+  );
+  assert.match(input, /"kind":"development","actorIds":\["oman"\]/);
 });
 
 test('story ids continue only for open stories; categories clamp; URLs and bad values are removed', () => {

@@ -6,6 +6,7 @@ import {
   NEWS_FOLDERS,
   NEWS_VERIFICATION_LABELS,
   formatUsdShort,
+  isPinnedStory,
 } from '../layers/news/records.js';
 
 export const SITUATION_FOLDER_LABELS = Object.freeze({
@@ -229,9 +230,12 @@ export function citedItems(story, items, citations) {
   return (story?.itemIds || []).map((id) => byId.get(id)).filter(Boolean);
 }
 
-/** Stories without a location: list-only, counted in the panel. */
+/**
+ * Open stories without a pin (no location, or a development): list-only,
+ * counted in the panel.
+ */
 export function listOnlyCount(stories) {
   return (stories || []).filter(
-    (story) => story.status === 'open' && !story.location,
+    (story) => story.status === 'open' && !isPinnedStory(story),
   ).length;
 }

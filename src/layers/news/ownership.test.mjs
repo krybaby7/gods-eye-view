@@ -228,6 +228,34 @@ test('one pin per located open story; list-only stories are counted, never drawn
   assert.equal(h.contexts.get('news:a').layerId, 'news');
 });
 
+test('a development gets no pin and no flight, even when it names a place', async () => {
+  const withTalks = payload();
+  withTalks.stories.push(
+    story('talks', { kind: 'development', actorIds: ['oman', 7] }),
+  );
+  const h = harness({
+    source: {
+      getSnapshot: async () => normalizeNewsSnapshot(withTalks),
+      requestDigest: async () => ({ ok: true }),
+    },
+  });
+  await h.layer.update();
+  assert.deepEqual(h.layer._testing.pinIds(), ['a', 'b']);
+  const talks = h.layer.getSnapshot().stories.find((s) => s.id === 'talks');
+  assert.deepEqual([talks.kind, talks.actorIds], ['development', ['oman']]);
+  assert.equal(
+    h.layer.getSnapshot().stories.find((s) => s.id === 'a').kind,
+    'event',
+    'a story from before kinds existed reads as an event',
+  );
+  const stats = h.layer.getStats();
+  assert.equal(stats.count, 2);
+  assert.equal(stats.listOnly, 2);
+  assert.equal(h.layer.selectStory('talks'), true);
+  assert.equal(h.focus.length, 0);
+  assert.ok(!h.contexts.has('news:talks'));
+});
+
 test('a missing digest key is not a load failure: the feed still loads', async () => {
   const keyless = payload();
   keyless.digest = { ...keyless.digest, keyConfigured: false };
@@ -560,6 +588,7 @@ test('analyst records cover visible open stories, located or not', async () => {
     lat: 31.35,
     lon: 34.3,
     modelPlaced: true,
+    kind: 'event',
     status: 'open',
     eventAt: Date.parse('2026-10-26T03:00:00Z'),
     updatedAt: Date.parse('2026-10-26T11:00:00Z'),

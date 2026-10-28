@@ -560,7 +560,7 @@ async function main() {
             '#situation-panel .situation-note',
             (n) => n.textContent,
           );
-          assert.match(note, /1 story has no location/);
+          assert.match(note, /^1 story has no pin and appears only here\.$/);
         }
         assert.ok(s.digestLine && s.digestLine.length > 10, s.digestLine);
       },

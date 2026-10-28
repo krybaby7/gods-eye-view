@@ -280,6 +280,8 @@ export function mergeDigest({
         whatsNew: next.whatsNew,
         contradictions: next.contradictions,
         status: next.status,
+        kind: next.kind === 'development' ? 'development' : 'event',
+        actorIds: next.actorIds || [],
         firstSeenAt: prior?.firstSeenAt ?? nowIso,
         updatedAt: nowIso,
         digestRunId: runId,

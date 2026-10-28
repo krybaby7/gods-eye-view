@@ -47,6 +47,12 @@ export const CLAIM_TYPES = Object.freeze([
   'intent',
   'other',
 ]);
+/**
+ * An event happened at a place (a strike, a protest) and gets a pin; a
+ * development is a change with no meaningful point (a sanction, talks, a
+ * ruling) and appears only in the Stories list and the Brief.
+ */
+export const STORY_KINDS = Object.freeze(['event', 'development']);
 // The live runs wrote about 95 tokens a second, so a full 64k-token answer
 // takes about 11 minutes; a slower call is charged an estimate.
 const TIMEOUT_MS = 900_000;
@@ -59,8 +65,9 @@ const nullable = (schema) => ({ anyOf: [schema, { type: 'null' }] });
  * `additionalProperties: false` but no numeric or length constraints, so the
  * bounds are enforced by validateDigestOutput instead.
  * @param {string[]} categoryIds
+ * @param {string[]} [actorIds] The theater's actor ids.
  */
-export function digestSchema(categoryIds) {
+export function digestSchema(categoryIds, actorIds = []) {
   return {
     type: 'object',
     additionalProperties: false,
@@ -85,6 +92,8 @@ export function digestSchema(categoryIds) {
             'whatsNew',
             'contradictions',
             'status',
+            'kind',
+            'actorIds',
           ],
           properties: {
             id: nullable({ type: 'string' }),
@@ -113,6 +122,13 @@ export function digestSchema(categoryIds) {
             whatsNew: { type: 'string' },
             contradictions: { type: 'array', items: { type: 'string' } },
             status: { type: 'string', enum: ['open', 'closed'] },
+            kind: { type: 'string', enum: [...STORY_KINDS] },
+            actorIds: {
+              type: 'array',
+              items: actorIds.length
+                ? { type: 'string', enum: [...actorIds] }
+                : { type: 'string' },
+            },
           },
         },
       },
@@ -144,7 +160,9 @@ Output rules:
 - whatsNew: one short sentence on what this digest's new items add; "" for a new story.
 - claims: at most ${DIGEST_CLAIM_CAP} per story, the most important first.
 - contradictions: one sentence per conflict between sources ("IRNA says X; CENTCOM says Y."), else [].
-- claims[].itemIds: the cited items that carry that claim.`;
+- claims[].itemIds: the cited items that carry that claim.
+- kind: "event" for something that happened at a place (a strike, an interception, a protest); "development" for a change with no meaningful point on a map (a sanction, talks, a ruling, a statement of policy, a mobilisation order).
+- actorIds: ids from the actor list of the actors the story involves, [] when none applies. Use the list's ids only.`;
 
 /**
  * Fixed instructions: rules, theater brief, categories and gazetteer names.
@@ -160,8 +178,19 @@ export function buildDigestInstructions(theater) {
     HANDLING_RULES,
     `Theater: ${theater.name}\n${theater.brief.join('\n\n')}`,
     `Categories:\n${categories}`,
+    `Actors (id: name, aliases in parentheses):\n${actorListForPrompt(theater.actors) || '(none)'}`,
     `Gazetteer place names (aliases in parentheses):\n${placeNamesForPrompt(theater.gazetteer).join('\n')}`,
   ].join('\n\n');
+}
+
+/** "- iran: Iran (Tehran, IRGC)" per actor; shared with the brief prompt. */
+export function actorListForPrompt(actors = []) {
+  return actors
+    .map(
+      (actor) =>
+        `- ${actor.id}: ${actor.name}${actor.aliases?.length ? ` (${actor.aliases.join(', ')})` : ''}`,
+    )
+    .join('\n');
 }
 
 function itemTime(item) {
@@ -213,6 +242,8 @@ export function buildDigestInput({ openStories, items, sourcesById, nowIso }) {
       actor,
       type,
     })),
+    kind: story.kind === 'development' ? 'development' : 'event',
+    actorIds: story.actorIds || [],
   }));
   const newItems = items.map((item) => ({
     id: item.id,
@@ -233,7 +264,12 @@ ${JSON.stringify(newItems)}`;
 }
 
 /** The Agent API request body. */
-export function buildDigestRequest({ instructions, input, categoryIds }) {
+export function buildDigestRequest({
+  instructions,
+  input,
+  categoryIds,
+  actorIds = [],
+}) {
   return {
     model: DIGEST_MODEL,
     instructions,
@@ -245,7 +281,7 @@ export function buildDigestRequest({ instructions, input, categoryIds }) {
       type: 'json_schema',
       json_schema: {
         name: 'war_monitor_digest',
-        schema: digestSchema(categoryIds),
+        schema: digestSchema(categoryIds, actorIds),
         strict: true,
       },
     },
@@ -322,13 +358,15 @@ function validEventAt(value, nowMs) {
  * Validate model output against the store. Unknown item ids are dropped and
  * counted, an item cited by two stories stays with the first, stories left
  * with no valid ids are rejected, unknown story ids become new stories and
- * categories are clamped to the theater list. Text fields lose URLs.
+ * categories are clamped to the theater list. Kind defaults to event and
+ * actor ids outside the theater list are dropped and counted. Text fields
+ * lose URLs.
  * @param {unknown} output Parsed JSON.
- * @param {{knownItemIds: Set<string>, openStories: Map<string, object>, categoryIds: string[], nowMs: number}} context
+ * @param {{knownItemIds: Set<string>, openStories: Map<string, object>, categoryIds: string[], actorIds?: string[], nowMs: number}} context
  */
 export function validateDigestOutput(
   output,
-  { knownItemIds, openStories, categoryIds, nowMs },
+  { knownItemIds, openStories, categoryIds, actorIds = [], nowMs },
 ) {
   if (!Array.isArray(output?.stories)) {
     const error = new Error('digest output has no stories array');
@@ -341,7 +379,9 @@ export function validateDigestOutput(
     rejectedStories: 0,
     unknownStoryIds: 0,
     clampedCategories: 0,
+    droppedActorIds: 0,
   };
+  const knownActors = new Set(actorIds);
   const assigned = new Set();
   const usedStoryIds = new Set();
   const stories = [];
@@ -384,6 +424,12 @@ export function validateDigestOutput(
     const lon =
       Number.isFinite(raw.lon) && Math.abs(raw.lon) <= 180 ? raw.lon : null;
     const storyItems = new Set(itemIds);
+    const storyActors = [];
+    for (const actorId of Array.isArray(raw.actorIds) ? raw.actorIds : []) {
+      if (typeof actorId !== 'string' || !knownActors.has(actorId))
+        counts.droppedActorIds++;
+      else if (!storyActors.includes(actorId)) storyActors.push(actorId);
+    }
     stories.push({
       id,
       title: cleanText(raw.title, 160) || 'Untitled story',
@@ -422,6 +468,8 @@ export function validateDigestOutput(
         .filter(Boolean)
         .slice(0, 8),
       status: raw.status === 'closed' ? 'closed' : 'open',
+      kind: raw.kind === 'development' ? 'development' : 'event',
+      actorIds: storyActors,
     });
   }
   return { stories, counts };
@@ -583,6 +631,7 @@ export async function runDigest({
   const selected = selectDigestItems(newItems, sourcesById);
   const open = selectOpenStories(openStories);
   const categoryIds = theater.categories.map((category) => category.id);
+  const actorIds = (theater.actors || []).map((actor) => actor.id);
   const body = buildDigestRequest({
     instructions: buildDigestInstructions(theater),
     input: buildDigestInput({
@@ -592,6 +641,7 @@ export async function runDigest({
       nowIso: new Date(nowMs).toISOString(),
     }),
     categoryIds,
+    actorIds,
   });
   const result = await callDigestModel({ apiKey, body, fetchImpl, signal });
   const parsed = parseDigestText(result.text);
@@ -606,6 +656,7 @@ export async function runDigest({
       knownItemIds,
       openStories: new Map(open.map((story) => [story.id, story])),
       categoryIds,
+      actorIds,
       nowMs,
     });
   } catch (error) {

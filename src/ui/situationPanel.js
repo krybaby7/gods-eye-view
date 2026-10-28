@@ -418,7 +418,8 @@ export function createSituationPanel({
       (snapshot.categories || []).find((c) => c.id === story.category)?.label ||
       story.category;
     const flags = [];
-    if (!story.location) flags.push('no location · list only');
+    if (story.kind === 'development') flags.push('development · no pin');
+    else if (!story.location) flags.push('no location · list only');
     else if (story.location.method === 'model') flags.push('model-placed');
     if (story.status === 'closed') flags.push('closed');
     const items = citedItems(story, snapshot.items, snapshot.citations);
@@ -538,7 +539,7 @@ export function createSituationPanel({
       ? ''
       : stories.length
         ? listOnly
-          ? `${listOnly} ${listOnly === 1 ? 'story has' : 'stories have'} no location and appear only here.`
+          ? `${listOnly === 1 ? '1 story has no pin and appears' : `${listOnly} stories have no pin and appear`} only here.`
           : ''
         : snapshot.lastDigest
           ? 'No stories under these categories.'
