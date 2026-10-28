@@ -39,6 +39,13 @@ sentence must cite stories; code drops any sentence that does not. The map still
 
   The theater description becomes a neutral scope note: it no longer names the parties or frames
   the war as two sides.
+- **Evidence tightened after the first live run** (owner, 2026-10-28). The live Refresh accepted
+  the UAE on one outlet's allegation that sat inside a corroborated Saudi–Houthi story: the story
+  was corroborated, the mention of the UAE was not. So, besides rules 1 to 4, the evidence
+  stories' items must **name the actor (name or alias) from at least two perspective groups**,
+  the same groups the verification label uses. The same bar applies to upgrades, downgrades and
+  new actors. Replayed on that run: Saudi Arabia (four groups), Kuwait (two: Iran and Iran
+  diaspora) and Türkiye (three) still pass; the UAE (one) is refused.
 
 ## 2. The screen: eight questions, who answers each
 
@@ -182,10 +189,17 @@ stories report, not from its own knowledge. Code then:
   a suffix if taken). A proposal whose name matches an existing name or alias, or whose alias
   matches an existing name, is that actor. A proposal whose alias matches another actor's alias is
   refused as a possible duplicate ("US Central Command", also "CENTCOM"), neither merged nor added.
+- **Requires two perspective groups** for both of the above: among the items of those evidence
+  stories, publishers from at least two different perspective groups (the theater's groups, as
+  the verification label uses them) must name the actor in an item's title, original title or
+  snippet. Two outlets of one group (two Israeli papers, say) are not enough. A corroborated story
+  can rest on parts that do not concern the actor; this keeps one outlet's mention inside it from
+  counting.
 - **Never deletes** an actor. Learned actors join the digest's actor list, so later stories can be
   tagged with them.
 - **Records** each accepted role with when it changed, from what, and the evidence stories. The
-  run records what changed, what was held for lack of evidence, what was added, merged or refused.
+  run records what changed, what was held and why (no corroborated story, or named by one
+  perspective group), and what was added, merged or refused and why.
 
 The panel groups chips by current role, says on each chip where its role comes from ("Party
 since 14:03, on 2 corroborated stories", or "starting role from the theater file"), and lists the
@@ -320,7 +334,9 @@ From the research's pitfalls list, cut to what applies here:
   same; restating a role keeps its date; a new actor needs a corroborated story naming it, gets a
   code-made id, and a proposal naming an existing actor (by name or alias, any case) is that
   actor; a proposal using another actor's alias is refused; learned actors are never deleted and
-  can be tagged by the next digest; roles survive a restart.
+  can be tagged by the next digest; roles survive a restart. Two outlets from one perspective
+  group naming an actor: held (or refused, for a new actor); two from different groups:
+  accepted. Held and refused entries say why.
 - Run protocol: brief runs only after a successful digest; brief failure keeps the stories;
   budget counts brief runs; over-budget skip shows its reason; Retry brief works only after a
   failure.

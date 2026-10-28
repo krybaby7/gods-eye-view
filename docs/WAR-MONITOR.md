@@ -308,13 +308,21 @@ decides:
   (by name or alias, in any case: "KSA", "Saudi-led coalition") is that
   actor. A proposal using another actor's alias is refused as a possible
   duplicate.
+- **Both also need two perspective groups.** Among the items of those
+  evidence stories, publishers from at least two perspective groups (the
+  groups the verification label uses) must name the actor, by name or alias.
+  Two Israeli papers are one group, so they are not enough. A corroborated
+  story can rest on parts that have nothing to do with the actor; this keeps
+  one outlet's mention inside it from counting. (Added after the first live
+  run, where the UAE got in on one outlet's allegation.)
 - **Actors are never deleted.** Learned actors join the list the digest tags
   stories with. One the stories stop mentioning is only hidden from the strip.
 
-Each brief run records what changed (`roleChanges`), what was held for lack
-of evidence (`roleChangesHeld`), and what was added, merged or refused. With
-few corroborated stories (for example when GDELT returns nothing), roles move
-slowly; that is intended.
+Each brief run records what changed (`roleChanges`), what was held and why
+(`roleChangesHeld`: no corroborated story, or named by one perspective group),
+what was added (`actorsAdded`), merged (`actorsMerged`) and refused and why
+(`actorsRefused`). With few corroborated stories (for example when GDELT
+returns nothing), roles move slowly; that is intended.
 
 **Coverage line.** Computed from source health and item times, never by the
 model: sources down (blocked, failing or stale), grouped by perspective;
