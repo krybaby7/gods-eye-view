@@ -44,6 +44,25 @@ export const NEWS_PLACE_PRECISIONS = Object.freeze([
   'site',
 ]);
 
+/** Situation Brief actors: what kind of actor, and its undisputed role. */
+export const NEWS_ACTOR_TYPES = Object.freeze([
+  'state',
+  'armed-group',
+  'institution',
+  'population',
+]);
+export const NEWS_ACTOR_ROLES = Object.freeze([
+  'party',
+  'mediator',
+  'institution',
+  'affected',
+  'external',
+]);
+/** Drivers are curated, slow-changing and opinion-prone: three at most. */
+export const NEWS_DRIVER_CAP = 3;
+const ACTOR_CAP = 24;
+const TRACK_CAP = 4;
+
 const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const TELEGRAM_CHANNEL = /^[A-Za-z][A-Za-z0-9_]{3,63}$/;
 const DOMAIN =
@@ -212,6 +231,75 @@ function validateGazetteer(gazetteer) {
   });
 }
 
+function optionalList(value, what) {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) fail(`theater ${what} must be an array`);
+  return value;
+}
+
+/**
+ * Actors for the Situation Brief. Roles record only what is not in dispute;
+ * who backs whom is never written here.
+ */
+function validateActors(actors) {
+  const list = optionalList(actors, 'actors');
+  if (list.length > ACTOR_CAP)
+    fail(`theater has more than ${ACTOR_CAP} actors`);
+  const ids = new Set();
+  return list.map((actor) => {
+    const id = String(actor?.id ?? '');
+    if (!SLUG.test(id)) fail(`actor id ${JSON.stringify(id)} is invalid`);
+    if (ids.has(id)) fail(`duplicate actor ${id}`);
+    ids.add(id);
+    if (!nonEmptyString(actor.name)) fail(`actor ${id} needs a name`);
+    if (!NEWS_ACTOR_TYPES.includes(actor.type))
+      fail(`actor ${id} has unknown type ${actor.type}`);
+    if (!NEWS_ACTOR_ROLES.includes(actor.role))
+      fail(`actor ${id} has unknown role ${actor.role}`);
+    const aliases = Array.isArray(actor.aliases)
+      ? actor.aliases.filter(nonEmptyString).map((alias) => alias.trim())
+      : [];
+    return Object.freeze({
+      id,
+      name: actor.name.trim(),
+      type: actor.type,
+      role: actor.role,
+      aliases: Object.freeze(aliases),
+    });
+  });
+}
+
+function validateDrivers(drivers) {
+  const list = optionalList(drivers, 'drivers');
+  if (list.length > NEWS_DRIVER_CAP)
+    fail(`theater may list at most ${NEWS_DRIVER_CAP} drivers`);
+  return list.map((driver, index) => {
+    if (!nonEmptyString(driver?.text)) fail(`driver ${index} needs text`);
+    const source = driver.source;
+    if (!nonEmptyString(source?.name) || !httpsUrl(source?.url))
+      fail(`driver ${index} needs a source name and link`);
+    return Object.freeze({
+      text: driver.text.trim(),
+      source: Object.freeze({ name: source.name.trim(), url: source.url }),
+    });
+  });
+}
+
+function validateTracks(tracks) {
+  const list = optionalList(tracks, 'tracks');
+  if (list.length > TRACK_CAP)
+    fail(`theater has more than ${TRACK_CAP} tracks`);
+  const ids = new Set();
+  return list.map((track) => {
+    const id = String(track?.id ?? '');
+    if (!SLUG.test(id)) fail(`track id ${JSON.stringify(id)} is invalid`);
+    if (ids.has(id)) fail(`duplicate track ${id}`);
+    ids.add(id);
+    if (!nonEmptyString(track.label)) fail(`track ${id} needs a label`);
+    return Object.freeze({ id, label: track.label.trim() });
+  });
+}
+
 /**
  * Validate one theater against the loaded source directory.
  * @param {unknown} doc Parsed theater file.
@@ -253,6 +341,9 @@ export function validateNewsTheater(doc, sourcesById) {
     perspectives: Object.freeze(perspectives),
     gdeltTerms: Object.freeze(gdeltTerms),
     gazetteer: Object.freeze(validateGazetteer(doc.gazetteer)),
+    actors: Object.freeze(validateActors(doc.actors)),
+    drivers: Object.freeze(validateDrivers(doc.drivers)),
+    tracks: Object.freeze(validateTracks(doc.tracks)),
   });
 }
 

@@ -196,6 +196,201 @@
       "group": "analysis"
     }
   ],
+  "actors": [
+    {
+      "id": "iran",
+      "name": "Iran",
+      "type": "state",
+      "role": "party",
+      "aliases": [
+        "Tehran",
+        "Islamic Republic",
+        "IRGC",
+        "Islamic Revolutionary Guard Corps"
+      ]
+    },
+    {
+      "id": "israel",
+      "name": "Israel",
+      "type": "state",
+      "role": "party",
+      "aliases": [
+        "IDF",
+        "Israel Defense Forces",
+        "Israeli government"
+      ]
+    },
+    {
+      "id": "united-states",
+      "name": "United States",
+      "type": "state",
+      "role": "party",
+      "aliases": [
+        "US",
+        "USA",
+        "Washington",
+        "White House",
+        "Pentagon",
+        "CENTCOM"
+      ]
+    },
+    {
+      "id": "hezbollah",
+      "name": "Hezbollah",
+      "type": "armed-group",
+      "role": "party",
+      "aliases": [
+        "Hizbullah",
+        "Islamic Resistance in Lebanon"
+      ]
+    },
+    {
+      "id": "hamas",
+      "name": "Hamas",
+      "type": "armed-group",
+      "role": "party",
+      "aliases": [
+        "Qassam Brigades",
+        "Izz ad-Din al-Qassam Brigades"
+      ]
+    },
+    {
+      "id": "houthis",
+      "name": "Houthis",
+      "type": "armed-group",
+      "role": "party",
+      "aliases": [
+        "Ansar Allah",
+        "Ansarallah"
+      ]
+    },
+    {
+      "id": "iraqi-armed-groups",
+      "name": "Iraqi armed groups",
+      "type": "armed-group",
+      "role": "party",
+      "aliases": [
+        "Islamic Resistance in Iraq",
+        "Kataib Hezbollah",
+        "Harakat al-Nujaba"
+      ]
+    },
+    {
+      "id": "qatar",
+      "name": "Qatar",
+      "type": "state",
+      "role": "mediator",
+      "aliases": [
+        "Doha"
+      ]
+    },
+    {
+      "id": "pakistan",
+      "name": "Pakistan",
+      "type": "state",
+      "role": "mediator",
+      "aliases": [
+        "Islamabad"
+      ]
+    },
+    {
+      "id": "saudi-arabia",
+      "name": "Saudi Arabia",
+      "type": "state",
+      "role": "external",
+      "aliases": [
+        "Riyadh",
+        "Saudi-led coalition"
+      ]
+    },
+    {
+      "id": "iaea",
+      "name": "IAEA",
+      "type": "institution",
+      "role": "institution",
+      "aliases": [
+        "International Atomic Energy Agency"
+      ]
+    },
+    {
+      "id": "united-nations",
+      "name": "United Nations",
+      "type": "institution",
+      "role": "institution",
+      "aliases": [
+        "UN",
+        "UN Security Council",
+        "OCHA",
+        "UNRWA",
+        "UNIFIL"
+      ]
+    },
+    {
+      "id": "civilians-gaza-west-bank",
+      "name": "Civilians in Gaza and the West Bank",
+      "type": "population",
+      "role": "affected",
+      "aliases": []
+    },
+    {
+      "id": "civilians-lebanon",
+      "name": "Civilians in Lebanon",
+      "type": "population",
+      "role": "affected",
+      "aliases": []
+    },
+    {
+      "id": "civilians-israel",
+      "name": "Civilians in Israel",
+      "type": "population",
+      "role": "affected",
+      "aliases": []
+    },
+    {
+      "id": "civilians-iran",
+      "name": "Civilians in Iran",
+      "type": "population",
+      "role": "affected",
+      "aliases": []
+    }
+  ],
+  "drivers": [
+    {
+      "text": "Iran's nuclear programme has been disputed for two decades: the 2015 deal that limited it lost force after the US left it in 2018, and Iran then enriched uranium beyond the deal's limits.",
+      "source": {
+        "name": "Council on Foreign Relations",
+        "url": "https://www.cfr.org/backgrounder/what-iran-nuclear-deal"
+      }
+    },
+    {
+      "text": "Iran has long backed armed groups across the region, including Hezbollah, Hamas, the Houthis and Iraqi militias; the US and Israel cite that network and the nuclear programme as threats.",
+      "source": {
+        "name": "Council on Foreign Relations",
+        "url": "https://www.cfr.org/global-conflict-tracker/conflict/confrontation-between-united-states-and-iran"
+      }
+    },
+    {
+      "text": "The Gaza war that followed the Hamas-led attack on Israel on 7 October 2023 spread across the region: Hezbollah, the Houthis and Iraqi armed groups joined in, and Israel and Iran fought a twelve-day war in June 2025.",
+      "source": {
+        "name": "Council on Foreign Relations",
+        "url": "https://www.cfr.org/global-conflict-tracker/conflict/israeli-palestinian-conflict"
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "military",
+      "label": "Military"
+    },
+    {
+      "id": "diplomatic",
+      "label": "Diplomatic"
+    },
+    {
+      "id": "humanitarian",
+      "label": "Humanitarian"
+    }
+  ],
   "gdeltTerms": [
     "Iran",
     "Israel",
