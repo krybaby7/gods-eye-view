@@ -285,3 +285,277 @@
   padding-top: 6px;
   border-top: 1px solid var(--glass-border);
 }
+
+/* Frame theater sits between the theater selector and Refresh. */
+.situation-row > select {
+  min-width: 0;
+}
+
+.situation-frame {
+  flex: 0 0 auto;
+}
+
+/* Situation Brief. Neutral throughout: states are words with a glyph, not
+   colours, and actors share one chip style (roles, not sides). */
+.situation-brief {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+  border-top: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.situation-brief[hidden],
+.situation-brief-more[hidden],
+.situation-cited-note[hidden] {
+  display: none;
+}
+
+.situation-brief-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.situation-brief-toggle {
+  font-size: 11px;
+}
+
+.situation-brief-lines,
+.situation-signposts,
+.situation-drivers ul,
+.situation-brief-coverage-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.situation-brief-line {
+  display: block;
+  width: 100%;
+  padding: 1px 0;
+  border: 0;
+  background: none;
+  color: var(--text-primary);
+  font: 12px/1.45 var(--panel-surface-font);
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.situation-brief-lines .situation-brief-line::before {
+  content: '· ';
+  color: var(--text-secondary);
+}
+
+.situation-brief-line:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--glass-border-hover);
+}
+
+.situation-brief-headline {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.situation-brief-line:focus-visible,
+.situation-track:focus-visible,
+.situation-signpost-seen:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+.situation-tracks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.situation-track {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  padding: 3px 7px;
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  background: none;
+  color: var(--text-primary);
+  font: 11px/1.3 var(--panel-surface-font);
+  text-align: left;
+  cursor: pointer;
+}
+
+.situation-track:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.situation-track-label {
+  color: var(--text-secondary);
+  font: 600 10px/1.3 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.situation-track-state {
+  font-weight: 600;
+}
+
+.situation-track[data-state='none'] .situation-track-state,
+.situation-track[data-state='unclear'] .situation-track-state {
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.situation-brief-filter,
+.situation-brief-coverage,
+.situation-brief-age,
+.situation-cited-note {
+  font-size: 11px;
+}
+
+.situation-brief-coverage {
+  color: var(--text-secondary);
+}
+
+.situation-brief-coverage-details li {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.situation-brief-meta {
+  color: var(--text-secondary);
+  font: 10px/1.4 var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+.situation-brief-retry {
+  align-self: flex-start;
+}
+
+.situation-brief-more {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.situation-actors {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.situation-actor-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.situation-actor-role {
+  min-width: 74px;
+  color: var(--text-secondary);
+  font: 600 10px/1.4 var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.situation-actor {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  max-width: 100%;
+  cursor: pointer;
+}
+
+.situation-actor[aria-pressed='true'] {
+  border-color: var(--glass-border-hover);
+  background: var(--accent-dim);
+  color: var(--text-primary);
+}
+
+.situation-actor-type,
+.situation-actor-count {
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.situation-actor-note {
+  font-size: 11px;
+}
+
+.situation-brief-kicker {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-style: italic;
+}
+
+.situation-drivers li {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.situation-scenario {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+}
+
+.situation-scenario-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.situation-scenario-title {
+  font-weight: 600;
+}
+
+.situation-scenario-horizon {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.situation-signposts li {
+  font-size: 11px;
+}
+
+.situation-signpost-seen {
+  padding: 0 4px;
+  border: 1px solid var(--glass-border-hover);
+  border-radius: 3px;
+  background: none;
+  color: var(--text-primary);
+  font: 600 10px/1.4 var(--panel-surface-font);
+  cursor: pointer;
+}
+
+.situation-signpost-open {
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+/* A story a brief line cites; a quiet marker for stories new since the
+   viewer's last visit, distinct from the verification label. */
+.situation-story-cited {
+  background: var(--accent-dim);
+}
+
+.situation-marker-fresh {
+  margin-right: 6px;
+  border: 1px solid var(--glass-border-hover);
+  color: var(--text-primary);
+  font-weight: 400;
+}

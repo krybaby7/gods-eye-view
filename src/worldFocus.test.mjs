@@ -141,7 +141,7 @@ test('fires frame wider than vessels — a fire is read by its surroundings', ()
 
 test('every framing is a real oblique standoff, not a nadir or an inside-out sphere', () => {
   const kinds = Object.keys(WORLD_FOCUS_FRAMING);
-  assert.deepEqual(kinds.sort(), ['fire', 'story', 'vessel']);
+  assert.deepEqual(kinds.sort(), ['fire', 'story', 'theater', 'vessel']);
   for (const kind of kinds) {
     const framing = WORLD_FOCUS_FRAMING[kind];
     // Looking DOWN at the target, but obliquely — a nadir drop reads as a map.
@@ -153,14 +153,39 @@ test('every framing is a real oblique standoff, not a nadir or an inside-out sph
       framing.rangeM > framing.radiusM,
       `${kind}: range ${framing.rangeM} must stand off outside radius ${framing.radiusM}`,
     );
-    // Objects are framed close in; a news story's place is a city or region.
-    const maxRangeM = kind === 'story' ? 150_000 : 10000;
+    // Objects are framed close in; a news story's place is a city or region;
+    // a theater is every located story.
+    const maxRangeM =
+      kind === 'theater' ? 1_000_000 : kind === 'story' ? 150_000 : 10000;
     assert.ok(framing.rangeM <= maxRangeM, `${kind}: range must stay close-in, got ${framing.rangeM}`);
   }
   // Exact shipped values — a silent retune must show up as a failing test.
   assert.deepEqual({ ...WORLD_FOCUS_FRAMING.vessel }, { radiusM: 150, rangeM: 1200, pitchDeg: -30 });
   assert.deepEqual({ ...WORLD_FOCUS_FRAMING.fire }, { radiusM: 400, rangeM: 3000, pitchDeg: -35 });
   assert.deepEqual({ ...WORLD_FOCUS_FRAMING.story }, { radiusM: 4000, rangeM: 90_000, pitchDeg: -55 });
+});
+
+test('a theater frames the sphere its request carries, within a floor and a ceiling', () => {
+  const fly = (radiusM) => {
+    const camera = stubCamera();
+    flyToWorldTarget(
+      { camera },
+      { kind: 'theater', id: 'news-theater:x', position: POSITION, radiusM },
+    );
+    const { sphere, options } = camera.calls.flights[0];
+    return [sphere.radius, options.offset.range];
+  };
+  assert.deepEqual(fly(800_000), [800_000, 2_400_000]);
+  assert.deepEqual(fly(1000), [150_000, 450_000], 'one place: the floor');
+  assert.deepEqual(fly(9e6), [3_000_000, 9_000_000], 'never a hemisphere');
+  assert.deepEqual(fly(undefined), [150_000, 450_000]);
+  // Other kinds ignore a carried radius.
+  const camera = stubCamera();
+  flyToWorldTarget(
+    { camera },
+    { kind: 'story', id: 'news:a', position: POSITION, radiusM: 9e6 },
+  );
+  assert.equal(camera.calls.flights[0].sphere.radius, 4000);
 });
 
 test('unknown kinds and missing viewers issue no flight', () => {

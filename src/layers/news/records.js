@@ -447,6 +447,22 @@ export function isPinnedStory(story) {
   return Boolean(story?.location) && story.kind !== 'development';
 }
 
+/** Stories tagged with one actor; a null actor keeps them all. */
+export function filterStoriesByActor(stories, actorId) {
+  if (!actorId) return stories;
+  return stories.filter((story) => (story.actorIds || []).includes(actorId));
+}
+
+/**
+ * New since the viewer's last visit: updated after the digest they last
+ * saw. Nothing is new before a first visit has been recorded.
+ */
+export function isNewSince(story, sinceMs) {
+  return (
+    Number.isFinite(sinceMs) && Date.parse(story?.updatedAt || '') > sinceMs
+  );
+}
+
 /** Stories visible under a category filter (`hidden` is a Set of ids). */
 export function filterNewsStories(stories, hidden) {
   if (!hidden?.size) return stories;

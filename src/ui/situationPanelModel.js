@@ -81,7 +81,7 @@ export function refreshState(snapshot, nowMs) {
     return {
       running: true,
       disabled: true,
-      label: `Digesting… ${formatElapsed(Number.isNaN(started) ? 0 : nowMs - started)}`,
+      label: `${digest.phase === 'brief' ? 'Writing brief…' : 'Digesting…'} ${formatElapsed(Number.isNaN(started) ? 0 : nowMs - started)}`,
       reason: REFRESH_DISABLED_REASONS.in_flight,
       reasonCode: 'in_flight',
     };
@@ -122,6 +122,8 @@ export function formatDigestLine(snapshot, nowMs, options = {}) {
   const tail = [];
   if (Number.isFinite(budget.lastRunCostUsd))
     tail.push(`last run ${formatUsdShort(budget.lastRunCostUsd)}`);
+  if (Number.isFinite(budget.lastBriefCostUsd))
+    tail.push(`brief ${formatUsdShort(budget.lastBriefCostUsd)}`);
   if (Number.isFinite(budget.remainingUsd))
     tail.push(`budget $${budget.remainingUsd.toFixed(2)} left`);
   const lastDigest = snapshot.lastDigest;

@@ -73,6 +73,21 @@ test('the digest line reads time, stories, items, unassigned, cost and budget', 
     formatDigestLine(snapshot(), NOW, UTC),
     'Digest 14:02 · 2 stories from 2 items · 1 unassigned · last run 18¢ · budget $1.42 left',
   );
+  // The brief that followed the digest shows its own cost beside it.
+  assert.equal(
+    formatDigestLine(
+      snapshot({
+        budget: {
+          remainingUsd: 1.3,
+          lastRunCostUsd: 0.18,
+          lastBriefCostUsd: 0.12,
+        },
+      }),
+      NOW,
+      UTC,
+    ),
+    'Digest 14:02 · 2 stories from 2 items · 1 unassigned · last run 18¢ · brief 12¢ · budget $1.30 left',
+  );
   assert.equal(
     formatDigestLine(
       snapshot({
@@ -104,6 +119,19 @@ test('Refresh: idle, running with elapsed time, disabled with the reason', () =>
   );
   assert.equal(running.label, 'Digesting… 0:23');
   assert.equal(running.disabled, true);
+  assert.equal(
+    refreshState(
+      snapshot({
+        digest: {
+          running: true,
+          phase: 'brief',
+          startedAt: '2026-10-26T14:29:37Z',
+        },
+      }),
+      NOW,
+    ).label,
+    'Writing brief… 0:23',
+  );
   for (const [code, pattern] of [
     ['no_key', /PERPLEXITY_API_KEY/],
     ['over_budget', /budget is used up/],

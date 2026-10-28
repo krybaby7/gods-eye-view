@@ -21,8 +21,9 @@ function escapeAttribute(value) {
 /**
  * One story marker: a filled disc, a ring when every source is a party to
  * the conflict, a dashed outline when the model (not the gazetteer) placed
- * it, a white halo when selected.
- * @param {{color: string, size: number, ring?: boolean, dashed?: boolean, selected?: boolean}} style
+ * it, a white halo when selected, and a small corner dot when the story is
+ * new since the viewer's last visit (apart from the verification ring).
+ * @param {{color: string, size: number, ring?: boolean, dashed?: boolean, selected?: boolean, fresh?: boolean}} style
  * @returns {string} SVG data URL.
  */
 export function newsMarkerImage({
@@ -31,6 +32,7 @@ export function newsMarkerImage({
   ring = false,
   dashed = false,
   selected = false,
+  fresh = false,
 }) {
   const s = Math.max(8, Math.round(size)) + 6;
   const c = s / 2;
@@ -40,18 +42,22 @@ export function newsMarkerImage({
     ? `<circle cx="${c}" cy="${c}" r="${r - 1.5}" fill="${fill}" fill-opacity="0.18" stroke="${fill}" stroke-width="3"/>`
     : `<circle cx="${c}" cy="${c}" r="${r}" fill="${fill}" fill-opacity="0.9"/>`;
   const outline = `<circle cx="${c}" cy="${c}" r="${r + 1.5}" fill="none" stroke="${selected ? '#ffffff' : '#0b1220'}" stroke-opacity="${selected ? 1 : 0.85}" stroke-width="${selected ? 2.5 : 1.5}"${dashed ? ' stroke-dasharray="3 2.5"' : ''}/>`;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">${disc}${outline}</svg>`;
+  const dot = fresh
+    ? `<circle data-fresh="1" cx="${s - 3.5}" cy="3.5" r="2.5" fill="#f8fafc" stroke="#0b1220" stroke-width="1"/>`
+    : '';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">${disc}${outline}${dot}</svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 /** Marker style for a story under its theater's categories. */
-export function newsMarkerStyle(story, color, selected = false) {
+export function newsMarkerStyle(story, color, selected = false, fresh = false) {
   return {
     color,
     size: newsMarkerSizePx(story.sourceCount),
     ring: story.verification === 'participant-claim',
     dashed: story.location?.method === 'model',
     selected,
+    fresh,
   };
 }
 

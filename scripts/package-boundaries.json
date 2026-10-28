@@ -297,6 +297,7 @@
       "server/providers/common/same-site.js",
       "server/providers/common/source-root.js",
       "server/providers/news/collector.js",
+      "server/providers/news/digest/brief.js",
       "server/providers/news/digest/runner.js",
       "server/providers/news/digest/stories.js",
       "server/providers/news/digest/store.js",
@@ -313,7 +314,8 @@
       "src/data/regionalModel.js",
       "src/localRequestGate.mjs",
       "src/sources/httpBody.js",
-      "src/sources/rateLimit.js"
+      "src/sources/rateLimit.js",
+      "src/layers/news/coverage.js"
     ],
     "external": []
   },
@@ -492,7 +494,10 @@
     "exports": ["./ui/situation-panel"],
     "modules": [
       "src/layers/news/records.js",
+      "src/layers/news/coverage.js",
       "src/ui/situationPanel.js",
+      "src/ui/situationBrief.js",
+      "src/ui/situationBriefModel.js",
       "src/ui/situationPanelModel.js"
     ],
     "external": []
@@ -2286,8 +2291,11 @@
       "src/layers/news/index.js",
       "src/layers/news/model.js",
       "src/layers/news/records.js",
+      "src/layers/news/coverage.js",
       "src/layers/news/source.js",
       "src/ui/situationPanel.js",
+      "src/ui/situationBrief.js",
+      "src/ui/situationBriefModel.js",
       "src/ui/situationPanelModel.js"
     ],
     "external": [
