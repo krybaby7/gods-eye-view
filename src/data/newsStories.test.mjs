@@ -127,6 +127,41 @@ test('items repeating one primary source count once toward corroboration', () =>
     ]),
     'corroborated',
   );
+  // Two different releases from the same issuer are still one source.
+  assert.equal(
+    verify([
+      item('state', 'us-mil', { primarySource: statement }),
+      item('independent', 'international-wire', {
+        primarySource: {
+          ...statement,
+          url: 'https://www.centcom.mil/y',
+        },
+      }),
+    ]),
+    'reported',
+  );
+});
+
+test('distinct primary sources from different groups corroborate', () => {
+  assert.equal(
+    verify([
+      item('state', 'us-mil', {
+        primarySource: {
+          kind: 'statement',
+          issuer: 'US Central Command',
+          url: 'https://www.centcom.mil/x',
+        },
+      }),
+      item('independent', 'international-wire', {
+        primarySource: {
+          kind: 'statement',
+          issuer: 'IRNA',
+          url: 'https://en.irna.ir/news/1',
+        },
+      }),
+    ]),
+    'corroborated',
+  );
 });
 
 test('disputed: contradictions without corroboration; corroboration wins over contradictions', () => {

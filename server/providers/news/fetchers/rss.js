@@ -4,21 +4,26 @@ import {
   FETCHER_ITEM_CAP,
   candidate,
   errorMessage,
+  linkedStatement,
+  primarySourceFor,
   sourceStatus,
 } from './text.js';
 
 /**
  * Fetch one RSS or Atom source. Headline, snippet, link and publisher only.
- * Never throws: failures come back as a status record with no items.
+ * An entry whose text links to an official or armed-group website records
+ * that statement as its primary source. Never throws: failures come back as
+ * a status record with no items.
  * @param {object} source Registry source with transport.type 'rss'.
- * @param {{fetchImpl?: Function, signal?: AbortSignal}} [options]
+ * @param {{fetchImpl?: Function, signal?: AbortSignal, statementHosts?: Map<string, string>}} [options]
  * @returns {Promise<{items: Array<object>, status: object}>}
  */
 export async function fetchRssSource(source, options = {}) {
+  const { statementHosts = new Map(), ...fetchOptions } = options;
   const startedAt = Date.now();
   try {
     const response = await fetchNewsBody(source.transport.url, {
-      ...options,
+      ...fetchOptions,
       headers: {
         Accept:
           'application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5',
@@ -48,6 +53,9 @@ export async function fetchRssSource(source, options = {}) {
         url: entry.url,
         publishedAt: entry.publishedAt,
         language,
+        primarySource:
+          primarySourceFor(source, entry.url) ??
+          linkedStatement(entry.links, statementHosts),
       }),
     );
     return {

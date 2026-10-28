@@ -6,6 +6,7 @@ import {
   groupGdeltSources,
 } from './fetchers/gdeltDomain.js';
 import { fetchReliefwebSource } from './fetchers/reliefweb.js';
+import { statementHosts } from './fetchers/text.js';
 import { ITEM_RETENTION_MS } from './store.js';
 
 /**
@@ -90,6 +91,7 @@ export function createNewsCollector({
 }) {
   const { theater, sourcesById } = registry;
   const sources = theater.sourceIds.map((id) => sourcesById.get(id));
+  const linkHosts = statementHosts([...sourcesById.values()]);
   const health = new Map(sources.map((s) => [s.id, initialHealth(s)]));
   const lastRunAt = new Map();
   const running = new Map();
@@ -105,7 +107,7 @@ export function createNewsCollector({
     switch (type) {
       case 'rss':
         return mapLimited(list, FEED_CONCURRENCY, (s) =>
-          fetchRssSource(s, options),
+          fetchRssSource(s, { ...options, statementHosts: linkHosts }),
         );
       case 'telegram-public':
         return mapLimited(list, 2, (s) => fetchTelegramSource(s, options));

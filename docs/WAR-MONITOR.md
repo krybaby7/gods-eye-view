@@ -211,8 +211,11 @@ Code applies the first rule that holds:
 1. **Corroborated.** Two cited items that:
    - come from different perspective groups;
    - include at least one independent, humanitarian or verification outlet;
-   - do not trace to the same primary document. Official and armed-group
-     posts are their own primary source. ReliefWeb reports carry their
+   - do not trace to the same primary source: the same statement URL or the
+     same issuer. Official and armed-group posts are their own primary
+     source. An RSS entry whose text links to an official or armed-group
+     website (not a shared platform such as Telegram or X) records that
+     statement as its primary source. ReliefWeb reports carry their
      authoring body.
 2. **Disputed.** The digest recorded contradictions and nothing corroborates.
 3. **Participant claim.** Every cited item comes from a party to the conflict

@@ -23,7 +23,11 @@ import {
   fetchReliefwebSource,
   reliefwebRequestBody,
 } from '../../server/providers/news/fetchers/reliefweb.js';
-import { detectLanguage } from '../../server/providers/news/fetchers/text.js';
+import {
+  detectLanguage,
+  linkedStatement,
+  statementHosts,
+} from '../../server/providers/news/fetchers/text.js';
 
 const readJson = (relative) =>
   JSON.parse(readFileSync(new URL(relative, import.meta.url), 'utf8'));
@@ -182,6 +186,36 @@ test('official sources mark their items as primary statements', async () => {
     issuer: 'US Central Command',
     url: 'https://example.org/a?utm=1',
   });
+});
+
+test('an entry linking to an official website records that statement', async () => {
+  const hosts = statementHosts(registry.sources);
+  assert.equal(hosts.get('centcom.mil'), 'US Central Command');
+  assert.equal(hosts.has('t.me'), false, 'shared platforms name no issuer');
+  const wire = source('wire', { type: 'rss', url: 'https://example.org/feed' });
+  const feed = `<rss><channel>
+<item><title>Strike near port</title><link>https://wire.example/1</link>
+<description><![CDATA[<p>Via <a href="https://t.me/idfofficial/9">a channel</a> and
+<a href="https://www.centcom.mil/MEDIA/PRESS-RELEASES/Article/42/">CENTCOM</a>.</p>]]></description></item>
+<item><title>Unrelated</title><link>https://wire.example/2</link>
+<description><![CDATA[<a href="https://t.me/idfofficial/10">post</a>]]></description></item>
+</channel></rss>`;
+  const { items } = await fetchRssSource(wire, {
+    fetchImpl: async () => respond(feed),
+    statementHosts: hosts,
+  });
+  assert.deepEqual(items[0].primarySource, {
+    kind: 'statement',
+    issuer: 'US Central Command',
+    url: 'https://www.centcom.mil/MEDIA/PRESS-RELEASES/Article/42/',
+  });
+  assert.equal(items[1].primarySource, null);
+  assert.equal(
+    linkedStatement(['https://news.centcom.mil/x'], hosts)?.issuer,
+    'US Central Command',
+    'subdomains count',
+  );
+  assert.equal(linkedStatement(['https://notcentcom.mil/x'], hosts), null);
 });
 
 const TELEGRAM = `<html><body>
