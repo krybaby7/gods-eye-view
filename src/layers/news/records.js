@@ -19,6 +19,27 @@ export const NEWS_FOLDERS = Object.freeze([
   'humanitarian',
   'analysis',
 ]);
+/** Situation Brief: fixed lists the model chooses from; checked again here. */
+export const NEWS_TRACK_STATES = Object.freeze([
+  'escalating',
+  'easing',
+  'stalled',
+  'shifting',
+  'unclear',
+]);
+export const NEWS_SCENARIO_HORIZONS = Object.freeze([
+  'days',
+  'weeks',
+  'months',
+]);
+export const NEWS_ACTOR_ROLES = Object.freeze([
+  'party',
+  'mediator',
+  'institution',
+  'affected',
+  'external',
+]);
+const ACTOR_TYPES = ['state', 'armed-group', 'institution', 'population'];
 const FALLBACK_CATEGORY_COLOR = '#94a3b8';
 
 const text = (value, max = 600) =>
@@ -140,12 +161,93 @@ function normalizeStory(raw) {
   };
 }
 
+/** A cited brief line, or null when it has no text or no story. */
+function normalizeLine(raw, max = 400) {
+  if (!raw || typeof raw.text !== 'string' || !raw.text.trim()) return null;
+  const storyIds = stringList(raw.storyIds, 40);
+  return storyIds.length ? { text: raw.text.slice(0, max), storyIds } : null;
+}
+
+const lineList = (value, max) =>
+  (Array.isArray(value) ? value : [])
+    .map((entry) => normalizeLine(entry))
+    .filter(Boolean)
+    .slice(0, max);
+
+/**
+ * The Situation Brief, already checked by the server; checked again here so
+ * a malformed payload cannot put an uncited line on screen. A brief without
+ * a cited headline is no brief.
+ */
+function normalizeBrief(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const headline = normalizeLine(raw.headline);
+  if (!headline) return null;
+  return {
+    id: text(raw.id, 32),
+    digestRunId: textOrNull(raw.digestRunId, 64),
+    createdAt: isoOrNull(raw.createdAt),
+    headline,
+    changes: lineList(raw.changes, 3),
+    trigger: normalizeLine(raw.trigger),
+    tracks: (Array.isArray(raw.tracks) ? raw.tracks : [])
+      .filter((track) => track && typeof track.id === 'string')
+      .slice(0, 4)
+      .map((track) => ({
+        id: text(track.id, 64),
+        state: NEWS_TRACK_STATES.includes(track.state)
+          ? track.state
+          : 'unclear',
+        reason: text(track.reason, 300),
+        storyIds: stringList(track.storyIds, 40),
+      })),
+    affected: lineList(raw.affected, 3),
+    scenarios: (Array.isArray(raw.scenarios) ? raw.scenarios : [])
+      .filter(
+        (scenario) =>
+          scenario &&
+          typeof scenario.title === 'string' &&
+          typeof scenario.text === 'string',
+      )
+      .slice(0, 3)
+      .map((scenario) => ({
+        title: text(scenario.title, 120),
+        horizon: NEWS_SCENARIO_HORIZONS.includes(scenario.horizon)
+          ? scenario.horizon
+          : null,
+        text: text(scenario.text, 500),
+        storyIds: stringList(scenario.storyIds, 40),
+        signposts: (Array.isArray(scenario.signposts) ? scenario.signposts : [])
+          .filter(
+            (signpost) =>
+              typeof signpost?.text === 'string' && signpost.text.trim(),
+          )
+          .slice(0, 4)
+          .map((signpost) => ({
+            text: text(signpost.text, 200),
+            seenIn: stringList(signpost.seenIn, 40),
+          })),
+      })),
+    unknowns: lineList(raw.unknowns, 3),
+    actorNotes: (Array.isArray(raw.actorNotes) ? raw.actorNotes : [])
+      .filter((note) => typeof note?.actorId === 'string')
+      .map((note) => {
+        const line = normalizeLine(note, 300);
+        return line ? { actorId: text(note.actorId, 64), ...line } : null;
+      })
+      .filter(Boolean),
+  };
+}
+
 function normalizeRun(raw) {
   if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string')
     return null;
   const count = (value) => (Number.isFinite(value) ? value : null);
   return {
     id: raw.id,
+    kind: raw.kind === 'brief' ? 'brief' : 'digest',
+    digestRunId: textOrNull(raw.digestRunId, 64),
+    reason: textOrNull(raw.reason, 32),
     status: ['ok', 'failed', 'skipped'].includes(raw.status)
       ? raw.status
       : 'failed',
@@ -159,6 +261,12 @@ function normalizeRun(raw) {
     unassignedCount: count(raw.unassignedCount),
     leftOut: count(raw.leftOut),
     droppedItemIds: count(raw.droppedItemIds),
+    storiesSent: count(raw.storiesSent),
+    droppedLines: count(raw.droppedLines),
+    droppedStoryIds: count(raw.droppedStoryIds),
+    inputTokens: count(raw.inputTokens),
+    outputTokens: count(raw.outputTokens),
+    reasoningTokens: count(raw.reasoningTokens),
     costUsd: count(raw.costUsd),
     costEstimated: raw.costEstimated === true,
     model: textOrNull(raw.model, 80),
@@ -204,8 +312,41 @@ export function normalizeNewsSnapshot(payload) {
       label: text(p.label, 60) || p.id,
       group: text(p.group, 64) || p.id,
     }));
+  const list = (value) => (Array.isArray(value) ? value : []);
+  const actors = list(payload.theater.actors)
+    .filter(
+      (actor) =>
+        typeof actor?.id === 'string' &&
+        typeof actor.name === 'string' &&
+        ACTOR_TYPES.includes(actor.type) &&
+        NEWS_ACTOR_ROLES.includes(actor.role),
+    )
+    .map((actor) => ({
+      id: actor.id,
+      name: text(actor.name, 80),
+      type: actor.type,
+      role: actor.role,
+      aliases: stringList(actor.aliases, 20),
+    }));
+  const drivers = list(payload.theater.drivers)
+    .filter((driver) => typeof driver?.text === 'string')
+    .slice(0, 3)
+    .map((driver) => ({
+      text: text(driver.text, 400),
+      source: {
+        name: text(driver.source?.name, 120),
+        url: safeUrl(driver.source?.url),
+      },
+    }));
+  const tracks = list(payload.theater.tracks)
+    .filter((track) => typeof track?.id === 'string')
+    .map((track) => ({
+      id: track.id,
+      label: text(track.label, 40) || track.id,
+    }));
   const budget = payload.budget || {};
   const digest = payload.digest || {};
+  const briefStatus = payload.briefStatus || {};
   return {
     revision: String(payload.revision || ''),
     retrievedAt: isoOrNull(payload.retrievedAt),
@@ -214,6 +355,9 @@ export function normalizeNewsSnapshot(payload) {
       name: text(payload.theater.name, 80) || payload.theater.id,
       categories,
       perspectives,
+      actors,
+      drivers,
+      tracks,
     },
     theaters: (Array.isArray(payload.theaters) ? payload.theaters : [])
       .filter((t) => t && typeof t.id === 'string')
@@ -225,6 +369,15 @@ export function normalizeNewsSnapshot(payload) {
     stories: payload.stories.map(normalizeStory).filter(Boolean),
     lastRun: normalizeRun(payload.lastRun),
     lastDigest: normalizeRun(payload.lastDigest),
+    brief: normalizeBrief(payload.brief),
+    briefRun: normalizeRun(payload.briefRun),
+    briefStatus: {
+      digestsBehind: Number.isInteger(briefStatus.digestsBehind)
+        ? Math.max(0, briefStatus.digestsBehind)
+        : null,
+      retryable: briefStatus.retryable === true,
+      retryDisabledReason: textOrNull(briefStatus.retryDisabledReason, 32),
+    },
     sources: (Array.isArray(payload.sources) ? payload.sources : [])
       .filter((s) => s && typeof s.id === 'string')
       .map((s) => ({
@@ -262,12 +415,14 @@ export function normalizeNewsSnapshot(payload) {
       remainingUsd: finiteOrNull(budget.remainingUsd),
       exhausted: budget.exhausted === true,
       lastRunCostUsd: finiteOrNull(budget.lastRunCostUsd),
+      lastBriefCostUsd: finiteOrNull(budget.lastBriefCostUsd),
     },
     digest: {
       provider: text(digest.provider, 80),
       model: text(digest.model, 80),
       keyConfigured: digest.keyConfigured === true,
       running: digest.running === true,
+      phase: ['digest', 'brief'].includes(digest.phase) ? digest.phase : null,
       startedAt: isoOrNull(digest.startedAt),
       disabledReason: textOrNull(digest.disabledReason, 32),
       undigestedCount: finiteOrNull(digest.undigestedCount) ?? 0,
@@ -359,6 +514,39 @@ export function formatUsdShort(value) {
   return `$${value.toFixed(2)}`;
 }
 
+/** What happened to the brief after a digest or a Retry brief, or "". */
+function briefSentence(briefRun) {
+  if (!briefRun) return '';
+  if (briefRun.status === 'ok')
+    return `Brief written, ${formatUsdShort(briefRun.costUsd)}.`;
+  if (briefRun.status === 'skipped')
+    return `${String(briefRun.message || 'Brief skipped').replace(/\.$/, '')}.`;
+  const cost =
+    Number(briefRun.costUsd) > 0
+      ? ` and cost ${formatUsdShort(briefRun.costUsd)}`
+      : '';
+  return `The brief failed (${briefRun.error || 'error'})${cost}; the previous brief stays.`;
+}
+
+/**
+ * One readable sentence for a Retry brief outcome.
+ * @param {object} outcome From the source's requestBrief.
+ */
+export function formatBriefOutcome(outcome) {
+  if (!outcome) return '';
+  if (outcome.keyRequired)
+    return 'The brief needs a Perplexity API key: add PERPLEXITY_API_KEY in Provider Settings.';
+  if (outcome.error === 'in_flight')
+    return 'A digest or brief is already running.';
+  if (outcome.error === 'nothing_to_retry')
+    return 'There is no failed brief to retry.';
+  if (outcome.error === 'rate_limited')
+    return 'Too many requests; try again in a minute.';
+  const sentence = briefSentence(outcome.briefRun);
+  if (sentence) return sentence;
+  return `The brief failed (${outcome.error || 'error'}${outcome.message ? `: ${outcome.message}` : ''}).`;
+}
+
 /**
  * One readable sentence for a digest outcome (panel notice and voice
  * read-back).
@@ -386,7 +574,8 @@ export function formatDigestOutcome(outcome, budget = null) {
     const updated = run.storiesUpdated ?? 0;
     const items = run.itemCount ?? 0;
     const unassigned = run.unassignedCount ?? 0;
-    return `Digest done: ${created} new and ${updated} updated ${created + updated === 1 ? 'story' : 'stories'} from ${items} items, ${unassigned} left unassigned. Cost ${formatUsdShort(run.costUsd)}.${left}`;
+    const brief = briefSentence(outcome.briefRun);
+    return `Digest done: ${created} new and ${updated} updated ${created + updated === 1 ? 'story' : 'stories'} from ${items} items, ${unassigned} left unassigned. Cost ${formatUsdShort(run.costUsd)}.${brief ? ` ${brief}` : ''}${left}`;
   }
   const cost =
     Number(run.costUsd) > 0 ? ` It cost ${formatUsdShort(run.costUsd)}.` : '';

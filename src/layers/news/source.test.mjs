@@ -3,6 +3,8 @@ import test from 'node:test';
 import { createNewsSource } from './source.js';
 import {
   filterNewsStories,
+  formatBriefOutcome,
+  formatDigestOutcome,
   formatUsdShort,
   normalizeHiddenCategories,
   normalizeNewsSnapshot,
@@ -103,6 +105,7 @@ test('digest outcomes: 503 no_key maps to keyRequired; refusals are outcomes', a
   assert.deepEqual(await ok.requestDigest({ theater: 'iran-israel-us' }), {
     ok: true,
     run: { id: 'run_1' },
+    briefRun: null,
     budget: { remainingUsd: 1 },
   });
   assert.equal(request.url, '/api/news/digest?theater=iran-israel-us');
@@ -162,6 +165,220 @@ test('category filter values normalize to a sorted comma list', () => {
     { category: 'b' },
   ]);
   assert.equal(filterNewsStories(stories, new Set()), stories);
+});
+
+const line = (text, storyIds = ['st_1']) => ({ text, storyIds });
+
+test('the snapshot carries the brief, its run and status, and the theater actors', () => {
+  const snapshot = normalizeNewsSnapshot({
+    ...minimal,
+    theater: {
+      ...minimal.theater,
+      actors: [
+        {
+          id: 'oman',
+          name: 'Oman',
+          type: 'state',
+          role: 'mediator',
+          aliases: ['Muscat'],
+        },
+        { id: 'x', name: 'Bad role', type: 'state', role: 'ally' },
+        { name: 'No id' },
+      ],
+      drivers: [
+        {
+          text: 'A cause.',
+          source: { name: 'CFR', url: 'https://www.cfr.org/x' },
+        },
+        { text: 'Bad link.', source: { name: 'X', url: 'javascript:1' } },
+      ],
+      tracks: [{ id: 'military', label: 'Military' }, { label: 'No id' }],
+    },
+    brief: {
+      id: 'br_1',
+      digestRunId: 'run_1',
+      createdAt: '2026-10-28T14:03:00Z',
+      headline: line('Headline.'),
+      changes: [line('Change.'), { text: 7 }, line('Uncited.', [])],
+      trigger: null,
+      tracks: [
+        { id: 'military', state: 'escalating', reason: 'R.', storyIds: ['a'] },
+        { id: 'diplomatic', state: 'winning', reason: 'R.', storyIds: ['a'] },
+      ],
+      affected: [],
+      scenarios: [
+        {
+          title: 'Talks',
+          horizon: 'weeks',
+          text: 'Two sentences.',
+          storyIds: ['st_1'],
+          signposts: [
+            { text: 'Seen', seenIn: ['st_1'] },
+            { text: 'Not yet', seenIn: [] },
+          ],
+        },
+      ],
+      unknowns: [line('Unknown.')],
+      actorNotes: [{ actorId: 'oman', text: 'Hosted.', storyIds: ['st_1'] }],
+    },
+    briefRun: {
+      id: 'run_2',
+      kind: 'brief',
+      status: 'failed',
+      digestRunId: 'run_1',
+      error: 'truncated',
+      costUsd: 0.09,
+      reasoningTokens: 3100,
+    },
+    briefStatus: {
+      digestsBehind: 1,
+      retryable: true,
+      retryDisabledReason: null,
+    },
+    budget: { lastBriefCostUsd: 0.12 },
+    digest: { running: true, phase: 'brief' },
+  });
+  assert.deepEqual(snapshot.theater.actors, [
+    {
+      id: 'oman',
+      name: 'Oman',
+      type: 'state',
+      role: 'mediator',
+      aliases: ['Muscat'],
+    },
+  ]);
+  assert.deepEqual(snapshot.theater.drivers, [
+    {
+      text: 'A cause.',
+      source: { name: 'CFR', url: 'https://www.cfr.org/x' },
+    },
+    { text: 'Bad link.', source: { name: 'X', url: null } },
+  ]);
+  assert.deepEqual(snapshot.theater.tracks, [
+    { id: 'military', label: 'Military' },
+  ]);
+  const brief = snapshot.brief;
+  assert.equal(brief.createdAt, '2026-10-28T14:03:00.000Z');
+  assert.deepEqual(brief.changes, [line('Change.')]);
+  assert.deepEqual(brief.tracks, [
+    { id: 'military', state: 'escalating', reason: 'R.', storyIds: ['a'] },
+    { id: 'diplomatic', state: 'unclear', reason: 'R.', storyIds: ['a'] },
+  ]);
+  assert.deepEqual(brief.scenarios[0].signposts[1], {
+    text: 'Not yet',
+    seenIn: [],
+  });
+  assert.equal(snapshot.briefRun.kind, 'brief');
+  assert.equal(snapshot.briefRun.error, 'truncated');
+  assert.equal(snapshot.briefRun.reasoningTokens, 3100);
+  assert.deepEqual(snapshot.briefStatus, {
+    digestsBehind: 1,
+    retryable: true,
+    retryDisabledReason: null,
+  });
+  assert.equal(snapshot.budget.lastBriefCostUsd, 0.12);
+  assert.equal(snapshot.digest.phase, 'brief');
+  // A brief without a headline is not a brief.
+  assert.equal(
+    normalizeNewsSnapshot({ ...minimal, brief: { id: 'br', headline: null } })
+      .brief,
+    null,
+  );
+  const bare = normalizeNewsSnapshot(minimal);
+  assert.equal(bare.brief, null);
+  assert.equal(bare.briefRun, null);
+  assert.deepEqual(bare.briefStatus, {
+    digestsBehind: null,
+    retryable: false,
+    retryDisabledReason: null,
+  });
+  assert.deepEqual(bare.theater.actors, []);
+});
+
+test('Retry brief posts to its own route; refusals are outcomes', async () => {
+  let request;
+  const ok = createNewsSource({
+    fetchImpl: async (url, init) => {
+      request = { url, init };
+      return Response.json({ ok: true, briefRun: { id: 'r' }, budget: {} });
+    },
+  });
+  assert.deepEqual(await ok.requestBrief({ theater: 'iran-israel-us' }), {
+    ok: true,
+    briefRun: { id: 'r' },
+    budget: {},
+  });
+  assert.equal(request.url, '/api/news/brief?theater=iran-israel-us');
+  assert.equal(request.init.method, 'POST');
+  const refused = createNewsSource({
+    fetchImpl: async () =>
+      Response.json(
+        { error: 'nothing_to_retry', message: 'Only after a failure' },
+        { status: 409 },
+      ),
+  });
+  assert.deepEqual(await refused.requestBrief(), {
+    ok: false,
+    status: 409,
+    error: 'nothing_to_retry',
+    message: 'Only after a failure',
+    briefRun: null,
+  });
+});
+
+test('digest and brief outcomes read as one sentence each', () => {
+  const run = {
+    storiesCreated: 1,
+    storiesUpdated: 0,
+    itemCount: 2,
+    unassignedCount: 1,
+    costUsd: 0.18,
+  };
+  const done =
+    'Digest done: 1 new and 0 updated story from 2 items, 1 left unassigned. Cost 18¢.';
+  assert.equal(
+    formatDigestOutcome({
+      ok: true,
+      run,
+      briefRun: { status: 'ok', costUsd: 0.12 },
+    }),
+    `${done} Brief written, 12¢.`,
+  );
+  assert.equal(
+    formatDigestOutcome({
+      ok: true,
+      run,
+      briefRun: { status: 'failed', error: 'truncated', costUsd: 0.09 },
+    }),
+    `${done} The brief failed (truncated) and cost 9¢; the previous brief stays.`,
+  );
+  assert.equal(
+    formatDigestOutcome({
+      ok: true,
+      run,
+      briefRun: {
+        status: 'skipped',
+        message: 'Brief skipped: $0.15 left today',
+      },
+    }),
+    `${done} Brief skipped: $0.15 left today.`,
+  );
+  assert.equal(
+    formatBriefOutcome({ ok: true, briefRun: { status: 'ok', costUsd: 0.1 } }),
+    'Brief written, 10¢.',
+  );
+  assert.equal(
+    formatBriefOutcome({ ok: false, error: 'nothing_to_retry' }),
+    'There is no failed brief to retry.',
+  );
+  assert.equal(
+    formatBriefOutcome({
+      ok: false,
+      error: 'model_error',
+      briefRun: { status: 'failed', error: 'model_error', costUsd: 0 },
+    }),
+    'The brief failed (model_error); the previous brief stays.',
+  );
 });
 
 test('costs read as cents, budgets as dollars', () => {

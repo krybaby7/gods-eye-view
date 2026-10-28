@@ -72,13 +72,57 @@ export function createNewsSource({
       if (response.ok)
         return body?.skipped
           ? { ok: true, skipped: true, message: body.message, run: body.run }
-          : { ok: true, run: body?.run ?? null, budget: body?.budget ?? null };
+          : {
+              ok: true,
+              run: body?.run ?? null,
+              briefRun: body?.briefRun ?? null,
+              budget: body?.budget ?? null,
+            };
       return {
         ok: false,
         status: response.status,
         error: body?.error || `HTTP ${response.status}`,
         message: body?.reason || body?.message || null,
         run: body?.run ?? null,
+      };
+    },
+
+    /**
+     * Retry brief: rerun the brief for the latest digest after its brief
+     * failed. Resolves to a plain outcome, like requestDigest.
+     * @param {{signal?: AbortSignal, theater?: string}} [options]
+     */
+    async requestBrief({ signal, theater } = {}) {
+      signal?.throwIfAborted();
+      const response = await fetchImpl(
+        `${endpoint}/brief${query({ theater })}`,
+        {
+          method: 'POST',
+          signal,
+          cache: 'no-store',
+          headers: { Accept: 'application/json' },
+        },
+      );
+      let body = null;
+      try {
+        body = await response.json();
+      } catch {
+        /* handled below */
+      }
+      if (response.status === 503 && body?.error === 'no_key')
+        return { ok: false, keyRequired: true, error: 'no_key' };
+      if (response.ok)
+        return {
+          ok: true,
+          briefRun: body?.briefRun ?? null,
+          budget: body?.budget ?? null,
+        };
+      return {
+        ok: false,
+        status: response.status,
+        error: body?.error || `HTTP ${response.status}`,
+        message: body?.reason || body?.message || null,
+        briefRun: body?.briefRun ?? null,
       };
     },
   };
