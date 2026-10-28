@@ -5,9 +5,11 @@
  * starting role. After that, roles come from the stories: each Situation
  * Brief proposes a role per actor with cited stories, and code accepts a
  * change only when at least one cited story is corroborated and tagged with
- * that actor. The same bar applies in both directions, so a role does not
- * flip back on weaker evidence. A brief may also propose an actor the list
- * lacks; code accepts it only with a corroborated cited story that names it,
+ * that actor, and those stories' items name the actor from two perspective
+ * groups. The same bar applies in both directions, so a role does not flip
+ * back on weaker evidence. A brief may also propose an actor the list lacks;
+ * code accepts it only with a corroborated cited story that names it (and
+ * the same two groups naming it in its items),
  * makes its id from the name, folds a proposal that names an existing actor
  * into that actor, and refuses one whose alias another actor already uses.
  * Actors are never deleted: one the stories stop mentioning keeps its id, so
@@ -108,15 +110,30 @@ function names(text, spellings) {
     .some((spelling) => spelling && padded.includes(` ${spelling} `));
 }
 
+/** Why a proposed role or actor was not accepted, for the run record. */
+export const ACTOR_HOLD_REASONS = Object.freeze({
+  noEvidence: 'no-corroborated-story',
+  oneGroup: 'named-by-one-perspective-group',
+  duplicateAlias: 'alias-of-another-actor',
+});
+
 /**
  * Apply one brief's proposed roles and new actors. Returns a new state and
  * what happened, for the run record.
+ *
+ * Besides a corroborated cited story tagged with (or, for a new actor,
+ * naming) the actor, the stories' own items must name the actor from at
+ * least two perspective groups, the same groups the verification label
+ * uses. A corroborated story can rest on parts that do not concern the
+ * actor; this keeps a single outlet's mention inside one from counting.
  * @param {{
  *   actors: Array<object>,
  *   state: {roles: object, learned: Array<object>},
  *   actorRoles: Array<{actorId: string, role: string, storyIds: string[]}>,
  *   newActors: Array<{name: string, type: string, role: string, aliases: string[], storyIds: string[]}>,
  *   storiesById: Map<string, object>,
+ *   itemsById: Map<string, object>,
+ *   perspectiveGroups: Map<string, string>,
  *   nowIso: string,
  *   briefId: string,
  * }} update
@@ -127,6 +144,8 @@ export function applyActorUpdates({
   actorRoles,
   newActors,
   storiesById,
+  itemsById,
+  perspectiveGroups,
   nowIso,
   briefId,
 }) {
@@ -137,10 +156,28 @@ export function applyActorUpdates({
     held: [],
     added: [],
     merged: 0,
-    rejectedNew: 0,
+    refused: [],
   };
   const corroborated = (id) =>
     storiesById.get(id)?.verification === 'corroborated';
+
+  /** Perspective groups whose items in these stories name the actor. */
+  function namingGroups(storyIds, spellings) {
+    const groups = new Set();
+    for (const storyId of storyIds)
+      for (const itemId of storiesById.get(storyId)?.itemIds || []) {
+        const item = itemsById.get(itemId);
+        if (!item) continue;
+        const text = normalizeActorName(
+          [item.title, item.titleOriginal, item.snippet].join(' '),
+        );
+        if (names(text, spellings))
+          groups.add(
+            perspectiveGroups.get(item.perspective) ?? item.perspective,
+          );
+      }
+    return groups;
+  }
 
   function propose(actorId, role, storyIds) {
     const actor = current.get(actorId);
@@ -150,8 +187,13 @@ export function applyActorUpdates({
         corroborated(id) &&
         (storiesById.get(id).actorIds || []).includes(actorId),
     );
-    if (!evidence.length) {
-      result.held.push({ actorId, from: actor.role, to: role });
+    const reason = !evidence.length
+      ? ACTOR_HOLD_REASONS.noEvidence
+      : namingGroups(evidence, [actor.name, ...(actor.aliases || [])]).size < 2
+        ? ACTOR_HOLD_REASONS.oneGroup
+        : null;
+    if (reason) {
+      result.held.push({ actorId, from: actor.role, to: role, reason });
       return;
     }
     next.roles[actorId] = {
@@ -193,7 +235,10 @@ export function applyActorUpdates({
     if (
       proposal.aliases.some((alias) => taken.has(normalizeActorName(alias)))
     ) {
-      result.rejectedNew++;
+      result.refused.push({
+        name: proposal.name,
+        reason: ACTOR_HOLD_REASONS.duplicateAlias,
+      });
       continue;
     }
     const spellings = [proposal.name, ...proposal.aliases];
@@ -201,8 +246,13 @@ export function applyActorUpdates({
       (id) =>
         corroborated(id) && names(storyText(storiesById.get(id)), spellings),
     );
-    if (!evidence.length) {
-      result.rejectedNew++;
+    const reason = !evidence.length
+      ? ACTOR_HOLD_REASONS.noEvidence
+      : namingGroups(evidence, spellings).size < 2
+        ? ACTOR_HOLD_REASONS.oneGroup
+        : null;
+    if (reason) {
+      result.refused.push({ name: proposal.name, reason });
       continue;
     }
     const id = actorSlug(proposal.name, new Set(current.keys()));

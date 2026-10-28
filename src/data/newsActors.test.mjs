@@ -34,47 +34,114 @@ const theaterActors = [
     aliases: ['Ansar Allah'],
   },
 ];
-const story = (id, verification, actorIds, text = '') => ({
+// Perspective groups as the theater defines them (and the verification
+// label uses them): two Israeli outlets are one group.
+const perspectiveGroups = new Map([
+  ['international-wire', 'international'],
+  ['international-regional', 'international'],
+  ['houthi', 'axis-armed'],
+  ['israel-mainstream', 'israel'],
+  ['israel-right', 'israel'],
+  ['iran-state', 'iran'],
+  ['gulf', 'gulf'],
+]);
+const items = new Map(
+  [
+    [
+      'i_wire',
+      'reuters',
+      'international-wire',
+      'Saudi-led coalition strikes Sanaa',
+    ],
+    [
+      'i_houthi',
+      'almasirah',
+      'houthi',
+      'Saudi Arabia jets struck Sanaa, Houthis say',
+    ],
+    ['i_haaretz', 'haaretz', 'israel-mainstream', 'Saudi Arabia joins the war'],
+    ['i_hayom', 'israelhayom', 'israel-right', 'Riyadh enters the fight'],
+    ['i_talks_irna', 'irna', 'iran-state', 'Pakistan hosts envoys'],
+    ['i_talks_wire', 'reuters', 'international-wire', 'Islamabad talks resume'],
+    ['i_other', 'reuters', 'international-wire', 'Houthis fire at Aden'],
+    ['i_egypt_wire', 'reuters', 'international-wire', 'Egypt pledges support'],
+    ['i_egypt_gulf', 'arabnews', 'gulf', 'Egypt backs Riyadh'],
+    ['i_egypt_one', 'mee', 'international-regional', 'Egypt deploys jets'],
+  ].map(([id, sourceId, perspective, title]) => [
+    id,
+    { id, sourceId, perspective, title, titleOriginal: title, snippet: '' },
+  ]),
+);
+const story = (id, verification, actorIds, text, itemIds) => ({
   id,
   title: `Story ${id} ${text}`,
   summary: '',
   claims: [],
   verification,
   actorIds,
+  itemIds,
 });
 const stories = new Map(
   [
+    // Named by two groups: international and axis-armed.
     story(
       'st_strikes',
       'corroborated',
       ['saudi-arabia', 'houthis'],
       'Coalition strikes in Sanaa',
+      ['i_wire', 'i_houthi'],
+    ),
+    // Two outlets, one group: both Israeli.
+    story(
+      'st_one_group',
+      'corroborated',
+      ['saudi-arabia'],
+      'Saudi Arabia enters the war',
+      ['i_haaretz', 'i_hayom'],
     ),
     story(
       'st_claim',
       'participant-claim',
       ['saudi-arabia'],
       'Houthis say Saudi jets struck',
+      ['i_houthi'],
     ),
-    story('st_talks', 'corroborated', ['pakistan'], 'Talks in Tehran'),
+    story('st_talks', 'corroborated', ['pakistan'], 'Talks in Tehran', [
+      'i_talks_irna',
+      'i_talks_wire',
+    ]),
     story(
       'st_troops',
       'reported',
       ['pakistan'],
       'Pakistan sends troops to Saudi Arabia',
+      ['i_talks_wire'],
     ),
-    story('st_other', 'corroborated', ['houthis'], 'Houthis fire at Aden'),
+    story('st_other', 'corroborated', ['houthis'], 'Houthis fire at Aden', [
+      'i_other',
+      'i_houthi',
+    ]),
     story(
       'st_egypt',
       'corroborated',
       [],
       'Egypt parliament authorises military support',
+      ['i_egypt_wire', 'i_egypt_gulf'],
     ),
     story(
       'st_egypt_one',
       'reported',
       [],
       'Egypt deploys jets, one outlet says',
+      ['i_egypt_one'],
+    ),
+    // Corroborated, but only one group names Egypt in its items.
+    story(
+      'st_egypt_mention',
+      'corroborated',
+      [],
+      'Gulf war widens; Egypt mentioned',
+      ['i_egypt_one', 'i_wire'],
     ),
   ].map((entry) => [entry.id, entry]),
 );
@@ -85,6 +152,8 @@ const apply = (lines = {}, state = EMPTY_ACTOR_STATE, nowIso = NOW) =>
     actorRoles: lines.roles || [],
     newActors: lines.added || [],
     storiesById: stories,
+    itemsById: items,
+    perspectiveGroups,
     nowIso,
     briefId: 'br_1',
   });
@@ -163,6 +232,66 @@ test('a role changes only with a corroborated story tagged with that actor', () 
     ],
     ['party', 'external', NOW, ['st_strikes'], 'external'],
   );
+});
+
+test('two outlets from one perspective group naming an actor: held', () => {
+  // Haaretz and Israel Hayom both name Saudi Arabia in a corroborated story
+  // tagged with it, but both are the Israeli group.
+  const held = apply({
+    roles: [
+      {
+        actorId: 'saudi-arabia',
+        role: 'party',
+        text: 'x',
+        storyIds: ['st_one_group'],
+      },
+    ],
+  });
+  assert.deepEqual(held.changed, []);
+  assert.deepEqual(held.held, [
+    {
+      actorId: 'saudi-arabia',
+      from: 'external',
+      to: 'party',
+      reason: 'named-by-one-perspective-group',
+    },
+  ]);
+  // Two groups (a wire and a Houthi outlet) naming it: accepted. Aliases
+  // count, and so do the evidence stories' items together.
+  const accepted = apply({
+    roles: [
+      {
+        actorId: 'saudi-arabia',
+        role: 'party',
+        text: 'x',
+        storyIds: ['st_one_group', 'st_strikes'],
+      },
+    ],
+  });
+  assert.deepEqual(accepted.changed, [
+    {
+      actorId: 'saudi-arabia',
+      from: 'external',
+      to: 'party',
+      storyIds: ['st_one_group', 'st_strikes'],
+    },
+  ]);
+  // A new actor named by one group only, even in a corroborated story.
+  const single = apply({
+    added: [
+      {
+        name: 'Egypt',
+        type: 'state',
+        role: 'external',
+        aliases: [],
+        text: 'x',
+        storyIds: ['st_egypt_mention'],
+      },
+    ],
+  });
+  assert.deepEqual(single.refused, [
+    { name: 'Egypt', reason: 'named-by-one-perspective-group' },
+  ]);
 });
 
 test('evidence about something else, or one side only, does not count', () => {
@@ -249,7 +378,7 @@ test('a downgrade needs the same evidence as an upgrade; restating a role change
 });
 
 test('a new actor needs a corroborated story naming it; code makes its id', () => {
-  const { state, added, rejectedNew } = apply({
+  const { state, added, refused } = apply({
     added: [
       {
         name: 'Egypt',
@@ -261,7 +390,7 @@ test('a new actor needs a corroborated story naming it; code makes its id', () =
       },
     ],
   });
-  assert.equal(rejectedNew, 0);
+  assert.deepEqual(refused, []);
   assert.deepEqual(added, [
     { id: 'egypt', name: 'Egypt', role: 'external', storyIds: ['st_egypt'] },
   ]);
@@ -295,7 +424,7 @@ test('a new actor needs a corroborated story naming it; code makes its id', () =
         },
       ],
     });
-    assert.equal(weak.rejectedNew, 1, String(storyIds));
+    assert.equal(weak.refused.length, 1, String(storyIds));
     assert.deepEqual(weak.state.learned, []);
   }
 });
@@ -318,7 +447,9 @@ test('a proposal using another actor’s alias is refused, neither merged nor ad
         },
       ],
     });
-    assert.equal(result.rejectedNew, 1, proposal.name);
+    assert.deepEqual(result.refused, [
+      { name: proposal.name, reason: 'alias-of-another-actor' },
+    ]);
     assert.equal(result.merged, 0);
     assert.deepEqual(result.changed, []);
     assert.deepEqual(result.state.learned, []);

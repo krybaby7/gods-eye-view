@@ -316,18 +316,27 @@ export function createNewsService(options = {}) {
     };
   }
 
-  /** Run one digest for a context already admitted by requestDigest. */
-  async function digestOnce(ctx, base) {
-    const { theater, sourcesById } = ctx.registry;
-    const nowMs = now();
-    const previous = ctx.digest.stories();
+  /**
+   * Items by id: the stories' cited-item snapshots (kept after the item
+   * store drops them), then the live items.
+   */
+  function itemsFor(ctx, stories) {
     const itemsById = new Map();
-    for (const story of previous)
+    for (const story of stories)
       for (const id of story.itemIds) {
         const snapshot = ctx.digest.citation(id);
         if (snapshot) itemsById.set(id, snapshot);
       }
     for (const item of ctx.store.list()) itemsById.set(item.id, item);
+    return itemsById;
+  }
+
+  /** Run one digest for a context already admitted by requestDigest. */
+  async function digestOnce(ctx, base) {
+    const { theater, sourcesById } = ctx.registry;
+    const nowMs = now();
+    const previous = ctx.digest.stories();
+    const itemsById = itemsFor(ctx, previous);
     const result = await digestRunner({
       apiKey: apiKey(),
       // Learned actors can be tagged too.
@@ -462,14 +471,17 @@ export function createNewsService(options = {}) {
       });
       const finishedMs = now();
       const finishedIso = new Date(finishedMs).toISOString();
-      // Roles move only on corroborated stories about that actor; new
-      // actors join only on corroborated stories that name them.
+      // Roles move only on corroborated stories about that actor, and new
+      // actors join only on corroborated stories that name them; either
+      // way their items must name the actor from two perspective groups.
       const update = applyActorUpdates({
         actors: theater.actors,
         state: ctx.digest.actorState(),
         actorRoles: result.brief.actorRoles,
         newActors: result.brief.newActors,
         storiesById: new Map(stories.map((story) => [story.id, story])),
+        itemsById: itemsFor(ctx, stories),
+        perspectiveGroups: ctx.perspectiveGroups,
         nowIso: finishedIso,
         briefId: result.brief.id,
       });
@@ -485,7 +497,7 @@ export function createNewsService(options = {}) {
         roleChangesHeld: update.held,
         actorsAdded: update.added,
         actorsMerged: update.merged,
-        actorsRefused: update.rejectedNew,
+        actorsRefused: update.refused,
         costUsd: roundUsd(result.cost.costUsd),
         costEstimated: result.cost.estimated,
         inputTokens: result.cost.inputTokens,

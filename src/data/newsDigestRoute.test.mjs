@@ -45,9 +45,9 @@ function upstream({ perplexity, brief, calls }) {
     if (url.hostname === 't.me') return new Response('<html></html>');
     const title =
       url.hostname === 'en.irna.ir'
-        ? 'Explosion at Bandar Abbas port warehouse, officials say'
+        ? 'Explosion at Bandar Abbas port warehouse, officials say; Saudi Arabia urges calm'
         : url.hostname === 'www.aljazeera.com'
-          ? 'Blast reported at Iranian port of Bandar Abbas'
+          ? 'Blast reported at Iranian port of Bandar Abbas as Saudi Arabia watches'
           : `${url.hostname} unrelated headline`;
     return new Response(
       `<rss><channel><item><title>${title}</title><link>https://${url.hostname}/story</link><pubDate>Mon, 26 Oct 2026 08:00:00 GMT</pubDate></item></channel></rss>`,
@@ -710,11 +710,21 @@ test('briefs move roles only on corroborated stories about that actor and add ac
             text: 'Struck the port.',
             storyIds: cite,
           },
+          // Only IRNA's item says "Bandar Abbas port": one group, refused.
           {
             name: 'Bandar Abbas port',
             type: 'institution',
             role: 'affected',
             aliases: ['Shahid Rajaee port'],
+            text: 'The port was hit.',
+            storyIds: cite,
+          },
+          // "Bandar Abbas" is in all three items: three groups, added.
+          {
+            name: 'Bandar Abbas port authority',
+            type: 'institution',
+            role: 'affected',
+            aliases: ['Bandar Abbas'],
             text: 'The port was hit.',
             storyIds: cite,
           },
@@ -727,7 +737,8 @@ test('briefs move roles only on corroborated stories about that actor and add ac
   const [story] = after.stories;
   assert.equal(story.verification, 'corroborated');
   assert.deepEqual(story.actorIds, ['united-states', 'iran', 'saudi-arabia']);
-  // Saudi Arabia: corroborated story tagged with it. Pakistan: not tagged.
+  // Saudi Arabia: corroborated story tagged with it, named by IRNA (Iran)
+  // and Al Jazeera (international). Pakistan: not tagged.
   assert.deepEqual(body.briefRun.roleChanges, [
     {
       actorId: 'saudi-arabia',
@@ -737,14 +748,22 @@ test('briefs move roles only on corroborated stories about that actor and add ac
     },
   ]);
   assert.deepEqual(body.briefRun.roleChangesHeld, [
-    { actorId: 'pakistan', from: 'mediator', to: 'party' },
+    {
+      actorId: 'pakistan',
+      from: 'mediator',
+      to: 'party',
+      reason: 'no-corroborated-story',
+    },
   ]);
   // "CENTCOM" is an alias of the United States: no duplicate.
   assert.equal(body.briefRun.actorsMerged, 1);
+  assert.deepEqual(body.briefRun.actorsRefused, [
+    { name: 'Bandar Abbas port', reason: 'named-by-one-perspective-group' },
+  ]);
   assert.deepEqual(body.briefRun.actorsAdded, [
     {
-      id: 'bandar-abbas-port',
-      name: 'Bandar Abbas port',
+      id: 'bandar-abbas-port-authority',
+      name: 'Bandar Abbas port authority',
       role: 'affected',
       storyIds: [story.id],
     },
@@ -765,11 +784,12 @@ test('briefs move roles only on corroborated stories about that actor and add ac
   assert.equal(actors.get('pakistan').roleSince, null);
   assert.deepEqual(
     [
-      actors.get('bandar-abbas-port').learned,
-      actors.get('bandar-abbas-port').type,
+      actors.get('bandar-abbas-port-authority').learned,
+      actors.get('bandar-abbas-port-authority').type,
     ],
     [true, 'institution'],
   );
+  assert.ok(!actors.has('bandar-abbas-port'), 'the refused one is not added');
   assert.equal(after.theater.actors.length, 17);
 
   // The next digest may tag the learned actor; the next brief sees the roles.
@@ -781,12 +801,12 @@ test('briefs move roles only on corroborated stories about that actor and add ac
   const schema = digests.at(-1).response_format.json_schema.schema;
   assert.ok(
     schema.properties.stories.items.properties.actorIds.items.enum.includes(
-      'bandar-abbas-port',
+      'bandar-abbas-port-authority',
     ),
   );
   assert.match(
     digests.at(-1).instructions,
-    /^- bandar-abbas-port: Bandar Abbas port \(Shahid Rajaee port\)$/m,
+    /^- bandar-abbas-port-authority: Bandar Abbas port authority \(Bandar Abbas\)$/m,
   );
 
   // Roles and learned actors survive a restart.
@@ -800,6 +820,6 @@ test('briefs move roles only on corroborated stories about that actor and add ac
     (await restarted.snapshot()).theater.actors.map((a) => [a.id, a]),
   );
   assert.equal(reloaded.get('saudi-arabia').role, 'party');
-  assert.ok(reloaded.has('bandar-abbas-port'));
+  assert.ok(reloaded.has('bandar-abbas-port-authority'));
   await restarted.stop();
 });
