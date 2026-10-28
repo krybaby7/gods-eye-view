@@ -99,7 +99,9 @@ The digest runs only on an explicit Refresh: the panel button, the
 - `model: "anthropic/claude-sonnet-5-5"`;
 - `tools: []` and `max_steps: 1`, so it does no search and takes one step;
 - no `preset` and no `effort`;
-- `max_output_tokens: 16000`;
+- `max_output_tokens: 16000`. The first live run used 14,273 of them, so the
+  rules ask for short stories with at most five claims each, and code keeps
+  only the first five;
 - `response_format: {type: "json_schema", json_schema: {name, schema, strict: true}}`.
 
 These field names were checked against the official Perplexity SDK types and
@@ -134,14 +136,14 @@ undigested for the next Refresh, and the run records how many were left out.
 
 **Outcomes.** The route answers:
 
-| Status            | Meaning                                                                                                         | Recorded as a run?                       |
-| ----------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| 503 `no_key`      | No key is configured.                                                                                           | —                                        |
-| 409 `in_flight`   | A digest is already running.                                                                                    | —                                        |
-| 429 `over_budget` | Today's budget is used up.                                                                                      | —                                        |
-| 200 `skipped`     | Nothing new since the last digest. No call is made.                                                             | Yes, at $0                               |
-| 200 `ok`          | The digest ran.                                                                                                 | Yes                                      |
-| 502               | The call failed: `auth`, `rate_limited`, `upstream`, `model_error`, `malformed_output`, `network` or `timeout`. | Yes, with its reported or estimated cost |
+| Status            | Meaning                                                                                                                                                        | Recorded as a run?                       |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| 503 `no_key`      | No key is configured.                                                                                                                                          | —                                        |
+| 409 `in_flight`   | A digest is already running.                                                                                                                                   | —                                        |
+| 429 `over_budget` | Today's budget is used up.                                                                                                                                     | —                                        |
+| 200 `skipped`     | Nothing new since the last digest. No call is made.                                                                                                            | Yes, at $0                               |
+| 200 `ok`          | The digest ran.                                                                                                                                                | Yes                                      |
+| 502               | The call failed: `auth`, `rate_limited`, `upstream`, `model_error`, `malformed_output`, `truncated` (the answer hit the output limit), `network` or `timeout`. | Yes, with its reported or estimated cost |
 
 A failed run that was still billed keeps its cost. A call that timed out (after
 5 minutes) or was cut off mid-answer returns no usage, so it is charged a

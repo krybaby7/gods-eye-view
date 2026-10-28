@@ -22,6 +22,12 @@ export const DIGEST_MODEL = 'anthropic/claude-sonnet-5-5';
 export const DIGEST_MAX_OUTPUT_TOKENS = 16000;
 export const DIGEST_ITEM_CAP = 400;
 export const DIGEST_OPEN_STORY_CAP = 60;
+/**
+ * Claims kept per story. The first live run (249 items, no open stories)
+ * used 14,273 of the 16,000 output tokens, so the rules keep each story
+ * short enough for the design caps of 400 items and 60 open stories.
+ */
+export const DIGEST_CLAIM_CAP = 5;
 /** List price per million tokens, used only when a response omits its cost. */
 export const DIGEST_FALLBACK_PRICE_PER_MTOK = Object.freeze({
   input: 2,
@@ -127,8 +133,11 @@ Output rules:
 - Set status "closed" only when the items show the event is over; otherwise "open".
 - category: exactly one id from the category list.
 - placeName: the most specific place the items name, spelled as in the gazetteer when it appears there, or null. lat and lon: only for a place missing from the gazetteer whose coordinates you know; otherwise null.
-- title: a neutral English headline of at most 120 characters. summary: two attributed sentences.
-- whatsNew: one sentence on what this digest's new items add; "" for a new story.
+- Keep every story short; the whole answer must fit the output limit.
+- itemIds: only the items that report this event.
+- title: a neutral English headline of at most 120 characters. summary: at most two short attributed sentences.
+- whatsNew: one short sentence on what this digest's new items add; "" for a new story.
+- claims: at most ${DIGEST_CLAIM_CAP} per story, the most important first.
 - contradictions: one sentence per conflict between sources ("IRNA says X; CENTCOM says Y."), else [].
 - claims[].itemIds: the cited items that carry that claim.`;
 
@@ -385,7 +394,7 @@ export function validateDigestOutput(
       itemIds,
       claims: (Array.isArray(raw.claims) ? raw.claims : [])
         .filter((claim) => claim && typeof claim.text === 'string')
-        .slice(0, 12)
+        .slice(0, DIGEST_CLAIM_CAP)
         .map((claim) => ({
           text: cleanText(claim.text, 300),
           actor:
@@ -517,6 +526,13 @@ export async function callDigestModel({
   if (!payload || typeof payload !== 'object')
     throw digestError('upstream', 'digest response was not JSON');
   const cost = responseCost(payload);
+  // An answer cut off at max_output_tokens is billed but unusable JSON.
+  if (payload.status === 'incomplete')
+    throw digestError(
+      'truncated',
+      `the digest hit the ${DIGEST_MAX_OUTPUT_TOKENS.toLocaleString('en-US')}-token output limit before finishing`,
+      { cost, model: payload.model ?? null },
+    );
   if (payload.status !== 'completed') {
     const detail = upstreamMessage(payload);
     throw digestError(

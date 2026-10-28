@@ -504,6 +504,12 @@ test('a missing key, a refusal or a network failure become readable outcomes', a
       message: "Today's digests cost $2.10 of the $2.00 daily budget",
     },
     { ok: true, skipped: true, message: 'Nothing new since the last digest' },
+    {
+      ok: false,
+      error: 'truncated',
+      message: 'the digest hit the 16,000-token output limit before finishing',
+      run: { costUsd: 0.34 },
+    },
   ];
   const h = harness({
     source: {
@@ -524,6 +530,10 @@ test('a missing key, a refusal or a network failure become readable outcomes', a
   assert.match(
     (await h.layer.requestDigest()).summary,
     /no model call was made/,
+  );
+  assert.equal(
+    (await h.layer.requestDigest()).summary,
+    'The digest hit its output limit before finishing, so no stories changed. It cost 34¢.',
   );
   assert.match(
     (await h.layer.requestDigest()).summary,

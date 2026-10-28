@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  DIGEST_CLAIM_CAP,
   DIGEST_ENDPOINT,
   DIGEST_FALLBACK_PRICE_PER_MTOK,
   DIGEST_MAX_OUTPUT_TOKENS,
@@ -170,6 +171,11 @@ test('instructions carry rules, brief, categories and place names but no coordin
   assert.match(text, /Never output URLs/);
   assert.match(text, /Prefer updating an open story/);
   assert.match(text, /at most one story/);
+  assert.match(
+    text,
+    new RegExp(`claims: at most ${DIGEST_CLAIM_CAP} per story`),
+  );
+  assert.match(text, /must fit the output limit/);
   assert.match(text, /Second paragraph\./);
   assert.match(text, /- humanitarian-casualties: Humanitarian/);
   assert.match(text, /^Khan Younis \(Khan Yunis\)$/m);
@@ -296,6 +302,44 @@ test('malformed JSON fails the run but still reports what the call cost', async 
   assert.deepEqual(parseDigestText('```json\n{"stories":[]}\n```'), {
     stories: [],
   });
+});
+
+test('claims are capped per story to keep the answer inside the output limit', () => {
+  const claims = Array.from({ length: 9 }, (_, i) => ({
+    text: `Claim ${i}`,
+    actor: null,
+    type: 'statement',
+    itemIds: ['a'],
+  }));
+  const { stories } = validateDigestOutput(
+    { stories: [storyOut({ itemIds: ['a'], claims })] },
+    {
+      knownItemIds: new Set(['a']),
+      openStories: new Map(),
+      categoryIds: ['war-military'],
+      nowMs: NOW,
+    },
+  );
+  assert.equal(DIGEST_CLAIM_CAP, 5);
+  assert.deepEqual(
+    stories[0].claims.map((claim) => claim.text),
+    ['Claim 0', 'Claim 1', 'Claim 2', 'Claim 3', 'Claim 4'],
+  );
+});
+
+test('an answer cut off at the output limit fails as truncated and keeps its cost', async () => {
+  const body = completed([], { status: 'incomplete' });
+  body.output[0].content[0].text = '{"stories": [{"id": null, "title": "Cut';
+  await assert.rejects(
+    runDigest(runOptions(async () => Response.json(body))),
+    (error) => {
+      assert.equal(error.code, 'truncated');
+      assert.match(error.message, /16,000-token output limit/);
+      assert.equal(error.cost.costUsd, 0.122);
+      assert.equal(error.model, 'anthropic/claude-sonnet-5-5');
+      return true;
+    },
+  );
 });
 
 test('a missing key never reaches the network', async () => {

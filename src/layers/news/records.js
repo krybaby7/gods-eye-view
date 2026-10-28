@@ -375,5 +375,7 @@ export function formatDigestOutcome(outcome, budget = null) {
   }
   const cost =
     Number(run.costUsd) > 0 ? ` It cost ${formatUsdShort(run.costUsd)}.` : '';
+  if (outcome.error === 'truncated')
+    return `The digest hit its output limit before finishing, so no stories changed.${cost}`;
   return `The digest failed (${outcome.error || 'error'}${outcome.message ? `: ${outcome.message}` : ''}).${cost}`;
 }
