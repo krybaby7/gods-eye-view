@@ -15,12 +15,20 @@ export const TRACK_STATE_GLYPHS = Object.freeze({
   shifting: '↔',
   unclear: '?',
 });
+/** Group headings, in the order the strip shows them. */
 export const ACTOR_ROLE_LABELS = Object.freeze({
   party: 'Parties',
   mediator: 'Mediators',
+  external: 'External',
   institution: 'Institutions',
   affected: 'Affected',
+});
+const ROLE_WORDS = Object.freeze({
+  party: 'Party',
+  mediator: 'Mediator',
   external: 'External',
+  institution: 'Institution',
+  affected: 'Affected',
 });
 const ACTOR_TYPE_LABELS = Object.freeze({
   state: 'state',
@@ -73,7 +81,7 @@ export function briefStoryIds(brief) {
     add(scenario.storyIds);
     for (const signpost of scenario.signposts || []) add(signpost.seenIn);
   }
-  for (const line of [...(brief.unknowns || []), ...(brief.actorNotes || [])])
+  for (const line of [...(brief.unknowns || []), ...(brief.actorRoles || [])])
     add(line.storyIds);
   return [...ids];
 }
@@ -123,35 +131,94 @@ export function retryBriefState(snapshot) {
   };
 }
 
+/** Most actors the strip shows at once; the rest stay stored, not shown. */
+export const ACTOR_STRIP_CAP = 16;
+
 /**
- * Actors grouped by role, groups and chips in theater order, each with the
- * number of open stories tagged with it. Roles, not sides: no group is
- * coloured or set against another.
+ * The actor strip: actors with open stories (and the active filter), at most
+ * 16 (those with the most open stories), grouped by their current role in a
+ * fixed role order, chips in list order. Before any story is tagged, the
+ * theater's own actors show. Roles, not sides: no group is coloured or set
+ * against another.
+ * @returns {{groups: Array<{role: string, label: string, actors: Array<object>}>, hidden: number}}
  */
-export function actorGroups(actors, stories) {
+export function actorStrip(
+  actors,
+  stories,
+  { activeId = null, cap = ACTOR_STRIP_CAP } = {},
+) {
+  const list = actors || [];
   const counts = new Map();
   for (const story of stories || [])
     if (story.status === 'open')
       for (const id of story.actorIds || [])
         counts.set(id, (counts.get(id) || 0) + 1);
-  const groups = [];
-  for (const actor of actors || []) {
-    let group = groups.find((entry) => entry.role === actor.role);
-    if (!group) {
-      group = {
-        role: actor.role,
-        label: ACTOR_ROLE_LABELS[actor.role] || actor.role,
-        actors: [],
-      };
-      groups.push(group);
-    }
-    group.actors.push({
-      ...actor,
-      typeLabel: ACTOR_TYPE_LABELS[actor.type] || actor.type,
-      count: counts.get(actor.id) || 0,
-    });
+  let shown = list.filter(
+    (actor) => counts.get(actor.id) || actor.id === activeId,
+  );
+  if (!shown.length) shown = list.filter((actor) => !actor.learned);
+  if (shown.length > cap) {
+    const keep = new Set(
+      [...shown]
+        .sort(
+          (a, b) =>
+            Number(b.id === activeId) - Number(a.id === activeId) ||
+            (counts.get(b.id) || 0) - (counts.get(a.id) || 0),
+        )
+        .slice(0, cap),
+    );
+    shown = shown.filter((actor) => keep.has(actor));
   }
-  return groups;
+  const groups = Object.keys(ACTOR_ROLE_LABELS)
+    .map((role) => ({
+      role,
+      label: ACTOR_ROLE_LABELS[role],
+      actors: shown
+        .filter((actor) => actor.role === role)
+        .map((actor) => ({
+          ...actor,
+          typeLabel: ACTOR_TYPE_LABELS[actor.type] || actor.type,
+          count: counts.get(actor.id) || 0,
+        })),
+    }))
+    .filter((group) => group.actors.length);
+  return { groups, hidden: list.length - shown.length };
+}
+
+/**
+ * Roles the stories have set, newest first: who changed, from what, when,
+ * and the stories behind it. Actors added from the stories are included.
+ */
+export function roleChanges(actors, limit = 6) {
+  return (actors || [])
+    .filter((actor) => actor.roleSince)
+    .sort((a, b) => Date.parse(b.roleSince) - Date.parse(a.roleSince))
+    .slice(0, limit)
+    .map((actor) => ({
+      actorId: actor.id,
+      name: actor.name,
+      from: actor.changedFrom,
+      to: actor.role,
+      since: actor.roleSince,
+      storyIds: actor.roleStoryIds || [],
+      added: actor.learned && !actor.changedFrom,
+    }));
+}
+
+/** "Saudi Arabia: external → party · 14:03"; "Egypt: added as external · …". */
+export function roleChangeLine(change, nowMs, options = {}) {
+  const what = change.from
+    ? `${change.from} → ${change.to}`
+    : `added as ${change.to}`;
+  return `${change.name}: ${what} · ${formatSituationTime(change.since, nowMs, options)}`;
+}
+
+/** Where an actor's role comes from, for its chip and filter line. */
+export function actorRoleNote(actor, nowMs, options = {}) {
+  const role = ROLE_WORDS[actor.role] || actor.role;
+  if (!actor.roleSince) return `${role}: starting role from the theater file`;
+  const count = actor.roleStoryIds?.length || 0;
+  return `${role} since ${formatSituationTime(actor.roleSince, nowMs, options)}, on ${count} corroborated ${count === 1 ? 'story' : 'stories'}`;
 }
 
 /** One badge per theater track: the brief's state, or no cited reading. */

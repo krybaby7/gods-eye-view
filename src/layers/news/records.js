@@ -229,11 +229,19 @@ function normalizeBrief(raw) {
           })),
       })),
     unknowns: lineList(raw.unknowns, 3),
-    actorNotes: (Array.isArray(raw.actorNotes) ? raw.actorNotes : [])
-      .filter((note) => typeof note?.actorId === 'string')
-      .map((note) => {
-        const line = normalizeLine(note, 300);
-        return line ? { actorId: text(note.actorId, 64), ...line } : null;
+    // Proposed roles with their cited reason; whether a role was accepted
+    // is on the theater's actors, set by code.
+    actorRoles: (Array.isArray(raw.actorRoles) ? raw.actorRoles : [])
+      .filter(
+        (entry) =>
+          typeof entry?.actorId === 'string' &&
+          NEWS_ACTOR_ROLES.includes(entry.role),
+      )
+      .map((entry) => {
+        const line = normalizeLine(entry, 300);
+        return line
+          ? { actorId: text(entry.actorId, 64), role: entry.role, ...line }
+          : null;
       })
       .filter(Boolean),
   };
@@ -327,6 +335,16 @@ export function normalizeNewsSnapshot(payload) {
       type: actor.type,
       role: actor.role,
       aliases: stringList(actor.aliases, 20),
+      // When the stories last set the role, and on which stories.
+      startingRole: NEWS_ACTOR_ROLES.includes(actor.startingRole)
+        ? actor.startingRole
+        : actor.role,
+      roleSince: isoOrNull(actor.roleSince),
+      roleStoryIds: stringList(actor.roleStoryIds, 20),
+      changedFrom: NEWS_ACTOR_ROLES.includes(actor.changedFrom)
+        ? actor.changedFrom
+        : null,
+      learned: actor.learned === true,
     }));
   const drivers = list(payload.theater.drivers)
     .filter((driver) => typeof driver?.text === 'string')

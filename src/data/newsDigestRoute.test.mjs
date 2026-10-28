@@ -115,6 +115,8 @@ function groupingModel(costs = []) {
                       'IRNA says a civilian warehouse; CENTCOM says a drone storage site.',
                     ],
                     status: 'open',
+                    kind: 'event',
+                    actorIds: ['united-states', 'iran', 'saudi-arabia'],
                   },
                 ],
               }),
@@ -139,15 +141,22 @@ function groupingModel(costs = []) {
 
 /**
  * A brief double that cites the first story it is sent, plus one invented
- * id. `answers` queues per-call overrides: `{status}` or `{cost}`.
+ * id. `answers` queues per-call overrides: `{status}`, `{cost}`, or actor
+ * lines as functions of the cited ids: `{actorRoles, newActors}`.
  */
-function briefModel(answers = []) {
+function briefModel(answers = [], requests = []) {
   return (body) => {
+    requests.push(body);
     const input = body.input[0].content;
     const stories = JSON.parse(
       input.slice(input.indexOf('Stories (')).split('\n')[1],
     );
-    const { status = 'completed', cost = 0.12 } = answers.shift() ?? {};
+    const {
+      status = 'completed',
+      cost = 0.12,
+      actorRoles = () => [],
+      newActors = () => [],
+    } = answers.shift() ?? {};
     const cite = [stories[0].id, 'st_invented'];
     const line = (text) => ({ text, storyIds: cite });
     return Response.json({
@@ -179,7 +188,8 @@ function briefModel(answers = []) {
                 affected: [],
                 scenarios: [],
                 unknowns: [line('What was hit is disputed.')],
-                actorNotes: [],
+                actorRoles: actorRoles(cite),
+                newActors: newActors(cite),
               }),
             },
           ],
@@ -659,4 +669,137 @@ test('the Retry brief route is POST-only, same-site gated and rate limited', asy
   for (let i = 0; i < 6; i++)
     statuses.push((await request('/brief')).statusCode);
   assert.deepEqual(statuses, [503, 503, 503, 503, 429, 429]);
+});
+
+test('briefs move roles only on corroborated stories about that actor and add actors under code-made ids', async (t) => {
+  const digests = [];
+  const model = groupingModel();
+  const { news, options } = await setup(t, {
+    perplexity: (body, init) => {
+      digests.push(body);
+      return model(body, init);
+    },
+    brief: briefModel([
+      {
+        actorRoles: (cite) => [
+          {
+            actorId: 'saudi-arabia',
+            role: 'party',
+            text: 'Its forces are named in the strike story.',
+            storyIds: cite,
+          },
+          {
+            actorId: 'pakistan',
+            role: 'party',
+            text: 'Said to be sending troops.',
+            storyIds: cite,
+          },
+          {
+            actorId: 'united-states',
+            role: 'party',
+            text: 'CENTCOM said it struck.',
+            storyIds: cite,
+          },
+        ],
+        newActors: (cite) => [
+          {
+            name: 'CENTCOM',
+            type: 'institution',
+            role: 'party',
+            aliases: [],
+            text: 'Struck the port.',
+            storyIds: cite,
+          },
+          {
+            name: 'Bandar Abbas port',
+            type: 'institution',
+            role: 'affected',
+            aliases: ['Shahid Rajaee port'],
+            text: 'The port was hit.',
+            storyIds: cite,
+          },
+        ],
+      },
+    ]),
+  });
+  const { body } = await news.requestDigest();
+  const after = await news.snapshot();
+  const [story] = after.stories;
+  assert.equal(story.verification, 'corroborated');
+  assert.deepEqual(story.actorIds, ['united-states', 'iran', 'saudi-arabia']);
+  // Saudi Arabia: corroborated story tagged with it. Pakistan: not tagged.
+  assert.deepEqual(body.briefRun.roleChanges, [
+    {
+      actorId: 'saudi-arabia',
+      from: 'external',
+      to: 'party',
+      storyIds: [story.id],
+    },
+  ]);
+  assert.deepEqual(body.briefRun.roleChangesHeld, [
+    { actorId: 'pakistan', from: 'mediator', to: 'party' },
+  ]);
+  // "CENTCOM" is an alias of the United States: no duplicate.
+  assert.equal(body.briefRun.actorsMerged, 1);
+  assert.deepEqual(body.briefRun.actorsAdded, [
+    {
+      id: 'bandar-abbas-port',
+      name: 'Bandar Abbas port',
+      role: 'affected',
+      storyIds: [story.id],
+    },
+  ]);
+  const actors = new Map(after.theater.actors.map((a) => [a.id, a]));
+  const saudi = actors.get('saudi-arabia');
+  assert.deepEqual(
+    [
+      saudi.role,
+      saudi.startingRole,
+      saudi.changedFrom,
+      saudi.roleStoryIds,
+      saudi.roleSince,
+    ],
+    ['party', 'external', 'external', [story.id], body.briefRun.finishedAt],
+  );
+  assert.equal(actors.get('pakistan').role, 'mediator');
+  assert.equal(actors.get('pakistan').roleSince, null);
+  assert.deepEqual(
+    [
+      actors.get('bandar-abbas-port').learned,
+      actors.get('bandar-abbas-port').type,
+    ],
+    [true, 'institution'],
+  );
+  assert.equal(after.theater.actors.length, 17);
+
+  // The next digest may tag the learned actor; the next brief sees the roles.
+  arrive(
+    await news.context(),
+    'Port authority describes damage at Bandar Abbas',
+  );
+  await news.requestDigest();
+  const schema = digests.at(-1).response_format.json_schema.schema;
+  assert.ok(
+    schema.properties.stories.items.properties.actorIds.items.enum.includes(
+      'bandar-abbas-port',
+    ),
+  );
+  assert.match(
+    digests.at(-1).instructions,
+    /^- bandar-abbas-port: Bandar Abbas port \(Shahid Rajaee port\)$/m,
+  );
+
+  // Roles and learned actors survive a restart.
+  const restarted = createNewsService({
+    ...options,
+    fetchImpl: async () => {
+      throw new Error('offline');
+    },
+  });
+  const reloaded = new Map(
+    (await restarted.snapshot()).theater.actors.map((a) => [a.id, a]),
+  );
+  assert.equal(reloaded.get('saudi-arabia').role, 'party');
+  assert.ok(reloaded.has('bandar-abbas-port'));
+  await restarted.stop();
 });

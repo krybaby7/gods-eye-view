@@ -178,9 +178,33 @@ test('the current and previous brief survive a restart', async (t) => {
     brief: brief('br_1', `run_${at}`),
     run: briefRun(at, 0.1, `run_${at}`),
   });
+  assert.deepEqual(digest.actorState(), { roles: {}, learned: [] });
+  const actors = {
+    roles: {
+      'saudi-arabia': {
+        role: 'party',
+        since: at,
+        storyIds: ['st_1'],
+        changedFrom: 'external',
+        briefId: 'br_2',
+      },
+    },
+    learned: [
+      {
+        id: 'egypt',
+        name: 'Egypt',
+        type: 'state',
+        role: 'external',
+        aliases: [],
+        addedAt: at,
+        briefId: 'br_2',
+      },
+    ],
+  };
   digest.commitBrief({
     brief: brief('br_2', `run_${at}`),
     run: briefRun(at, 0.1, `run_${at}`),
+    actors,
   });
   await digest.save();
   const again = createDigestStore({
@@ -192,4 +216,5 @@ test('the current and previous brief survive a restart', async (t) => {
   assert.equal(again.brief().id, 'br_2');
   assert.equal(again.previousBrief().id, 'br_1');
   assert.equal(again.lastBriefRun().kind, 'brief');
+  assert.deepEqual(again.actorState(), actors, 'roles and learned actors too');
 });

@@ -9,7 +9,10 @@
 import { newsCoverage } from '../layers/news/coverage.js';
 import {
   BRIEF_EXPANDED_KEY,
-  actorGroups,
+  actorRoleNote,
+  actorStrip as actorStripModel,
+  roleChangeLine,
+  roleChanges,
   briefAgeLine,
   briefMetaLine,
   briefRunLine,
@@ -149,13 +152,21 @@ export function createSituationBrief({
     );
   }
 
-  function actorStrip(snap) {
-    const groups = actorGroups(snap.theater?.actors, snap.stories);
-    if (!groups.length) return null;
+  function actorStrip(snap, nowMs) {
     const active = snap.actorFilter;
-    const note = (snap.brief?.actorNotes || []).find(
+    const { groups, hidden } = actorStripModel(
+      snap.theater?.actors,
+      snap.stories,
+      { activeId: active },
+    );
+    if (!groups.length) return null;
+    const activeActor = (snap.theater?.actors || []).find(
+      (entry) => entry.id === active,
+    );
+    const note = (snap.brief?.actorRoles || []).find(
       (entry) => entry.actorId === active,
     );
+    const changes = roleChanges(snap.theater?.actors);
     return [
       heading('Who is involved'),
       h(
@@ -179,10 +190,11 @@ export function createSituationBrief({
                   'aria-pressed': active === actor.id ? 'true' : 'false',
                   'data-actor-id': actor.id,
                   'data-focus-key': `actor-${actor.id}`,
-                  title:
+                  title: `${
                     active === actor.id
                       ? 'Show all stories again'
-                      : `Show only stories involving ${actor.name} (${actor.typeLabel}, ${actor.count} open)`,
+                      : `Show only stories involving ${actor.name} (${actor.typeLabel}, ${actor.count} open)`
+                  }. ${actorRoleNote(actor, nowMs)}.`,
                   onClick: () =>
                     layer.setActorFilter?.(
                       active === actor.id ? null : actor.id,
@@ -202,7 +214,60 @@ export function createSituationBrief({
           ),
         ),
       ),
+      hidden
+        ? h('p', {
+            className: 'situation-note',
+            text: `${hidden} more ${hidden === 1 ? 'actor has' : 'actors have'} no open stories and ${hidden === 1 ? 'is' : 'are'} not shown.`,
+          })
+        : null,
+      activeActor
+        ? h(
+            'p',
+            { className: 'situation-actor-role-note' },
+            activeActor.roleStoryIds.length
+              ? h('button', {
+                  type: 'button',
+                  className: 'situation-link-button',
+                  'data-focus-key': 'actor-role-evidence',
+                  'data-story-ids': activeActor.roleStoryIds.join(' '),
+                  text: actorRoleNote(activeActor, nowMs),
+                  onClick: () => onOpenStories(activeActor.roleStoryIds),
+                })
+              : actorRoleNote(activeActor, nowMs),
+          )
+        : null,
       note ? lineButton(note, 'actor-note', 'situation-actor-note') : null,
+      changes.length
+        ? h(
+            'div',
+            { className: 'situation-role-changes' },
+            h('p', {
+              className: 'situation-brief-kicker',
+              text: 'Role changes, set from corroborated stories',
+            }),
+            h(
+              'ul',
+              {
+                className: 'situation-brief-lines',
+                'aria-label': 'Role changes',
+              },
+              changes.map((change) =>
+                h(
+                  'li',
+                  {},
+                  lineButton(
+                    {
+                      text: roleChangeLine(change, nowMs),
+                      storyIds: change.storyIds,
+                    },
+                    `role-change-${change.actorId}`,
+                    'situation-role-change',
+                  ),
+                ),
+              ),
+            ),
+          )
+        : null,
     ];
   }
 
@@ -328,7 +393,9 @@ export function createSituationBrief({
     const meta = brief ? briefMetaLine(brief, nowMs) : '';
     const age = briefAgeLine(brief, snapshot.briefStatus, nowMs);
     const failure = briefRunLine(snapshot.briefRun, snapshot.briefStatus);
-    const groups = actorGroups(snapshot.theater?.actors, snapshot.stories);
+    const strip = actorStripModel(snapshot.theater?.actors, snapshot.stories, {
+      activeId: snapshot.actorFilter,
+    });
     const key = JSON.stringify([
       brief,
       expanded,
@@ -339,7 +406,8 @@ export function createSituationBrief({
       meta,
       age,
       failure,
-      groups,
+      strip,
+      snapshot.theater?.actors,
       snapshot.theater?.drivers,
     ]);
     if (root.dataset.key === key) return;
@@ -417,7 +485,7 @@ export function createSituationBrief({
     if (expanded)
       more.append(
         ...[
-          actorStrip(snapshot),
+          actorStrip(snapshot, nowMs),
           whyNow(snapshot, brief),
           heading('Who is affected'),
           brief.affected.length

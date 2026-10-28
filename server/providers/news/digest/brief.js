@@ -8,6 +8,7 @@ import {
   parseDigestText,
   worstCaseCost,
 } from './runner.js';
+import { NEWS_ACTOR_ROLES, NEWS_ACTOR_TYPES } from '../registry.js';
 
 /**
  * The Situation Brief: a second model call after each successful digest that
@@ -15,12 +16,14 @@ import {
  * shape as the digest (Claude Sonnet 5.5, no tools, one step, strict JSON
  * schema), its own 16,000-token output limit.
  *
- * The model writes the text, track states, scenario horizons, citations and
- * which signposts it has seen. Code checks every citation against the
- * stories it sent: an unknown id is dropped and counted, a line left with no
- * valid story is dropped, and a brief without a valid headline is rejected.
- * Code also enforces the limits and the never-break rules it can check (no
- * single forecast, no probabilities). It never writes analysis itself.
+ * The model writes the text, track states, scenario horizons, citations,
+ * which signposts it has seen, and a cited role line per actor (plus actors
+ * the list lacks). Code checks every citation against the stories it sent:
+ * an unknown id is dropped and counted, a line left with no valid story is
+ * dropped, and a brief without a valid headline is rejected. Code also
+ * enforces the limits and the never-break rules it can check (no single
+ * forecast, no probabilities). Whether a proposed role or actor is accepted
+ * is decided afterwards by actors.js. Code never writes analysis itself.
  */
 
 /**
@@ -47,6 +50,7 @@ export const BRIEF_LIMITS = Object.freeze({
   scenariosMin: 2,
   scenariosMax: 3,
   signposts: 4,
+  newActors: 3,
 });
 
 const nullable = (schema) => ({ anyOf: [schema, { type: 'null' }] });
@@ -81,7 +85,8 @@ export function briefSchema({ trackIds, actorIds }) {
       'affected',
       'scenarios',
       'unknowns',
-      'actorNotes',
+      'actorRoles',
+      'newActors',
     ],
     properties: {
       headline: citedLineSchema(),
@@ -126,14 +131,32 @@ export function briefSchema({ trackIds, actorIds }) {
         },
       },
       unknowns: lines,
-      actorNotes: {
+      actorRoles: {
         type: 'array',
         items: {
           type: 'object',
           additionalProperties: false,
-          required: ['actorId', 'text', 'storyIds'],
+          required: ['actorId', 'role', 'text', 'storyIds'],
           properties: {
             actorId: enumOrString(actorIds),
+            role: { type: 'string', enum: [...NEWS_ACTOR_ROLES] },
+            text: { type: 'string' },
+            storyIds: idList,
+          },
+        },
+      },
+      // A name, never an id: code makes the id and refuses duplicates.
+      newActors: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['name', 'type', 'role', 'aliases', 'text', 'storyIds'],
+          properties: {
+            name: { type: 'string' },
+            type: { type: 'string', enum: [...NEWS_ACTOR_TYPES] },
+            role: { type: 'string', enum: [...NEWS_ACTOR_ROLES] },
+            aliases: { type: 'array', items: { type: 'string' } },
             text: { type: 'string' },
             storyIds: idList,
           },
@@ -162,7 +185,15 @@ Fields:
 - affected: up to ${BRIEF_LIMITS.affected} lines on civilians, displacement, access and services, from the humanitarian stories.
 - scenarios: ${BRIEF_LIMITS.scenariosMin} or ${BRIEF_LIMITS.scenariosMax} distinct possibilities for what could happen next, each with a horizon (days, weeks or months), a short title, at most two sentences and up to ${BRIEF_LIMITS.signposts} signposts: observable things that would show it unfolding. signposts[].seenIn: ids of stories that already report that signpost, else [].
 - unknowns: up to ${BRIEF_LIMITS.unknowns} things that are poorly known or contested, and why.
-- actorNotes: at most one short line per actor, only for actors whose position changed or matters now; actorId from the actor list.`;
+- actorRoles: one line for each listed actor the stories show acting or affected: its role as the cited stories show it now, and one short sentence on why. Set a role only from what the stories report, not from what you know; when the stories show no change, give the listed role. A role change is accepted only when a cited story corroborates it. actorId from the actor list.
+- newActors: up to ${BRIEF_LIMITS.newActors} states, armed groups, institutions or populations the stories show taking part that are not in the actor list: the name as commonly written, its type, its role, other names it goes by, one sentence on why, and the stories that name it. Never repeat a listed actor under another name.
+
+Roles:
+- party: takes part in the fighting (strikes, attacks, or defends as a combatant);
+- mediator: carries messages between parties or hosts their talks;
+- institution: an international body (UN agencies, the IAEA);
+- affected: a population harmed by the fighting;
+- external: an involved state or group that is not fighting or mediating (it supplies, hosts, sanctions or pledges support).`;
 
 /**
  * Fixed instructions: rules, theater brief, actors, drivers and tracks.
@@ -180,7 +211,7 @@ export function buildBriefInstructions(theater) {
   return [
     BRIEF_RULES,
     `Theater: ${theater.name}\n${theater.brief.join('\n\n')}`,
-    `Actors (id: name, aliases in parentheses — type, role; roles record only what is not in dispute):\n${actorListForPrompt(theater.actors, { withRole: true }) || '(none)'}`,
+    `Actors (id: name, aliases in parentheses — type, role; current roles, set from earlier stories):\n${actorListForPrompt(theater.actors, { withRole: true }) || '(none)'}`,
     `Long-running drivers (curated background, already shown to the reader):\n${drivers || '(none)'}`,
     `Tracks:\n${tracks || '(none)'}`,
   ].join('\n\n');
@@ -346,7 +377,7 @@ export function validateBriefOutput(output, { storyIds, trackIds, actorIds }) {
     clampedStates: 0,
     clampedHorizons: 0,
     droppedTracks: 0,
-    droppedActorNotes: 0,
+    droppedActorLines: 0,
     droppedScenarios: 0,
   };
   const list = (value) => (Array.isArray(value) ? value : []);
@@ -458,17 +489,49 @@ export function validateBriefOutput(output, { storyIds, trackIds, actorIds }) {
 
   const unknowns = lines(output.unknowns, BRIEF_LIMITS.unknowns);
 
-  const actorNotes = [];
-  for (const raw of list(output.actorNotes)) {
-    if (
-      !actorIds.includes(raw?.actorId) ||
-      actorNotes.some((note) => note.actorId === raw.actorId)
-    ) {
-      counts.droppedActorNotes++;
+  // Actor lines: a listed role, a sentence and its stories. A line that
+  // fails any check is dropped and counted apart from the other lines.
+  const actorLine = (raw) => {
+    const text = cleanText(raw?.text, 240);
+    const ids = validIds(raw?.storyIds);
+    return text && ids.length && NEWS_ACTOR_ROLES.includes(raw.role)
+      ? { role: raw.role, text, storyIds: ids }
+      : null;
+  };
+  const actorRoles = [];
+  for (const raw of list(output.actorRoles)) {
+    const line =
+      actorIds.includes(raw?.actorId) &&
+      !actorRoles.some((entry) => entry.actorId === raw.actorId)
+        ? actorLine(raw)
+        : null;
+    if (line) actorRoles.push({ actorId: raw.actorId, ...line });
+    else counts.droppedActorLines++;
+  }
+  const newActors = [];
+  for (const raw of list(output.newActors)) {
+    const name = cleanText(raw?.name, 60);
+    const line =
+      name && NEWS_ACTOR_TYPES.includes(raw.type) ? actorLine(raw) : null;
+    if (!line) {
+      counts.droppedActorLines++;
       continue;
     }
-    const line = cited(raw, 240);
-    if (line) actorNotes.push({ actorId: raw.actorId, ...line });
+    newActors.push({
+      name,
+      type: raw.type,
+      role: line.role,
+      aliases: [
+        ...new Set(
+          list(raw.aliases)
+            .filter((alias) => typeof alias === 'string')
+            .map((alias) => cleanText(alias, 40))
+            .filter(Boolean),
+        ),
+      ].slice(0, 5),
+      text: line.text,
+      storyIds: line.storyIds,
+    });
   }
 
   return {
@@ -480,7 +543,8 @@ export function validateBriefOutput(output, { storyIds, trackIds, actorIds }) {
       affected,
       scenarios,
       unknowns,
-      actorNotes,
+      actorRoles,
+      newActors: capped(newActors, BRIEF_LIMITS.newActors),
     },
     counts,
   };

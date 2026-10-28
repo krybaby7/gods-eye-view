@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   TRACK_STATE_GLYPHS,
-  actorGroups,
+  actorRoleNote,
+  actorStrip,
   briefAgeLine,
   briefMetaLine,
   briefRunLine,
@@ -10,6 +11,8 @@ import {
   horizonLabel,
   lastSeenKey,
   retryBriefState,
+  roleChangeLine,
+  roleChanges,
   trackBadges,
 } from './situationBriefModel.js';
 
@@ -37,7 +40,9 @@ const brief = {
     },
   ],
   unknowns: [line('U.', ['a'])],
-  actorNotes: [{ actorId: 'oman', text: 'N.', storyIds: ['g'] }],
+  actorRoles: [
+    { actorId: 'oman', role: 'mediator', text: 'N.', storyIds: ['g'] },
+  ],
 };
 
 test('a brief cites the distinct stories of every line, signposts included', () => {
@@ -59,7 +64,7 @@ test('the AI-analysis line names its time and how many stories it cites', () => 
         tracks: [],
         scenarios: [],
         unknowns: [],
-        actorNotes: [],
+        actorRoles: [],
         headline: line('H.', ['a']),
       },
       NOW,
@@ -152,38 +157,108 @@ test('Retry brief shows only after a failure and says why it is disabled', () =>
   );
 });
 
-test('actors group by role in theater order, never by side, with their open story counts', () => {
+const actor = (id, role, extra = {}) => ({
+  id,
+  name: id[0].toUpperCase() + id.slice(1),
+  type: 'state',
+  role,
+  ...extra,
+});
+
+test('the strip groups actors by current role, never by side, and shows only those in open stories', () => {
   const actors = [
-    { id: 'iran', name: 'Iran', type: 'state', role: 'party' },
-    { id: 'oman', name: 'Oman', type: 'state', role: 'mediator' },
-    { id: 'hamas', name: 'Hamas', type: 'armed-group', role: 'party' },
-    { id: 'gaza', name: 'Civilians', type: 'population', role: 'affected' },
+    actor('iran', 'party'),
+    actor('oman', 'mediator'),
+    actor('hamas', 'party', { type: 'armed-group' }),
+    actor('gaza', 'affected', { type: 'population' }),
+    actor('egypt', 'external', { learned: true }),
   ];
   const stories = [
-    { id: 'a', status: 'open', actorIds: ['iran', 'hamas'] },
-    { id: 'b', status: 'open', actorIds: ['iran'] },
+    { id: 'a', status: 'open', actorIds: ['iran', 'hamas', 'egypt'] },
+    { id: 'b', status: 'open', actorIds: ['iran', 'gaza'] },
     { id: 'c', status: 'closed', actorIds: ['oman'] },
   ];
-  assert.deepEqual(actorGroups(actors, stories), [
-    {
-      role: 'party',
-      label: 'Parties',
-      actors: [
-        { ...actors[0], typeLabel: 'state', count: 2 },
-        { ...actors[2], typeLabel: 'armed group', count: 1 },
+  const strip = actorStrip(actors, stories);
+  assert.deepEqual(
+    strip.groups.map((group) => [
+      group.label,
+      group.actors.map((entry) => [entry.id, entry.typeLabel, entry.count]),
+    ]),
+    [
+      [
+        'Parties',
+        [
+          ['iran', 'state', 2],
+          ['hamas', 'armed group', 1],
+        ],
       ],
-    },
-    {
-      role: 'mediator',
-      label: 'Mediators',
-      actors: [{ ...actors[1], typeLabel: 'state', count: 0 }],
-    },
-    {
-      role: 'affected',
-      label: 'Affected',
-      actors: [{ ...actors[3], typeLabel: 'population', count: 0 }],
-    },
-  ]);
+      ['External', [['egypt', 'state', 1]]],
+      ['Affected', [['gaza', 'population', 1]]],
+    ],
+  );
+  // Oman has no open story: hidden, not deleted.
+  assert.equal(strip.hidden, 1);
+  // The active filter always shows.
+  assert.deepEqual(
+    actorStrip(actors, stories, { activeId: 'oman' }).groups.map(
+      (group) => group.label,
+    ),
+    ['Parties', 'Mediators', 'External', 'Affected'],
+  );
+  // Before any story is tagged, the theater's own actors show.
+  assert.deepEqual(
+    actorStrip(actors, [])
+      .groups.flatMap((group) => group.actors)
+      .map((entry) => entry.id),
+    ['iran', 'hamas', 'oman', 'gaza'],
+  );
+});
+
+test('the strip shows at most 16, keeping those with the most open stories', () => {
+  const actors = Array.from({ length: 20 }, (_, n) =>
+    actor(`a${String(n).padStart(2, '0')}`, 'party'),
+  );
+  const stories = actors.map((entry, n) => ({
+    id: `s${n}`,
+    status: 'open',
+    actorIds: n < 4 ? [entry.id, 'a19'] : [entry.id],
+  }));
+  const strip = actorStrip(actors, stories, { activeId: 'a05' });
+  const shown = strip.groups[0].actors.map((entry) => entry.id);
+  assert.equal(shown.length, 16);
+  assert.equal(strip.hidden, 4);
+  assert.ok(shown.includes('a19'), 'five stories');
+  assert.ok(shown.includes('a05'), 'the active filter');
+});
+
+test('role changes list who moved, from what, when, and on which stories', () => {
+  const actors = [
+    actor('iran', 'party'),
+    actor('saudi', 'party', {
+      changedFrom: 'external',
+      roleSince: '2026-10-28T14:03:00Z',
+      roleStoryIds: ['st_1', 'st_2'],
+    }),
+    actor('egypt', 'external', {
+      learned: true,
+      roleSince: '2026-10-28T14:30:00Z',
+      roleStoryIds: ['st_3'],
+    }),
+  ];
+  const changes = roleChanges(actors);
+  assert.deepEqual(
+    changes.map((change) => roleChangeLine(change, NOW, UTC)),
+    ['Egypt: added as external · 14:30', 'Saudi: external → party · 14:03'],
+  );
+  assert.deepEqual(changes[1].storyIds, ['st_1', 'st_2']);
+  assert.equal(
+    actorRoleNote(actors[1], NOW, UTC),
+    'Party since 14:03, on 2 corroborated stories',
+  );
+  assert.equal(
+    actorRoleNote(actors[0], NOW, UTC),
+    'Party: starting role from the theater file',
+  );
 });
 
 test('track badges follow the theater; a track the brief left out has no reading', () => {

@@ -127,9 +127,15 @@ const output = (overrides = {}) => ({
     },
   ],
   unknowns: [line('Damage at the port is unconfirmed.', ['st_b'])],
-  actorNotes: [
-    { actorId: 'oman', text: 'Oman hosted the talks.', storyIds: ['st_a'] },
+  actorRoles: [
+    {
+      actorId: 'oman',
+      role: 'mediator',
+      text: 'Oman hosted the talks.',
+      storyIds: ['st_a'],
+    },
   ],
+  newActors: [],
   ...overrides,
 });
 const context = (overrides = {}) => ({
@@ -223,8 +229,30 @@ test('the schema is strict and offers only fixed states, horizons, tracks and ac
     SCENARIO_HORIZONS,
   );
   assert.deepEqual(SCENARIO_HORIZONS, ['days', 'weeks', 'months']);
-  assert.deepEqual(schema.properties.actorNotes.items.properties.actorId.enum, [
-    'iran',
+  const role = schema.properties.actorRoles.items.properties;
+  assert.deepEqual(role.actorId.enum, ['iran']);
+  assert.deepEqual(role.role.enum, [
+    'party',
+    'mediator',
+    'institution',
+    'affected',
+    'external',
+  ]);
+  // A new actor carries a name, never an id: code makes the id.
+  const added = schema.properties.newActors.items.properties;
+  assert.deepEqual(Object.keys(added).sort(), [
+    'aliases',
+    'name',
+    'role',
+    'storyIds',
+    'text',
+    'type',
+  ]);
+  assert.deepEqual(added.type.enum, [
+    'state',
+    'armed-group',
+    'institution',
+    'population',
   ]);
   assert.deepEqual(schema.properties.trigger.anyOf[1], { type: 'null' });
   assert.doesNotMatch(
@@ -251,6 +279,11 @@ test('instructions carry the never-break rules, the theater, actors, drivers and
   assert.match(text, /Second paragraph\./);
   assert.match(text, /^- iran: Iran \(Tehran\) — state, party$/m);
   assert.match(text, /^- oman: Oman — state, mediator$/m);
+  // Roles are read from the stories; the list only says where they stand.
+  assert.match(text, /current roles, set from earlier stories/);
+  assert.match(text, /party: takes part in the fighting/);
+  assert.match(text, /not from what you know/);
+  assert.match(text, /newActors:/);
   assert.match(text, /A long-running dispute over the nuclear programme\./);
   assert.match(text, /^- military: Military$/m);
   assert.doesNotMatch(text, /https?:/, 'driver links stay out of the prompt');
@@ -290,7 +323,8 @@ test('stories go in with claims, labels and actors, but no item ids or links', (
       affected: [],
       scenarios: [],
       unknowns: [],
-      actorNotes: [],
+      actorRoles: [],
+      newActors: [],
     },
     stories: [story('st_a')],
     coverage: {
@@ -360,9 +394,15 @@ test('a valid answer keeps every cited line in theater track order', () => {
     { text: 'A second round is announced', seenIn: [] },
     { text: 'Envoys meet', seenIn: ['st_a'] },
   ]);
-  assert.deepEqual(brief.actorNotes, [
-    { actorId: 'oman', text: 'Oman hosted the talks.', storyIds: ['st_a'] },
+  assert.deepEqual(brief.actorRoles, [
+    {
+      actorId: 'oman',
+      role: 'mediator',
+      text: 'Oman hosted the talks.',
+      storyIds: ['st_a'],
+    },
   ]);
+  assert.deepEqual(brief.newActors, []);
   assert.deepEqual(counts, {
     droppedStoryIds: 0,
     droppedLines: 0,
@@ -370,7 +410,7 @@ test('a valid answer keeps every cited line in theater track order', () => {
     clampedStates: 0,
     clampedHorizons: 0,
     droppedTracks: 0,
-    droppedActorNotes: 0,
+    droppedActorLines: 0,
     droppedScenarios: 0,
   });
 });
@@ -436,11 +476,35 @@ test('limits are enforced after citation checks', () => {
       affected: four('Affected'),
       unknowns: four('Unknown'),
       scenarios: [scenario('A'), scenario('B'), scenario('C'), scenario('D')],
-      actorNotes: [
-        { actorId: 'oman', text: 'First.', storyIds: ['st_a'] },
-        { actorId: 'oman', text: 'Second.', storyIds: ['st_a'] },
-        { actorId: 'hamas', text: 'Unknown actor.', storyIds: ['st_a'] },
+      actorRoles: [
+        {
+          actorId: 'oman',
+          role: 'mediator',
+          text: 'First.',
+          storyIds: ['st_a'],
+        },
+        { actorId: 'oman', role: 'party', text: 'Second.', storyIds: ['st_a'] },
+        {
+          actorId: 'hamas',
+          role: 'party',
+          text: 'Unknown.',
+          storyIds: ['st_a'],
+        },
+        {
+          actorId: 'iran',
+          role: 'ally',
+          text: 'Not a role.',
+          storyIds: ['st_a'],
+        },
       ],
+      newActors: [1, 2, 3, 4].map((n) => ({
+        name: `Actor ${n}`,
+        type: 'state',
+        role: 'external',
+        aliases: [],
+        text: 'Named in a story.',
+        storyIds: ['st_a'],
+      })),
     }),
     context(),
   );
@@ -455,12 +519,51 @@ test('limits are enforced after citation checks', () => {
     brief.scenarios.map((entry) => entry.title),
     ['A', 'B', 'C'],
   );
-  assert.deepEqual(brief.actorNotes, [
-    { actorId: 'oman', text: 'First.', storyIds: ['st_a'] },
+  assert.deepEqual(brief.actorRoles, [
+    { actorId: 'oman', role: 'mediator', text: 'First.', storyIds: ['st_a'] },
   ]);
-  assert.equal(counts.trimmedLines, 4);
+  assert.deepEqual(
+    brief.newActors.map((entry) => entry.name),
+    ['Actor 1', 'Actor 2', 'Actor 3'],
+  );
+  assert.equal(counts.trimmedLines, 5, 'four limits and the fourth actor');
   assert.equal(counts.droppedLines, 1);
-  assert.equal(counts.droppedActorNotes, 2);
+  assert.equal(counts.droppedActorLines, 3);
+});
+
+test('a proposed new actor needs a name, a listed type and role, and a citation', () => {
+  const proposal = (overrides) => ({
+    name: 'Egypt',
+    type: 'state',
+    role: 'external',
+    aliases: ['Cairo', '', 'Cairo', 7],
+    text: 'Its parliament authorised support, see https://x.example now.',
+    storyIds: ['st_a', 'ghost'],
+    ...overrides,
+  });
+  const { brief, counts } = validateBriefOutput(
+    output({
+      newActors: [
+        proposal(),
+        proposal({ name: ' ' }),
+        proposal({ type: 'coalition' }),
+        proposal({ role: 'ally' }),
+        proposal({ storyIds: ['ghost'] }),
+      ],
+    }),
+    context(),
+  );
+  assert.deepEqual(brief.newActors, [
+    {
+      name: 'Egypt',
+      type: 'state',
+      role: 'external',
+      aliases: ['Cairo'],
+      text: 'Its parliament authorised support, see now.',
+      storyIds: ['st_a'],
+    },
+  ]);
+  assert.equal(counts.droppedActorLines, 4);
 });
 
 test('track states and horizons are clamped; unknown and repeated tracks are dropped', () => {

@@ -90,10 +90,13 @@ const BRIEF = {
     },
   ],
   unknowns: [line('Damage at the port is unconfirmed.', ['st_d'])],
-  actorNotes: [line('Oman hosted the talks.', ['st_c'])].map((note) => ({
-    actorId: 'oman',
-    ...note,
-  })),
+  actorRoles: [
+    {
+      actorId: 'oman',
+      role: 'mediator',
+      ...line('Oman hosted the talks.', ['st_c']),
+    },
+  ],
 };
 
 function payload(overrides = {}) {
@@ -124,7 +127,17 @@ function payload(overrides = {}) {
           type: 'state',
           role: 'party',
         },
-        { id: 'oman', name: 'Oman', type: 'state', role: 'mediator' },
+        // Set from the stories: external at first, a mediator since 13:02.
+        {
+          id: 'oman',
+          name: 'Oman',
+          type: 'state',
+          role: 'mediator',
+          startingRole: 'external',
+          changedFrom: 'external',
+          roleSince: at('13:02'),
+          roleStoryIds: ['st_c'],
+        },
         {
           id: 'civilians-gaza',
           name: 'Civilians in Gaza',
@@ -356,10 +369,20 @@ test('Show more adds actors, why now, the affected, scenarios and unknowns, and 
       ['Affected', ['civilians-gaza']],
     ],
   );
-  // Chips carry a type and a count, never a colour of their own.
+  // Chips carry a type and a count, never a colour of their own; the title
+  // says where the role comes from.
   const iran = $('[data-actor-id="iran"]');
   assert.equal(text(iran), 'Iranstate2');
   assert.equal(iran.getAttribute('style'), null);
+  assert.match(iran.title, /Party: starting role from the theater file\.$/);
+  assert.match(
+    $('[data-actor-id="oman"]').title,
+    /Mediator since \d\d:\d\d, on 1 corroborated story\.$/,
+  );
+  // Role changes list who moved and when; each opens its evidence.
+  const change = $('[data-focus-key="role-change-oman"]');
+  assert.match(text(change), /^Oman: external → mediator · \d\d:\d\d$/);
+  assert.equal(change.getAttribute('data-story-ids'), 'st_c');
   assert.equal(
     text($('[data-focus-key="trigger"]')),
     'The port strike prompted new talks, officials said.',
@@ -430,7 +453,7 @@ test('every line opens its stories: the first is selected and flown to when pinn
     ...$$('.situation-track').filter((badge) => !badge.disabled),
     ...$$('.situation-signpost-seen'),
   ];
-  assert.equal(clickable.length, 13);
+  assert.equal(clickable.length, 14, 'with the role change line');
   for (const control of clickable) {
     const [first] = control.getAttribute('data-story-ids').split(' ');
     control.click();
@@ -464,6 +487,14 @@ test('the actor filter combines with category toggles on the list and the pins',
   );
   // The active actor's note appears under the strip.
   assert.equal(text($('.situation-actor-note')), 'Oman hosted the talks.');
+  // And where its role comes from, opening the evidence.
+  const evidence = $('[data-focus-key="actor-role-evidence"]');
+  assert.match(
+    text(evidence),
+    /^Mediator since \d\d:\d\d, on 1 corroborated story$/,
+  );
+  evidence.click();
+  assert.equal(layer.getSnapshot().selectedStoryId, 'st_c');
   // Hide Humanitarian: both filters apply.
   $('[data-focus-key="chip-humanitarian-casualties"]').click();
   assert.deepEqual(
@@ -650,4 +681,33 @@ test('Frame theater flies once over the pins and is off without any', async () =
   layer.toggleCategory('war-military');
   assert.equal($('.situation-frame').disabled, true);
   assert.equal($('.situation-frame').title, 'No located open stories to frame');
+});
+
+test('an actor with no open stories leaves the strip but keeps its id', async () => {
+  const withEgypt = payload();
+  withEgypt.theater.actors.push({
+    id: 'egypt',
+    name: 'Egypt',
+    type: 'state',
+    role: 'external',
+    learned: true,
+    roleSince: at('12:00'),
+    roleStoryIds: ['st_gone'],
+  });
+  const { $, layer } = await mount({
+    snapshot: withEgypt,
+    storage: createFakeStorage({ [BRIEF_EXPANDED_KEY]: '1' }),
+  });
+  assert.equal($('[data-actor-id="egypt"]'), null);
+  assert.match(
+    text($('.situation-actors').nextSibling),
+    /^1 more actor has no open stories and is not shown\.$/,
+  );
+  // It is still an actor: it can be filtered on, and then it shows.
+  layer.setActorFilter('egypt');
+  assert.equal(
+    $('[data-actor-id="egypt"]').getAttribute('aria-pressed'),
+    'true',
+  );
+  assert.equal(layer.getSnapshot().actorFilter, 'egypt');
 });

@@ -10,6 +10,7 @@ import { loadNewsRegistry } from './registry.js';
 import { createNewsItemStore } from './store.js';
 import { DIGEST_MODEL, runDigest } from './digest/runner.js';
 import { prepareBrief, runBrief } from './digest/brief.js';
+import { applyActorUpdates, effectiveActors } from './digest/actors.js';
 import { mergeDigest, storyByItem, unassignedItems } from './digest/stories.js';
 import { newsCoverage } from '../../../src/layers/news/coverage.js';
 import {
@@ -301,6 +302,20 @@ export function createNewsService(options = {}) {
     };
   }
 
+  /**
+   * The theater with its actors as they stand: the theater file's actors
+   * with the roles the stories have set, plus actors learned from them.
+   */
+  function withActors(ctx) {
+    return {
+      ...ctx.registry.theater,
+      actors: effectiveActors(
+        ctx.registry.theater.actors,
+        ctx.digest.actorState(),
+      ),
+    };
+  }
+
   /** Run one digest for a context already admitted by requestDigest. */
   async function digestOnce(ctx, base) {
     const { theater, sourcesById } = ctx.registry;
@@ -315,7 +330,8 @@ export function createNewsService(options = {}) {
     for (const item of ctx.store.list()) itemsById.set(item.id, item);
     const result = await digestRunner({
       apiKey: apiKey(),
-      theater,
+      // Learned actors can be tagged too.
+      theater: withActors(ctx),
       sourcesById,
       openStories: previous,
       newItems: ctx.store.undigested(),
@@ -387,7 +403,7 @@ export function createNewsService(options = {}) {
    * @param {object} digestRun The successful digest run it explains.
    */
   async function briefOnce(ctx, digestRun) {
-    const { theater } = ctx.registry;
+    const theater = withActors(ctx);
     const startedMs = now();
     const base = {
       id: runId(startedMs),
@@ -445,14 +461,31 @@ export function createNewsService(options = {}) {
         fetchImpl,
       });
       const finishedMs = now();
+      const finishedIso = new Date(finishedMs).toISOString();
+      // Roles move only on corroborated stories about that actor; new
+      // actors join only on corroborated stories that name them.
+      const update = applyActorUpdates({
+        actors: theater.actors,
+        state: ctx.digest.actorState(),
+        actorRoles: result.brief.actorRoles,
+        newActors: result.brief.newActors,
+        storiesById: new Map(stories.map((story) => [story.id, story])),
+        nowIso: finishedIso,
+        briefId: result.brief.id,
+      });
       run = {
         ...base,
         status: 'ok',
-        finishedAt: new Date(finishedMs).toISOString(),
+        finishedAt: finishedIso,
         durationMs: finishedMs - startedMs,
         briefId: result.brief.id,
         storiesSent: result.storiesSent,
         ...result.counts,
+        roleChanges: update.changed,
+        roleChangesHeld: update.held,
+        actorsAdded: update.added,
+        actorsMerged: update.merged,
+        actorsRefused: update.rejectedNew,
         costUsd: roundUsd(result.cost.costUsd),
         costEstimated: result.cost.estimated,
         inputTokens: result.cost.inputTokens,
@@ -461,10 +494,14 @@ export function createNewsService(options = {}) {
         model: result.model,
         responseId: result.responseId,
       };
-      ctx.digest.commitBrief({ brief: result.brief, run });
+      ctx.digest.commitBrief({
+        brief: result.brief,
+        run,
+        actors: update.state,
+      });
       await ctx.digest.save();
       console.log(
-        `[news] brief ${ctx.theaterId}: ${run.storiesSent} stories, ${run.droppedLines} lines dropped, ${run.droppedStoryIds} ids dropped, $${run.costUsd.toFixed(4)}`,
+        `[news] brief ${ctx.theaterId}: ${run.storiesSent} stories, ${run.droppedLines} lines dropped, ${run.droppedStoryIds} ids dropped, ${update.changed.length} roles changed, ${update.held.length} held, ${update.added.length} actors added, $${run.costUsd.toFixed(4)}`,
       );
     } catch (error) {
       run = failedRun(base, error, now());
@@ -516,7 +553,7 @@ export function createNewsService(options = {}) {
           name: theater.name,
           categories: theater.categories,
           perspectives: theater.perspectives,
-          actors: theater.actors,
+          actors: withActors(ctx).actors,
           drivers: theater.drivers,
           tracks: theater.tracks,
         },
