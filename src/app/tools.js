@@ -3,6 +3,7 @@ import { initAnnotations } from '../annotations/index.js';
 import { initDrawTool } from '../annotations/drawTool.js';
 import { initImageryBoxTool } from '../ui/imageryBoxTool.js';
 import { createRecentImageryPanel } from '../ui/recentImagery.js';
+import { createSituationPanel } from '../ui/situationPanel.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
 import { installViews, isEmbeddedInline } from './embed.js';
 import { installScopeMask, destroyScopeMask } from '../scopeMask.js';
@@ -92,6 +93,14 @@ export function createApplicationTools({
       data.presentation.attachRecentImagery(null);
       imageryBoxTool?.destroy();
     });
+  }
+  // DATA ▸ War Monitor: the Situation panel lives on the right rail.
+  const news = dataManager.layers.get('news')?.module;
+  if (news) {
+    data.presentation.attachSituation((container) =>
+      createSituationPanel({ container, layer: news }),
+    );
+    defer(() => data.presentation.attachSituation(null));
   }
   if (startChrome)
     defer(startChrome({ loadingScreen, styleManager, dataManager, signal }));

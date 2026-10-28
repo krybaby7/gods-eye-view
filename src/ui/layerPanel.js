@@ -49,7 +49,13 @@ const PANEL_GROUPS = [
   },
   {
     label: 'Events',
-    ids: ['rocket-launches', 'earthquakes', 'local-firms', 'fire-perimeters'],
+    ids: [
+      'rocket-launches',
+      'earthquakes',
+      'local-firms',
+      'fire-perimeters',
+      'news',
+    ],
   },
   {
     label: 'Weather',
@@ -138,6 +144,8 @@ export class LayerPanel {
     this._cancelRowControlsRefresh = null;
     this._recentImageryFactory = null;
     this._recentImageryPanel = null;
+    this._situationFactory = null;
+    this._situationPanel = null;
   }
   mount(container) {
     if (this._destroyed) return;
@@ -151,6 +159,7 @@ export class LayerPanel {
       setLayerParams: this.setLayerParams,
     });
     this._mountRecentImagery();
+    this._mountSituation();
     this._renderToggles();
   }
   /**
@@ -173,6 +182,25 @@ export class LayerPanel {
     if (container && this._recentImageryFactory)
       this._recentImageryPanel = this._recentImageryFactory(container) || null;
   }
+  /**
+   * Host the war monitor's Situation panel in its rail body, like the Recent
+   * Imagery readout; a remount rebuilds it in place.
+   * @param {((container: HTMLElement) => { destroy: () => void } | null) | null} factory
+   */
+  attachSituation(factory) {
+    if (this._destroyed) return;
+    this._situationFactory = typeof factory === 'function' ? factory : null;
+    this._mountSituation();
+  }
+  _mountSituation() {
+    this._situationPanel?.destroy();
+    this._situationPanel = null;
+    const container = this._toggleContainer?.ownerDocument?.getElementById?.(
+      'situation-panel-body',
+    );
+    if (container && this._situationFactory)
+      this._situationPanel = this._situationFactory(container) || null;
+  }
   _bind(element, type, listener) {
     element.addEventListener(type, listener);
     this._removers.push(() => element.removeEventListener(type, listener));
@@ -192,6 +220,9 @@ export class LayerPanel {
     this._recentImageryPanel?.destroy();
     this._recentImageryPanel = null;
     this._recentImageryFactory = null;
+    this._situationPanel?.destroy();
+    this._situationPanel = null;
+    this._situationFactory = null;
     this._toggleContainer = null;
   }
   _renderToggles() {

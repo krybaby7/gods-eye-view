@@ -266,6 +266,7 @@
       "server/providers/common/http.js",
       "server/providers/common/query.js",
       "server/providers/common/rate-limit.js",
+      "server/providers/common/rss.js",
       "server/providers/regional.js",
       "server/providers/regional/briefing.js",
       "server/providers/regional/http.js",
@@ -283,6 +284,50 @@
       "src/data/naturalEarthRegions.js",
       "src/data/bundledJson.js",
       "src/data/retryableLoad.js"
+    ],
+    "external": []
+  },
+  "news-provider": {
+    "runtime": "node",
+    "exports": ["./server/providers/news"],
+    "modules": [
+      "server/providers/common/http.js",
+      "server/providers/common/rate-limit.js",
+      "server/providers/common/rss.js",
+      "server/providers/common/same-site.js",
+      "server/providers/common/source-root.js",
+      "server/providers/news/collector.js",
+      "server/providers/news/digest/runner.js",
+      "server/providers/news/digest/stories.js",
+      "server/providers/news/digest/store.js",
+      "server/providers/news/fetchers/gdeltDomain.js",
+      "server/providers/news/fetchers/http.js",
+      "server/providers/news/fetchers/reliefweb.js",
+      "server/providers/news/fetchers/rss.js",
+      "server/providers/news/fetchers/telegramPublic.js",
+      "server/providers/news/fetchers/text.js",
+      "server/providers/news/geocode.js",
+      "server/providers/news/index.js",
+      "server/providers/news/registry.js",
+      "server/providers/news/store.js",
+      "src/data/regionalModel.js",
+      "src/localRequestGate.mjs",
+      "src/sources/httpBody.js",
+      "src/sources/rateLimit.js"
+    ],
+    "external": []
+  },
+  "news-digest": {
+    "runtime": "node",
+    "exports": [
+      "./server/providers/news/digest",
+      "./server/providers/news/digest/stories"
+    ],
+    "modules": [
+      "server/providers/news/digest/runner.js",
+      "server/providers/news/digest/stories.js",
+      "server/providers/news/geocode.js",
+      "server/providers/news/store.js"
     ],
     "external": []
   },
@@ -440,6 +485,15 @@
       "src/localRequestGate.mjs",
       "src/data/feedState.js",
       "src/data/layerSnapshot.js"
+    ],
+    "external": []
+  },
+  "situation-panel": {
+    "exports": ["./ui/situation-panel"],
+    "modules": [
+      "src/layers/news/records.js",
+      "src/ui/situationPanel.js",
+      "src/ui/situationPanelModel.js"
     ],
     "external": []
   },
@@ -932,6 +986,17 @@
       "src/layers/earthquakes/model.js",
       "src/layers/earthquakes/source.js",
       "src/layers/earthquakes/records.js"
+    ],
+    "external": ["cesium"]
+  },
+  "news-layer": {
+    "exports": ["./layers/news"],
+    "modules": [
+      "src/data/inputOwnership.js",
+      "src/layers/news/index.js",
+      "src/layers/news/model.js",
+      "src/layers/news/records.js",
+      "src/layers/news/source.js"
     ],
     "external": ["cesium"]
   },
@@ -2216,7 +2281,14 @@
       "src/app/lensLayers.js",
       "src/lenses/catalog.js",
       "src/lenses/rules.js",
-      "src/ui/lensBar.js"
+      "src/ui/lensBar.js",
+      "src/app/layers/news.js",
+      "src/layers/news/index.js",
+      "src/layers/news/model.js",
+      "src/layers/news/records.js",
+      "src/layers/news/source.js",
+      "src/ui/situationPanel.js",
+      "src/ui/situationPanelModel.js"
     ],
     "external": [
       "hls.js",
@@ -2746,7 +2818,12 @@
       "src/sources/infrastructureData.js",
       "src/app/sourceAvailability.js",
       "src/keySetupCore.mjs",
-      "src/localRequestGate.mjs"
+      "src/localRequestGate.mjs",
+      "src/app/layers/news.js",
+      "src/layers/news/index.js",
+      "src/layers/news/model.js",
+      "src/layers/news/records.js",
+      "src/layers/news/source.js"
     ],
     "external": [
       "hls.js",
@@ -3053,6 +3130,11 @@
       "src/layers/earthquakes/records.js",
       "src/layers/earthquakes/source.js"
     ],
+    "external": []
+  },
+  "news-source": {
+    "exports": ["./layers/news/source"],
+    "modules": ["src/layers/news/records.js", "src/layers/news/source.js"],
     "external": []
   },
   "firms-source": {

@@ -429,7 +429,7 @@ names it.
 
 ### Choose the capabilities you want
 
-Seven keys. Five have a free tier, and the two 🔴 ones are metered:
+Eight keys. Five have a free tier, and the three 🔴 ones are metered:
 
 |     | Key             | Why                                                                                                                                                                                  | Get it                                                                                                                                                               |
 | --- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -440,6 +440,7 @@ Seven keys. Five have a free tier, and the two 🔴 ones are metered:
 | 🟡  | **NASA FIRMS**  | 🔥 Live active fires                                                                                                                                                                 | [firms.modaps.eosdis.nasa.gov](https://firms.modaps.eosdis.nasa.gov/api/map_key/) — free                                                                             |
 | 🟡  | **TomTom**      | 🚦 Live flow speeds and congestion colors for the simulated traffic layer                                                                                                            | [my.tomtom.com](https://my.tomtom.com/keys) — free tier available                                                                                                    |
 | 🟡  | **Mapillary**   | 📷 Street Level coverage and photos. A public client token by design (see SECURITY.md)                                                                                               | [mapillary.com/dashboard/developers](https://www.mapillary.com/dashboard/developers) — register an app, copy its Client Token                                        |
+| 🔴  | **Perplexity**  | 🗞️ War monitor digest: Refresh turns collected headlines into mapped stories (Claude Sonnet 5.5 through the Perplexity Agent API). Headlines are collected without it. See [docs/WAR-MONITOR.md](docs/WAR-MONITOR.md) | [perplexity.ai](https://www.perplexity.ai/account/api/keys) — metered per Refresh, capped by `NEWS_DIGEST_DAILY_BUDGET_USD` |
 
 ![Diving from city-scale live congestion straight into an intersection's public camera](docs/media/05-traffic-to-cctv.gif)
 

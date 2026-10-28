@@ -77,6 +77,14 @@ export const KEY_SETUP_KEYS = Object.freeze([
     tier: 'free',
   }),
   Object.freeze({
+    id: 'perplexity',
+    title: 'PERPLEXITY',
+    unlocks: 'War monitor digest — Refresh turns headlines into mapped stories',
+    getUrl: 'https://www.perplexity.ai/account/api/keys',
+    envVars: Object.freeze(['PERPLEXITY_API_KEY']),
+    tier: 'metered',
+  }),
+  Object.freeze({
     id: 'tomtom',
     title: 'TOMTOM',
     unlocks: 'Real live traffic (keyless runs a simulation)',

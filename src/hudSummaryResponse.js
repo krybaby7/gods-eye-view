@@ -69,6 +69,14 @@ export const HUD_SUMMARY_INSTRUCTIONS = [
 export function hudSummaryLayerContext(layers = [], options) {
   const snapshots = layerSnapshots(layers, options).filter((s) => s.enabled);
   const envelope = feedProvenanceEnvelope(snapshots, options);
+  // A layer may add one plain-text line of its own state (the war monitor's
+  // stories, digest age, degraded sources and budget).
+  const summaries = new Map(
+    (Array.isArray(layers) ? layers : []).map((row) => [
+      row?.id,
+      typeof row?.stats?.summary === 'string' ? row.stats.summary.trim() : '',
+    ]),
+  );
   return {
     enabledLayerLabels: snapshots.map((s) => s.name).filter(Boolean),
     enabledLayers: snapshots.map((s) => ({
@@ -77,6 +85,7 @@ export function hudSummaryLayerContext(layers = [], options) {
       feedState: s.feedState,
       source: s.source,
       count: s.count,
+      ...(summaries.get(s.id) ? { summary: summaries.get(s.id) } : {}),
     })),
     feedProvenance: envelope,
   };

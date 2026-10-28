@@ -141,7 +141,7 @@ test('fires frame wider than vessels — a fire is read by its surroundings', ()
 
 test('every framing is a real oblique standoff, not a nadir or an inside-out sphere', () => {
   const kinds = Object.keys(WORLD_FOCUS_FRAMING);
-  assert.deepEqual(kinds.sort(), ['fire', 'vessel']);
+  assert.deepEqual(kinds.sort(), ['fire', 'story', 'vessel']);
   for (const kind of kinds) {
     const framing = WORLD_FOCUS_FRAMING[kind];
     // Looking DOWN at the target, but obliquely — a nadir drop reads as a map.
@@ -153,11 +153,14 @@ test('every framing is a real oblique standoff, not a nadir or an inside-out sph
       framing.rangeM > framing.radiusM,
       `${kind}: range ${framing.rangeM} must stand off outside radius ${framing.radiusM}`,
     );
-    assert.ok(framing.rangeM <= 10000, `${kind}: range must stay close-in, got ${framing.rangeM}`);
+    // Objects are framed close in; a news story's place is a city or region.
+    const maxRangeM = kind === 'story' ? 150_000 : 10000;
+    assert.ok(framing.rangeM <= maxRangeM, `${kind}: range must stay close-in, got ${framing.rangeM}`);
   }
   // Exact shipped values — a silent retune must show up as a failing test.
   assert.deepEqual({ ...WORLD_FOCUS_FRAMING.vessel }, { radiusM: 150, rangeM: 1200, pitchDeg: -30 });
   assert.deepEqual({ ...WORLD_FOCUS_FRAMING.fire }, { radiusM: 400, rangeM: 3000, pitchDeg: -35 });
+  assert.deepEqual({ ...WORLD_FOCUS_FRAMING.story }, { radiusM: 4000, rangeM: 90_000, pitchDeg: -55 });
 });
 
 test('unknown kinds and missing viewers issue no flight', () => {

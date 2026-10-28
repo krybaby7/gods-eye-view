@@ -43,6 +43,10 @@ How to read this:
 | **Open-Meteo**                                                        | Current weather in the cockpit Local Info page and cockpit-local dynamic atmospheric effects                                        | [CC BY 4.0 data licence and adjacent-link attribution requirement](https://open-meteo.com/en/licence)                                                                                                                                                                                                                                                 | Linked "Weather data by Open-Meteo.com" beside the displayed local data                                                                     |
 | **Google News RSS**                                                   | Primary locality-matched headlines in the cockpit Regional News page                                                                | [Google News Terms of Service](https://www.google.com/intl/en_us/terms_google_news.html) restrict use to personal, noncommercial use; linked articles remain third-party publisher content and retain publisher terms                                                                                                                                 | "Google News RSS" plus each article's linked publisher/domain                                                                               |
 | **GDELT Project DOC 2.0**                                             | Fail-soft fallback for location-matched cockpit headlines                                                                           | [GDELT Terms of Use](https://www.gdeltproject.org/about.html#termsofuse): unrestricted academic/commercial/governmental dataset use, with citation and link required; linked articles retain publisher terms                                                                                                                                          | "GDELT Project" plus each article's linked publisher/domain                                                                                 |
+| **War monitor publisher feeds** (RSS/Atom; GDELT DOC 2.0 `domainis:` queries for outlets without a usable feed) | War monitor headlines for one theater, collected on timers by `/api/news`; the source list is in the [War monitor](#war-monitor) section | Each publisher's own terms; headline, snippet and link only, kept 72 hours. GDELT's [terms](https://www.gdeltproject.org/about.html#termsofuse) require citation and a link | Each publisher by name in the Data attribution popover, plus "GDELT Project" |
+| **Telegram public channel previews** (`t.me/s/<channel>`) | War monitor posts from two channels of parties to the conflict; no account, bot or API | [Telegram Terms of Service](https://telegram.org/tos); post text and link only | "Israel Defense Forces", "Al Masirah" |
+| **ReliefWeb API v2** (UN OCHA) | War monitor humanitarian reports; only when `RELIEFWEB_APPNAME` is set | [ReliefWeb terms](https://reliefweb.int/terms-conditions); each report credits its authors | "ReliefWeb (UN OCHA)" |
+| **Perplexity Agent API** (`anthropic/claude-sonnet-5-5`) | War monitor digest: turns new headlines into stories when the user presses Refresh. BYOK and metered (`PERPLEXITY_API_KEY`), capped by `NEWS_DIGEST_DAILY_BUDGET_USD` | Perplexity API terms and Anthropic usage policies; your own key and billing | "Claude Sonnet 5.5 (Anthropic) through the Perplexity Agent API" |
 | **City of Austin Open Data**                                          | CCTV camera catalog + frames                                                                                                        | City of Austin Open Data Terms of Use                                                                                                                                                                                                                                                                                                                 | "City of Austin, TX — data.austintexas.gov"                                                                                                 |
 | **TxDOT ITS (its.txdot.gov)**                                         | CCTV camera catalogs + frames, Texas districts                                                                                      | Public TxDOT traffic camera data                                                                                                                                                                                                                                                                                                                      | "Texas Department of Transportation" (courtesy)                                                                                             |
 | **City of Tallinn (ristmikud.tallinn.ee)**                            | CCTV camera catalog + frames, Tallinn intersections                                                                                 | Public City of Tallinn traffic camera data                                                                                                                                                                                                                                                                                                            | "City of Tallinn — ristmikud.tallinn.ee" (courtesy)                                                                                         |
@@ -333,6 +337,67 @@ NOAA hazard provenance and freshness work
 The fixed nowCOAST imagery and NHC advisory implementations are original maintainer
 work; this acknowledgement does not represent merging those four PRs or equate
 NOAA density imagery with the raw GLM product.
+
+---
+
+## War monitor
+
+The **War monitor** layer (Events group) and its Situation panel collect headlines for one theater (Phase 1: Iran · Israel · US) from the registry in [`public/news/sources.json`](public/news/sources.json). Collection is keyless and runs on timers inside the dev/preview server (`/api/news`); nothing is fetched until the first request. Stories are made only when someone presses **Refresh** or says "refresh news": one digest call per press, never on a timer. Design and behaviour are in [`docs/WAR-MONITOR.md`](docs/WAR-MONITOR.md).
+
+**Headlines and stories are reporting, not verified incidents or risk rankings.** Verification labels describe who is reporting (several independent outlets, a party to the conflict, outlets that disagree), not whether an event happened.
+
+What is kept: the headline (up to 220 characters), a snippet of at most 300 characters, the link, the publisher and the published/fetched times, in `.gev-cache/news/` on the machine running the server, for 72 hours (stories for 7 days after they close, digest run records for 30 days). Article bodies are never fetched or stored; every item links to the original. Each publisher's own terms apply to its headlines and links.
+
+- **RSS / Atom.** Fetched every 10 minutes with an identifying User-Agent and a 4 MB response cap. A feed that answers 401, 403 or 451 is shown as blocked and is only retried on its normal cadence; pages are never scraped.
+- **GDELT DOC 2.0 `domainis:` queries.** Outlets with no usable public feed (bot-protected or none published) arrive through GDELT article-list queries, every 15 minutes, through one global queue spaced 5.5 s apart that doubles its delay after a 429. GDELT's [terms](https://www.gdeltproject.org/about.html#termsofuse) require citation and a link; each item links to its publisher.
+- **Telegram public previews** (`t.me/s/<channel>`). The public web preview of two channels, every 5 minutes; no Telegram account, bot or API is used. The preview markup is not a stable interface, so these sources are flagged fragile and show as degraded when parsing fails.
+- **ReliefWeb API v2** (OCHA). Humanitarian reports for the listed countries, every 30 minutes, **only when `RELIEFWEB_APPNAME` is set** (ReliefWeb requires a registered appname). [ReliefWeb terms](https://reliefweb.int/terms-conditions); each report credits its own authors.
+- **Link-only.** Listed in the Raw feed folders as a link to the publisher; never fetched.
+- **Digest: Perplexity Agent API, model `anthropic/claude-sonnet-5-5`.** BYOK and metered (`PERPLEXITY_API_KEY`, entered in Provider Settings). On Refresh the server sends the undigested items' ids, publishers, kinds, perspectives, published times, titles and snippets, plus the open stories (title, category, place name, event time, cited ids and claims), to `POST https://api.perplexity.ai/v1/responses` with tools off and strict JSON-schema output. The model writes story text; code places pins (bundled gazetteer first), computes perspectives, source counts and verification labels, and checks every cited id against the store. Each run's `usage.cost.total_cost` is recorded and `NEWS_DIGEST_DAILY_BUDGET_USD` (default 2.00) stops further runs for the day once spent. Subject to Perplexity's API terms (linked from [docs.perplexity.ai](https://docs.perplexity.ai)) and Anthropic's usage policies.
+- **Gazetteer.** [`public/news/theaters/iran-israel-us.json`](public/news/theaters/iran-israel-us.json) is hand-compiled for this repo: place names and aliases with approximate coordinates (city centroids and publicly reported site locations), spot-checked against public maps. It is not an authoritative geodata source.
+
+| Id | Source | Folder | Perspective | Transport | Credit |
+| -- | ------ | ------ | ----------- | --------- | ------ |
+| `aljazeera` | [Al Jazeera English](https://www.aljazeera.com/) | reporting | international-regional | `rss` — www.aljazeera.com | Al Jazeera |
+| `haaretz` | [Haaretz](https://www.haaretz.com/) | reporting | israel-dissent | `rss` — www.haaretz.com | Haaretz |
+| `ynet` | [Ynetnews](https://www.ynetnews.com/) | reporting | israel-mainstream | `rss` — www.ynetnews.com | Ynetnews |
+| `timesofisrael` | [The Times of Israel](https://www.timesofisrael.com/) | reporting | israel-mainstream | `gdelt-domain` — `domainis:timesofisrael.com` | The Times of Israel |
+| `israelhayom` | [Israel Hayom](https://www.israelhayom.com/) | reporting | israel-right | `gdelt-domain` — `domainis:israelhayom.com` | Israel Hayom |
+| `972mag` | [+972 Magazine](https://www.972mag.com/) | local | israel-dissent | `gdelt-domain` — `domainis:972mag.com` | +972 Magazine |
+| `reuters` | [Reuters](https://www.reuters.com/world/middle-east/) | reporting | international-wire | `gdelt-domain` — `domainis:reuters.com` | Reuters |
+| `apnews` | [Associated Press](https://apnews.com/hub/middle-east) | reporting | international-wire | `gdelt-domain` — `domainis:apnews.com` | Associated Press |
+| `afp` | [Agence France-Presse](https://www.afp.com/en) | reporting | international-wire | `link-only` — not fetched | — |
+| `almonitor` | [Al-Monitor](https://www.al-monitor.com/) | reporting | international-regional | `rss` — www.al-monitor.com | Al-Monitor |
+| `amwaj` | [Amwaj.media](https://amwaj.media/) | reporting | international-regional | `rss` — amwaj.media | Amwaj.media |
+| `middleeasteye` | [Middle East Eye](https://www.middleeasteye.net/) | reporting | international-regional | `rss` — www.middleeasteye.net | Middle East Eye |
+| `newarab` | [The New Arab](https://www.newarab.com/) | reporting | international-regional | `gdelt-domain` — `domainis:newarab.com` | The New Arab |
+| `alarabiya` | [Al Arabiya](https://english.alarabiya.net/) | reporting | gulf | `gdelt-domain` — `domainis:alarabiya.net` | Al Arabiya |
+| `lorienttoday` | [L'Orient Today](https://today.lorientlejour.com/) | local | lebanon | `gdelt-domain` — `domainis:lorientlejour.com` | L'Orient Today |
+| `almayadeen` | [Al Mayadeen](https://english.almayadeen.net/) | reporting | lebanon | `gdelt-domain` — `domainis:almayadeen.net` | Al Mayadeen |
+| `irna` | [IRNA](https://en.irna.ir/) | official | iran-state | `rss` — en.irna.ir | IRNA |
+| `tasnim` | [Tasnim News Agency](https://www.tasnimnews.com/en) | official | iran-revolutionary | `gdelt-domain` — `domainis:tasnimnews.com` | Tasnim |
+| `presstv` | [Press TV](https://www.presstv.ir/) | official | iran-state | `gdelt-domain` — `domainis:presstv.ir` | Press TV |
+| `iranintl` | [Iran International](https://www.iranintl.com/en) | reporting | iran-diaspora | `rss` — www.iranintl.com | Iran International |
+| `iranwire` | [IranWire](https://iranwire.com/en/) | local | iran-diaspora | `rss` — iranwire.com | IranWire |
+| `mondoweiss` | [Mondoweiss](https://mondoweiss.net/) | local | palestinian | `rss` — mondoweiss.net | Mondoweiss |
+| `dropsite` | [Drop Site News](https://www.dropsitenews.com/) | reporting | international-regional | `rss` — www.dropsitenews.com | Drop Site News |
+| `centcom` | [US Central Command](https://www.centcom.mil/MEDIA/PRESS-RELEASES/) | official | us-mil | `rss` — www.centcom.mil | US Central Command |
+| `whitehouse` | [The White House](https://www.whitehouse.gov/news/) | official | us-gov | `rss` — www.whitehouse.gov | The White House |
+| `statedept` | [US Department of State](https://www.state.gov/press-releases/) | official | us-gov | `link-only` — not fetched | — |
+| `idf` | [Israel Defense Forces (Telegram)](https://t.me/s/idfofficial) | official | israel-mil | `telegram-public` — t.me/s/idfofficial | Israel Defense Forces |
+| `almanar` | [Al-Manar](https://english.almanar.com.lb/) | armed-group | hezbollah | `rss` — english.almanar.com.lb | Al-Manar |
+| `almasirah` | [Al Masirah (Telegram)](https://t.me/s/almasirahnet) | armed-group | houthi | `telegram-public` — t.me/s/almasirahnet | Al Masirah |
+| `bellingcat` | [Bellingcat](https://www.bellingcat.com/) | verification | verification | `rss` — www.bellingcat.com | Bellingcat |
+| `afpfactcheck` | [AFP Fact Check](https://factcheck.afp.com/) | verification | verification | `gdelt-domain` — `domainis:factcheck.afp.com` | AFP Fact Check |
+| `airwars` | [Airwars](https://airwars.org/) | verification | verification | `rss` — airwars.org | Airwars |
+| `reliefweb` | [ReliefWeb (OCHA, WHO, Red Crescent reports)](https://reliefweb.int/) | humanitarian | un | `reliefweb` — PSE, LBN, IRN, ISR, YEM, SYR, IRQ | ReliefWeb (UN OCHA) |
+| `ochaopt` | [OCHA oPt](https://www.ochaopt.org/) | humanitarian | un | `link-only` — not fetched | — |
+| `iaea` | [IAEA](https://www.iaea.org/newscenter) | official | un | `rss` — www.iaea.org | IAEA |
+| `crisisgroup` | [International Crisis Group](https://www.crisisgroup.org/middle-east-north-africa) | analysis | analysis-crisis | `rss` — www.crisisgroup.org | International Crisis Group |
+| `isw` | [ISW and Critical Threats (CTP)](https://www.understandingwar.org/) | analysis | analysis-western | `gdelt-domain` — `domainis:understandingwar.org` | Institute for the Study of War |
+| `criticalthreats` | [Critical Threats (AEI)](https://www.criticalthreats.org/) | analysis | analysis-western | `gdelt-domain` — `domainis:criticalthreats.org` | Critical Threats Project |
+| `rusi` | [RUSI](https://www.rusi.org/explore-our-research) | analysis | analysis-western | `link-only` — not fetched | — |
+| `iiss` | [IISS](https://www.iiss.org/online-analysis/) | analysis | analysis-western | `link-only` — not fetched | — |
 
 ---
 

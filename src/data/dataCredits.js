@@ -191,6 +191,49 @@ export const DATA_CREDITS = [
       '<a href="https://www.gdeltproject.org/about.html" target="_blank" rel="noopener">GDELT Project</a> ' +
       '(location-matched article links; publisher terms apply)',
   },
+  // War monitor: headline, snippet, link and publisher only. One group per
+  // transport; every fetched source in public/news/sources.json is named here.
+  {
+    key: 'war-monitor-feeds',
+    html:
+      'War monitor headlines (RSS): Al Jazeera, Haaretz, Ynetnews, Al-Monitor, ' +
+      'Amwaj.media, Middle East Eye, Drop Site News, Iran International, IranWire, ' +
+      'Mondoweiss, IRNA, US Central Command, The White House, IAEA, Al-Manar, ' +
+      'Bellingcat, Airwars, International Crisis Group ' +
+      '(headline, snippet and link; publisher terms apply)',
+  },
+  {
+    key: 'war-monitor-gdelt',
+    html:
+      'War monitor headlines via the ' +
+      '<a href="https://www.gdeltproject.org/about.html" target="_blank" rel="noopener">GDELT Project</a>: ' +
+      'Reuters, Associated Press, The Times of Israel, Israel Hayom, +972 Magazine, ' +
+      "The New Arab, Al Arabiya, L'Orient Today, Al Mayadeen, Tasnim, Press TV, " +
+      'AFP Fact Check, Institute for the Study of War, Critical Threats Project ' +
+      '(article links; publisher terms apply)',
+  },
+  {
+    key: 'war-monitor-telegram',
+    html:
+      'War monitor channel posts: public ' +
+      '<a href="https://telegram.org/tos" target="_blank" rel="noopener">Telegram</a> previews of ' +
+      'Israel Defense Forces and Al Masirah (post text and link)',
+  },
+  {
+    key: 'reliefweb',
+    html:
+      'War monitor humanitarian reports: ' +
+      '<a href="https://reliefweb.int/terms-conditions" target="_blank" rel="noopener">ReliefWeb (UN OCHA)</a>; ' +
+      'each report credits its own authors',
+  },
+  {
+    key: 'war-monitor-digest',
+    html:
+      'War monitor stories: digest by Claude Sonnet 5.5 (' +
+      '<a href="https://www.anthropic.com" target="_blank" rel="noopener">Anthropic</a>) through the ' +
+      '<a href="https://docs.perplexity.ai" target="_blank" rel="noopener">Perplexity Agent API</a>. ' +
+      'Headlines and stories are reporting, not verified incidents or risk rankings.',
+  },
   {
     key: 'austin-cctv',
     html:

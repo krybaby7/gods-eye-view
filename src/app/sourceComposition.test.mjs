@@ -162,7 +162,7 @@ test('local receiver availability follows a connected device without selecting i
 
 test('all acquisition sources may be absent, and enable fails before initializing or fetching', async (t) => {
   const actual = catalog({}, t);
-  assert.equal(actual.layers.length, 30);
+  assert.equal(actual.layers.length, 31);
   const manager = new LayerLifecycle(
     {},
     { getSourceAvailability: actual.getSourceAvailability },
