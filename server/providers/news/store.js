@@ -6,7 +6,8 @@ import { promises as fsp } from 'node:fs';
  * Collected news items for one theater: dedupe, 72 h retention, a per-source
  * cap and a disk cache at .gev-cache/news/<theater>.json. Items are reporting
  * metadata only (headline, snippet, link, publisher); nothing here is a
- * verified incident.
+ * verified incident. The cache also keeps collection cursors (the last GDELT
+ * file read) so a restart does not read the same files again.
  */
 
 export const ITEM_RETENTION_MS = 72 * 3600_000;
@@ -119,6 +120,8 @@ export function createNewsItemStore({
   /** @type {Map<string, object>} */
   const items = new Map();
   const titles = new Map();
+  /** @type {Map<string, string>} */
+  const cursors = new Map();
   let revision = 0;
   let loaded = null;
   let saving = Promise.resolve();
@@ -178,6 +181,8 @@ export function createNewsItemStore({
               typeof item.collectedAt === 'string'
             )
               index(item);
+          for (const [key, value] of Object.entries(parsed.cursors || {}))
+            if (typeof value === 'string') cursors.set(key, value);
           prune();
           revision++;
         } catch {
@@ -197,6 +202,7 @@ export function createNewsItemStore({
           version: CACHE_VERSION,
           theater: theaterId,
           savedAt: new Date(now()).toISOString(),
+          cursors: Object.fromEntries(cursors),
           items: [...items.values()],
         });
         try {
@@ -258,6 +264,16 @@ export function createNewsItemStore({
       const pruned = prune();
       if (added || pruned) revision++;
       return { added, duplicates, rejected, pruned };
+    },
+
+    /** Where a transport stopped reading, e.g. the last GDELT file; or null. */
+    cursor(key) {
+      return cursors.get(key) ?? null;
+    },
+
+    /** Move a cursor; it is written with the next save. */
+    setCursor(key, value) {
+      if (value) cursors.set(key, value);
     },
 
     /** All retained items, newest first. */
