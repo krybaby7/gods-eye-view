@@ -8,6 +8,7 @@ import {
   formatUsdShort,
   isPinnedStory,
 } from '../layers/news/records.js';
+import { sourceHealthReason } from '../layers/news/coverage.js';
 
 export const SITUATION_FOLDER_LABELS = Object.freeze({
   reporting: 'Reporting',
@@ -145,19 +146,7 @@ export function degradedSources(sources) {
       ? `${list.length} ${list.length === 1 ? 'source' : 'sources'} degraded`
       : '',
     detail: list
-      .map((source) => {
-        const health = source.health;
-        const why = health.blocked
-          ? 'blocked'
-          : health.rateLimited
-            ? 'rate limited'
-            : health.stale
-              ? health.quiet && health.newestItemAt
-                ? `nothing new since ${health.newestItemAt.slice(0, 10)}`
-                : 'stale'
-              : health.error || 'failing';
-        return `${source.name}: ${why}`;
-      })
+      .map((source) => `${source.name}: ${sourceHealthReason(source.health)}`)
       .join('\n'),
   };
 }

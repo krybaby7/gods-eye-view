@@ -183,12 +183,15 @@ export function buildDigestInstructions(theater) {
   ].join('\n\n');
 }
 
-/** "- iran: Iran (Tehran, IRGC)" per actor; shared with the brief prompt. */
-export function actorListForPrompt(actors = []) {
+/**
+ * "- iran: Iran (Tehran, IRGC)" per actor, with " — state, party" appended
+ * for the brief prompt.
+ */
+export function actorListForPrompt(actors = [], { withRole = false } = {}) {
   return actors
     .map(
       (actor) =>
-        `- ${actor.id}: ${actor.name}${actor.aliases?.length ? ` (${actor.aliases.join(', ')})` : ''}`,
+        `- ${actor.id}: ${actor.name}${actor.aliases?.length ? ` (${actor.aliases.join(', ')})` : ''}${withRole ? ` — ${actor.type}, ${actor.role}` : ''}`,
     )
     .join('\n');
 }
@@ -324,6 +327,18 @@ export function responseCost(body) {
   };
 }
 
+/**
+ * Hidden reasoning tokens (counted inside output_tokens) when the response
+ * reports them, else null.
+ */
+export function responseReasoningTokens(body) {
+  const usage = body?.usage || {};
+  const value = Number(
+    usage.output_tokens_details?.reasoning_tokens ?? usage.reasoning_tokens,
+  );
+  return Number.isFinite(value) && value >= 0 ? value : null;
+}
+
 /** Parse the model's JSON text; tolerate a code fence, nothing else. */
 export function parseDigestText(text) {
   const trimmed = String(text || '')
@@ -339,7 +354,8 @@ export function parseDigestText(text) {
 
 const URL_PATTERN = /\b(?:https?:\/\/|www\.)\S+/gi;
 
-function cleanText(value, max) {
+/** Model text without URLs or runs of whitespace, cut to `max` characters. */
+export function cleanText(value, max) {
   const text = String(value ?? '')
     .replace(URL_PATTERN, '')
     .replace(/\s+/g, ' ')
@@ -482,12 +498,13 @@ function digestError(code, message, extra = {}) {
 /**
  * What a sent request may have cost when no usage came back (timed out or
  * cut off mid-answer): the input at about three characters a token and a
- * full-length answer, at list price, flagged as an estimate. Errs high so
- * the daily budget still counts the call.
+ * full-length answer (the request's own output limit), at list price,
+ * flagged as an estimate. Errs high so the daily budget still counts the
+ * call.
  */
 export function worstCaseCost(body) {
   const inputTokens = Math.ceil(JSON.stringify(body).length / 3);
-  const outputTokens = DIGEST_MAX_OUTPUT_TOKENS;
+  const outputTokens = body?.max_output_tokens ?? DIGEST_MAX_OUTPUT_TOKENS;
   return {
     costUsd:
       (inputTokens * DIGEST_FALLBACK_PRICE_PER_MTOK.input +
@@ -509,9 +526,10 @@ function upstreamMessage(body) {
 }
 
 /**
- * Call the Agent API once.
- * @param {{apiKey: string, body: object, fetchImpl?: Function, signal?: AbortSignal}} options
- * @returns {Promise<{text: string, model: ?string, status: string, cost: ReturnType<typeof responseCost>, responseId: ?string}>}
+ * Call the Agent API once. The digest and the Situation Brief share it;
+ * `label` names the call in error messages.
+ * @param {{apiKey: string, body: object, fetchImpl?: Function, signal?: AbortSignal, label?: string}} options
+ * @returns {Promise<{text: string, model: ?string, status: string, cost: ReturnType<typeof responseCost>, reasoningTokens: ?number, responseId: ?string}>}
  *   Throws an error with `code` and, when the provider billed the call, `cost`.
  */
 export async function callDigestModel({
@@ -519,6 +537,7 @@ export async function callDigestModel({
   body,
   fetchImpl = (...args) => globalThis.fetch(...args),
   signal,
+  label = 'digest',
 }) {
   if (!apiKey) throw digestError('no_key', 'PERPLEXITY_API_KEY is not set');
   const timeout = AbortSignal.timeout(TIMEOUT_MS);
@@ -539,10 +558,10 @@ export async function callDigestModel({
     // A timeout means the request was sent and may be billed; a failed
     // connection was not.
     if (error?.name === 'TimeoutError')
-      throw digestError('timeout', 'digest request timed out', {
+      throw digestError('timeout', `${label} request timed out`, {
         cost: worstCaseCost(body),
       });
-    throw digestError('network', 'digest request failed to connect');
+    throw digestError('network', `${label} request failed to connect`);
   }
   let raw;
   try {
@@ -551,13 +570,13 @@ export async function callDigestModel({
     throw digestError(
       error?.name === 'TimeoutError' ? 'timeout' : 'network',
       error?.name === 'TimeoutError'
-        ? 'digest request timed out'
-        : 'digest response was cut off',
+        ? `${label} request timed out`
+        : `${label} response was cut off`,
       { cost: worstCaseCost(body) },
     );
   }
   if (raw.length > MAX_RESPONSE_CHARS)
-    throw digestError('upstream', 'digest response too large');
+    throw digestError('upstream', `${label} response too large`);
   let payload = null;
   try {
     payload = JSON.parse(raw);
@@ -577,20 +596,20 @@ export async function callDigestModel({
     );
   }
   if (!payload || typeof payload !== 'object')
-    throw digestError('upstream', 'digest response was not JSON');
+    throw digestError('upstream', `${label} response was not JSON`);
   const cost = responseCost(payload);
   // An answer cut off at max_output_tokens is billed but unusable JSON.
   if (payload.status === 'incomplete')
     throw digestError(
       'truncated',
-      `the digest hit the ${DIGEST_MAX_OUTPUT_TOKENS.toLocaleString('en-US')}-token output limit before finishing`,
+      `the ${label} hit the ${(body?.max_output_tokens ?? DIGEST_MAX_OUTPUT_TOKENS).toLocaleString('en-US')}-token output limit before finishing`,
       { cost, model: payload.model ?? null },
     );
   if (payload.status !== 'completed') {
     const detail = upstreamMessage(payload);
     throw digestError(
       'model_error',
-      `digest run ${payload.status || 'failed'}${detail ? `: ${detail}` : ''}`,
+      `${label} run ${payload.status || 'failed'}${detail ? `: ${detail}` : ''}`,
       { cost, model: payload.model ?? null },
     );
   }
@@ -599,6 +618,7 @@ export async function callDigestModel({
     model: typeof payload.model === 'string' ? payload.model : null,
     status: payload.status,
     cost,
+    reasoningTokens: responseReasoningTokens(payload),
     responseId: typeof payload.id === 'string' ? payload.id : null,
   };
 }
@@ -672,6 +692,7 @@ export async function runDigest({
     leftOut: selected.leftOut,
     model: result.model,
     cost: result.cost,
+    reasoningTokens: result.reasoningTokens,
     responseId: result.responseId,
   };
 }
