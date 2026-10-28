@@ -342,7 +342,7 @@ NOAA density imagery with the raw GLM product.
 
 ## War monitor
 
-The **War monitor** layer (Events group) and its Situation panel collect headlines for one theater (Phase 1: Iran · Israel · US) from the registry in [`public/news/sources.json`](public/news/sources.json). Collection is keyless and runs on timers inside the dev/preview server (`/api/news`); nothing is fetched until the first request. Stories are made only when someone presses **Refresh** or says "refresh news": one digest call per press, never on a timer. Design and behaviour are in [`docs/WAR-MONITOR.md`](docs/WAR-MONITOR.md).
+The **War monitor** layer (Events group) and its Situation panel collect headlines for each theater (**Iran · Israel · US**, and **World**: political news from every continent) from the registry in [`public/news/sources.json`](public/news/sources.json); a source can serve several theaters, and each theater lists its own in `public/news/theaters/<id>.json`. Collection is keyless and runs on timers inside the dev/preview server (`/api/news`); nothing is fetched until the first request. Stories are made only when someone presses **Refresh** or says "refresh news": one digest call per press, never on a timer. Design and behaviour are in [`docs/WAR-MONITOR.md`](docs/WAR-MONITOR.md).
 
 **Headlines and stories are reporting, not verified incidents or risk rankings.** Verification labels describe who is reporting (several independent outlets, a party to the conflict, outlets that disagree), not whether an event happened.
 
@@ -354,8 +354,9 @@ What is kept: the headline (up to 220 characters), a snippet of at most 300 char
 - **ReliefWeb API v2** (OCHA). Humanitarian reports for the listed countries, every 30 minutes, **only when `RELIEFWEB_APPNAME` is set** (ReliefWeb requires a registered appname). [ReliefWeb terms](https://reliefweb.int/terms-conditions); each report credits its own authors.
 - **Link-only.** Listed in the Raw feed folders as a link to the publisher; never fetched.
 - **Digest: Perplexity Agent API, model `anthropic/claude-sonnet-5-5`.** BYOK and metered (`PERPLEXITY_API_KEY`, entered in Provider Settings). On Refresh the server sends the undigested items' ids, publishers, kinds, perspectives, published times, titles and snippets, plus the open stories (title, category, place name, event time, cited ids and claims), to `POST https://api.perplexity.ai/v1/agent` with tools off and strict JSON-schema output. The model writes story text; code places pins (bundled gazetteer first), computes perspectives, source counts and verification labels, and checks every cited id against the store. Each run's `usage.cost.total_cost` is recorded and `NEWS_DIGEST_DAILY_BUDGET_USD` (default 2.00) stops further runs for the day once spent. Subject to Perplexity's API terms (linked from [docs.perplexity.ai](https://docs.perplexity.ai)) and Anthropic's usage policies.
-- **Situation Brief: the same API and model.** After each successful digest, in the same Refresh, the server sends the open stories and those closed in the last 72 hours (ids, titles, summaries, claims, the code-computed verification labels, perspectives and actor tags; no item links), the previous brief, a coverage note computed from source health, and the theater's actor list, drivers and tracks. The model writes the brief's lines; code drops any line that cites no real story and rejects a brief without a cited headline. Actor roles, and actors added to the list, also come from these answers, but code accepts one only when a corroborated story about that actor backs it. Brief runs count toward the same `NEWS_DIGEST_DAILY_BUDGET_USD`. The theater's three drivers are curated sentences that link to their published source (Council on Foreign Relations); nothing is fetched from those pages.
+- **Situation Brief: the same API and model.** After each successful digest, in the same Refresh, the server sends the open stories and those closed in the last 72 hours (ids, titles, summaries, claims, the code-computed verification labels, perspectives and actor tags; no item links), the previous brief, a coverage note computed from source health, and the theater's actor list, drivers and tracks. The model writes the brief's lines; code drops any line that cites no real story and rejects a brief without a cited headline. Actor roles, and actors added to the list, also come from these answers, but code accepts one only when a corroborated story about that actor backs it. Brief runs count toward the same `NEWS_DIGEST_DAILY_BUDGET_USD`. The theater's three drivers are curated sentences that link to their published source (Council on Foreign Relations); nothing is fetched from those pages. The World theater has no Situation Brief (`situationBrief: false`), so no brief call is made for it.
 - **Gazetteer.** [`public/news/theaters/iran-israel-us.json`](public/news/theaters/iran-israel-us.json) is hand-compiled for this repo: place names and aliases with approximate coordinates (city centroids and publicly reported site locations), spot-checked against public maps. It is not an authoritative geodata source.
+- **World gazetteer.** The `gazetteer` of [`public/news/theaters/world.json`](public/news/theaters/world.json) is generated by `scripts/build-world-gazetteer.mjs` from [Natural Earth](https://www.naturalearthdata.com) 5.1.2 (**public domain**; credited as a courtesy): admin-0 countries (1:50m) at Natural Earth's label points, populated places (1:10m) for every capital and every city of 1 million people or more, with Natural Earth's English, Arabic, Persian, Hebrew, Russian, Chinese, Spanish, French, Portuguese and native-language names as aliases, and admin-1 label points for the hotspots that are provinces. About 40 named political hotspots (Gaza, Donbas, Kashmir, Darfur, the Taiwan Strait and similar) are hand-listed in the script with their source. Only countries and capitals are sent to the digest model, by name; the full list stays on the server for placing pins. Coordinates are label points and centroids, not boundaries.
 
 | Id | Source | Folder | Perspective | Transport | Credit |
 | -- | ------ | ------ | ----------- | --------- | ------ |
@@ -399,6 +400,44 @@ What is kept: the headline (up to 220 characters), a snippet of at most 300 char
 | `criticalthreats` | [Critical Threats (AEI)](https://www.criticalthreats.org/) | analysis | analysis-western | `gdelt-domain` — `domainis:criticalthreats.org` | Critical Threats Project |
 | `rusi` | [RUSI](https://www.rusi.org/explore-our-research) | analysis | analysis-western | `link-only` — not fetched | — |
 | `iiss` | [IISS](https://www.iiss.org/online-analysis/) | analysis | analysis-western | `link-only` — not fetched | — |
+| `bbcworld` | [BBC News (World)](https://www.bbc.com/news/world) | reporting | international-public | `rss` — feeds.bbci.co.uk | BBC News |
+| `france24` | [France 24](https://www.france24.com/en/) | reporting | international-public | `rss` — www.france24.com | France 24 |
+| `allafrica` | [AllAfrica](https://allafrica.com/) | reporting | africa-press | `rss` — allafrica.com | AllAfrica |
+| `premiumtimes` | [Premium Times](https://www.premiumtimesng.com/) | reporting | africa-press | `rss` — www.premiumtimesng.com | Premium Times |
+| `dailymaverick` | [Daily Maverick](https://www.dailymaverick.co.za/) | reporting | africa-press | `rss` — www.dailymaverick.co.za | Daily Maverick |
+| `dabanga` | [Radio Dabanga](https://www.dabangasudan.org/en) | local | africa-press | `rss` — www.dabangasudan.org | Radio Dabanga |
+| `nationafrica` | [Nation (Kenya)](https://nation.africa/kenya) | reporting | africa-press | `rss` — nation.africa | Nation Africa |
+| `scmp` | [South China Morning Post](https://www.scmp.com/) | reporting | asia-pacific-press | `rss` — www.scmp.com | South China Morning Post |
+| `japantimes` | [The Japan Times](https://www.japantimes.co.jp/) | reporting | asia-pacific-press | `rss` — www.japantimes.co.jp | The Japan Times |
+| `rappler` | [Rappler](https://www.rappler.com/) | reporting | asia-pacific-press | `rss` — www.rappler.com | Rappler |
+| `irrawaddy` | [The Irrawaddy](https://www.irrawaddy.com/) | local | asia-pacific-press | `rss` — www.irrawaddy.com | The Irrawaddy |
+| `rnzpacific` | [RNZ Pacific](https://www.rnz.co.nz/international) | reporting | asia-pacific-press | `rss` — www.rnz.co.nz | RNZ Pacific |
+| `politicoeu` | [Politico Europe](https://www.politico.eu/) | reporting | europe-press | `rss` — www.politico.eu | Politico Europe |
+| `balkaninsight` | [Balkan Insight (BIRN)](https://balkaninsight.com/) | reporting | europe-press | `rss` — balkaninsight.com | Balkan Insight |
+| `lemonde` | [Le Monde in English](https://www.lemonde.fr/en/) | reporting | europe-press | `rss` — www.lemonde.fr | Le Monde |
+| `mercopress` | [MercoPress](https://en.mercopress.com/) | reporting | latin-america-press | `rss` — en.mercopress.com | MercoPress |
+| `batimes` | [Buenos Aires Times](https://www.batimes.com.ar/) | reporting | latin-america-press | `rss` — www.batimes.com.ar | Buenos Aires Times |
+| `mexiconewsdaily` | [Mexico News Daily](https://mexiconewsdaily.com/) | reporting | latin-america-press | `rss` — mexiconewsdaily.com | Mexico News Daily |
+| `confidencial` | [Confidencial](https://confidencial.digital/) | local | latin-america-press | `rss` — confidencial.digital | Confidencial |
+| `haitiantimes` | [The Haitian Times](https://haitiantimes.com/) | reporting | latin-america-press | `rss` — haitiantimes.com | The Haitian Times |
+| `nprpolitics` | [NPR (Politics)](https://www.npr.org/sections/politics/) | reporting | north-america-press | `rss` — feeds.npr.org | NPR |
+| `pbspolitics` | [PBS News (Politics)](https://www.pbs.org/newshour/politics) | reporting | north-america-press | `rss` — www.pbs.org | PBS News |
+| `politicous` | [Politico (US)](https://www.politico.com/) | reporting | north-america-press | `rss` — rss.politico.com | Politico |
+| `dawn` | [Dawn (Pakistan)](https://www.dawn.com/pakistan) | reporting | south-asia-press | `rss` — www.dawn.com | Dawn |
+| `thehindu` | [The Hindu (National)](https://www.thehindu.com/news/national/) | reporting | south-asia-press | `rss` — www.thehindu.com | The Hindu |
+| `amutv` | [Amu TV](https://amu.tv/) | local | south-asia-press | `rss` — amu.tv | Amu TV |
+| `tbsnews` | [The Business Standard (Bangladesh politics)](https://www.tbsnews.net/bangladesh/politics) | reporting | south-asia-press | `rss` — www.tbsnews.net | The Business Standard |
+| `meduza` | [Meduza](https://meduza.io/en) | reporting | eurasia-press | `rss` — meduza.io | Meduza |
+| `pravdaua` | [Ukrainska Pravda](https://www.pravda.com.ua/eng/) | reporting | eurasia-press | `rss` — www.pravda.com.ua | Ukrainska Pravda |
+| `ocmedia` | [OC Media](https://oc-media.org/) | reporting | eurasia-press | `rss` — oc-media.org | OC Media |
+| `eurasianet` | [Eurasianet](https://eurasianet.org/) | reporting | eurasia-press | `rss` — eurasianet.org | Eurasianet |
+| `tass` | [TASS](https://tass.com/) | official | russia-state | `rss` — tass.com | TASS |
+| `cgtn` | [CGTN](https://www.cgtn.com/) | official | china-state | `rss` — www.cgtn.com | CGTN |
+| `anadolu` | [Anadolu Agency](https://www.aa.com.tr/en) | official | turkey-state | `rss` — www.aa.com.tr | Anadolu Agency |
+| `telesur` | [teleSUR](https://www.telesurenglish.net/) | official | venezuela-state | `rss` — www.telesurenglish.net | teleSUR |
+| `unnews` | [UN News](https://news.un.org/en/) | humanitarian | un | `rss` — news.un.org | UN News |
+| `hrw` | [Human Rights Watch](https://www.hrw.org/) | humanitarian | ngo | `rss` — www.hrw.org | Human Rights Watch |
+| `insightcrime` | [InSight Crime](https://insightcrime.org/) | analysis | analysis-regional | `rss` — insightcrime.org | InSight Crime |
 
 ---
 

@@ -209,6 +209,57 @@ test('actors, drivers and tracks are optional and default to empty', () => {
   );
 });
 
+test('the Situation Brief is on unless the theater sets situationBrief: false', async () => {
+  const list = sourcesById([source()]);
+  assert.equal(validateNewsTheater(theater(), list).situationBrief, true);
+  assert.equal(
+    validateNewsTheater(theater({ situationBrief: true }), list).situationBrief,
+    true,
+  );
+  assert.equal(
+    validateNewsTheater(theater({ situationBrief: false }), list)
+      .situationBrief,
+    false,
+  );
+  assert.throws(
+    () => validateNewsTheater(theater({ situationBrief: 'off' }), list),
+    /situationBrief must be true or false/,
+  );
+  const { theater: real } = await loadNewsRegistry({
+    theaterId: 'iran-israel-us',
+  });
+  assert.equal(real.situationBrief, true);
+});
+
+test('gazetteer rows keep an optional prompt flag, true or false', () => {
+  const loaded = validateNewsTheater(
+    theater({
+      gazetteer: [
+        {
+          name: 'Tehran',
+          lat: 35.69,
+          lon: 51.39,
+          precision: 'city',
+          prompt: true,
+        },
+        {
+          name: 'Isfahan',
+          lat: 32.65,
+          lon: 51.67,
+          precision: 'city',
+          prompt: 'yes',
+        },
+        { name: 'Shiraz', lat: 29.59, lon: 52.58, precision: 'city' },
+      ],
+    }),
+    sourcesById([source()]),
+  );
+  assert.deepEqual(
+    loaded.gazetteer.map((row) => row.prompt),
+    [true, false, false],
+  );
+});
+
 test('actor validation: unique ids, types and roles from the lists', () => {
   const list = sourcesById([source()]);
   const actor = (overrides = {}) => ({

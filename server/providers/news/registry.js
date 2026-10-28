@@ -227,6 +227,8 @@ function validateGazetteer(gazetteer) {
       precision: entry.precision,
       country: typeof entry.country === 'string' ? entry.country : null,
       aliases: Object.freeze(aliases),
+      // Listed in the digest instructions (see placeNamesForPrompt).
+      prompt: entry.prompt === true,
     });
   });
 }
@@ -332,9 +334,17 @@ export function validateNewsTheater(doc, sourcesById) {
   const gdeltTerms = Array.isArray(doc.gdeltTerms)
     ? doc.gdeltTerms.filter((term) => /^[\p{L}\p{N} '-]{2,40}$/u.test(term))
     : [];
+  // The Situation Brief explains one crisis; a theater without one (World)
+  // turns it off.
+  if (
+    doc.situationBrief !== undefined &&
+    typeof doc.situationBrief !== 'boolean'
+  )
+    fail(`theater ${id} situationBrief must be true or false`);
   return Object.freeze({
     id,
     name: doc.name,
+    situationBrief: doc.situationBrief !== false,
     brief: Object.freeze(brief),
     sourceIds: Object.freeze(sourceIds),
     categories: Object.freeze(categories),

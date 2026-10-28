@@ -92,6 +92,7 @@ test('first snapshot starts collection; items, sources and health follow', async
   assert.equal(first.theater.categories.length, 6);
   assert.deepEqual(first.theaters, [
     { id: 'iran-israel-us', name: 'Iran · Israel · US' },
+    { id: 'world', name: 'World' },
   ]);
   const ctx = await news.context('iran-israel-us');
   await ctx.collector.collectAll();

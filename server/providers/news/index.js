@@ -36,7 +36,8 @@ import {
  * one brief call over the finished stories when the remaining budget covers
  * a worst-case brief. A failed brief keeps the stories and the previous
  * brief; POST /api/news/brief (Retry brief) reruns it only after a failure.
- * Brief runs share the run log, so the daily budget covers both.
+ * Brief runs share the run log, so the daily budget covers both. A theater
+ * with `situationBrief: false` (World) runs no brief and offers no retry.
  *
  * Routes:
  *   GET  /api/news?theater=&rev=  → items, stories, lastRun, sources, budget,
@@ -259,6 +260,7 @@ export function createNewsService(options = {}) {
     const brief = ctx.digest.brief();
     const last = ctx.digest.lastBriefRun();
     const retryable = Boolean(
+      ctx.registry.theater.situationBrief &&
       latest &&
       last?.digestRunId === latest.id &&
       brief?.digestRunId !== latest.id &&
@@ -563,6 +565,7 @@ export function createNewsService(options = {}) {
         theater: {
           id: theater.id,
           name: theater.name,
+          situationBrief: theater.situationBrief,
           categories: theater.categories,
           perspectives: theater.perspectives,
           actors: withActors(ctx).actors,
@@ -667,7 +670,9 @@ export function createNewsService(options = {}) {
           `[news] digest ${ctx.theaterId}: ${run.storiesCreated} new, ${run.storiesUpdated} updated, ${run.unassignedCount} unassigned, $${run.costUsd.toFixed(4)}`,
         );
         // The stories are already saved; a failed brief cannot cost them.
-        const briefRun = await briefOnce(ctx, run);
+        const briefRun = ctx.registry.theater.situationBrief
+          ? await briefOnce(ctx, run)
+          : null;
         return {
           status: 200,
           body: { ok: true, run, briefRun, budget: await budget() },
@@ -685,6 +690,14 @@ export function createNewsService(options = {}) {
     async requestBrief(theaterId) {
       const ctx = await context(theaterId);
       if (!ctx) return { status: 404, body: { error: 'unknown_theater' } };
+      if (!ctx.registry.theater.situationBrief)
+        return {
+          status: 409,
+          body: {
+            error: 'brief_off',
+            message: 'This theater has no Situation Brief',
+          },
+        };
       if (!apiKey())
         return {
           status: 503,

@@ -212,6 +212,7 @@ async function setup(
     perplexity = groupingModel(),
     brief = briefModel(),
     digestRunner,
+    theaterId,
   } = {},
 ) {
   const cacheDir = await mkdtemp(path.join(tmpdir(), 'gev-news-digest-route-'));
@@ -229,8 +230,8 @@ async function setup(
     ...(digestRunner ? { digestRunner } : {}),
   };
   const news = createNewsService(options);
-  await news.snapshot();
-  await (await news.context()).collector.collectAll();
+  await news.snapshot(theaterId);
+  await (await news.context(theaterId)).collector.collectAll();
   return { news, calls, options };
 }
 
@@ -512,6 +513,7 @@ test('a successful digest is followed by one brief in the same Refresh', async (
   const before = await news.snapshot();
   assert.equal(before.brief, null);
   assert.equal(before.briefRun, null);
+  assert.equal(before.theater.situationBrief, true);
   assert.equal(before.theater.actors.length, 16);
   assert.equal(before.theater.drivers.length, 3);
   assert.deepEqual(
@@ -546,6 +548,34 @@ test('a successful digest is followed by one brief in the same Refresh', async (
     retryable: false,
     retryDisabledReason: null,
   });
+});
+
+test('a theater with the Situation Brief off runs and records no brief after a digest', async (t) => {
+  const { news, calls } = await setup(t, { theaterId: 'world' });
+  const before = await news.snapshot('world');
+  assert.equal(before.theater.id, 'world');
+  assert.equal(before.theater.situationBrief, false);
+  const { status, body } = await news.requestDigest('world');
+  assert.equal(status, 200);
+  assert.equal(body.run.status, 'ok');
+  assert.equal(body.briefRun, null);
+  assert.deepEqual(
+    calls.filter((host) => host.startsWith('api.perplexity.ai')),
+    ['api.perplexity.ai'],
+  );
+  const after = await news.snapshot('world');
+  assert.equal(after.stories.length, 1);
+  assert.equal(after.brief, null);
+  assert.equal(after.briefRun, null, 'no brief run is recorded');
+  assert.deepEqual(after.briefStatus, {
+    digestsBehind: null,
+    retryable: false,
+    retryDisabledReason: null,
+  });
+  const retry = await news.requestBrief('world');
+  assert.equal(retry.status, 409);
+  assert.equal(retry.body.error, 'brief_off');
+  assert.equal(calls.includes('api.perplexity.ai#brief'), false);
 });
 
 test('a failed digest runs no brief', async (t) => {

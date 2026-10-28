@@ -997,6 +997,8 @@
   "src/data/newsLayerState.test.mjs",
   "src/data/newsProxy.test.mjs",
   "src/data/newsRegistry.test.mjs",
+  "src/data/newsWorldTheater.test.mjs",
+  "scripts/build-world-gazetteer.mjs",
   "src/data/newsStore.test.mjs",
   "src/data/newsStories.test.mjs",
   "src/layers/news/ownership.test.mjs",

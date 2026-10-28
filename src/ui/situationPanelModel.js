@@ -122,7 +122,10 @@ export function formatDigestLine(snapshot, nowMs, options = {}) {
   const tail = [];
   if (Number.isFinite(budget.lastRunCostUsd))
     tail.push(`last run ${formatUsdShort(budget.lastRunCostUsd)}`);
-  if (Number.isFinite(budget.lastBriefCostUsd))
+  if (
+    Number.isFinite(budget.lastBriefCostUsd) &&
+    snapshot.theater?.situationBrief !== false
+  )
     tail.push(`brief ${formatUsdShort(budget.lastBriefCostUsd)}`);
   if (Number.isFinite(budget.remainingUsd))
     tail.push(`budget $${budget.remainingUsd.toFixed(2)} left`);
