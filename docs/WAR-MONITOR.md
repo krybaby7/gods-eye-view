@@ -6,15 +6,19 @@ theater. Phase 1 covers **Iran · Israel · US**. It has three parts:
 1. **Collect.** Free and keyless. Feeds are fetched on timers and kept for 72
    hours.
 2. **Digest.** Paid and manual. One model call per **Refresh** groups the new
-   items into stories.
-3. **Map.** Each story with a known place is one pin on the globe. The
-   Situation panel lists every story and every collected item.
+   items into stories. A second call then writes the
+   [Situation Brief](#situation-brief), which explains the whole crisis from
+   those stories.
+3. **Map.** Each event story with a known place is one pin on the globe. The
+   Situation panel shows the Brief, then lists every story and every
+   collected item.
 
 **Headlines and stories are reporting, not verified incidents or risk
 rankings.** Everything below is about where a claim came from, never about
 whether it is true.
 
-Design: [`superpowers/specs/2026-10-25-war-monitor-design.md`](superpowers/specs/2026-10-25-war-monitor-design.md).
+Design: [`superpowers/specs/2026-10-25-war-monitor-design.md`](superpowers/specs/2026-10-25-war-monitor-design.md);
+the Brief: [`superpowers/specs/2026-10-28-situation-brief-design.md`](superpowers/specs/2026-10-28-situation-brief-design.md).
 Sources and terms: the War monitor section of
 [`../DATA_SOURCES.md`](../DATA_SOURCES.md).
 
@@ -28,12 +32,15 @@ Sources and terms: the War monitor section of
    unassigned, or attached to a story.
 3. Add `PERPLEXITY_API_KEY` in Provider Settings (or `.env`).
 4. Press **Refresh**, or say "refresh news". After the digest:
-   - pins appear for located stories;
-   - the **Stories** tab lists every story, including list-only ones;
+   - pins appear for located event stories;
+   - the **Stories** tab lists every story, including list-only ones
+     (no location, or a development such as talks or a sanction);
+   - the Situation Brief at the top of the panel is rewritten;
    - the digest line reads, for example:
-     `Digest 14:02 · 23 stories from 312 items · 9 unassigned · last run 18¢ · budget $1.42 left`.
+     `Digest 14:02 · 23 stories from 312 items · 9 unassigned · last run 34¢ · brief 12¢ · budget $1.08 left`.
 5. The category chips filter the pins and the story list together. The choice
-   is kept in share links.
+   is kept in share links. The Brief's actor chips narrow both further.
+   **Frame theater**, next to Refresh, flies to every visible pin at once.
 6. Open a story row to see:
    - its claims;
    - what's new since the last digest;
@@ -45,7 +52,7 @@ Sources and terms: the War monitor section of
 
 Voice:
 
-- "refresh news" runs one digest and reads back the outcome.
+- "refresh news" runs one digest (and its brief) and reads back the outcome.
 - Questions about stories ("what's corroborated near Isfahan?") go through the
   analyst query over the `news` layer and never trigger a digest.
 - "open the situation panel" opens the panel.
@@ -54,7 +61,7 @@ The Refresh control is disabled with a reason when:
 
 - there is no key;
 - today's budget is used up;
-- a digest is already running;
+- a digest or brief is already running;
 - nothing new has arrived since the last digest.
 
 ## Collect
@@ -180,6 +187,121 @@ server logs one line per run: counts and cost.
 Story ids stay stable from run to run. The model updates an open story by
 returning its id. New stories get `st_` ids that code mints.
 
+**Kind and actors.** The model also marks each story:
+
+- `event`: something that happened at a place (a strike, a protest). It gets
+  a pin when it has a location.
+- `development`: a change with no meaningful point on a map (talks, a
+  sanction, a ruling). It never gets a pin, even with a place name: a pin in
+  Doha would suggest something happened in Doha. It shows in the Stories
+  list, marked "development · no pin", and in the Brief.
+
+It tags each story with the theater actors it involves (`actorIds`), chosen
+from the actor list only. Code drops unknown ids and counts them. A story from
+before kinds existed reads as an event with no actors.
+
+## Situation Brief
+
+The Brief is the panel's political view: a card at the top of the Situation
+panel that explains the whole crisis in under two minutes. It answers what
+changed, who is involved, why now, who is affected, which way it is moving,
+what could happen next and what is poorly known. The map still answers
+"where". The Brief is a situation brief, never a scoreboard.
+
+**On screen.** Collapsed (the default):
+
+- a headline and up to three change lines;
+- one badge per track (Military, Diplomatic, Humanitarian): the state as a
+  word (escalating, easing, stalled, shifting or unclear) and a small glyph,
+  in neutral colours;
+- the Coverage line;
+- "AI analysis · 14:03 · cites 12 stories".
+
+**Show more** adds the actor strip, why now (a cited trigger line and the
+three curated drivers with their source links), who is affected, two or three
+scenario cards with a time horizon and signposts to watch, and what is poorly
+known. The choice is remembered per viewer.
+
+- **Every line opens its stories.** Clicking a line selects the first story
+  it cites (a located event flies there) and highlights the others in the
+  Stories tab.
+- **Actor chips** are grouped by role (parties, mediators, institutions,
+  affected, external), in the theater's order, each with its type and the
+  number of open stories tagged with it. Clicking a chip shows only those
+  stories, in the list and as pins, on top of the category chips. Clicking
+  it again, or "Show all", clears it. It is not kept in share links.
+- **New since your last visit.** Stories updated after the digest you last
+  saw get a quiet "new since your last visit" marker on the row and a small
+  dot on the pin, apart from the verification ring. "Last seen" is stored in
+  the browser per theater and moves to the current digest when the panel
+  closes or the page is hidden. A first visit marks nothing.
+- **A seen signpost** has a tick that opens the story reporting it. A
+  signpost nobody has reported yet reads "not yet seen".
+
+**Rules the Brief never breaks:** no crisis score, tension percentage, health
+bar or "x% toward war"; no two coloured teams (roles, not sides); no rolling
+casualty counters, sounds or winning and losing language; no single forecast
+and no probabilities; a party's claim is written as that party's claim;
+quiet is not calm.
+
+**The call.** After a successful digest has saved its stories, the same
+Refresh makes one more Agent API call with the digest's shape (same model, no
+tools, one step, strict JSON schema) and `max_output_tokens: 16000` (hidden
+reasoning counts toward it). It sends:
+
+- fixed instructions with the rules above;
+- the theater brief, the actor list (with types and roles), the drivers and
+  the tracks;
+- the previous brief, so the change lines are relative to it;
+- the open stories and those closed in the last 72 hours, most recently
+  updated first, at most 80: their ids, kind, titles, summaries, claims,
+  contradictions, code-computed verification labels, perspectives and actor
+  tags. No item ids and no links;
+- the coverage note.
+
+A skipped or failed digest runs no brief.
+
+**What code checks.** The model writes the text, the track states, the
+horizons, the citations and which signposts it has seen. Code then:
+
+- drops every cited story id that was not sent, and counts it;
+- drops every line left citing no story (a signpost may cite none: not seen
+  yet);
+- rejects a brief without a cited headline: the previous brief stays;
+- keeps at most 3 change, affected and unknown lines, 3 scenarios, 4
+  signposts each and one note per actor;
+- holds track states and horizons to their lists (an unknown state reads
+  "unclear");
+- removes a scenario that states odds, a probability or a percentage, and
+  shows no scenarios at all when fewer than two remain (one would read as a
+  forecast);
+- strips anything URL-shaped.
+
+The Coverage line, the AI-analysis label, the brief's age, the
+new-since marker and the verification labels are all code.
+
+**Coverage line.** Computed from source health and item times, never by the
+model: sources down (blocked, failing or stale), grouped by perspective;
+perspectives with no item in 24 hours ("no Iran state items in 24 h"); open
+stories without a location. Show more lists the details.
+
+**Budget.** Brief runs go into the same run log with `kind: "brief"` (older
+records without a kind read as digests), so the daily budget covers both.
+Before the call, code checks that the remaining budget covers a worst-case
+brief: the input plus a full 16,000-token answer at list price, about 20 to 25
+cents. If not, the brief is skipped and the reason is shown. A brief is
+expected to cost about 10 to 15 cents.
+
+**Failure and Retry brief.** A failed brief keeps the digest's stories and the
+previous brief, which is shown with its age ("Brief from 14:02, one digest
+behind") and the reason ("The latest brief failed: it hit its output limit").
+A billed failure keeps its cost. **Retry brief** appears then, and only then
+(also after a brief skipped for budget). It reruns the brief for the latest
+digest without running a digest, through `POST /api/news/brief`.
+
+**Storage.** The current and previous brief live in the theater's digest file
+(`.gev-cache/news/<theater>-digest.json`) next to the stories.
+
 ## Who owns what
 
 | The model writes                | Code computes                                                                                                                                                                                                                                  |
@@ -260,9 +382,14 @@ usual vantage point, not any one article.
 
 Sources live in `public/news/sources.json`. The theater lives in
 `public/news/theaters/<id>.json`: brief, categories, perspective groups,
-GDELT terms and gazetteer. Both are validated at load. An unknown folder,
-kind, transport or category, a duplicate id, or an ambiguous gazetteer
-spelling throws.
+GDELT terms, gazetteer, and the Brief's actors, drivers and tracks. Both are
+validated at load. An unknown folder, kind, transport or category, a
+duplicate id, or an ambiguous gazetteer spelling throws. So does an actor
+with a type or role outside the lists (types: state, armed-group,
+institution, population; roles: party, mediator, institution, affected,
+external), a duplicate actor or track, or more than three drivers or a
+driver without a source link. Actor roles record only what is not in
+dispute; who backs whom is never written there.
 
 ## Routes
 
@@ -270,12 +397,20 @@ spelling throws.
   - items, stories and citations;
   - sources with their health;
   - the last run and the last digest;
+  - `brief`, `briefRun` and `briefStatus` (how many digests the brief is
+    behind and whether Retry brief applies);
+  - the theater's actors, drivers and tracks;
   - budget and digest state.
 
   If `rev` matches, it returns `{unchanged: true}`.
 
-- `POST /api/news/digest?theater=<id>`: same-site only and rate limited. See
+- `POST /api/news/digest?theater=<id>`: same-site only and rate limited. Runs
+  the digest and then the brief; the answer carries both runs. See
   [Digest](#digest).
+- `POST /api/news/brief?theater=<id>`: Retry brief. Same-site only, sharing
+  the digest's rate limit. 409 unless the latest brief failed or was skipped
+  for budget; 429 when the budget cannot cover it. See
+  [Situation Brief](#situation-brief).
 - `GET /api/news/status`: collection health per theater.
 
 ## Code
@@ -286,11 +421,14 @@ spelling throws.
 | Fetchers                       | `server/providers/news/fetchers/`                                            |
 | Item store, collector, routes  | `server/providers/news/store.js`, `collector.js`, `index.js`                 |
 | Digest call and validation     | `server/providers/news/digest/runner.js`                                     |
+| Brief call and checks          | `server/providers/news/digest/brief.js`                                      |
 | Code-owned story fields (pure) | `server/providers/news/digest/stories.js`                                    |
-| Stories and run history        | `server/providers/news/digest/store.js`                                      |
+| Stories, briefs, run history   | `server/providers/news/digest/store.js`                                      |
+| Coverage line (pure, shared)   | `src/layers/news/coverage.js`                                                |
 | Browser source and records     | `src/layers/news/source.js`, `records.js`                                    |
 | Layer: pins, cards, selection  | `src/layers/news/index.js`, `model.js`                                       |
 | Situation panel                | `src/ui/situationPanel.js`, `situationPanelModel.js`, `styles/situation.css` |
+| Situation Brief section        | `src/ui/situationBrief.js`, `situationBriefModel.js`                         |
 | Fixture QA                     | `npm run qa:news:fixtures` (`scripts/qa-news.mjs`)                           |
 
 ## Known limits (Phase 1)

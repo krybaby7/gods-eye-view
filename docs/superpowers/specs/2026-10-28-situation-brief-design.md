@@ -1,6 +1,6 @@
 # Situation Brief: the political view
 
-Date: 2026-10-28. Status: design, location agreed with the owner, not built.
+Date: 2026-10-28. Status: Phase A built (fork PR, 2026-10-28); Phases B and C not built.
 Builds on `2026-10-25-war-monitor-design.md` (fork PR krybaby7/gods-eye-view#1) and a Perplexity
 deep research run on the questions that explain a political situation (summary in section 11).
 
