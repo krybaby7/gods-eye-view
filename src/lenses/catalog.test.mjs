@@ -112,6 +112,7 @@ test('lens membership preserves the owner decisions and shared layers', () => {
     'military',
     'military-installations',
     'local-firms',
+    'news',
   ]);
   assert.deepEqual(byId.hazards.layerIds, [
     'earthquakes',
@@ -132,7 +133,6 @@ test('lens membership preserves the owner decisions and shared layers', () => {
   assert.deepEqual(byId.signals.layerIds, ['radio', 'cctv']);
   const assigned = new Set(LENSES.flatMap(({ layerIds }) => layerIds));
   for (const id of [
-    'news',
     'street-level',
     'directions',
     'recent-imagery',
