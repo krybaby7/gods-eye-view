@@ -170,10 +170,16 @@ function httpUrl(value) {
   }
 }
 
+// Drupal's default "Friday, October 23, 2026 - 18:13" (Crisis Group), with no
+// zone: read as UTC so the result does not depend on the server's zone.
+const DRUPAL_DATE =
+  /^(?:[a-z]+,\s*)?([a-z]+ \d{1,2}, \d{4}) - (\d{1,2}:\d{2})$/i;
+
 function isoDate(raw) {
   const text = feedFieldText(raw);
   if (!text) return null;
-  const ms = Date.parse(text);
+  const drupal = DRUPAL_DATE.exec(text);
+  const ms = Date.parse(drupal ? `${drupal[1]} ${drupal[2]} UTC` : text);
   return Number.isNaN(ms) ? null : new Date(ms).toISOString();
 }
 

@@ -125,6 +125,19 @@ test('feed entries: RSS CDATA, escaped markup, entities, Atom links and language
   assert.equal(atom.entries[0].publishedAt, '2026-10-25T08:00:00.000Z');
 });
 
+test('feed entries read Drupal dates with a dash and no zone as UTC', () => {
+  const feed = (date) =>
+    parseFeedEntries(
+      `<rss><channel><item><title>T</title><link>https://x.example/1</link><pubDate>${date}</pubDate></item></channel></rss>`,
+    ).entries[0].publishedAt;
+  assert.equal(
+    feed('Friday, October 23, 2026 - 18:13'),
+    '2026-10-23T18:13:00.000Z',
+  );
+  assert.equal(feed('October 23, 2026 - 9:05'), '2026-10-23T09:05:00.000Z');
+  assert.equal(feed('not a date - 18:13'), null);
+});
+
 test('RSS fetcher returns candidates, inflates gzip bodies and never throws', async () => {
   const rss = source('wire', { type: 'rss', url: 'https://example.org/feed' });
   const calls = [];
