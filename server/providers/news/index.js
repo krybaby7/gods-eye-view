@@ -13,6 +13,7 @@ import { DIGEST_MODEL, runDigest } from './digest/runner.js';
 import { prepareBrief, runBrief } from './digest/brief.js';
 import { applyActorUpdates, effectiveActors } from './digest/actors.js';
 import { mergeDigest, storyByItem, unassignedItems } from './digest/stories.js';
+import { assignHotspots } from './hotspots.js';
 import { newsCoverage } from '../../../src/layers/news/coverage.js';
 import {
   createDigestStore,
@@ -382,6 +383,8 @@ export function createNewsService(options = {}) {
         (s) => s.status === 'open' && s.location,
       ).length,
       unassignedCount: unassigned.length,
+      // Gazetteer matches over 500 km from the model's point (namesakes).
+      farMatches: merged.touched.filter((s) => s.location?.farMatch).length,
       droppedItemIds: result.counts.droppedItemIds,
       duplicateItemIds: result.counts.duplicateItemIds,
       rejectedStories: result.counts.rejectedStories,
@@ -579,7 +582,9 @@ export function createNewsService(options = {}) {
         theaters: await listTheaters(),
         items,
         citations,
-        stories,
+        // Bubble grouping is computed per request: the stored digest is
+        // unchanged and the browser never receives the gazetteer.
+        stories: assignHotspots(stories, theater.gazetteer),
         lastRun: ctx.digest.lastRun(),
         lastDigest: ctx.digest.lastCompletedRun(),
         brief: ctx.digest.brief(),

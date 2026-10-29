@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   CORROBORATING_KINDS,
+  FAR_MATCH_KM,
   assignIds,
   closeStaleStories,
   deriveClaimStatuses,
@@ -262,7 +263,7 @@ const gazetteer = [
 
 test('location: gazetteer first, model coordinates only without a gazetteer match', () => {
   assert.deepEqual(
-    resolveLocation({ placeName: 'بندرعباس', lat: 1, lon: 2 }, gazetteer),
+    resolveLocation({ placeName: 'بندرعباس', lat: 27.2, lon: 56.3 }, gazetteer),
     {
       lat: 27.1832,
       lon: 56.2666,
@@ -302,6 +303,35 @@ test('location: gazetteer first, model coordinates only without a gazetteer matc
   assert.equal(
     resolveLocation({ placeName: null, lat: null, lon: null }, gazetteer),
     null,
+  );
+});
+
+test('far match: a gazetteer row over 500 km from the model coordinates is not trusted', () => {
+  assert.equal(FAR_MATCH_KM, 500);
+  // Only Toledo, Ohio is a row; the story is about Toledo, Spain.
+  const ohio = [
+    { name: 'Toledo', lat: 41.67, lon: -83.58, precision: 'city', aliases: [] },
+  ];
+  assert.deepEqual(
+    resolveLocation({ placeName: 'Toledo', lat: 39.86, lon: -4.02 }, ohio),
+    {
+      lat: 39.86,
+      lon: -4.02,
+      precision: 'approximate',
+      method: 'model',
+      name: 'Toledo',
+      farMatch: true,
+    },
+  );
+  // Within 500 km the row wins; without model coordinates it always does.
+  assert.equal(
+    resolveLocation({ placeName: 'Toledo', lat: 41.0, lon: -84.5 }, ohio)
+      .method,
+    'gazetteer',
+  );
+  assert.equal(
+    resolveLocation({ placeName: 'Toledo', lat: null, lon: null }, ohio).method,
+    'gazetteer',
   );
 });
 

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { resolvePlace } from '../geocode.js';
+import { greatCircleKm, resolvePlace } from '../geocode.js';
 import { canonicalizeUrl } from '../store.js';
 
 /**
@@ -23,6 +23,11 @@ export const CORROBORATING_KINDS = Object.freeze([
 const PARTICIPANT_KINDS = new Set(['participant', 'state']);
 export const STORY_STALE_MS = 48 * 3600_000;
 export const OPEN_STORY_CAP = 60;
+/**
+ * A gazetteer match farther than this from the model's own coordinates is a
+ * namesake (Toledo, Ohio for Toledo, Spain): the model's point is kept.
+ */
+export const FAR_MATCH_KM = 500;
 
 function groupOf(item, perspectiveGroups) {
   return perspectiveGroups.get(item.perspective) ?? item.perspective;
@@ -115,24 +120,30 @@ export function sourceCount(items) {
 
 /**
  * Story location: the gazetteer match for the model's place name; the
- * model's coordinates only when there is no match (shown as model-placed);
- * otherwise null (list-only story).
+ * model's coordinates only when there is no match (shown as model-placed),
+ * or when the match lies over FAR_MATCH_KM from them (`farMatch`, counted in
+ * the run record); otherwise null (list-only story).
  */
 export function resolveLocation({ placeName, lat, lon }, gazetteer) {
   const match = placeName ? resolvePlace(placeName, gazetteer) : null;
-  if (match) return match;
-  if (
+  const modelPoint =
     Number.isFinite(lat) &&
     Number.isFinite(lon) &&
     Math.abs(lat) <= 90 &&
-    Math.abs(lon) <= 180
+    Math.abs(lon) <= 180;
+  if (
+    match &&
+    !(modelPoint && greatCircleKm(match, { lat, lon }) > FAR_MATCH_KM)
   )
+    return match;
+  if (modelPoint)
     return {
       lat,
       lon,
       precision: 'approximate',
       method: 'model',
       name: placeName || null,
+      ...(match ? { farMatch: true } : {}),
     };
   return null;
 }

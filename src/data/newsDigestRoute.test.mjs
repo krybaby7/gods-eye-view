@@ -107,8 +107,8 @@ function groupingModel(costs = []) {
                       'CENTCOM said it struck a drone storage site. IRNA said a warehouse exploded.',
                     category: 'war-military',
                     placeName: 'Bandar Abbas',
-                    lat: 1,
-                    lon: 1,
+                    lat: 27.2,
+                    lon: 56.3,
                     eventAt: '2026-10-26T03:00:00Z',
                     itemIds: ids,
                     claims: [
@@ -277,6 +277,7 @@ test('a digest turns items into a story with code-owned fields', async (t) => {
   assert.equal(body.run.droppedItemIds, 1, 'the invented id was dropped');
   assert.equal(body.run.itemCount, before.items.length);
   assert.equal(body.run.unassignedCount, before.items.length - 3);
+  assert.equal(body.run.farMatches, 0);
 
   const after = await news.snapshot();
   const [story] = after.stories;
@@ -288,6 +289,14 @@ test('a digest turns items into a story with code-owned fields', async (t) => {
     precision: 'city',
     method: 'gazetteer',
     name: 'Bandar Abbas',
+  });
+  // The snapshot groups it under its country, placed at the country row.
+  assert.deepEqual(story.hotspot, {
+    key: 'country:Iran',
+    label: 'Iran',
+    kind: 'country',
+    lat: 32.43,
+    lon: 53.69,
   });
   assert.deepEqual(story.perspectives, [
     'international-regional',
