@@ -116,6 +116,7 @@ const payload = (overrides = {}) => ({
 function harness({
   source,
   cameraPosition = Cesium.Cartesian3.fromDegrees(50, 28, 2e7),
+  height,
 } = {}) {
   const added = [];
   const overlay = [];
@@ -130,7 +131,11 @@ function harness({
       add: (value) => added.push(value),
       remove: (value) => added.splice(added.indexOf(value), 1),
     },
-    camera: { positionWC: cameraPosition },
+    // Without positionCartographic the map keeps pins (the older tests).
+    camera: {
+      positionWC: cameraPosition,
+      ...(height === undefined ? {} : { positionCartographic: { height } }),
+    },
     scene: {
       pick: () => picked,
       requestRender() {},
@@ -204,6 +209,11 @@ function harness({
     selectedContext: () => selectedContext,
     pick: (value) => (picked = value),
     runPreRender: () => preRender?.(),
+    setHeight: (value) => {
+      viewer.camera.positionCartographic = { height: value };
+      // A move the horizon cull would notice too.
+      viewer.camera.positionWC = Cesium.Cartesian3.fromDegrees(50, 28, value);
+    },
     lastCards: () => overlay.at(-1)?.[1] ?? [],
   };
 }
@@ -789,4 +799,185 @@ test('Retry brief runs one brief, reloads and reports; it never overlaps a diges
   assert.equal(briefs, 1);
   release({ ok: true, run: {} });
   await digest;
+});
+
+const iran = {
+  key: 'country:Iran',
+  label: 'Iran',
+  kind: 'country',
+  lat: 32.4,
+  lon: 53.7,
+};
+const gaza = {
+  key: 'region:Gaza Strip',
+  label: 'Gaza Strip',
+  kind: 'region',
+  lat: 31.42,
+  lon: 34.37,
+};
+function hotspotHarness(height) {
+  const withHotspots = payload({
+    stories: [
+      story('a', { hotspot: iran }),
+      story('e', {
+        hotspot: iran,
+        location: {
+          lat: 35.69,
+          lon: 51.39,
+          precision: 'city',
+          method: 'gazetteer',
+          name: 'Tehran',
+        },
+        updatedAt: '2026-10-26T11:30:00Z',
+      }),
+      story('b', {
+        category: 'humanitarian-casualties',
+        hotspot: gaza,
+        location: {
+          lat: 31.35,
+          lon: 34.3,
+          precision: 'approximate',
+          method: 'model',
+          name: 'Somewhere',
+        },
+      }),
+      story('c', { location: null, place: null, hotspot: null }),
+      story('talks', { kind: 'development', hotspot: null }),
+    ],
+  });
+  return harness({
+    height,
+    source: {
+      getSnapshot: async () => normalizeNewsSnapshot(withHotspots),
+      requestDigest: async () => ({ ok: true }),
+    },
+  });
+}
+
+test('high above the globe the map draws one bubble per hotspot, and pins below', async () => {
+  const h = hotspotHarness(4_000_000);
+  await h.layer.update();
+  const [source] = h.added;
+  assert.equal(h.layer._testing.mapMode(), 'bubbles');
+  assert.deepEqual(h.layer._testing.hotspotKeys(), [
+    'country:Iran',
+    'region:Gaza Strip',
+  ]);
+  assert.deepEqual(h.layer._testing.pinIds(), []);
+  assert.equal(source.entities.values.length, 2, 'bubbles only');
+  // No entity contexts for bubbles, and no story cards, even when selected.
+  assert.deepEqual([...h.contexts.keys()], []);
+  h.layer.selectStory('a', { focus: false });
+  assert.deepEqual(h.lastCards(), []);
+  assert.deepEqual(h.layer._testing.pinIds(), []);
+  // The selected story's bubble gets the white outline.
+  const image = source.entities
+    .getById('news:hotspot:country:Iran')
+    .billboard.image.getValue();
+  assert.match(decodeURIComponent(image), /stroke="#ffffff"/);
+  assert.match(decodeURIComponent(image), />2<\/text>/);
+
+  // Between the thresholds nothing changes, either way.
+  h.setHeight(3_200_000);
+  h.runPreRender();
+  assert.equal(h.layer._testing.mapMode(), 'bubbles');
+  h.setHeight(2_800_000);
+  h.runPreRender();
+  assert.equal(h.layer._testing.mapMode(), 'pins');
+  assert.deepEqual(h.layer._testing.pinIds(), ['a', 'e', 'b']);
+  assert.deepEqual(h.layer._testing.hotspotKeys(), []);
+  assert.equal(source.entities.values.length, 3, 'pins only');
+  assert.deepEqual([...h.contexts.keys()], ['news:a', 'news:e', 'news:b']);
+  assert.equal(h.layer.getSnapshot().mapMode, 'pins');
+  h.setHeight(3_200_000);
+  h.runPreRender();
+  assert.equal(h.layer._testing.mapMode(), 'pins');
+  h.setHeight(4_000_000);
+  h.runPreRender();
+  assert.equal(h.layer._testing.mapMode(), 'bubbles');
+  assert.deepEqual([...h.contexts.keys()], []);
+});
+
+test('filters change bubble counts; an emptied bubble disappears', async () => {
+  const h = hotspotHarness(4_000_000);
+  await h.layer.update();
+  h.layer.toggleCategory('humanitarian-casualties');
+  assert.deepEqual(h.layer._testing.hotspotKeys(), ['country:Iran']);
+  h.layer.toggleCategory('humanitarian-casualties');
+  h.layer.toggleCategory('war-military');
+  assert.deepEqual(h.layer._testing.hotspotKeys(), ['region:Gaza Strip']);
+});
+
+test('hovering a bubble shows its card: place, count, newest titles, the caveat', async () => {
+  const h = hotspotHarness(4_000_000);
+  await h.layer.update();
+  const [source] = h.added;
+  h.pick({ id: source.entities.getById('news:hotspot:country:Iran') });
+  h.actions.get(Cesium.ScreenSpaceEventType.MOUSE_MOVE)({
+    endPosition: { x: 2, y: 2 },
+  });
+  const [card] = h.lastCards();
+  assert.equal(card.id, 'hotspot:country:Iran');
+  assert.equal(card.variant, 'card');
+  assert.equal(card.title, 'Iran · 2 stories');
+  assert.deepEqual(card.details, [
+    'Story e',
+    'Story a',
+    'Counts stories in the latest digest, not severity. Quiet places may be under-reported.',
+  ]);
+  assert.equal(card.accent, '#ef4444');
+});
+
+test('clicking a bubble flies over its stories and filters the Stories list, not the map', async () => {
+  const h = hotspotHarness(4_000_000);
+  await h.layer.update();
+  const [source] = h.added;
+  h.pick({ id: source.entities.getById('news:hotspot:country:Iran') });
+  h.actions.get(Cesium.ScreenSpaceEventType.LEFT_CLICK)({
+    position: { x: 2, y: 2 },
+  });
+  assert.equal(h.focus.length, 1);
+  const [request] = h.focus;
+  assert.equal(request.kind, 'hotspot');
+  assert.equal(request.id, 'news:hotspot:country:Iran');
+  // Iran's bubble (32.4, 53.7) to Bandar Abbas and Tehran: about 640 km.
+  assert.ok(request.radiusM > 550_000 && request.radiusM < 700_000);
+  const snapshot = h.layer.getSnapshot();
+  assert.deepEqual(snapshot.placeFilter, { key: 'country:Iran', label: 'Iran' });
+  assert.deepEqual(
+    snapshot.visibleStories.map((s) => s.id).sort(),
+    ['a', 'e'],
+  );
+  assert.equal(snapshot.selectedStoryId, null, 'no story is selected');
+  assert.deepEqual(h.layer.getParams(), { hiddenCategories: '' });
+  // The map is not filtered.
+  assert.deepEqual(h.layer._testing.hotspotKeys(), [
+    'country:Iran',
+    'region:Gaza Strip',
+  ]);
+  h.setHeight(1_600_000);
+  h.runPreRender();
+  assert.deepEqual(h.layer._testing.pinIds(), ['a', 'e', 'b']);
+  // Selecting a story or a new snapshot leaves it; another bubble replaces it.
+  h.layer.selectStory('b', { focus: false });
+  await h.layer.refresh();
+  assert.equal(h.layer.getSnapshot().placeFilter.key, 'country:Iran');
+  assert.equal(h.layer.focusHotspot('region:Gaza Strip'), true);
+  assert.equal(h.layer.getSnapshot().placeFilter.label, 'Gaza Strip');
+  h.layer.setPlaceFilter(null);
+  assert.equal(h.layer.getSnapshot().placeFilter, null);
+  assert.equal(h.layer.getSnapshot().visibleStories.length, 5);
+  assert.equal(h.layer.focusHotspot('country:Nowhere'), false);
+});
+
+test('switching theater or disabling the layer clears the place filter', async () => {
+  const h = hotspotHarness(4_000_000);
+  await h.layer.update();
+  h.layer.setPlaceFilter('country:Iran');
+  assert.equal(h.layer.getSnapshot().placeFilter.key, 'country:Iran');
+  await h.layer.setTheater('world');
+  assert.equal(h.layer.getSnapshot().placeFilter, null);
+  h.layer.setPlaceFilter('country:Iran');
+  h.layer.disable();
+  assert.equal(h.layer.getSnapshot().placeFilter, null);
 });
