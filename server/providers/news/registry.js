@@ -198,7 +198,7 @@ function validatePerspectives(perspectives) {
 function validateGazetteer(gazetteer) {
   if (!Array.isArray(gazetteer)) fail('theater gazetteer must be an array');
   const owners = new Map();
-  return gazetteer.map((entry, index) => {
+  const rows = gazetteer.map((entry, index) => {
     const name = entry?.name;
     if (!nonEmptyString(name)) fail(`gazetteer row ${index} needs a name`);
     if (
@@ -229,8 +229,35 @@ function validateGazetteer(gazetteer) {
       aliases: Object.freeze(aliases),
       // Listed in the digest instructions (see placeNamesForPrompt).
       prompt: entry.prompt === true,
+      // Joins this region or water row's hotspot bubble (see hotspots.js).
+      hotspot: entry.hotspot ?? null,
     });
   });
+  checkHotspotLinks(rows);
+  return rows;
+}
+
+/** A hotspot link names another region or water row that links nowhere. */
+function checkHotspotLinks(rows) {
+  const byName = new Map(rows.map((row) => [row.name, row]));
+  for (const row of rows) {
+    if (row.hotspot === null) continue;
+    const target = byName.get(row.hotspot);
+    if (
+      typeof row.hotspot !== 'string' ||
+      !target ||
+      !['region', 'water'].includes(target.precision)
+    )
+      fail(
+        `gazetteer ${row.name} hotspot ${row.hotspot} is not a region or water row`,
+      );
+    if (target === row)
+      fail(`gazetteer ${row.name} hotspot ${row.hotspot} is the row itself`);
+    if (target.hotspot !== null)
+      fail(
+        `gazetteer ${row.name} hotspot ${row.hotspot} has a link of its own; links do not chain`,
+      );
+  }
 }
 
 function optionalList(value, what) {

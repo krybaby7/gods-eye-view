@@ -370,6 +370,51 @@ test('the Situation Brief is on unless the theater says situationBrief: false', 
   assert.equal(junk.theater.situationBrief, true);
 });
 
+test('a story keeps a well-formed hotspot and reads a malformed one as none', () => {
+  const hotspot = {
+    key: 'region:West Bank',
+    label: 'West Bank',
+    kind: 'region',
+    lat: 31.95,
+    lon: 35.25,
+  };
+  const story = (id, value) => ({ id, title: id, hotspot: value });
+  const { stories } = normalizeNewsSnapshot({
+    ...minimal,
+    stories: [
+      story('ok', hotspot),
+      story('long', {
+        ...hotspot,
+        key: 'k'.repeat(300),
+        label: 'l'.repeat(300),
+      }),
+      story('absent', undefined),
+      story('null', null),
+      story('kind', { ...hotspot, kind: 'planet' }),
+      story('nokey', { ...hotspot, key: '' }),
+      story('nolabel', { ...hotspot, label: 7 }),
+      story('lat', { ...hotspot, lat: 91 }),
+      story('lon', { ...hotspot, lon: '35' }),
+      story('nan', { ...hotspot, lat: NaN }),
+    ],
+  });
+  const byId = new Map(stories.map((s) => [s.id, s.hotspot]));
+  assert.deepEqual(byId.get('ok'), hotspot);
+  assert.equal(byId.get('long').key.length, 200);
+  assert.equal(byId.get('long').label.length, 160);
+  for (const id of [
+    'absent',
+    'null',
+    'kind',
+    'nokey',
+    'nolabel',
+    'lat',
+    'lon',
+    'nan',
+  ])
+    assert.equal(byId.get(id), null, id);
+});
+
 test('Retry brief posts to its own route; refusals are outcomes', async () => {
   let request;
   const ok = createNewsSource({

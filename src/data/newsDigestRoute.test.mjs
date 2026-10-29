@@ -107,8 +107,8 @@ function groupingModel(costs = []) {
                       'CENTCOM said it struck a drone storage site. IRNA said a warehouse exploded.',
                     category: 'war-military',
                     placeName: 'Bandar Abbas',
-                    lat: 1,
-                    lon: 1,
+                    lat: 27.2,
+                    lon: 56.3,
                     eventAt: '2026-10-26T03:00:00Z',
                     itemIds: ids,
                     claims: [
@@ -289,6 +289,15 @@ test('a digest turns items into a story with code-owned fields', async (t) => {
     method: 'gazetteer',
     name: 'Bandar Abbas',
   });
+  // Computed from the gazetteer on each snapshot: the city joins Iran.
+  assert.deepEqual(story.hotspot, {
+    key: 'country:Iran',
+    label: 'Iran',
+    kind: 'country',
+    lat: 32.43,
+    lon: 53.69,
+  });
+  assert.equal(body.run.farMatches, 0);
   assert.deepEqual(story.perspectives, [
     'international-regional',
     'iran-state',
@@ -314,6 +323,39 @@ test('a digest turns items into a story with code-owned fields', async (t) => {
     assert.equal(item.storyId, cited.has(item.id) ? story.id : null);
   }
   assert.equal(after.digest.disabledReason, 'nothing_new');
+});
+
+test('the snapshot gives a located event a hotspot and a development none', async (t) => {
+  const grouping = groupingModel();
+  const withDevelopment = async (body, init) => {
+    const response = await (await grouping(body, init)).json();
+    const message = response.output[0].content[0];
+    const [event] = JSON.parse(message.text).stories;
+    const aljazeera = event.itemIds[2];
+    event.itemIds = event.itemIds.slice(0, 2);
+    event.claims = event.claims.map((claim) => ({
+      ...claim,
+      itemIds: claim.itemIds.filter((id) => id !== aljazeera),
+    }));
+    const development = {
+      ...event,
+      title: 'Talks announced over the port',
+      kind: 'development',
+      itemIds: [aljazeera],
+      claims: [],
+      contradictions: [],
+    };
+    message.text = JSON.stringify({ stories: [event, development] });
+    return Response.json(response);
+  };
+  const { news } = await setup(t, { perplexity: withDevelopment });
+  await news.requestDigest();
+  const { stories } = await news.snapshot();
+  const event = stories.find((story) => story.kind === 'event');
+  const development = stories.find((story) => story.kind === 'development');
+  assert.ok(development.location, 'the development kept its place');
+  assert.equal(event.hotspot.key, 'country:Iran');
+  assert.equal(development.hotspot, null);
 });
 
 test('nothing new skips without calling the model and records the skip', async (t) => {

@@ -264,6 +264,84 @@ test('gazetteer rows keep an optional prompt flag, true or false', () => {
   );
 });
 
+test('gazetteer rows keep a hotspot link to a region or water row, else null', () => {
+  const rows = [
+    { name: 'West Bank', lat: 31.95, lon: 35.25, precision: 'region' },
+    { name: 'Red Sea', lat: 20, lon: 38.5, precision: 'water' },
+    {
+      name: 'Hebron',
+      lat: 31.53,
+      lon: 35.1,
+      precision: 'city',
+      hotspot: 'West Bank',
+    },
+    {
+      name: 'Port Sudan',
+      lat: 19.6,
+      lon: 37.2,
+      precision: 'city',
+      hotspot: 'Red Sea',
+    },
+    { name: 'Tehran', lat: 35.69, lon: 51.39, precision: 'city' },
+  ];
+  const loaded = validateNewsTheater(
+    theater({ gazetteer: rows }),
+    sourcesById([source()]),
+  );
+  assert.deepEqual(
+    loaded.gazetteer.map((row) => row.hotspot),
+    [null, null, 'West Bank', 'Red Sea', null],
+  );
+});
+
+test('a gazetteer hotspot must name another region or water row without a link of its own', () => {
+  const run = (rows) => () =>
+    validateNewsTheater(theater({ gazetteer: rows }), sourcesById([source()]));
+  const region = {
+    name: 'West Bank',
+    lat: 31.95,
+    lon: 35.25,
+    precision: 'region',
+  };
+  const hebron = (hotspot) => ({
+    name: 'Hebron',
+    lat: 31.53,
+    lon: 35.1,
+    precision: 'city',
+    hotspot,
+  });
+  assert.throws(
+    run([region, hebron('Westbank')]),
+    /gazetteer Hebron hotspot Westbank is not a region or water row/,
+  );
+  assert.throws(
+    run([
+      { name: 'Jenin', lat: 32.46, lon: 35.3, precision: 'city' },
+      hebron('Jenin'),
+    ]),
+    /gazetteer Hebron hotspot Jenin is not a region or water row/,
+  );
+  assert.throws(
+    run([{ ...region, hotspot: 'West Bank' }]),
+    /gazetteer West Bank hotspot West Bank/,
+  );
+  assert.throws(
+    run([
+      region,
+      {
+        name: 'Gaza',
+        lat: 31.4,
+        lon: 34.4,
+        precision: 'region',
+        hotspot: 'West Bank',
+      },
+      hebron('Gaza'),
+    ]),
+    /gazetteer Hebron hotspot Gaza .*link/,
+  );
+  assert.throws(run([region, hebron(7)]), /gazetteer Hebron hotspot/);
+});
+
 test('actor validation: unique ids, types and roles from the lists', () => {
   const list = sourcesById([source()]);
   const actor = (overrides = {}) => ({

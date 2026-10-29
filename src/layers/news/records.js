@@ -117,6 +117,32 @@ function normalizeLocation(raw) {
   };
 }
 
+const HOTSPOT_KINDS = ['region', 'water', 'country', 'place'];
+
+/** The server-computed bubble a story belongs to, or null when malformed. */
+function normalizeHotspot(raw) {
+  if (
+    !raw ||
+    typeof raw.key !== 'string' ||
+    !raw.key ||
+    typeof raw.label !== 'string' ||
+    !raw.label ||
+    !HOTSPOT_KINDS.includes(raw.kind) ||
+    !Number.isFinite(raw.lat) ||
+    !Number.isFinite(raw.lon) ||
+    Math.abs(raw.lat) > 90 ||
+    Math.abs(raw.lon) > 180
+  )
+    return null;
+  return {
+    key: text(raw.key, 200),
+    label: text(raw.label, 160),
+    kind: raw.kind,
+    lat: raw.lat,
+    lon: raw.lon,
+  };
+}
+
 function normalizeStory(raw) {
   if (!raw || typeof raw.id !== 'string' || typeof raw.title !== 'string')
     return null;
@@ -127,6 +153,7 @@ function normalizeStory(raw) {
     category: text(raw.category, 64),
     place: textOrNull(raw.place?.name, 160),
     location: normalizeLocation(raw.location),
+    hotspot: normalizeHotspot(raw.hotspot),
     eventAt: isoOrNull(raw.eventAt),
     firstSeenAt: isoOrNull(raw.firstSeenAt),
     updatedAt: isoOrNull(raw.updatedAt),

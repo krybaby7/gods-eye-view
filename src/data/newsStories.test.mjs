@@ -262,7 +262,7 @@ const gazetteer = [
 
 test('location: gazetteer first, model coordinates only without a gazetteer match', () => {
   assert.deepEqual(
-    resolveLocation({ placeName: 'بندرعباس', lat: 1, lon: 2 }, gazetteer),
+    resolveLocation({ placeName: 'بندرعباس', lat: 27, lon: 56 }, gazetteer),
     {
       lat: 27.1832,
       lon: 56.2666,
@@ -303,6 +303,48 @@ test('location: gazetteer first, model coordinates only without a gazetteer matc
     resolveLocation({ placeName: null, lat: null, lon: null }, gazetteer),
     null,
   );
+});
+
+const ohioToledo = {
+  name: 'Toledo',
+  lat: 41.66,
+  lon: -83.56,
+  precision: 'city',
+};
+
+test('location: a gazetteer match far from the model coordinates is model-placed', () => {
+  assert.deepEqual(
+    resolveLocation({ placeName: 'Toledo', lat: 39.86, lon: -4.02 }, [
+      ohioToledo,
+    ]),
+    {
+      lat: 39.86,
+      lon: -4.02,
+      precision: 'approximate',
+      method: 'model',
+      name: 'Toledo',
+      farMatch: 'Toledo',
+    },
+  );
+});
+
+test('location: a match within 500 km of the model, or without model coordinates, is kept', () => {
+  const near = resolveLocation(
+    { placeName: 'Bandar Abbas', lat: 27.5, lon: 56.5 },
+    gazetteer,
+  );
+  assert.equal(near.method, 'gazetteer');
+  assert.equal(near.lat, 27.1832);
+  assert.equal('farMatch' in near, false);
+  const bare = resolveLocation({ placeName: 'Toledo', lat: null, lon: null }, [
+    ohioToledo,
+  ]);
+  assert.equal(bare.method, 'gazetteer');
+  assert.equal(bare.lat, 41.66);
+  const invalid = resolveLocation({ placeName: 'Toledo', lat: 95, lon: -4 }, [
+    ohioToledo,
+  ]);
+  assert.equal(invalid.method, 'gazetteer');
 });
 
 test('ids: open ids continue, new stories get deterministic st_ ids that never collide', () => {
@@ -494,6 +536,49 @@ test('mergeDigest updates open stories in place and computes every code-owned fi
   assert.equal(
     stories.find((s) => s.id === 'st_untouched').updatedAt,
     '2026-10-26T06:00:00.000Z',
+  );
+});
+
+test('mergeDigest counts the touched stories placed by the far-match guard', () => {
+  const itemsById = new Map([
+    ['a', item('independent', 'international-wire', { id: 'a' })],
+    ['b', item('independent', 'international-wire', { id: 'b' })],
+  ]);
+  const validated = (id, itemId, placeName, lat, lon) => ({
+    id,
+    title: placeName,
+    summary: '',
+    category: 'war-military',
+    placeName,
+    lat,
+    lon,
+    eventAt: null,
+    itemIds: [itemId],
+    claims: [],
+    whatsNew: '',
+    contradictions: [],
+    status: 'open',
+  });
+  const merged = mergeDigest({
+    previous: [],
+    validated: [
+      validated(null, 'a', 'Toledo', 39.86, -4.02),
+      validated(null, 'b', 'Toledo', 41.7, -83.5),
+    ],
+    itemsById,
+    theaterId: 'fixture',
+    gazetteer: [ohioToledo],
+    perspectiveGroups: groups,
+    runId: 'run_3',
+    nowIso: '2026-10-26T12:00:00.000Z',
+  });
+  assert.equal(merged.farMatches, 1);
+  assert.deepEqual(
+    merged.touched.map((s) => [s.location.method, s.location.farMatch]),
+    [
+      ['model', 'Toledo'],
+      ['gazetteer', undefined],
+    ],
   );
 });
 

@@ -55,6 +55,26 @@ export function normalizePlaceName(value) {
     .trim();
 }
 
+const EARTH_RADIUS_KM = 6371;
+const toRadians = (degrees) => (degrees * Math.PI) / 180;
+
+/**
+ * Great-circle distance in kilometres (haversine, mean Earth radius).
+ * @param {{lat: number, lon: number}} a
+ * @param {{lat: number, lon: number}} b
+ * @returns {number}
+ */
+export function distanceKm(a, b) {
+  const dLat = toRadians(b.lat - a.lat);
+  const dLon = toRadians(b.lon - a.lon);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRadians(a.lat)) *
+      Math.cos(toRadians(b.lat)) *
+      Math.sin(dLon / 2) ** 2;
+  return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
 function stripArticle(key) {
   return key.replace(LEADING_ARTICLE, '');
 }

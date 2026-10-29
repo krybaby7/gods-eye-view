@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { resolvePlace } from '../geocode.js';
+import { distanceKm, resolvePlace } from '../geocode.js';
 import { canonicalizeUrl } from '../store.js';
 
 /**
@@ -23,6 +23,8 @@ export const CORROBORATING_KINDS = Object.freeze([
 const PARTICIPANT_KINDS = new Set(['participant', 'state']);
 export const STORY_STALE_MS = 48 * 3600_000;
 export const OPEN_STORY_CAP = 60;
+// A gazetteer match this far from the model's own coordinates is a namesake.
+const FAR_MATCH_KM = 500;
 
 function groupOf(item, perspectiveGroups) {
   return perspectiveGroups.get(item.perspective) ?? item.perspective;
@@ -115,26 +117,31 @@ export function sourceCount(items) {
 
 /**
  * Story location: the gazetteer match for the model's place name; the
- * model's coordinates only when there is no match (shown as model-placed);
- * otherwise null (list-only story).
+ * model's coordinates when there is no match, or when the match lies more
+ * than FAR_MATCH_KM from them (a namesake: Toledo, Ohio for Toledo, Spain),
+ * shown as model-placed and, in the second case, carrying `farMatch` (the
+ * matched row's name); otherwise null (list-only story).
  */
 export function resolveLocation({ placeName, lat, lon }, gazetteer) {
   const match = placeName ? resolvePlace(placeName, gazetteer) : null;
-  if (match) return match;
-  if (
+  const modelGaveCoordinates =
     Number.isFinite(lat) &&
     Number.isFinite(lon) &&
     Math.abs(lat) <= 90 &&
-    Math.abs(lon) <= 180
-  )
-    return {
-      lat,
-      lon,
-      precision: 'approximate',
-      method: 'model',
-      name: placeName || null,
-    };
-  return null;
+    Math.abs(lon) <= 180;
+  const modelLocation = () => ({
+    lat,
+    lon,
+    precision: 'approximate',
+    method: 'model',
+    name: placeName || null,
+  });
+  if (match) {
+    if (modelGaveCoordinates && distanceKm(match, { lat, lon }) > FAR_MATCH_KM)
+      return { ...modelLocation(), farMatch: match.name };
+    return match;
+  }
+  return modelGaveCoordinates ? modelLocation() : null;
 }
 
 /**
@@ -237,7 +244,9 @@ export function withComputedFields(
  * Updated stories take the model's fields and keep earlier citations that
  * no other story claimed in this run; new stories get minted ids; a story
  * whose citations all moved elsewhere is dropped. Untouched stories stay.
- * @returns {{stories: Array<object>, touched: Array<object>, created: number, updated: number}}
+ * `farMatches` counts touched stories the far-match guard moved to the
+ * model's coordinates.
+ * @returns {{stories: Array<object>, touched: Array<object>, created: number, updated: number, farMatches: number}}
  */
 export function mergeDigest({
   previous,
@@ -305,5 +314,11 @@ export function mergeDigest({
       );
     }
   }
-  return { stories: [...touched, ...stories], touched, created, updated };
+  return {
+    stories: [...touched, ...stories],
+    touched,
+    created,
+    updated,
+    farMatches: touched.filter((story) => story.location?.farMatch).length,
+  };
 }

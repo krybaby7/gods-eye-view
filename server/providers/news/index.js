@@ -7,6 +7,7 @@ import { defaultSourceRoot } from '../common/source-root.js';
 import { gdeltQueue as defaultGdeltQueue } from './fetchers/gdeltDomain.js';
 import { gdeltFileFeed as defaultGdeltFileFeed } from './fetchers/gdeltFiles.js';
 import { createNewsCollector } from './collector.js';
+import { assignHotspots } from './hotspots.js';
 import { loadNewsRegistry } from './registry.js';
 import { createNewsItemStore } from './store.js';
 import { DIGEST_MODEL, runDigest } from './digest/runner.js';
@@ -381,6 +382,7 @@ export function createNewsService(options = {}) {
       locatedCount: merged.stories.filter(
         (s) => s.status === 'open' && s.location,
       ).length,
+      farMatches: merged.farMatches,
       unassignedCount: unassigned.length,
       droppedItemIds: result.counts.droppedItemIds,
       duplicateItemIds: result.counts.duplicateItemIds,
@@ -579,7 +581,7 @@ export function createNewsService(options = {}) {
         theaters: await listTheaters(),
         items,
         citations,
-        stories,
+        stories: assignHotspots(stories, theater.gazetteer),
         lastRun: ctx.digest.lastRun(),
         lastDigest: ctx.digest.lastCompletedRun(),
         brief: ctx.digest.brief(),
