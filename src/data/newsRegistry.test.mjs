@@ -264,6 +264,40 @@ test('gazetteer rows keep an optional prompt flag, true or false', () => {
   );
 });
 
+test('a gazetteer row may link a region or water row as its hotspot, kept on the row', () => {
+  const list = sourcesById([source()]);
+  const rows = (hotspot) => [
+    { name: 'West Bank', lat: 31.95, lon: 35.25, precision: 'region' },
+    { name: 'Red Sea', lat: 20, lon: 38.5, precision: 'water' },
+    { name: 'Ramallah', lat: 31.9, lon: 35.2, precision: 'city' },
+    { name: 'Hebron', lat: 31.53, lon: 35.1, precision: 'city', hotspot },
+  ];
+  const loaded = validateNewsTheater(
+    theater({ gazetteer: rows('West Bank') }),
+    list,
+  );
+  assert.equal(loaded.gazetteer[3].hotspot, 'West Bank');
+  assert.ok(Object.isFrozen(loaded.gazetteer[3]));
+  // Rows without a link carry none.
+  assert.equal(Object.hasOwn(loaded.gazetteer[2], 'hotspot'), false);
+  assert.equal(
+    validateNewsTheater(theater({ gazetteer: rows('Red Sea') }), list)
+      .gazetteer[3].hotspot,
+    'Red Sea',
+  );
+  for (const [hotspot, why] of [
+    ['Nablus', /unknown hotspot/],
+    ['Ramallah', /region or water/],
+    ['', /hotspot/],
+    [7, /hotspot/],
+  ])
+    assert.throws(
+      () => validateNewsTheater(theater({ gazetteer: rows(hotspot) }), list),
+      why,
+      String(hotspot),
+    );
+});
+
 test('actor validation: unique ids, types and roles from the lists', () => {
   const list = sourcesById([source()]);
   const actor = (overrides = {}) => ({
