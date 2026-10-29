@@ -363,41 +363,41 @@ What is kept: the headline (up to 220 characters), a snippet of at most 300 char
 | `aljazeera` | [Al Jazeera English](https://www.aljazeera.com/) | reporting | international-regional | `rss` — www.aljazeera.com | Al Jazeera |
 | `haaretz` | [Haaretz](https://www.haaretz.com/) | reporting | israel-dissent | `rss` — www.haaretz.com | Haaretz |
 | `ynet` | [Ynetnews](https://www.ynetnews.com/) | reporting | israel-mainstream | `rss` — www.ynetnews.com | Ynetnews |
-| `timesofisrael` | [The Times of Israel](https://www.timesofisrael.com/) | reporting | israel-mainstream | `gdelt-domain` — `domainis:timesofisrael.com` | The Times of Israel |
-| `israelhayom` | [Israel Hayom](https://www.israelhayom.com/) | reporting | israel-right | `gdelt-domain` — `domainis:israelhayom.com` | Israel Hayom |
-| `972mag` | [+972 Magazine](https://www.972mag.com/) | local | israel-dissent | `gdelt-domain` — `domainis:972mag.com` | +972 Magazine |
-| `reuters` | [Reuters](https://www.reuters.com/world/middle-east/) | reporting | international-wire | `gdelt-domain` — `domainis:reuters.com` | Reuters |
-| `apnews` | [Associated Press](https://apnews.com/hub/middle-east) | reporting | international-wire | `gdelt-domain` — `domainis:apnews.com` | Associated Press |
+| `timesofisrael` | [The Times of Israel](https://www.timesofisrael.com/) | reporting | israel-mainstream | `link-only` | The Times of Israel |
+| `israelhayom` | [Israel Hayom](https://www.israelhayom.com/) | reporting | israel-right | `link-only` | Israel Hayom |
+| `972mag` | [+972 Magazine](https://www.972mag.com/) | local | israel-dissent | `link-only` | +972 Magazine |
+| `reuters` | [Reuters](https://www.reuters.com/world/middle-east/) | reporting | international-wire | `link-only` | Reuters |
+| `apnews` | [Associated Press](https://apnews.com/hub/middle-east) | reporting | international-wire | `link-only` | Associated Press |
 | `afp` | [Agence France-Presse](https://www.afp.com/en) | reporting | international-wire | `link-only` — not fetched | — |
 | `almonitor` | [Al-Monitor](https://www.al-monitor.com/) | reporting | international-regional | `rss` — www.al-monitor.com | Al-Monitor |
 | `amwaj` | [Amwaj.media](https://amwaj.media/) | reporting | international-regional | `rss` — amwaj.media | Amwaj.media |
 | `middleeasteye` | [Middle East Eye](https://www.middleeasteye.net/) | reporting | international-regional | `rss` — www.middleeasteye.net | Middle East Eye |
-| `newarab` | [The New Arab](https://www.newarab.com/) | reporting | international-regional | `gdelt-domain` — `domainis:newarab.com` | The New Arab |
-| `alarabiya` | [Al Arabiya](https://english.alarabiya.net/) | reporting | gulf | `gdelt-domain` — `domainis:alarabiya.net` | Al Arabiya |
-| `lorienttoday` | [L'Orient Today](https://today.lorientlejour.com/) | local | lebanon | `gdelt-domain` — `domainis:lorientlejour.com` | L'Orient Today |
-| `almayadeen` | [Al Mayadeen](https://english.almayadeen.net/) | reporting | lebanon | `gdelt-domain` — `domainis:almayadeen.net` | Al Mayadeen |
+| `newarab` | [The New Arab](https://www.newarab.com/) | reporting | international-regional | `rss` — www.newarab.com | The New Arab |
+| `alarabiya` | [Al Arabiya](https://english.alarabiya.net/) | reporting | gulf | `link-only` | Al Arabiya |
+| `lorienttoday` | [L'Orient Today](https://today.lorientlejour.com/) | local | lebanon | `link-only` | L'Orient Today |
+| `almayadeen` | [Al Mayadeen](https://english.almayadeen.net/) | reporting | lebanon | `link-only` | Al Mayadeen |
 | `irna` | [IRNA](https://en.irna.ir/) | official | iran-state | `rss` — en.irna.ir | IRNA |
-| `tasnim` | [Tasnim News Agency](https://www.tasnimnews.com/en) | official | iran-revolutionary | `gdelt-domain` — `domainis:tasnimnews.com` | Tasnim |
-| `presstv` | [Press TV](https://www.presstv.ir/) | official | iran-state | `gdelt-domain` — `domainis:presstv.ir` | Press TV |
+| `tasnim` | [Tasnim News Agency](https://www.tasnimnews.com/en) | official | iran-revolutionary | `link-only` | Tasnim |
+| `presstv` | [Press TV](https://www.presstv.ir/) | official | iran-state | `rss` — www.presstv.ir | Press TV |
 | `iranintl` | [Iran International](https://www.iranintl.com/en) | reporting | iran-diaspora | `rss` — www.iranintl.com | Iran International |
 | `iranwire` | [IranWire](https://iranwire.com/en/) | local | iran-diaspora | `rss` — iranwire.com | IranWire |
 | `mondoweiss` | [Mondoweiss](https://mondoweiss.net/) | local | palestinian | `rss` — mondoweiss.net | Mondoweiss |
 | `dropsite` | [Drop Site News](https://www.dropsitenews.com/) | reporting | international-regional | `rss` — www.dropsitenews.com | Drop Site News |
-| `centcom` | [US Central Command](https://www.centcom.mil/MEDIA/PRESS-RELEASES/) | official | us-mil | `gdelt-domain` — `domainis:centcom.mil` | US Central Command |
+| `centcom` | [US Central Command](https://www.centcom.mil/MEDIA/PRESS-RELEASES/) | official | us-mil | `link-only` | US Central Command |
 | `whitehouse` | [The White House](https://www.whitehouse.gov/news/) | official | us-gov | `rss` — www.whitehouse.gov | The White House |
 | `statedept` | [US Department of State](https://www.state.gov/press-releases/) | official | us-gov | `link-only` — not fetched | — |
 | `idf` | [Israel Defense Forces (Telegram)](https://t.me/s/idfofficial) | official | israel-mil | `telegram-public` — t.me/s/idfofficial | Israel Defense Forces |
 | `almanar` | [Al-Manar](https://english.almanar.com.lb/) | armed-group | hezbollah | `rss` — english.almanar.com.lb | Al-Manar |
 | `almasirah` | [Al Masirah (Telegram)](https://t.me/s/almasirahnet) | armed-group | houthi | `telegram-public` — t.me/s/almasirahnet | Al Masirah |
 | `bellingcat` | [Bellingcat](https://www.bellingcat.com/) | verification | verification | `rss` — www.bellingcat.com | Bellingcat |
-| `afpfactcheck` | [AFP Fact Check](https://factcheck.afp.com/) | verification | verification | `gdelt-domain` — `domainis:factcheck.afp.com` | AFP Fact Check |
+| `afpfactcheck` | [AFP Fact Check](https://factcheck.afp.com/) | verification | verification | `link-only` | AFP Fact Check |
 | `airwars` | [Airwars](https://airwars.org/) | verification | verification | `rss` — airwars.org | Airwars |
 | `reliefweb` | [ReliefWeb (OCHA, WHO, Red Crescent reports)](https://reliefweb.int/) | humanitarian | un | `reliefweb` — PSE, LBN, IRN, ISR, YEM, SYR, IRQ | ReliefWeb (UN OCHA) |
 | `ochaopt` | [OCHA oPt](https://www.ochaopt.org/) | humanitarian | un | `link-only` — not fetched | — |
 | `iaea` | [IAEA](https://www.iaea.org/newscenter) | official | un | `rss` — www.iaea.org | IAEA |
 | `crisisgroup` | [International Crisis Group](https://www.crisisgroup.org/middle-east-north-africa) | analysis | analysis-crisis | `rss` — www.crisisgroup.org | International Crisis Group |
-| `isw` | [ISW and Critical Threats (CTP)](https://www.understandingwar.org/) | analysis | analysis-western | `gdelt-domain` — `domainis:understandingwar.org` | Institute for the Study of War |
-| `criticalthreats` | [Critical Threats (AEI)](https://www.criticalthreats.org/) | analysis | analysis-western | `gdelt-domain` — `domainis:criticalthreats.org` | Critical Threats Project |
+| `isw` | [ISW and Critical Threats (CTP)](https://www.understandingwar.org/) | analysis | analysis-western | `link-only` | Institute for the Study of War |
+| `criticalthreats` | [Critical Threats (AEI)](https://www.criticalthreats.org/) | analysis | analysis-western | `link-only` | Critical Threats Project |
 | `rusi` | [RUSI](https://www.rusi.org/explore-our-research) | analysis | analysis-western | `link-only` — not fetched | — |
 | `iiss` | [IISS](https://www.iiss.org/online-analysis/) | analysis | analysis-western | `link-only` — not fetched | — |
 | `bbcworld` | [BBC News (World)](https://www.bbc.com/news/world) | reporting | international-public | `rss` — feeds.bbci.co.uk | BBC News |

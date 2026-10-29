@@ -28,11 +28,13 @@ import {
   linkedStatement,
   statementHosts,
 } from '../../server/providers/news/fetchers/text.js';
+import { withTestGdeltSources } from '../testSupport/newsRoot.mjs';
 
 const readJson = (relative) =>
   JSON.parse(readFileSync(new URL(relative, import.meta.url), 'utf8'));
 const registry = readJson('../../public/news/sources.json');
 const theaterFile = readJson('../../public/news/theaters/iran-israel-us.json');
+const worldTheaterFile = readJson('../../public/news/theaters/world.json');
 
 const source = (id, transport, overrides = {}) => ({
   id,
@@ -408,16 +410,19 @@ test('GDELT groups keep every query, terms included, within the length limit', (
   );
 });
 
-test('the live theater and registry fit GDELT in groups under the limit', () => {
-  const groups = groupGdeltSources(registry.sources, theaterFile.gdeltTerms);
-  assert.ok(groups.length > 1);
-  for (const group of groups)
-    assert.ok(
-      buildGdeltDomainQuery(
-        group.map((s) => s.transport.domain),
-        theaterFile.gdeltTerms,
-      ).length <= GDELT_MAX_QUERY_CHARS,
-    );
+test('every theater keeps its GDELT terms within the query limit', () => {
+  const sources = withTestGdeltSources(registry.sources);
+  for (const terms of [theaterFile.gdeltTerms, worldTheaterFile.gdeltTerms]) {
+    const groups = groupGdeltSources(sources, terms);
+    assert.ok(groups.length >= 1);
+    for (const group of groups)
+      assert.ok(
+        buildGdeltDomainQuery(
+          group.map((s) => s.transport.domain),
+          terms,
+        ).length <= GDELT_MAX_QUERY_CHARS,
+      );
+  }
 });
 
 test('the GDELT queue spaces requests; after a 429 the whole queue waits', async () => {

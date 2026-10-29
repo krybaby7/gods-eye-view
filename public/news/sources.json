@@ -58,8 +58,8 @@
       "perspective": "israel-mainstream",
       "languages": ["en"],
       "starred": true,
-      "caution": "Bot-protected feed; arrives through the GDELT index with a link to the publisher.",
-      "transport": { "type": "gdelt-domain", "domain": "timesofisrael.com" },
+      "caution": "Israeli news site. No reachable feed on 2026-10-29 (its feed answers 403 to automated readers) and GDELT doesn't index it; listed as a link only.",
+      "transport": { "type": "link-only" },
       "credit": "The Times of Israel"
     },
     {
@@ -71,8 +71,8 @@
       "perspective": "israel-right",
       "languages": ["en", "he"],
       "starred": false,
-      "caution": "Free daily close to the Israeli right; bot-protected feed, arrives through GDELT.",
-      "transport": { "type": "gdelt-domain", "domain": "israelhayom.com" },
+      "caution": "Free daily close to the Israeli right. No reachable feed on 2026-10-29 (its feed answers 403 to automated readers) and GDELT doesn't index it; listed as a link only.",
+      "transport": { "type": "link-only" },
       "credit": "Israel Hayom"
     },
     {
@@ -84,8 +84,8 @@
       "perspective": "israel-dissent",
       "languages": ["en"],
       "starred": false,
-      "caution": "Israeli-Palestinian left-wing magazine; bot-protected feed, arrives through GDELT.",
-      "transport": { "type": "gdelt-domain", "domain": "972mag.com" },
+      "caution": "Israeli-Palestinian left-wing magazine. No reachable feed on 2026-10-29 (its feed answers 403 to automated readers) and GDELT doesn't index it; listed as a link only.",
+      "transport": { "type": "link-only" },
       "credit": "+972 Magazine"
     },
     {
@@ -97,8 +97,8 @@
       "perspective": "international-wire",
       "languages": ["en"],
       "starred": true,
-      "caution": "No public feed; arrives through GDELT with a link to the publisher.",
-      "transport": { "type": "gdelt-domain", "domain": "reuters.com" },
+      "caution": "Wire service. No reachable feed on 2026-10-29 (it publishes no public feed) and GDELT doesn't index it; listed as a link only.",
+      "transport": { "type": "link-only" },
       "credit": "Reuters"
     },
     {
@@ -110,8 +110,8 @@
       "perspective": "international-wire",
       "languages": ["en"],
       "starred": true,
-      "caution": "No public feed; arrives through GDELT with a link to the publisher.",
-      "transport": { "type": "gdelt-domain", "domain": "apnews.com" },
+      "caution": "Wire service. No reachable feed on 2026-10-29 (it publishes no public feed) and GDELT doesn't index it; listed as a link only.",
+      "transport": { "type": "link-only" },
       "credit": "Associated Press"
     },
     {
@@ -178,8 +178,8 @@
       "perspective": "international-regional",
       "languages": ["en", "ar"],
       "starred": false,
-      "caution": "Qatari-owned; bot-protected feed, arrives through GDELT.",
-      "transport": { "type": "gdelt-domain", "domain": "newarab.com" },
+      "caution": "Qatari-owned.",
+      "transport": { "type": "rss", "url": "https://www.newarab.com/rss" },
       "credit": "The New Arab"
     },
     {
@@ -191,8 +191,8 @@
       "perspective": "gulf",
       "languages": ["en", "ar"],
       "starred": false,
-      "caution": "Owned by the Saudi state-controlled MBC group; bot-protected feed, arrives through GDELT.",
-      "transport": { "type": "gdelt-domain", "domain": "alarabiya.net" },
+      "caution": "Owned by the Saudi state-controlled MBC group. No reachable feed on 2026-10-29 (its feed answers 403 to automated readers) and GDELT doesn't index it; listed as a link only.",
+      "transport": { "type": "link-only" },
       "credit": "Al Arabiya"
     },
     {
@@ -204,8 +204,8 @@
       "perspective": "lebanon",
       "languages": ["en", "fr"],
       "starred": true,
-      "caution": "Lebanese independent daily; no public feed located, arrives through GDELT.",
-      "transport": { "type": "gdelt-domain", "domain": "lorientlejour.com" },
+      "caution": "Lebanese independent daily. No reachable feed on 2026-10-29 (its feed answers 403 to automated readers) and GDELT doesn't index it; listed as a link only.",
+      "transport": { "type": "link-only" },
       "credit": "L'Orient Today"
     },
     {
@@ -217,8 +217,8 @@
       "perspective": "lebanon",
       "languages": ["en", "ar"],
       "starred": false,
-      "caution": "Beirut-based channel aligned with the Iran-led axis; bot-protected feed, arrives through GDELT.",
-      "transport": { "type": "gdelt-domain", "domain": "almayadeen.net" },
+      "caution": "Beirut-based channel aligned with the Iran-led axis. No reachable feed on 2026-10-29 (its feed answers 403 to automated readers) and GDELT doesn't index it; listed as a link only.",
+      "transport": { "type": "link-only" },
       "credit": "Al Mayadeen"
     },
     {
@@ -243,8 +243,8 @@
       "perspective": "iran-revolutionary",
       "languages": ["en", "fa"],
       "starred": false,
-      "caution": "Affiliated with the IRGC; bot-protected feed, arrives through GDELT.",
-      "transport": { "type": "gdelt-domain", "domain": "tasnimnews.com" },
+      "caution": "Affiliated with the IRGC. No reachable feed on 2026-10-29 (its domain did not resolve) and GDELT doesn't index it; listed as a link only.",
+      "transport": { "type": "link-only" },
       "credit": "Tasnim"
     },
     {
@@ -256,8 +256,8 @@
       "perspective": "iran-state",
       "languages": ["en"],
       "starred": false,
-      "caution": "Iranian state broadcaster's English channel; no public feed, arrives through GDELT.",
-      "transport": { "type": "gdelt-domain", "domain": "presstv.ir" },
+      "caution": "Iranian state broadcaster's English channel. Its feed carries no dates, so items are dated by when the app collected them.",
+      "transport": { "type": "rss", "url": "https://www.presstv.ir/rss.xml" },
       "credit": "Press TV"
     },
     {
@@ -324,8 +324,8 @@
       "perspective": "us-mil",
       "languages": ["en"],
       "starred": true,
-      "caution": "Party to the conflict; statements are participant claims. Its press-release RSS stopped updating in February 2026, so it arrives through GDELT.",
-      "transport": { "type": "gdelt-domain", "domain": "centcom.mil" },
+      "caution": "Party to the conflict; statements are participant claims. Its press-release RSS stopped updating in February 2026 and GDELT doesn't index it; listed as a link only.",
+      "transport": { "type": "link-only" },
       "credit": "US Central Command"
     },
     {
@@ -421,8 +421,8 @@
       "perspective": "verification",
       "languages": ["en", "ar", "fr"],
       "starred": false,
-      "caution": "Bot-protected feed; arrives through GDELT.",
-      "transport": { "type": "gdelt-domain", "domain": "factcheck.afp.com" },
+      "caution": "AFP's verification desk. No reachable feed on 2026-10-29 (its feed answers 403 to automated readers) and GDELT doesn't index it; listed as a link only.",
+      "transport": { "type": "link-only" },
       "credit": "AFP Fact Check"
     },
     {
@@ -505,8 +505,8 @@
       "perspective": "analysis-western",
       "languages": ["en"],
       "starred": false,
-      "caution": "US think tanks with a hawkish lens; bot-protected feeds, arrive through GDELT.",
-      "transport": { "type": "gdelt-domain", "domain": "understandingwar.org" },
+      "caution": "US think tanks with a hawkish lens. No reachable feed on 2026-10-29 (its feed answers 403 to automated readers) and GDELT doesn't index it; listed as a link only.",
+      "transport": { "type": "link-only" },
       "credit": "Institute for the Study of War"
     },
     {
@@ -518,8 +518,8 @@
       "perspective": "analysis-western",
       "languages": ["en"],
       "starred": false,
-      "caution": "Publishes the daily Iran Update with ISW; bot-protected feed, arrives through GDELT.",
-      "transport": { "type": "gdelt-domain", "domain": "criticalthreats.org" },
+      "caution": "Publishes the daily Iran Update with ISW. No reachable feed on 2026-10-29 (its feed answers 403 to automated readers) and GDELT doesn't index it; listed as a link only.",
+      "transport": { "type": "link-only" },
       "credit": "Critical Threats Project"
     },
     {

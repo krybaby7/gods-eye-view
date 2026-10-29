@@ -1014,5 +1014,6 @@
   "src/testSupport/fakeDocument.mjs",
   "src/testSupport/gdeltFiles.mjs",
   "src/testSupport/zipFixture.mjs",
+  "src/testSupport/newsRoot.mjs",
   "src/voice/refreshNews.test.mjs"
 ]
