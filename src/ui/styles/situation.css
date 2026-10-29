@@ -106,6 +106,26 @@
   color: var(--text-primary);
 }
 
+/* The place filter is on, so the chip reads like a pressed category chip with
+   the accent border; a long place name wraps instead of widening the rail. */
+.situation-place-filter {
+  display: flex;
+  margin-bottom: 6px;
+}
+
+.situation-place-filter[hidden] {
+  display: none;
+}
+
+.situation-place-chip {
+  max-width: 100%;
+  color: var(--text-primary);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
 .situation-swatch {
   flex: 0 0 auto;
   width: 9px;

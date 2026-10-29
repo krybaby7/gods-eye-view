@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  citedHiddenHint,
   citedItems,
   degradedSources,
   filterRawItems,
@@ -10,8 +11,10 @@ import {
   formatSituationTime,
   itemDigestState,
   listOnlyCount,
+  placeFilterChip,
   rawFilterOptions,
   refreshState,
+  storiesEmptyNote,
   tabCounts,
   verificationLabel,
 } from './situationPanelModel.js';
@@ -189,6 +192,79 @@ test('counts: tabs follow the category filter, folders include zeros, list-only 
     ]),
     2,
   );
+});
+
+test('the Stories tab count follows a list narrowed by the place filter', () => {
+  const placeFilter = { key: 'country:SD', label: 'Sudan' };
+  // The full snapshot() has three stories; the count reads visibleStories only.
+  assert.equal(tabCounts(snapshot()).stories, 1);
+  assert.equal(
+    tabCounts(
+      snapshot({
+        placeFilter,
+        visibleStories: [
+          { id: 'a', status: 'open' },
+          { id: 'd', status: 'open' },
+          { id: 'e', status: 'open' },
+          { id: 'f', status: 'closed' },
+        ],
+      }),
+    ).stories,
+    3,
+  );
+  assert.equal(
+    tabCounts(snapshot({ placeFilter, visibleStories: [] })).stories,
+    0,
+  );
+});
+
+test('place filter chip: label then a cross, named for clearing', () => {
+  assert.deepEqual(placeFilterChip({ key: 'country:SD', label: 'Sudan' }), {
+    text: 'Sudan ✕',
+    ariaLabel: 'Clear place filter: Sudan',
+  });
+  assert.equal(placeFilterChip(null), null);
+  assert.equal(placeFilterChip(undefined), null);
+});
+
+test('empty Stories note: names the place when a place filter is set', () => {
+  const placeFilter = { key: 'country:SD', label: 'Sudan' };
+  assert.equal(
+    storiesEmptyNote(snapshot({ visibleStories: [], placeFilter })),
+    'No stories in Sudan under these categories.',
+  );
+  assert.equal(
+    storiesEmptyNote(snapshot({ visibleStories: [], placeFilter: null })),
+    'No stories under these categories.',
+  );
+  assert.equal(
+    storiesEmptyNote(snapshot({ visibleStories: [] })),
+    'No stories under these categories.',
+  );
+  // Before any digest there is nothing to filter, so the first-run text stays.
+  assert.equal(
+    storiesEmptyNote(snapshot({ visibleStories: [], lastDigest: null })),
+    'No stories yet. Collected items are in the Raw feed; press Refresh to digest them.',
+  );
+  assert.equal(
+    storiesEmptyNote(
+      snapshot({ visibleStories: [], lastDigest: null, placeFilter }),
+    ),
+    'No stories yet. Collected items are in the Raw feed; press Refresh to digest them.',
+  );
+});
+
+test('cited hint: counts hidden stories and names the place filter when set', () => {
+  assert.equal(
+    citedHiddenHint(2, null),
+    '; 2 hidden by the category or actor filter',
+  );
+  assert.equal(
+    citedHiddenHint(2, { key: 'country:SD', label: 'Sudan' }),
+    '; 2 hidden by the category, actor or place filter',
+  );
+  assert.equal(citedHiddenHint(0, null), '');
+  assert.equal(citedHiddenHint(0, { key: 'country:SD', label: 'Sudan' }), '');
 });
 
 test('raw feed filters by folder, perspective and language', () => {

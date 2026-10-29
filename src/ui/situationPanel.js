@@ -9,6 +9,7 @@
 import {
   SITUATION_DISCLAIMER,
   SITUATION_FOLDER_LABELS,
+  citedHiddenHint,
   citedItems,
   degradedSources,
   filterRawItems,
@@ -17,8 +18,10 @@ import {
   formatSituationTime,
   itemDigestState,
   listOnlyCount,
+  placeFilterChip,
   rawFilterOptions,
   refreshState,
+  storiesEmptyNote,
   tabCounts,
   verificationLabel,
 } from './situationPanelModel.js';
@@ -137,13 +140,17 @@ export function createSituationPanel({
     role: 'tabpanel',
     'aria-labelledby': 'situation-tab-stories',
   });
+  const placeFilterRow = h('div', {
+    className: 'situation-place-filter',
+    hidden: true,
+  });
   const storiesNote = h('p', { className: 'situation-note' });
   const citedNote = h('p', { className: 'situation-cited-note', hidden: true });
   const storiesList = h('ul', {
     className: 'situation-stories',
     'aria-label': 'Stories',
   });
-  storiesPanel.append(storiesNote, citedNote, storiesList);
+  storiesPanel.append(placeFilterRow, storiesNote, citedNote, storiesList);
   const rawPanel = h('div', {
     id: 'situation-tabpanel-raw',
     className: 'situation-tabpanel',
@@ -603,18 +610,39 @@ export function createSituationPanel({
     ];
   }
 
+  /** "Sudan ✕" above the list while a bubble click has narrowed it. */
+  function renderPlaceFilter() {
+    const chip = placeFilterChip(snapshot.placeFilter);
+    const key = chip ? `${snapshot.placeFilter.key}|${chip.text}` : '';
+    placeFilterRow.hidden = !chip;
+    if (placeFilterRow.dataset.key === key) return;
+    placeFilterRow.dataset.key = key;
+    replaceChildren(
+      placeFilterRow,
+      chip
+        ? h('button', {
+            type: 'button',
+            className: 'situation-chip situation-place-chip data-toggle-chip',
+            'aria-label': chip.ariaLabel,
+            'data-focus-key': 'place-filter',
+            text: chip.text,
+            onClick: () => layer.setPlaceFilter(null),
+          })
+        : null,
+    );
+  }
+
   function renderStories() {
     const stories = snapshot.visibleStories || [];
     const listOnly = listOnlyCount(stories);
+    renderPlaceFilter();
     storiesNote.textContent = !snapshot.ready
       ? ''
       : stories.length
         ? listOnly
           ? `${listOnly === 1 ? '1 story has no pin and appears' : `${listOnly} stories have no pin and appear`} only here.`
           : ''
-        : snapshot.lastDigest
-          ? 'No stories under these categories.'
-          : 'No stories yet. Collected items are in the Raw feed; press Refresh to digest them.';
+        : storiesEmptyNote(snapshot);
     storiesNote.hidden = !storiesNote.textContent;
     renderCitedNote(stories);
     const seen = new Set();
@@ -664,7 +692,7 @@ export function createSituationPanel({
   function renderCitedNote(stories) {
     const shown = stories.filter((story) => citedIds.has(story.id)).length;
     const hidden = citedIds.size - shown;
-    const key = `${citedIds.size}|${shown}`;
+    const key = `${citedIds.size}|${shown}|${Boolean(snapshot.placeFilter)}`;
     citedNote.hidden = !citedIds.size;
     if (citedNote.dataset.key === key) return;
     citedNote.dataset.key = key;
@@ -675,7 +703,7 @@ export function createSituationPanel({
     replaceChildren(
       citedNote,
       `Highlighted: the ${citedIds.size === 1 ? 'story' : `${citedIds.size} stories`} this brief line cites`,
-      hidden ? `; ${hidden} hidden by the category or actor filter` : '',
+      citedHiddenHint(hidden, snapshot.placeFilter),
       ' · ',
       h('button', {
         type: 'button',

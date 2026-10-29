@@ -166,6 +166,33 @@ export function tabCounts(snapshot) {
   };
 }
 
+/**
+ * Place-filter chip over the Stories list: "Sudan ✕", or null with no filter.
+ * @param {?{key: string, label: string}} placeFilter
+ */
+export function placeFilterChip(placeFilter) {
+  if (!placeFilter) return null;
+  return {
+    text: `${placeFilter.label} ✕`,
+    ariaLabel: `Clear place filter: ${placeFilter.label}`,
+  };
+}
+
+/** Note for an empty Stories list; the place filter names itself when it emptied the list. */
+export function storiesEmptyNote(snapshot) {
+  if (!snapshot?.lastDigest)
+    return 'No stories yet. Collected items are in the Raw feed; press Refresh to digest them.';
+  return snapshot.placeFilter
+    ? `No stories in ${snapshot.placeFilter.label} under these categories.`
+    : 'No stories under these categories.';
+}
+
+/** Tail of the brief's cited-stories note for cited stories the filters hide. */
+export function citedHiddenHint(hidden, placeFilter) {
+  if (!hidden) return '';
+  return `; ${hidden} hidden by the ${placeFilter ? 'category, actor or place' : 'category or actor'} filter`;
+}
+
 /** Items per folder, in folder order, zeros included. */
 export function folderCounts(items) {
   const counts = Object.fromEntries(NEWS_FOLDERS.map((folder) => [folder, 0]));
