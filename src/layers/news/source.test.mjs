@@ -67,6 +67,38 @@ test('construction makes no request; snapshots carry theater and revision', asyn
   assert.equal(snapshot.stories[0].claims[0].status, 'reported');
 });
 
+test('a story keeps its server-computed hotspot; a malformed one is dropped', () => {
+  const location = {
+    lat: 31.53,
+    lon: 35.1,
+    precision: 'city',
+    method: 'gazetteer',
+    name: 'Hebron',
+  };
+  const hotspot = {
+    key: 'region:West Bank',
+    label: 'West Bank',
+    kind: 'region',
+    lat: 31.95,
+    lon: 35.25,
+  };
+  const { stories } = normalizeNewsSnapshot({
+    ...minimal,
+    stories: [
+      { id: 'a', title: 'A', location, hotspot },
+      { id: 'b', title: 'B', location, hotspot: { ...hotspot, lat: 99 } },
+      { id: 'c', title: 'C', location, hotspot: { ...hotspot, key: '' } },
+      { id: 'd', title: 'D', location, hotspot: { ...hotspot, kind: 'moon' } },
+      { id: 'e', title: 'E', location },
+    ],
+  });
+  assert.deepEqual(stories[0].hotspot, hotspot);
+  assert.deepEqual(
+    stories.slice(1).map((story) => story.hotspot),
+    [null, null, null, null],
+  );
+});
+
 test('unchanged and malformed answers', async () => {
   const unchanged = createNewsSource({
     fetchImpl: async () => Response.json({ unchanged: true, revision: '1.0' }),
