@@ -176,6 +176,8 @@ const CITY_NAMES = {
   Djibouti: 'Djibouti City',
   'Nur-Sultan': 'Astana',
   Victoria: 'Victoria, Seychelles',
+  // Natural Earth's English name for Ha'il is "Saudi Arabia".
+  Hail: "Ha'il",
 };
 const CITY_ALIASES = {
   'Washington, D.C.': ['Washington', 'Washington DC'],
@@ -224,11 +226,12 @@ const SEATS_OF_GOVERNMENT = new Set([
 /** Natural Earth country codes that differ between its two datasets. */
 const PLACE_A3 = { SSD: 'SDS' };
 /**
- * Natural Earth errata, by NE_ID: a village in Amapá that carries the
- * population of Vila Velha (Espírito Santo), which is kept; a Saudi Al
- * Hillah that carries the population of Hillah, Iraq, which is kept.
+ * Natural Earth errata, by NE_ID: places that carry another city's
+ * population, which is kept: a village in Amapá (Vila Velha, Espírito
+ * Santo), a Saudi Al Hillah (Hillah, Iraq) and an Algerian Arak (Arak,
+ * Iran).
  */
-const PLACE_ERRATA = new Set([1159148899, 1159128275]);
+const PLACE_ERRATA = new Set([1159148899, 1159128275, 1159149029]);
 
 /**
  * Spellings that also name another well-known place, so a match would put

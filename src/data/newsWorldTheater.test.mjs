@@ -325,7 +325,15 @@ test('a smaller city never takes the bare name of a better-known namesake', () =
   assert.equal(at('St. Petersburg'), 'Saint Petersburg');
   assert.equal(at('St. Petersburg, Florida'), 'St. Petersburg, Florida');
   assert.equal(at('Newcastle'), 'Newcastle upon Tyne');
-  // Natural Earth's Saudi "Al Hillah" carried Iraq's population.
+  // Natural Earth errata: an Algerian Arak and a Saudi Al Hillah carried
+  // the populations of Arak, Iran and Hillah, Iraq; Ha'il's English name
+  // was "Saudi Arabia".
+  assert.equal(at('Arak'), 'Arak');
+  assert.equal(
+    theater.gazetteer.find((entry) => entry.name === 'Arak').country,
+    'Iran',
+  );
+  assert.equal(at("Ha'il"), "Ha'il");
   assert.equal(at('Al Hillah'), 'Hillah');
   assert.equal(
     theater.gazetteer.find((entry) => entry.name === 'Hillah').country,
