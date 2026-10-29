@@ -13,7 +13,8 @@ continent. Pick the theater in the Situation panel's menu. It has three parts:
    those stories.
 3. **Map.** Each event story with a known place is one pin on the globe. The
    Situation panel shows the Brief, then lists every story and every
-   collected item.
+   collected item. Zoomed out, the pins give way to one bubble per country
+   or region (the [hotspot view](#hotspot-view)).
 
 **Headlines and stories are reporting, not verified incidents or risk
 rankings.** Everything below is about where a claim came from, never about
@@ -410,21 +411,55 @@ digest without running a digest, through `POST /api/news/brief`.
 **Storage.** The current and previous brief live in the theater's digest file
 (`.gev-cache/news/<theater>-digest.json`) next to the stories.
 
+## Hotspot view
+
+Zoomed out, the pins scatter and overlap where news is dense. Above 3,500 km
+the map draws one bubble per hotspot instead of one pin per story; below
+3,000 km it draws pins again, and in between it keeps what it shows, so
+zooming does not flicker. There is no button.
+
+- **A hotspot** is a country, or a named region or water from the theater's
+  gazetteer (Gaza Strip, West Bank, Donbas, Darfur, Kashmir, Red Sea and
+  others), so the map never decides who owns a disputed place. Code assigns
+  it on the server from the gazetteer, never the model: a town linked to a
+  region joins that region (Hebron → West Bank), a region or water joins
+  itself, any other place joins its country. A model-placed story takes the
+  nearest gazetteer place within 100 km; with none, it gets a bubble of its
+  own, shared with stories naming the same place.
+- **A bubble** shows how many visible stories it holds (its size, 22 px for
+  one story to 54 px at 25, and the number inside), a ring split by category
+  in the theater's colours, the white outline when it holds the selected
+  story, and the new-since dot. The category chips and the actor filter
+  change the counts; a bubble left with none disappears. Hovering shows the
+  place, its count, its three newest titles, and that the count is stories in
+  the latest digest, not severity: quiet places may be under-reported.
+- **Clicking a bubble** flies over its stories (never wider than a 1,000 km
+  radius, so the flight ends low enough for pins) and filters the Stories
+  list to that place. A chip above the list ("Sudan ✕") clears it, as do
+  switching theater, turning the layer off, or clicking another bubble.
+  The place filter narrows the list and the Stories tab count only; the pins,
+  the bubbles, the HUD and voice answers stay unfiltered. It is not kept in
+  share links.
+- **Frame theater** ends in bubbles for both theaters: in fixture QA, World
+  about 8,600 km up and Iran · Israel · US about 3,900 km up, just above the
+  3,500 km threshold.
+
 ## Who owns what
 
-| The model writes                | Code computes                                                                                                                                                                                                                                  |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Story title and summary         | **Location**: the gazetteer match for the model's place name first. Model coordinates are used only when nothing matches; the pin is then drawn with a dashed outline and labelled model-placed. Otherwise the story is list-only and counted. |
-| Category (one of six)           | **Perspectives**: the distinct perspectives of the cited items.                                                                                                                                                                                |
-| Place name and event time       | **Source count**: the distinct publishers among the cited items.                                                                                                                                                                               |
-| Which item ids it cites         | **Verification label**, for the story and for each claim, from the cited items only.                                                                                                                                                           |
-| Claims (text, actor, type, ids) | Which cited ids are real (each is checked against the store).                                                                                                                                                                                  |
-| What's new and contradictions   | Ids, open/closed status and retention.                                                                                                                                                                                                         |
+| The model writes                | Code computes                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Story title and summary         | **Location**: the gazetteer match for the model's place name first. Model coordinates are used when nothing matches, or when the match lies more than 500 km from the model's own coordinates (a namesake, such as Toledo, Ohio for Toledo, Spain; counted per run as `farMatches`); the pin is then drawn with a dashed outline and labelled model-placed. Otherwise the story is list-only and counted. |
+| Category (one of six)           | **Perspectives**: the distinct perspectives of the cited items.                                                                                                                                                                                                                                                                                                                                           |
+| Place name and event time       | **Source count**: the distinct publishers among the cited items.                                                                                                                                                                                                                                                                                                                                          |
+| Which item ids it cites         | **Verification label**, for the story and for each claim, from the cited items only.                                                                                                                                                                                                                                                                                                                      |
+| Claims (text, actor, type, ids) | Which cited ids are real (each is checked against the store).                                                                                                                                                                                                                                                                                                                                             |
+| What's new and contradictions   | Ids, open/closed status and retention.                                                                                                                                                                                                                                                                                                                                                                    |
+|                                 | **Hotspot**: the bubble a story joins, from the gazetteer (see [Hotspot view](#hotspot-view)).                                                                                                                                                                                                                                                                                                            |
 
 The model never returns URLs. Every link shown comes from a collected item.
 
 Each theater file carries its gazetteer. Iran · Israel · US has 259
-hand-compiled places with Hebrew, Arabic and Persian aliases; World has 876
+hand-compiled places with Hebrew, Arabic and Persian aliases; World has 1,874
 places generated from Natural Earth ([World theater](#world-theater)).
 Matching:
 
@@ -540,10 +575,12 @@ whom is never written into the actor list.
 | Brief call and checks          | `server/providers/news/digest/brief.js`                                      |
 | Actor roles over time (pure)   | `server/providers/news/digest/actors.js`                                     |
 | Code-owned story fields (pure) | `server/providers/news/digest/stories.js`                                    |
+| Hotspot grouping (pure)        | `server/providers/news/hotspots.js`                                          |
 | Stories, briefs, run history   | `server/providers/news/digest/store.js`                                      |
 | Coverage line (pure, shared)   | `src/layers/news/coverage.js`                                                |
 | Browser source and records     | `src/layers/news/source.js`, `records.js`                                    |
 | Layer: pins, cards, selection  | `src/layers/news/index.js`, `model.js`                                       |
+| Hotspot bubbles (pure)         | `src/layers/news/hotspots.js`                                                |
 | Situation panel                | `src/ui/situationPanel.js`, `situationPanelModel.js`, `styles/situation.css` |
 | Situation Brief section        | `src/ui/situationBrief.js`, `situationBriefModel.js`                         |
 | Fixture QA                     | `npm run qa:news:fixtures` (`scripts/qa-news.mjs`)                           |
@@ -570,12 +607,18 @@ labels, the Situation panel) except the Brief, which is off for it.
   other, so two Russian state outlets, or two Kenyan papers, count once.
 - **Gazetteer:** generated by `scripts/build-world-gazetteer.mjs` from
   Natural Earth (public domain): 209 countries and territories at Natural
-  Earth's label points, 205 capitals, 413 more cities of 1 million people or
-  more, and 49 named regions. 42 are political hotspots (Gaza Strip, West
+  Earth's label points, 205 capitals, 1,352 more cities of 300,000 people or
+  more, 59 conflict towns the threshold misses (Hebron, Khan Younis,
+  Bakhmut, El Fasher, Kadugli, Marib, Sumy and others, each with its
+  source), and 49 named regions. 42 are political hotspots (Gaza Strip, West
   Bank, Donbas, Crimea, Kashmir, Darfur, Sahel, Taiwan Strait, South China
   Sea, Nagorno-Karabakh, Tigray, Rakhine State and others); 7 stop a
   lookalike name from matching the wrong place (New Mexico, Washington
-  State, Northern Ireland, Gulf of Guinea and similar). Aliases are
+  State, Northern Ireland, Gulf of Guinea and similar). A city inside a
+  hotspot region carries a link to it (Donetsk → Donbas, El Fasher →
+  Darfur), which the [hotspot view](#hotspot-view) uses. A city that shares
+  its name with a better-known place below the threshold is qualified by
+  hand (Toledo, Ohio; Windsor, Canada). Aliases are
   Natural Earth's English, Arabic, Persian, Hebrew, Russian, Chinese,
   Spanish, French, Portuguese and native-language names. A spelling two
   places share is dropped or given to the country; a name that also means
@@ -587,7 +630,7 @@ labels, the Situation panel) except the Brief, which is off for it.
   would make the digest instructions about 30,000 characters long.
   Countries and capitals carry `prompt: true`, so the instructions list
   only those 414 names: about 8,400 characters in all, roughly 2,400
-  tokens. Code still matches the model's place name against all 876 places
+  tokens. Code still matches the model's place name against all 1,874 places
   and every alias.
 - **Cost:** a World Refresh with 400 new items sends about 180,000
   characters (roughly 50,000 input tokens). The two live Iran · Israel · US
@@ -629,4 +672,4 @@ labels, the Situation panel) except the Brief, which is off for it.
   - per-story deep dives with search;
   - correction tracking;
   - stored history beyond the retention above;
-  - a World brief and a zoomed-out hotspot view.
+  - a World brief.
