@@ -50,13 +50,17 @@ test('the real registry and theater files load and cross-validate', async () => 
   for (const id of registry.theater.sourceIds)
     assert.ok(registry.sourcesById.has(id), id);
   const transports = new Set(registry.sources.map((s) => s.transport.type));
-  for (const type of NEWS_TRANSPORTS) assert.ok(transports.has(type), type);
+  for (const type of transports)
+    assert.ok(NEWS_TRANSPORTS.includes(type), type);
+  for (const type of ['rss', 'telegram-public', 'reliefweb', 'link-only'])
+    assert.ok(transports.has(type), type);
   const folders = new Set(registry.sources.map((s) => s.folder));
   for (const folder of NEWS_FOLDERS) assert.ok(folders.has(folder), folder);
   assert.ok(registry.theater.gazetteer.length > 200);
-  // Bot-protected outlets never use a scraping transport.
+  // Bot-protected outlets are never scraped. GDELT indexes none of them
+  // (2026-10-29), so they are listed as links only.
   for (const id of ['timesofisrael', 'alarabiya', 'tasnim', 'isw'])
-    assert.equal(registry.sourcesById.get(id).transport.type, 'gdelt-domain');
+    assert.equal(registry.sourcesById.get(id).transport.type, 'link-only');
   assert.equal(
     registry.sourcesById.get('reliefweb').transport.type,
     'reliefweb',

@@ -11,6 +11,7 @@ import {
   newsProxy,
 } from '../../server/providers/news/index.js';
 import { gdeltDataResponse, gkgZip } from '../testSupport/gdeltFiles.mjs';
+import { newsRootWithGdelt } from '../testSupport/newsRoot.mjs';
 
 const NOW = Date.parse('2026-10-26T12:00:00Z');
 const KEY = 'pplx-fixture-secret';
@@ -235,6 +236,7 @@ async function setup(
   t.mock.method(console, 'log', () => {});
   const calls = [];
   const options = {
+    root: await newsRootWithGdelt(t),
     cacheDir,
     now: () => NOW,
     env: { PERPLEXITY_API_KEY: KEY, NEWS_GDELT_FILES: 'on', ...env },

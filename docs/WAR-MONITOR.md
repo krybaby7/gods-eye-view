@@ -79,8 +79,11 @@ Starting the dev server alone fetches nothing.
 | `reliefweb`       | 30 min  | ReliefWeb API v2 reports for the theater's countries. Off unless `RELIEFWEB_APPNAME` is set.                                                         |
 | `link-only`       | never   | Listed in the Raw feed folders as a link to the publisher.                                                                                           |
 
-Outlets whose feeds sit behind bot protection are never scraped. They arrive
-through GDELT with a link to the publisher.
+Outlets whose feeds sit behind bot protection are never scraped. The
+`gdelt-domain` transport can collect them through GDELT, but on 2026-10-29
+GDELT indexed none of the registered ones, so they are `link-only`: listed in
+the Raw feed folders as a link, and not counted as degraded. Switching one
+back is a one-field change in `public/news/sources.json`.
 
 ### GDELT outlets
 
@@ -130,9 +133,11 @@ per cycle. Neither path retries in a loop.
 **Coverage on 2026-10-28.** A full day of GKG files (96 files, 119,874 articles
 from 6,426 sites) held no article from any of the 15 registered GDELT outlets
 (Reuters, AP, Times of Israel, CENTCOM and the others), and the DOC API
-answered with 429s, timeouts and empty results. Until GDELT carries them
-again, these outlets deliver nothing; their sources still show ok, with 0
-items.
+answered with 429s, timeouts and empty results. On 2026-10-29 they were
+probed for a feed of their own: The New Arab and Press TV have one and moved
+to `rss`. The rest answered 403 to automated readers (Times of Israel, Israel
+Hayom, +972, Al Arabiya, L'Orient Today, Al Mayadeen, AFP Fact Check, ISW,
+Critical Threats), publish no feed (Reuters, AP, CENTCOM since February 2026) or did not resolve (Tasnim), and are now `link-only`.
 
 Each source reports its health: ok, error, blocked (401/403/451), rate
 limited, disabled, link-only, fragile, loading or stale. Stale means the last
@@ -617,7 +622,8 @@ labels, the Situation panel) except the Brief, which is off for it.
   or private) shows "no public preview". On 2026-10-28 that was
   `almasirahnet`.
 - **GDELT coverage.** See [Coverage on 2026-10-28](#gdelt-outlets): GDELT
-  currently carries none of the 15 GDELT outlets.
+  carries none of the registered outlets, so the 13 without a feed of their
+  own are listed as links only.
 - **Out of scope:**
   - evidence-nearby counts;
   - per-story deep dives with search;

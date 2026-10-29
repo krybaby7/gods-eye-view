@@ -28,11 +28,13 @@ import {
   linkedStatement,
   statementHosts,
 } from '../../server/providers/news/fetchers/text.js';
+import { withTestGdeltSources } from '../testSupport/newsRoot.mjs';
 
 const readJson = (relative) =>
   JSON.parse(readFileSync(new URL(relative, import.meta.url), 'utf8'));
 const registry = readJson('../../public/news/sources.json');
 const theaterFile = readJson('../../public/news/theaters/iran-israel-us.json');
+const worldTheaterFile = readJson('../../public/news/theaters/world.json');
 
 const source = (id, transport, overrides = {}) => ({
   id,
@@ -123,6 +125,19 @@ test('feed entries: RSS CDATA, escaped markup, entities, Atom links and language
   assert.equal(atom.entries[0].url, 'https://example.org/alt');
   assert.equal(atom.entries[0].description, 'Summary text');
   assert.equal(atom.entries[0].publishedAt, '2026-10-25T08:00:00.000Z');
+});
+
+test('feed entries read Drupal dates with a dash and no zone as UTC', () => {
+  const feed = (date) =>
+    parseFeedEntries(
+      `<rss><channel><item><title>T</title><link>https://x.example/1</link><pubDate>${date}</pubDate></item></channel></rss>`,
+    ).entries[0].publishedAt;
+  assert.equal(
+    feed('Friday, October 23, 2026 - 18:13'),
+    '2026-10-23T18:13:00.000Z',
+  );
+  assert.equal(feed('October 23, 2026 - 9:05'), '2026-10-23T09:05:00.000Z');
+  assert.equal(feed('not a date - 18:13'), null);
 });
 
 test('RSS fetcher returns candidates, inflates gzip bodies and never throws', async () => {
@@ -395,16 +410,19 @@ test('GDELT groups keep every query, terms included, within the length limit', (
   );
 });
 
-test('the live theater and registry fit GDELT in groups under the limit', () => {
-  const groups = groupGdeltSources(registry.sources, theaterFile.gdeltTerms);
-  assert.ok(groups.length > 1);
-  for (const group of groups)
-    assert.ok(
-      buildGdeltDomainQuery(
-        group.map((s) => s.transport.domain),
-        theaterFile.gdeltTerms,
-      ).length <= GDELT_MAX_QUERY_CHARS,
-    );
+test('every theater keeps its GDELT terms within the query limit', () => {
+  const sources = withTestGdeltSources(registry.sources);
+  for (const terms of [theaterFile.gdeltTerms, worldTheaterFile.gdeltTerms]) {
+    const groups = groupGdeltSources(sources, terms);
+    assert.ok(groups.length >= 1);
+    for (const group of groups)
+      assert.ok(
+        buildGdeltDomainQuery(
+          group.map((s) => s.transport.domain),
+          terms,
+        ).length <= GDELT_MAX_QUERY_CHARS,
+      );
+  }
 });
 
 test('the GDELT queue spaces requests; after a 429 the whole queue waits', async () => {
