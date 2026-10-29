@@ -311,6 +311,7 @@
       "server/providers/news/fetchers/text.js",
       "server/providers/news/fetchers/zip.js",
       "server/providers/news/geocode.js",
+      "server/providers/news/hotspots.js",
       "server/providers/news/index.js",
       "server/providers/news/registry.js",
       "server/providers/news/store.js",
@@ -1003,6 +1004,7 @@
       "src/data/inputOwnership.js",
       "src/layers/news/index.js",
       "src/layers/news/model.js",
+      "src/layers/news/hotspots.js",
       "src/layers/news/records.js",
       "src/layers/news/source.js"
     ],
@@ -2293,6 +2295,7 @@
       "src/app/layers/news.js",
       "src/layers/news/index.js",
       "src/layers/news/model.js",
+      "src/layers/news/hotspots.js",
       "src/layers/news/records.js",
       "src/layers/news/coverage.js",
       "src/layers/news/source.js",
@@ -2833,6 +2836,7 @@
       "src/app/layers/news.js",
       "src/layers/news/index.js",
       "src/layers/news/model.js",
+      "src/layers/news/hotspots.js",
       "src/layers/news/records.js",
       "src/layers/news/source.js"
     ],
