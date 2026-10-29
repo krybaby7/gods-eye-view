@@ -4,6 +4,7 @@ import {
   CITY_HOTSPOTS,
   CITY_MIN_POPULATION,
   HOTSPOTS,
+  PLACE_RENAMES,
   TOWNS,
   buildWorldGazetteer,
 } from '../../scripts/build-world-gazetteer.mjs';
@@ -49,6 +50,11 @@ const ne = {
     place('ESP', 'Testville', 450_000, 41.0, -1.0),
     place('ESP', 'Smallville', 200_000, 38.0, -2.0),
     place('USA', 'Toledo', 469_924, 41.67, -83.58, { adm1: 'Ohio' }),
+    // A Natural Earth erratum: the English name is another place's.
+    place('ESP', 'Oujda', 409_391, 34.69, -1.91, {
+      NE_ID: 1159149507,
+      NAME_EN: 'Taza',
+    }),
     place('PSX', 'Gaza City', 505_700, 31.53, 34.445),
     // A Natural Earth Rafah: the hand-written town duplicates it.
     place('PSX', 'Rafah', 350_000, 31.29, 34.25),
@@ -82,6 +88,7 @@ test('cities of 300,000 or more join the gazetteer (1 million before)', () => {
   // (Natural Earth's Rafah, which shares a town's name, is checked below.)
   assert.deepEqual(cities(after.gazetteer), [
     'Gaza City',
+    'Oujda',
     'Testville',
     'Toledo, Ohio',
   ]);
@@ -124,6 +131,16 @@ test('a hand-written town that duplicates a Natural Earth row is logged and drop
   assert.equal(rafah.length, 1);
   assert.equal(rafah[0].lat, 31.29, 'the Natural Earth row is kept');
   assert.equal(rafah[0].hotspot, 'Gaza Strip');
+});
+
+test('a row whose Natural Earth English name is wrong is renamed by NE_ID', () => {
+  const { gazetteer } = buildWorldGazetteer(ne);
+  assert.equal(PLACE_RENAMES.get(1159149507), 'Oujda');
+  const row = gazetteer.find((entry) => entry.name === 'Oujda');
+  assert.ok(row, 'the renamed row exists');
+  assert.ok(!row.aliases.includes('Taza'), 'the wrong English name is gone');
+  assert.equal(resolvePlace('Taza', gazetteer), null);
+  assert.equal(resolvePlace('Oujda', gazetteer)?.name, 'Oujda');
 });
 
 test('a namesake renamed by hand loses the bare spelling', () => {

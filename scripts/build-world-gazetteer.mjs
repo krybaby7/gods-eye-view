@@ -228,10 +228,26 @@ const PLACE_A3 = { SSD: 'SDS' };
 /**
  * Natural Earth errata, by NE_ID: places that carry another city's
  * population, which is kept: a village in Amapá (Vila Velha, Espírito
- * Santo), a Saudi Al Hillah (Hillah, Iraq) and an Algerian Arak (Arak,
- * Iran).
+ * Santo), a Saudi Al Hillah (Hillah, Iraq), an Algerian Arak (Arak, Iran)
+ * and a Sonoran Mazatán (Mazatlán, Sinaloa).
  */
-const PLACE_ERRATA = new Set([1159148899, 1159128275, 1159149029]);
+const PLACE_ERRATA = new Set([1159148899, 1159128275, 1159149029, 1159138371]);
+/**
+ * Natural Earth errata, by NE_ID, renamed: NAME_EN is another place's name
+ * (a governorate, a neighbour, a city 1,000 km away). Left alone, the
+ * 300,000 threshold would put these on the map under the wrong name
+ * ("Juarez" at Mazatlán, "Taza" at Oujda) and the real name would match
+ * nothing. The row keeps NAME as an alias and drops the wrong NAME_EN.
+ */
+export const PLACE_RENAMES = new Map([
+  [1159150011, 'Cuttack'], // NAME_EN "Pochinki"
+  [1159129345, 'Celaya'], // "Guanajuato", the state
+  [1159149507, 'Oujda'], // "Taza", 200 km away
+  [1159150755, 'Mazatlán'], // "Juarez"
+  [1159140381, 'Mansoura'], // "sharkia", the governorate
+  [1159142649, 'Al Amarah'], // "Thi Qar", the neighbouring governorate
+  [1159130209, 'Hangu'], // "Lunan", a Tangshan district
+]);
 
 /**
  * Spellings that also name another well-known place, so a match would put
@@ -1244,6 +1260,8 @@ export const CITY_HOTSPOTS = {
     'Kostiantynivka',
     'Chasiv Yar',
     'Toretsk',
+    'Horlivka',
+    'Makiivka',
   ],
   'Zaporizhzhia Oblast': [
     'Zaporizhzhia',
@@ -1383,7 +1401,9 @@ function placeRows(places, countriesByA3, log, minPopulation) {
       );
       continue;
     }
+    const renamed = PLACE_RENAMES.get(props.NE_ID);
     const name =
+      renamed ??
       PLACE_NAMES[neKey] ??
       CITY_NAMES[props.NAME] ??
       props.NAME_EN ??
@@ -1392,7 +1412,14 @@ function placeRows(places, countriesByA3, log, minPopulation) {
     const dedupe = `${a3}:${normalizePlaceName(name)}:${Math.round(props.LATITUDE)}`;
     if (seen.has(dedupe)) continue;
     seen.add(dedupe);
-    const bare = PLACE_NAMES[neKey] ? normalizePlaceName(props.NAME) : null;
+    // The spelling the row must not keep: a hand-renamed namesake drops its
+    // bare name, a renamed erratum drops the wrong English name in every
+    // language Natural Earth copied it into.
+    const bare = PLACE_NAMES[neKey]
+      ? normalizePlaceName(props.NAME)
+      : renamed
+        ? normalizePlaceName(props.NAME_EN)
+        : null;
     const spellings = strings(
       props.NAME,
       props.NAMEASCII,

@@ -292,6 +292,8 @@ test('towns, links and English spellings: fewer stories are model-placed', () =>
     ['Ramallah', 'Ramallah', 'West Bank'],
     ['Donetsk', 'Donetsk', 'Donbas'],
     ['Mariupol', 'Mariupol', 'Donbas'],
+    ['Horlivka', 'Horlivka', 'Donbas'],
+    ['Makiivka', 'Makiivka', 'Donbas'],
     ['Nyala', 'Nyala', 'Darfur'],
     ['Sevastopol', 'Sevastopol', 'Crimea'],
     ['Wonsan', 'Wonsan', null],
@@ -335,6 +337,26 @@ test('a smaller city never takes the bare name of a better-known namesake', () =
   );
   assert.equal(at("Ha'il"), "Ha'il");
   assert.equal(at('Al Hillah'), 'Hillah');
+  // Rows whose Natural Earth English name is another place's: renamed, the
+  // wrong name matching nothing, and the Sonoran "Mazatán" row dropped.
+  for (const [wrong, right] of [
+    ['Taza', 'Oujda'],
+    ['Juarez', 'Mazatlán'],
+    ['Pochinki', 'Cuttack'],
+    ['Guanajuato', 'Celaya'],
+    ['Thi Qar', 'Al Amarah'],
+    ['Lunan', 'Hangu'],
+  ]) {
+    assert.equal(at(right), right);
+    assert.notEqual(at(wrong), right, wrong);
+  }
+  assert.equal(at('Mansoura'), 'Mansoura');
+  assert.equal(at('El Mansura'), 'Mansoura');
+  assert.equal(at('Mazatán'), undefined);
+  assert.equal(
+    theater.gazetteer.find((entry) => entry.name === 'Mazatlán').country,
+    'Mexico',
+  );
   assert.equal(
     theater.gazetteer.find((entry) => entry.name === 'Hillah').country,
     'Iraq',
