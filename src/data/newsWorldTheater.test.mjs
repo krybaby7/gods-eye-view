@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import {
+  findDuplicateTowns,
+  linkCityHotspots,
+} from '../../scripts/build-world-gazetteer.mjs';
 import {
   GDELT_MAX_QUERY_CHARS,
   buildGdeltDomainQuery,
@@ -117,14 +122,19 @@ test('every World GDELT query stays within the length limit', () => {
     );
 });
 
-test('the gazetteer has every country, every capital, big cities and named hotspots', () => {
+test('the gazetteer has every country, every capital, cities from 300,000 and named hotspots', () => {
   const countries = rows('country');
   const capitals = rows('city').filter((row) => row.prompt);
   const cities = rows('city').filter((row) => !row.prompt);
   const hotspots = [...rows('region'), ...rows('water')];
   assert.ok(countries.length >= 195, `countries ${countries.length}`);
   assert.ok(capitals.length >= 190, `capitals ${capitals.length}`);
-  assert.ok(cities.length >= 300, `cities ${cities.length}`);
+  // About 1,350 Natural Earth cities at 300,000 plus the hand-written towns;
+  // a million-city gazetteer had about 410.
+  assert.ok(
+    cities.length >= 1300 && cities.length <= 1500,
+    `cities ${cities.length}`,
+  );
   assert.ok(
     hotspots.length >= 35 && hotspots.length <= 50,
     `hotspots ${hotspots.length}`,
@@ -149,8 +159,8 @@ test('World places resolve: countries, capitals, hotspots and other scripts', ()
     ['الخرطوم', 'Khartoum', 'city'],
     ['Ciudad de México', 'Mexico City', 'city'],
     ['Lagos, Nigeria', 'Lagos', 'city'],
-    // Goma is below a million in Natural Earth: its province is the place.
-    ['Goma, North Kivu', 'North Kivu', 'region'],
+    // Goma is a hand-written town: the city is finer than its province.
+    ['Goma, North Kivu', 'Goma', 'city'],
     ['Copenhagen', 'Copenhagen', 'city'],
     ['DR Congo', 'Democratic Republic of the Congo', 'country'],
     ['Gaza', 'Gaza Strip', 'region'],
@@ -270,4 +280,230 @@ test('the World digest instructions list countries and capitals only, within a b
   assert.doesNotMatch(places, /Москва/);
   // About 3,000 tokens at four characters a token.
   assert.ok(text.length < 13_000, `${text.length} characters`);
+});
+
+// The registry may not keep every field of a row: link assertions read the
+// committed files as they are.
+const readGazetteer = (name) =>
+  JSON.parse(
+    readFileSync(
+      new URL(`../../public/news/theaters/${name}.json`, import.meta.url),
+      'utf8',
+    ),
+  ).gazetteer;
+const worldRows = readGazetteer('world');
+const worldByName = new Map(worldRows.map((row) => [row.name, row]));
+
+test('the 300,000 threshold: counts by precision', () => {
+  const count = (test) => worldRows.filter(test).length;
+  assert.equal(
+    count((row) => row.precision === 'country'),
+    209,
+  );
+  assert.equal(
+    count((row) => row.precision === 'city' && row.prompt),
+    205,
+  );
+  // Natural Earth's 1,354 cities at 300,000, less the rows its data gets
+  // wrong (PLACE_ERRATA), plus the hand-written towns.
+  const cities = count((row) => row.precision === 'city' && !row.prompt);
+  assert.ok(cities >= 1380 && cities <= 1450, `cities ${cities}`);
+  assert.equal(
+    count((row) => ['region', 'water'].includes(row.precision)),
+    49,
+  );
+  // Only countries and capitals are listed in the digest instructions.
+  assert.ok(
+    worldRows
+      .filter((row) => row.prompt)
+      .every((row) => ['country', 'city'].includes(row.precision)),
+  );
+});
+
+test('the owner list of conflict towns resolves to a row of that name', () => {
+  const at = (spelling) => resolvePlace(spelling, theater.gazetteer);
+  for (const town of [
+    'Hebron',
+    'Jenin',
+    'Nablus',
+    'Tulkarm',
+    'Khan Younis',
+    'Rafah',
+    'Deir al-Balah',
+    'Bakhmut',
+    'Pokrovsk',
+    'El Fasher',
+    'Kadugli',
+    'Marib',
+    'Sumy',
+    'Kramatorsk',
+    'Geneina',
+    'Mekelle',
+    'Goma',
+    'Sittwe',
+    'Stepanakert',
+    'Tyre',
+    'Timbuktu',
+  ]) {
+    const hit = at(town);
+    assert.equal(hit?.name, town, town);
+    assert.equal(hit?.precision, 'city', town);
+    assert.equal(hit?.method, 'gazetteer', town);
+  }
+  assert.equal(at('Khankendi')?.name, 'Stepanakert');
+  // Cities the threshold brings in.
+  for (const city of ['Donetsk', 'Luhansk', 'Mariupol', 'Nyala', 'Ramallah'])
+    assert.equal(at(city)?.name, city, city);
+  // Natural Earth's spellings, reached by the English press spellings, and
+  // two places the first live run had to guess.
+  for (const [spelling, name] of [
+    ['El Obeid', 'Al-Ubayyid'],
+    ['Taizz', "Ta'izz"],
+    ['Taiz', "Ta'izz"],
+    ['Hodeidah', 'Al Hudaydah'],
+    ['Hudaydah', 'Al Hudaydah'],
+    ['Wonsan', 'Wonsan'],
+    ['Cebu City', 'Cebu City'],
+  ])
+    assert.equal(at(spelling)?.name, name, spelling);
+});
+
+test('a namesake of a better-known place is qualified, not pinned in the wrong country', () => {
+  const at = (spelling) => resolvePlace(spelling, theater.gazetteer);
+  assert.equal(at('Toledo'), null);
+  assert.equal(at('Toledo, Ohio')?.name, 'Toledo, Ohio');
+  assert.equal(at('Newcastle')?.name, 'Newcastle upon Tyne');
+  assert.equal(at('Santa Fe'), null);
+  // The Florida city must not take the common spelling from the Russian one.
+  assert.equal(at('St. Petersburg')?.name, 'Saint Petersburg');
+  assert.equal(at('St. Petersburg, Florida')?.name, 'St. Petersburg, Florida');
+  // Natural Earth English names that belong to another place are renamed.
+  assert.equal(at('Hail')?.name, 'Hail');
+  assert.equal(at('Celaya')?.name, 'Celaya');
+  assert.equal(at('Oujda')?.name, 'Oujda');
+  assert.ok(at('Mazatlán')?.lat > 22);
+  assert.equal(at('Ciudad Juárez')?.name, 'Ciudad Juárez');
+});
+
+test('CITY_HOTSPOTS landed: cities carry the region they lie in', () => {
+  const link = (name) => worldByName.get(name)?.hotspot;
+  for (const [city, region] of [
+    ['Hebron', 'West Bank'],
+    ['Ramallah', 'West Bank'],
+    ['Gaza City', 'Gaza Strip'],
+    ['Khan Younis', 'Gaza Strip'],
+    ['Donetsk', 'Donbas'],
+    ['Bakhmut', 'Donbas'],
+    ['El Fasher', 'Darfur'],
+    ['Nyala', 'Darfur'],
+    ['Kadugli', 'Kordofan'],
+    ['Al-Ubayyid', 'Kordofan'],
+    ['Sevastopol', 'Crimea'],
+    ['Zaporizhzhia', 'Zaporizhzhia Oblast'],
+    ['Kherson', 'Kherson Oblast'],
+    ['Mekelle', 'Tigray'],
+    ['Sittwe', 'Rakhine State'],
+    ['Goma', 'North Kivu'],
+    ['Srinagar', 'Kashmir'],
+    ['Stepanakert', 'Nagorno-Karabakh'],
+    ['Timbuktu', 'Sahel'],
+  ])
+    assert.equal(link(city), region, city);
+  // A town outside every region row has no link.
+  assert.equal(link('Sumy'), undefined);
+  assert.equal(link('Caracas'), undefined);
+});
+
+test('every hotspot link names a region or water row that has no link itself', () => {
+  const linked = worldRows.filter((row) => row.hotspot !== undefined);
+  assert.ok(linked.length >= 60, `${linked.length} linked rows`);
+  for (const row of linked) {
+    const target = worldByName.get(row.hotspot);
+    assert.ok(target, `${row.name} → ${row.hotspot}`);
+    assert.ok(['region', 'water'].includes(target.precision), row.name);
+    assert.equal(target.hotspot, undefined, `${row.name}: a chain`);
+    assert.equal(row.precision, 'city', `${row.name} is not a city`);
+  }
+  // The field follows the country in key order.
+  const hebron = Object.keys(worldByName.get('Hebron'));
+  assert.equal(hebron[hebron.indexOf('country') + 1], 'hotspot');
+});
+
+test('a hand-written town that duplicates a Natural Earth row is found', () => {
+  const rows = [
+    { name: 'Kherson', aliases: ['Херсон'], lat: 46.63, lon: 32.6 },
+    { name: 'Sumy', aliases: [], lat: 50.92, lon: 34.78 },
+  ];
+  const towns = [
+    // The same city, 3 km off, under its Russian spelling.
+    { name: 'Херсон', lat: 46.65, lon: 32.62 },
+    // A namesake 2,000 km away is not the same place.
+    { name: 'Sumy', lat: 40.0, lon: 60.0 },
+    { name: 'Bakhmut', lat: 48.59, lon: 38.0 },
+  ];
+  assert.deepEqual(findDuplicateTowns(towns, rows), [
+    'Херсон: same place as Kherson',
+  ]);
+  assert.deepEqual(findDuplicateTowns([towns[2]], rows), []);
+});
+
+test('a stale CITY_HOTSPOTS entry fails loudly', () => {
+  const fixture = () => [
+    { name: 'Gaza Strip', kind: 'hotspot', precision: 'region' },
+    { name: 'Red Sea', kind: 'hotspot', precision: 'water' },
+    { name: 'Hebron', kind: 'city', precision: 'city' },
+    { name: 'Gaza City', kind: 'city', precision: 'city' },
+    { name: 'Egypt', kind: 'country', precision: 'country' },
+  ];
+  const rows = fixture();
+  linkCityHotspots(rows, { Hebron: 'Gaza Strip', 'Gaza City': 'Red Sea' });
+  assert.deepEqual(
+    rows.map((row) => row.hotspot),
+    [undefined, undefined, 'Gaza Strip', 'Red Sea', undefined],
+  );
+  // No row carries the name.
+  assert.throws(
+    () => linkCityHotspots(fixture(), { Jenin: 'Gaza Strip' }),
+    /Jenin/,
+  );
+  // The target is not a region or water row, or does not exist.
+  assert.throws(
+    () => linkCityHotspots(fixture(), { Hebron: 'Egypt' }),
+    /Egypt/,
+  );
+  assert.throws(
+    () => linkCityHotspots(fixture(), { Hebron: 'West Bank' }),
+    /West Bank/,
+  );
+  // A link is for a city.
+  assert.throws(
+    () => linkCityHotspots(fixture(), { 'Gaza Strip': 'Red Sea' }),
+    /Gaza Strip/,
+  );
+});
+
+test('iran-israel-us links its existing rows to the regions that hold them', () => {
+  const rows = readGazetteer('iran-israel-us');
+  const byName = new Map(rows.map((row) => [row.name, row]));
+  for (const [place, region] of [
+    ['Gaza City', 'Gaza Strip'],
+    ['Jabalia', 'Gaza Strip'],
+    ['Khan Younis', 'Gaza Strip'],
+    ['Netzarim corridor', 'Gaza Strip'],
+    ['Philadelphi corridor', 'Gaza Strip'],
+    ['Hebron', 'West Bank'],
+    ['Jenin', 'West Bank'],
+    ['Bint Jbeil', 'Southern Lebanon'],
+    ['Baalbek', 'Bekaa Valley'],
+    ['Erbil', 'Kurdistan Region'],
+    ['Ahvaz', 'Khuzestan'],
+  ])
+    assert.equal(byName.get(place)?.hotspot, region, place);
+  // Unlinked: a place no region row holds.
+  assert.equal(byName.get('Tehran').hotspot, undefined);
+  for (const row of rows.filter((entry) => entry.hotspot !== undefined)) {
+    const target = byName.get(row.hotspot);
+    assert.ok(['region', 'water'].includes(target?.precision), row.name);
+    assert.equal(target.hotspot, undefined, `${row.name}: a chain`);
+  }
 });
