@@ -19,8 +19,20 @@ export const WORLD_FOCUS_FRAMING = Object.freeze({
     pitchDeg: -65,
     fitToRequest: true,
   }),
+  // A hotspot bubble: the request carries the radius enclosing its stories;
+  // capped so the flight always ends low enough for pins.
+  hotspot: Object.freeze({
+    radiusM: 600_000,
+    rangeM: 1_800_000,
+    pitchDeg: -65,
+    fitToRequest: true,
+    maxRadiusM: 1_000_000,
+  }),
 });
-/** Largest sphere a fitted request may frame (a theater, not a hemisphere). */
+/**
+ * Default largest sphere a fitted request may frame (a theater, not a
+ * hemisphere). A kind may set a tighter `maxRadiusM`.
+ */
 const MAX_FIT_RADIUS_M = 3_000_000;
 /** Standoff per metre of fitted radius, so the whole sphere stays in view. */
 const FIT_RANGE_PER_RADIUS = 3;
@@ -95,7 +107,8 @@ export function flyToWorldTarget(viewer, target = {}) {
       : WORLD_CLICK_FOCUS_DURATION_SEC;
   let { radiusM, rangeM } = framing;
   if (framing.fitToRequest && Number.isFinite(target.radiusM)) {
-    radiusM = Math.min(MAX_FIT_RADIUS_M, Math.max(radiusM, target.radiusM));
+    const maxRadiusM = framing.maxRadiusM ?? MAX_FIT_RADIUS_M;
+    radiusM = Math.min(maxRadiusM, Math.max(radiusM, target.radiusM));
     rangeM = Math.max(rangeM, radiusM * FIT_RANGE_PER_RADIUS);
   }
   camera.cancelFlight?.();

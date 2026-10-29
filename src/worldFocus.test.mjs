@@ -141,7 +141,13 @@ test('fires frame wider than vessels — a fire is read by its surroundings', ()
 
 test('every framing is a real oblique standoff, not a nadir or an inside-out sphere', () => {
   const kinds = Object.keys(WORLD_FOCUS_FRAMING);
-  assert.deepEqual(kinds.sort(), ['fire', 'story', 'theater', 'vessel']);
+  assert.deepEqual(kinds.sort(), [
+    'fire',
+    'hotspot',
+    'story',
+    'theater',
+    'vessel',
+  ]);
   for (const kind of kinds) {
     const framing = WORLD_FOCUS_FRAMING[kind];
     // Looking DOWN at the target, but obliquely — a nadir drop reads as a map.
@@ -154,15 +160,31 @@ test('every framing is a real oblique standoff, not a nadir or an inside-out sph
       `${kind}: range ${framing.rangeM} must stand off outside radius ${framing.radiusM}`,
     );
     // Objects are framed close in; a news story's place is a city or region;
-    // a theater is every located story.
+    // a theater is every located story; a hotspot is one country or region.
     const maxRangeM =
-      kind === 'theater' ? 1_000_000 : kind === 'story' ? 150_000 : 10000;
+      kind === 'theater'
+        ? 1_000_000
+        : kind === 'hotspot'
+          ? 2_000_000
+          : kind === 'story'
+            ? 150_000
+            : 10000;
     assert.ok(framing.rangeM <= maxRangeM, `${kind}: range must stay close-in, got ${framing.rangeM}`);
   }
   // Exact shipped values — a silent retune must show up as a failing test.
   assert.deepEqual({ ...WORLD_FOCUS_FRAMING.vessel }, { radiusM: 150, rangeM: 1200, pitchDeg: -30 });
   assert.deepEqual({ ...WORLD_FOCUS_FRAMING.fire }, { radiusM: 400, rangeM: 3000, pitchDeg: -35 });
   assert.deepEqual({ ...WORLD_FOCUS_FRAMING.story }, { radiusM: 4000, rangeM: 90_000, pitchDeg: -55 });
+  assert.deepEqual(
+    { ...WORLD_FOCUS_FRAMING.hotspot },
+    {
+      radiusM: 600_000,
+      rangeM: 1_800_000,
+      pitchDeg: -65,
+      fitToRequest: true,
+      maxRadiusM: 1_000_000,
+    },
+  );
 });
 
 test('a theater frames the sphere its request carries, within a floor and a ceiling', () => {
@@ -186,6 +208,41 @@ test('a theater frames the sphere its request carries, within a floor and a ceil
     { kind: 'story', id: 'news:a', position: POSITION, radiusM: 9e6 },
   );
   assert.equal(camera.calls.flights[0].sphere.radius, 4000);
+});
+
+test('a hotspot frames the bubble it carries, within its floor and its own cap', () => {
+  const fly = (kind, radiusM) => {
+    const camera = stubCamera();
+    flyToWorldTarget(
+      { camera },
+      { kind, id: 'hotspot:x', position: POSITION, radiusM },
+    );
+    const { sphere, options } = camera.calls.flights[0];
+    return [sphere.radius, options.offset.range];
+  };
+  assert.deepEqual(fly('hotspot', 800_000), [800_000, 2_400_000]);
+  assert.deepEqual(
+    fly('hotspot', 100_000),
+    [600_000, 1_800_000],
+    'one story: the floor',
+  );
+  assert.deepEqual(
+    fly('hotspot', 5e6),
+    [1_000_000, 3_000_000],
+    'the per-kind cap, not the theater cap',
+  );
+  assert.deepEqual(fly('hotspot', undefined), [600_000, 1_800_000]);
+  const camera = stubCamera();
+  flyToWorldTarget(
+    { camera },
+    { kind: 'hotspot', id: 'hotspot:x', position: POSITION, radiusM: 800_000 },
+  );
+  assert.equal(
+    camera.calls.flights[0].options.offset.pitch,
+    Cesium.Math.toRadians(-65),
+  );
+  // The theater keeps the global 3,000 km ceiling, not the hotspot cap.
+  assert.deepEqual(fly('theater', 2e6), [2_000_000, 6_000_000]);
 });
 
 test('unknown kinds and missing viewers issue no flight', () => {
