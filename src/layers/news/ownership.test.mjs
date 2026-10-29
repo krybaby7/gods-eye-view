@@ -869,6 +869,7 @@ test('bubble mode draws no story cards and registers no entity contexts', async 
   h.setHeight(2_000_000);
   assert.deepEqual([...h.contexts.keys()], ['news:a', 'news:b']);
   assert.equal(h.lastCards()[0].variant, 'selected');
+  assert.equal(h.selectedContext(), 'news:a');
 });
 
 test('hovering a bubble shows its card; clicking it flies there and filters the list', async () => {

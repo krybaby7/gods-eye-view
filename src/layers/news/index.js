@@ -293,6 +293,13 @@ export function createNewsLayer({
       renderPins();
       renderCards();
       registerContexts();
+      // Bubble mode dropped the contexts; the selected pin is shared again.
+      const entity = _selectedId && _entities.get(_selectedId);
+      try {
+        if (entity) context.selectEntityContext?.(entity);
+      } catch {
+        /* context store unavailable */
+      }
     }
     return true;
   }
