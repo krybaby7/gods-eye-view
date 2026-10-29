@@ -24,14 +24,13 @@ function decodeBody(bytes, contentType) {
 }
 
 /**
- * One bounded upstream read for the news fetchers. The deadline covers the
- * body; gzip bodies served without Content-Encoding (`.xml.gz` feeds) are
- * inflated under the same byte cap. Never logs the URL or the body.
+ * One bounded upstream read as raw bytes. The deadline covers the body.
+ * `url` is where redirects ended. Never logs the URL or the body.
  * @param {string} url
  * @param {{fetchImpl?: Function, timeoutMs?: number, maxBytes?: number, headers?: object, method?: string, body?: string, signal?: AbortSignal}} [options]
- * @returns {Promise<{status: number, ok: boolean, text: string, headers: Headers}>}
+ * @returns {Promise<{status: number, ok: boolean, bytes: Uint8Array, url: string, headers: Headers}>}
  */
-export async function fetchNewsBody(url, options = {}) {
+export async function fetchNewsBytes(url, options = {}) {
   const {
     fetchImpl = (...args) => globalThis.fetch(...args),
     timeoutMs = DEFAULT_TIMEOUT_MS,
@@ -54,24 +53,47 @@ export async function fetchNewsBody(url, options = {}) {
       ...headers,
     },
   });
+  const finalUrl = response.url || url;
   if (!response.ok) {
     void response.body?.cancel?.().catch(() => {});
     return {
       status: response.status,
       ok: false,
-      text: '',
+      bytes: new Uint8Array(0),
+      url: finalUrl,
       headers: response.headers,
     };
-  }
-  let bytes = await readResponseBytesCapped(response, maxBytes, combined);
-  if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
-    bytes = gunzipSync(bytes, { maxOutputLength: maxBytes });
   }
   return {
     status: response.status,
     ok: true,
-    text: decodeBody(bytes, response.headers?.get?.('content-type')),
+    bytes: await readResponseBytesCapped(response, maxBytes, combined),
+    url: finalUrl,
     headers: response.headers,
+  };
+}
+
+/**
+ * One bounded upstream read for the news fetchers, decoded as text. gzip
+ * bodies served without Content-Encoding (`.xml.gz` feeds) are inflated under
+ * the same byte cap. Never logs the URL or the body.
+ * @param {string} url
+ * @param {Parameters<typeof fetchNewsBytes>[1]} [options]
+ * @returns {Promise<{status: number, ok: boolean, text: string, url: string, headers: Headers}>}
+ */
+export async function fetchNewsBody(url, options = {}) {
+  const response = await fetchNewsBytes(url, options);
+  const { bytes, ...rest } = response;
+  if (!response.ok) return { ...rest, text: '' };
+  const inflated =
+    bytes[0] === 0x1f && bytes[1] === 0x8b
+      ? gunzipSync(bytes, {
+          maxOutputLength: options.maxBytes ?? DEFAULT_MAX_BYTES,
+        })
+      : bytes;
+  return {
+    ...rest,
+    text: decodeBody(inflated, response.headers?.get?.('content-type')),
   };
 }
 

@@ -191,6 +191,21 @@ test('the disk cache round-trips and malformed caches are ignored', async (t) =>
   assert.equal(empty.size(), 0);
 });
 
+test('collection cursors, such as the last GDELT file read, survive a restart', async (t) => {
+  const { store, cacheDir } = await withStore(t);
+  assert.equal(store.cursor('gdeltFiles'), null);
+  store.setCursor('gdeltFiles', '20261028210000');
+  await store.save();
+  const again = createNewsItemStore({
+    theaterId: 'fixture',
+    cacheDir,
+    now: () => NOW,
+  });
+  await again.load();
+  assert.equal(again.cursor('gdeltFiles'), '20261028210000');
+  assert.equal(again.cursor('other'), null);
+});
+
 test('concurrent saves never leave a torn cache', async (t) => {
   const { store, cacheDir } = await withStore(t);
   const writes = [];

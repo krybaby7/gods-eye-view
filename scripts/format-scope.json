@@ -993,6 +993,7 @@
   "src/data/newsDigestRunner.test.mjs",
   "src/data/newsDigestStore.test.mjs",
   "src/data/newsFetchers.test.mjs",
+  "src/data/newsGdeltFiles.test.mjs",
   "src/data/newsGeocode.test.mjs",
   "src/data/newsLayerState.test.mjs",
   "src/data/newsProxy.test.mjs",
@@ -1011,5 +1012,7 @@
   "src/ui/situationBrief.test.mjs",
   "src/ui/situationBriefModel.test.mjs",
   "src/testSupport/fakeDocument.mjs",
+  "src/testSupport/gdeltFiles.mjs",
+  "src/testSupport/zipFixture.mjs",
   "src/voice/refreshNews.test.mjs"
 ]

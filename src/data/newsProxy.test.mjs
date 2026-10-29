@@ -4,20 +4,49 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import { createGdeltQueue } from '../../server/providers/news/fetchers/gdeltDomain.js';
+import { createGdeltFileFeed } from '../../server/providers/news/fetchers/gdeltFiles.js';
 import {
   createNewsService,
   newsProxy,
 } from '../../server/providers/news/index.js';
 import { localProviderPlugins } from '../../server/providers/local.js';
+import { gdeltDataResponse, gkgZip } from '../testSupport/gdeltFiles.mjs';
 
 const NOW = Date.parse('2026-10-26T12:00:00Z');
+const GDELT_STAMP = '20261026114500';
+const GDELT_DOMAINS = JSON.parse(
+  readFileSync(
+    new URL('../../public/news/sources.json', import.meta.url),
+    'utf8',
+  ),
+)
+  .sources.filter((source) => source.transport.type === 'gdelt-domain')
+  .map((source) => source.transport.domain);
 
-/** Upstream double: every feed answers with two unique headlines. */
+/**
+ * Upstream double: every feed answers with two unique headlines, and GDELT's
+ * newest file carries one headline per GDELT outlet (older files are absent).
+ */
 function fakeUpstream(calls = []) {
+  const gdelt = {
+    latest: GDELT_STAMP,
+    files: {
+      [GDELT_STAMP]: gkgZip(
+        GDELT_STAMP,
+        GDELT_DOMAINS.map((domain) => [
+          `https://${domain}/a`,
+          `${domain} report on Iran`,
+        ]),
+      ),
+    },
+  };
   return async (raw) => {
     const url = new URL(raw);
     calls.push(url);
+    if (url.hostname === 'data.gdeltproject.org')
+      return gdeltDataResponse(url, gdelt);
     if (url.hostname === 't.me')
       return new Response(
         `<div class="tgme_widget_message js-widget_message" data-post="${url.pathname.split('/').pop()}/9"><div class="tgme_widget_message_text js-message_text">Channel post</div><time datetime="2026-10-26T11:00:00+00:00"></time></div>`,
@@ -52,9 +81,10 @@ async function service(t, overrides = {}) {
   const news = createNewsService({
     cacheDir,
     now: () => NOW,
-    env: {},
+    env: { NEWS_GDELT_FILES: 'on' },
     fetchImpl: fakeUpstream(calls),
     gdeltQueue: createGdeltQueue({ sleep: async () => {} }),
+    gdeltFiles: createGdeltFileFeed({ log: () => {} }),
     timers: {
       setInterval(fn, ms) {
         const handle = { fn, ms, cleared: false };
@@ -99,9 +129,20 @@ test('first snapshot starts collection; items, sources and health follow', async
   // ReliefWeb stays off without an appname; link-only sources are never fetched.
   assert.ok(!calls.some((url) => url.hostname === 'api.reliefweb.int'));
   assert.ok(!calls.some((url) => url.hostname === 'www.afp.com'));
-  // Every GDELT domain query carries at most ten domains.
-  for (const url of calls.filter((u) => u.hostname === 'api.gdeltproject.org'))
-    assert.ok(url.searchParams.get('query').match(/domainis:/g).length <= 10);
+  // GDELT outlets come from the 15-minute files, not the search API.
+  assert.ok(!calls.some((url) => url.hostname === 'api.gdeltproject.org'));
+  assert.deepEqual(
+    calls
+      .filter((url) => url.hostname === 'data.gdeltproject.org')
+      .map((url) => url.pathname),
+    [
+      '/gdeltv2/lastupdate.txt',
+      '/gdeltv2/20261026110000.gkg.csv.zip',
+      '/gdeltv2/20261026111500.gkg.csv.zip',
+      '/gdeltv2/20261026113000.gkg.csv.zip',
+      '/gdeltv2/20261026114500.gkg.csv.zip',
+    ],
+  );
 
   const snapshot = await news.snapshot('iran-israel-us');
   assert.ok(snapshot.items.length > 30);
@@ -135,6 +176,44 @@ test('first snapshot starts collection; items, sources and health follow', async
   assert.equal(status.theaters[0].sources.blocked, 1);
   await news.stop();
   assert.equal(intervals[0].cleared, true);
+});
+
+test('by default GDELT outlets use the search API, ten domains at most', async (t) => {
+  const { news, calls } = await service(t, {
+    env: {},
+  });
+  await news.snapshot('iran-israel-us');
+  await (await news.context('iran-israel-us')).collector.collectAll();
+  assert.ok(!calls.some((url) => url.hostname === 'data.gdeltproject.org'));
+  const queries = calls.filter((u) => u.hostname === 'api.gdeltproject.org');
+  assert.ok(queries.length > 1);
+  for (const url of queries)
+    assert.ok(url.searchParams.get('query').match(/domainis:/g).length <= 10);
+  const rows = new Map(
+    (await news.snapshot('iran-israel-us')).sources.map((row) => [row.id, row]),
+  );
+  assert.equal(rows.get('timesofisrael').health.ok, true);
+  assert.equal(rows.get('timesofisrael').health.count, 1);
+  await news.stop();
+});
+
+test('GDELT outlets report one clear error when the files fail', async (t) => {
+  const upstream = fakeUpstream();
+  const { news } = await service(t, {
+    fetchImpl: async (raw) =>
+      new URL(raw).hostname === 'data.gdeltproject.org'
+        ? new Response('', { status: 503 })
+        : upstream(raw),
+  });
+  await news.snapshot('iran-israel-us');
+  await (await news.context('iran-israel-us')).collector.collectAll();
+  const reuters = (await news.snapshot('iran-israel-us')).sources.find(
+    (row) => row.id === 'reuters',
+  ).health;
+  assert.equal(reuters.ok, false);
+  assert.equal(reuters.error, 'GDELT files: lastupdate.txt HTTP 503');
+  assert.equal(reuters.degraded, true);
+  await news.stop();
 });
 
 test('a feed that answers with only old entries is quiet, stale and degraded', async (t) => {
@@ -181,6 +260,33 @@ test('a restart serves cached items before any upstream answers', async (t) => {
   });
   const snapshot = await restarted.snapshot('iran-israel-us');
   assert.equal(snapshot.items.length, count);
+  await restarted.stop();
+});
+
+test('a restart does not read the same GDELT files again', async (t) => {
+  const { news, cacheDir } = await service(t);
+  await news.snapshot('iran-israel-us');
+  await (await news.context('iran-israel-us')).collector.collectAll();
+  await news.stop();
+  const calls = [];
+  const restarted = createNewsService({
+    cacheDir,
+    now: () => NOW,
+    env: { NEWS_GDELT_FILES: 'on' },
+    fetchImpl: fakeUpstream(calls),
+    gdeltFiles: createGdeltFileFeed({ log: () => {} }),
+    timers: { setInterval: () => ({}), clearInterval() {} },
+  });
+  await restarted.snapshot('iran-israel-us');
+  await (await restarted.context('iran-israel-us')).collector.collectAll();
+  const read = calls
+    .filter((url) => url.hostname === 'data.gdeltproject.org')
+    .map((url) => url.pathname);
+  assert.ok(read.includes('/gdeltv2/lastupdate.txt'));
+  assert.deepEqual(
+    read.filter((pathname) => pathname.endsWith('.gkg.csv.zip')),
+    [],
+  );
   await restarted.stop();
 });
 

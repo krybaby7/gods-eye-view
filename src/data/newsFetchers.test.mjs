@@ -263,6 +263,88 @@ test('Telegram previews parse into canonical message URLs and snippets', async (
   assert.equal(changed.status.error, 'preview markup not found');
 });
 
+// Two posts from t.me/s/idfofficial on 2026-10-28 (a photo-only post, then a
+// text post), trimmed of the avatar, bubble tail and image URLs.
+const TELEGRAM_2026_10 = `<section class="tgme_channel_history js-message_history">
+<div class="tgme_widget_message_wrap js-widget_message_wrap"><div class="tgme_widget_message text_not_supported_wrap js-widget_message" data-post="idfofficial/19427" data-view="eyJjIjotMTM0MTAyODUxMSwicCI6MTk0MjcsInQiOjE3OTMyMjEyMzgsImgiOiI3ZGEwMzliOGI4ZWEyYTYzOWIifQ">
+  <div class="tgme_widget_message_bubble">
+    <div class="tgme_widget_message_author accent_color"><a class="tgme_widget_message_owner_name" href="https://t.me/idfofficial"><span dir="auto">Israel Defense Forces</span></a></div>
+<a class="tgme_widget_message_photo_wrap 5985528460673224383 1393614444_460000959" href="https://t.me/idfofficial/19427" style="width:800px;background-image:url('https://cdn4.telesco.pe/file/x.jpg')">
+  <div class="tgme_widget_message_photo" style="padding-top:56.25%"></div>
+</a>
+<div class="tgme_widget_message_footer compact js-message_footer">
+  <div class="tgme_widget_message_info short js-message_info">
+    <span class="tgme_widget_message_views">6.22K</span><span class="copyonly"> views</span><span class="tgme_widget_message_meta"><a class="tgme_widget_message_date" href="https://t.me/idfofficial/19427"><time datetime="2026-10-28T07:03:25+00:00" class="time">07:03</time></a></span>
+  </div>
+</div>
+  </div>
+</div></div>
+<div class="tgme_widget_message_wrap js-widget_message_wrap"><div class="tgme_widget_message text_not_supported_wrap js-widget_message" data-post="idfofficial/19432" data-view="eyJjIjotMTM0MTAyODUxMSwicCI6MTk0MzIsInQiOjE3OTMyMjEyMzgsImgiOiJkODFhNGZlNmMzNmRmZjU4NDgifQ">
+  <div class="tgme_widget_message_bubble">
+    <div class="tgme_widget_message_author accent_color"><a class="tgme_widget_message_owner_name" href="https://t.me/idfofficial"><span dir="auto">Israel Defense Forces</span></a></div>
+<div class="tgme_widget_message_text js-message_text" dir="auto">IDF: A short while ago, an interceptor was launched toward a suspicious aerial target identified in the area in which IDF soldiers are operating in southern Lebanon.<br/><br/>No sirens were sounded in accordance with protocol.</div>
+<div class="tgme_widget_message_footer compact js-message_footer">
+  <div class="tgme_widget_message_info short js-message_info">
+    <span class="tgme_widget_message_views">977</span><span class="copyonly"> views</span><span class="tgme_widget_message_meta"><a class="tgme_widget_message_date" href="https://t.me/idfofficial/19432"><time datetime="2026-10-28T20:38:40+00:00" class="time">20:38</time></a></span>
+  </div>
+</div>
+  </div>
+</div></div>
+</section>`;
+
+// What t.me/s/almasirahnet redirected to on 2026-10-28: the username's
+// contact page, which has no posts (trimmed).
+const TELEGRAM_CONTACT_PAGE = `<html><head><meta property="og:title" content="Telegram: Contact @almasirahnet"></head>
+<body><div class="tgme_page_wrap"><div class="tgme_page"><div class="tgme_page_description">If you have <strong>Telegram</strong>, you can contact <a class="tgme_username_link" href="tg://resolve?domain=almasirahnet">@almasirahnet</a> right away.</div>
+<div class="tgme_page_action"><a class="tgme_action_button_new" href="tg://resolve?domain=almasirahnet">Send Message</a></div></div></div></body></html>`;
+
+test('Telegram previews parse with the October 2026 markup', async () => {
+  assert.deepEqual(parseTelegramPreview(TELEGRAM_2026_10, 'idfofficial'), [
+    {
+      url: 'https://t.me/idfofficial/19432',
+      text: 'IDF: A short while ago, an interceptor was launched toward a suspicious aerial target identified in the area in which IDF soldiers are operating in southern Lebanon.\nNo sirens were sounded in accordance with protocol.',
+      publishedAt: '2026-10-28T20:38:40.000Z',
+    },
+  ]);
+  const idf = source(
+    'idf',
+    { type: 'telegram-public', channel: 'idfofficial' },
+    { folder: 'official', kind: 'state' },
+  );
+  const result = await fetchTelegramSource(idf, {
+    fetchImpl: async () =>
+      respond(TELEGRAM_2026_10, { headers: { 'content-type': 'text/html' } }),
+  });
+  assert.equal(result.status.ok, true);
+  assert.equal(result.items.length, 1);
+});
+
+test('a channel whose preview redirects away reports no public preview', async () => {
+  const almasirah = source(
+    'almasirah',
+    { type: 'telegram-public', channel: 'almasirahnet' },
+    { folder: 'armed-group', kind: 'participant', languages: ['ar'] },
+  );
+  const result = await fetchTelegramSource(almasirah, {
+    fetchImpl: async () => {
+      const response = respond(TELEGRAM_CONTACT_PAGE, {
+        headers: { 'content-type': 'text/html' },
+      });
+      // fetch followed t.me/s/almasirahnet → t.me/almasirahnet.
+      Object.defineProperty(response, 'url', {
+        value: 'https://t.me/almasirahnet',
+      });
+      return response;
+    },
+  });
+  assert.equal(result.status.ok, false);
+  assert.equal(
+    result.status.error,
+    'no public preview: t.me/s/almasirahnet redirects to a contact page',
+  );
+  assert.deepEqual(result.items, []);
+});
+
 test('GDELT domain queries group ten domains and quote multiword terms', () => {
   assert.equal(
     buildGdeltDomainQuery(['a.com', 'b.org'], ['Iran', 'Red Sea']),
@@ -325,34 +407,75 @@ test('the live theater and registry fit GDELT in groups under the limit', () => 
     );
 });
 
-test('the GDELT queue spaces requests and backs off after 429', async () => {
+test('the GDELT queue spaces requests; after a 429 the whole queue waits', async () => {
   let clock = 0;
   const sleeps = [];
   const queue = createGdeltQueue({
     spacingMs: 5500,
-    backoffMs: 60_000,
-    maxBackoffMs: 100_000,
+    backoffMs: 15 * 60_000,
+    maxBackoffMs: 60 * 60_000,
     now: () => clock,
     sleep: async (ms) => {
       sleeps.push(ms);
       clock += ms;
     },
   });
-  const order = [];
+  const sent = [];
   const task = (status) => async () => {
-    order.push(clock);
+    sent.push([clock, status]);
     return { status };
   };
-  await Promise.all([
+  const results = await Promise.all([
     queue.run(task(200)),
-    queue.run(task(429)),
     queue.run(task(429)),
     queue.run(task(200)),
     queue.run(task(200)),
   ]);
-  assert.deepEqual(order, [0, 5500, 65_500, 165_500, 171_000]);
-  assert.deepEqual(sleeps, [5500, 60_000, 100_000, 5500]);
+  // The two queued behind the 429 are never sent and never wait.
+  assert.deepEqual(sent, [
+    [0, 200],
+    [5500, 429],
+  ]);
+  assert.deepEqual(sleeps, [5500]);
+  assert.deepEqual(
+    results.map((result) => result.status),
+    [200, 429, 429, 429],
+  );
+  assert.equal(results[2].backoffUntil, 5500 + 15 * 60_000);
   assert.equal(queue.state().pending, 0);
+  // The pause doubles on each 429 in a row, up to an hour, and a success
+  // clears it.
+  const pauses = [];
+  for (const status of [429, 429, 429, 200]) {
+    clock = queue.state().backoffUntil;
+    await queue.run(task(status));
+    pauses.push(queue.state().backoffMs);
+  }
+  assert.deepEqual(pauses, [30 * 60_000, 60 * 60_000, 60 * 60_000, 0]);
+});
+
+test('one search request per group per cycle: a repeat reuses the answer', async () => {
+  let clock = 0;
+  const queue = createGdeltQueue({
+    now: () => clock,
+    sleep: async (ms) => {
+      clock += ms;
+    },
+  });
+  let sent = 0;
+  const task = async () => {
+    sent++;
+    return { status: 200, ok: true, text: '{}' };
+  };
+  const first = await queue.run(task, { key: 'group 1' });
+  clock += 60_000;
+  assert.equal(await queue.run(task, { key: 'group 1' }), first);
+  assert.equal(sent, 1);
+  await queue.run(task, { key: 'group 2' });
+  assert.equal(sent, 2);
+  clock += 14 * 60_000;
+  await queue.run(task, { key: 'group 1' });
+  assert.equal(sent, 3, 'the next cycle asks again');
 });
 
 test('GDELT domain results are attributed to sources by hostname', async () => {
@@ -407,19 +530,41 @@ test('GDELT domain results are attributed to sources by hostname', async () => {
       ['tasnim', true, 1],
     ],
   );
+  const throttledQueue = createGdeltQueue({
+    sleep: async () => {},
+    now: () => Date.parse('2026-10-28T21:00:00Z'),
+  });
   const throttled = await fetchGdeltDomainGroup(group, {
-    queue,
+    queue: throttledQueue,
     fetchImpl: async () => new Response('slow down', { status: 429 }),
   });
   assert.equal(throttled.statuses[0].rateLimited, true);
+  assert.equal(throttled.statuses[0].error, 'HTTP 429');
+  let sentDuringPause = false;
+  const paused = await fetchGdeltDomainGroup(group, {
+    terms: ['Iran'],
+    queue: throttledQueue,
+    fetchImpl: async () => {
+      sentDuringPause = true;
+      return Response.json({ articles: [] });
+    },
+  });
+  assert.equal(sentDuringPause, false);
+  assert.deepEqual(
+    paused.statuses.map((s) => [s.sourceId, s.rateLimited, s.error]),
+    [
+      ['alarabiya', true, 'GDELT: rate limited, next try after 21:15 UTC'],
+      ['tasnim', true, 'GDELT: rate limited, next try after 21:15 UTC'],
+    ],
+  );
   const text = await fetchGdeltDomainGroup(group, {
-    queue,
+    queue: createGdeltQueue({ sleep: async () => {} }),
     fetchImpl: async () =>
       new Response('Your search contained an invalid term'),
   });
   assert.match(text.statuses[0].error, /^GDELT: Your search/);
   const tooLong = await fetchGdeltDomainGroup(group, {
-    queue,
+    queue: createGdeltQueue({ sleep: async () => {} }),
     fetchImpl: async () =>
       new Response('Your query was too short or too long.'),
   });
