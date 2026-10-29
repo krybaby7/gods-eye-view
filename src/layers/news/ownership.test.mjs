@@ -943,11 +943,11 @@ test('clicking a bubble flies over its stories and filters the Stories list, not
   // Iran's bubble (32.4, 53.7) to Bandar Abbas and Tehran: about 640 km.
   assert.ok(request.radiusM > 550_000 && request.radiusM < 700_000);
   const snapshot = h.layer.getSnapshot();
-  assert.deepEqual(snapshot.placeFilter, { key: 'country:Iran', label: 'Iran' });
-  assert.deepEqual(
-    snapshot.visibleStories.map((s) => s.id).sort(),
-    ['a', 'e'],
-  );
+  assert.deepEqual(snapshot.placeFilter, {
+    key: 'country:Iran',
+    label: 'Iran',
+  });
+  assert.deepEqual(snapshot.visibleStories.map((s) => s.id).sort(), ['a', 'e']);
   assert.equal(snapshot.selectedStoryId, null, 'no story is selected');
   assert.deepEqual(h.layer.getParams(), { hiddenCategories: '' });
   // The map is not filtered.
