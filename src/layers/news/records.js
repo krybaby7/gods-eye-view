@@ -371,6 +371,8 @@ export function normalizeNewsSnapshot(payload) {
     theater: {
       id: payload.theater.id,
       name: text(payload.theater.name, 80) || payload.theater.id,
+      // Off only when the server says so (World): no Brief section.
+      situationBrief: payload.theater.situationBrief !== false,
       categories,
       perspectives,
       actors,

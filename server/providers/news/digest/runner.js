@@ -1,4 +1,4 @@
-import { placeNamesForPrompt } from '../geocode.js';
+import { hasPromptFlags, placeNamesForPrompt } from '../geocode.js';
 
 /**
  * One war monitor digest: assemble the input, make one Perplexity Agent API
@@ -174,12 +174,16 @@ export function buildDigestInstructions(theater) {
   const categories = theater.categories
     .map((category) => `- ${category.id}: ${category.label}`)
     .join('\n');
+  // A flagged gazetteer lists its main places only; the rest still match.
+  const places = hasPromptFlags(theater.gazetteer)
+    ? 'Gazetteer place names (the main places only; the gazetteer also knows cities and regions not listed here, so name the most specific place the items give):'
+    : 'Gazetteer place names (aliases in parentheses):';
   return [
     HANDLING_RULES,
     `Theater: ${theater.name}\n${theater.brief.join('\n\n')}`,
     `Categories:\n${categories}`,
     `Actors (id: name, aliases in parentheses):\n${actorListForPrompt(theater.actors) || '(none)'}`,
-    `Gazetteer place names (aliases in parentheses):\n${placeNamesForPrompt(theater.gazetteer).join('\n')}`,
+    `${places}\n${placeNamesForPrompt(theater.gazetteer).join('\n')}`,
   ].join('\n\n');
 }
 

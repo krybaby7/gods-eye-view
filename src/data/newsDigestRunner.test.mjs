@@ -199,6 +199,21 @@ test('instructions carry rules, brief, categories and place names but no coordin
   assert.equal(buildDigestInstructions(theater), text, 'stable across runs');
 });
 
+test('with prompt-flagged places the instructions list only those and say more are known', () => {
+  const text = buildDigestInstructions({
+    ...theater,
+    gazetteer: [
+      { ...theater.gazetteer[0], prompt: true },
+      theater.gazetteer[1],
+    ],
+  });
+  assert.match(text, /^Bandar Abbas$/m);
+  assert.doesNotMatch(text, /Khan Younis|Khan Yunis|بندرعباس/);
+  assert.match(text, /not listed here/);
+  // Without a flag the heading is unchanged.
+  assert.doesNotMatch(buildDigestInstructions(theater), /not listed here/);
+});
+
 test('the schema is strict: every object closed, every key required, nullables via anyOf', () => {
   const schema = digestSchema(['war-military']);
   const story = schema.properties.stories.items;

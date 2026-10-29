@@ -169,3 +169,24 @@ test('prompt names carry names and Latin aliases, never coordinates', () => {
   assert.match(real, /^Tehran \(Teheran\)$/m);
   assert.deepEqual(placeNamesForPrompt(null), []);
 });
+
+test('with prompt-flagged rows the prompt lists only those, by name; matching still uses every row', () => {
+  const flagged = [
+    { ...fixture[0], prompt: true },
+    fixture[1],
+    { ...fixture[2], prompt: true },
+    fixture[3],
+  ];
+  assert.deepEqual(placeNamesForPrompt(flagged), [
+    'Khan Younis',
+    'Natanz enrichment site',
+  ]);
+  // A truthy value that is not true flags nothing.
+  assert.equal(
+    placeNamesForPrompt([{ ...fixture[0], prompt: 'yes' }, fixture[1]]).length,
+    2,
+  );
+  assert.equal(resolvePlace('Gaza', flagged)?.name, 'Gaza Strip');
+  assert.equal(resolvePlace('خان يونس', flagged)?.name, 'Khan Younis');
+  assert.equal(resolvePlace('Beeri', flagged)?.name, "Be'eri");
+});

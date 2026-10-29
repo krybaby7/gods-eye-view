@@ -59,13 +59,24 @@ const THEATER = JSON.parse(
     'utf8',
   ),
 );
+// The World run uses the real World theater's categories and perspectives.
+const WORLD = JSON.parse(
+  readFileSync(
+    new URL('../public/news/theaters/world.json', import.meta.url),
+    'utf8',
+  ),
+);
+const THEATERS = [
+  { id: 'iran-israel-us', name: 'Iran · Israel · US' },
+  { id: 'world', name: 'World' },
+];
 const LAST_SEEN_KEY = 'godsEyeView.v1.situationLastSeen.iran-israel-us';
 const BRIEF_EXPANDED_KEY = 'godsEyeView.v1.situationBriefExpanded';
 
 function item(id, sourceId, folder, kind, perspective, title, extra = {}) {
   return {
     id,
-    theater: 'iran-israel-us',
+    theater: extra.theater || 'iran-israel-us',
     sourceId,
     folder,
     kind,
@@ -88,7 +99,7 @@ function item(id, sourceId, folder, kind, perspective, title, extra = {}) {
 function story(id, title, category, location, itemIds, extra = {}) {
   return {
     id,
-    theater: 'iran-israel-us',
+    theater: extra.theater || 'iran-israel-us',
     title,
     summary: extra.summary || `${title}. Sources differ on details.`,
     category,
@@ -515,7 +526,7 @@ export function fixtureSnapshot({
       drivers: THEATER.drivers,
       tracks: THEATER.tracks,
     },
-    theaters: [{ id: 'iran-israel-us', name: 'Iran · Israel · US' }],
+    theaters: THEATERS,
     items,
     citations: [],
     stories,
@@ -593,6 +604,317 @@ export function fixtureSnapshot({
   };
 }
 
+const region = (name, lat, lon) => ({
+  ...at(name, lat, lon),
+  precision: 'region',
+});
+
+/**
+ * The World theater after one digest: pins on every continent (two either
+ * side of the date line), a list-only development, a model-placed pin, and
+ * no Situation Brief.
+ */
+export function worldSnapshot() {
+  const w = { theater: 'world', digested: true };
+  const items = [
+    item(
+      'w-bbc',
+      'bbcworld',
+      'reporting',
+      'independent',
+      'international-public',
+      'Paramilitary assault reported on El Fasher',
+      { ...w, storyId: 'st_w_darfur' },
+    ),
+    item(
+      'w-dabanga',
+      'dabanga',
+      'local',
+      'independent',
+      'africa-press',
+      'Residents flee shelling in El Fasher',
+      { ...w, storyId: 'st_w_darfur' },
+    ),
+    item(
+      'w-telesur',
+      'telesur',
+      'official',
+      'state',
+      'venezuela-state',
+      'Caracas rally backs the government',
+      { ...w, storyId: 'st_w_caracas' },
+    ),
+    item(
+      'w-meduza',
+      'meduza',
+      'reporting',
+      'independent',
+      'eurasia-press',
+      'Shelling reported across Donbas',
+      { ...w, storyId: 'st_w_donbas' },
+    ),
+    item(
+      'w-tass',
+      'tass',
+      'official',
+      'state',
+      'russia-state',
+      'Defence ministry reports advances in Donbas',
+      { ...w, storyId: 'st_w_donbas' },
+    ),
+    item(
+      'w-rnz',
+      'rnzpacific',
+      'reporting',
+      'independent',
+      'asia-pacific-press',
+      'Fiji parliament debates electoral reform',
+      { ...w, storyId: 'st_w_suva' },
+    ),
+    item(
+      'w-rnz2',
+      'rnzpacific',
+      'reporting',
+      'independent',
+      'asia-pacific-press',
+      'Samoa sets a date for its election',
+      { ...w, storyId: 'st_w_apia' },
+    ),
+    item(
+      'w-hrw',
+      'hrw',
+      'humanitarian',
+      'humanitarian',
+      'ngo',
+      'Bangladesh: activists detained before protest',
+      { ...w, storyId: 'st_w_dhaka' },
+    ),
+    item(
+      'w-irrawaddy',
+      'irrawaddy',
+      'local',
+      'independent',
+      'asia-pacific-press',
+      'Aid cuts hit displaced families in Rakhine',
+      { ...w, storyId: 'st_w_rakhine' },
+    ),
+    item(
+      'w-unnews',
+      'unnews',
+      'humanitarian',
+      'humanitarian',
+      'un',
+      'Security Council renews sanctions regime',
+      { ...w, storyId: 'st_w_sanctions' },
+    ),
+    item(
+      'w-politico',
+      'politicous',
+      'reporting',
+      'independent',
+      'north-america-press',
+      'Georgia certifies its results',
+      { ...w, storyId: 'st_w_georgia' },
+    ),
+    item(
+      'w-crisis',
+      'crisisgroup',
+      'analysis',
+      'analysis',
+      'analysis-crisis',
+      'CrisisWatch: conflict risk alerts',
+      w,
+    ),
+    item(
+      'w-scmp',
+      'scmp',
+      'reporting',
+      'independent',
+      'asia-pacific-press',
+      'Hong Kong court hears appeal',
+      { theater: 'world' },
+    ),
+  ];
+  const s = (id, title, category, location, itemIds, extra = {}) =>
+    story(id, title, category, location, itemIds, {
+      theater: 'world',
+      ...extra,
+    });
+  const stories = [
+    s(
+      'st_w_darfur',
+      'Paramilitary assault reported on El Fasher',
+      'armed-conflict',
+      region('Darfur', 13.4, 24.4),
+      ['w-bbc', 'w-dabanga'],
+      {
+        verification: 'corroborated',
+        perspectives: ['international-public', 'africa-press'],
+        updated: 12,
+      },
+    ),
+    s(
+      'st_w_donbas',
+      'Shelling and advances reported in Donbas',
+      'armed-conflict',
+      region('Donbas', 48.53, 38.4),
+      ['w-meduza', 'w-tass'],
+      {
+        contradictions: [
+          'Meduza reports shelling of towns; TASS reports an advance.',
+        ],
+        verification: 'disputed',
+        perspectives: ['eurasia-press', 'russia-state'],
+        updated: 15,
+      },
+    ),
+    s(
+      'st_w_caracas',
+      'Rally in Caracas backs the government',
+      'protests-unrest',
+      at('Caracas', 10.5, -66.92),
+      ['w-telesur'],
+      {
+        verification: 'participant-claim',
+        perspectives: ['venezuela-state'],
+        updated: 20,
+      },
+    ),
+    s(
+      'st_w_suva',
+      'Fiji parliament debates electoral reform',
+      'elections-governance',
+      at('Suva', -18.13, 178.44),
+      ['w-rnz'],
+      { perspectives: ['asia-pacific-press'], updated: 25 },
+    ),
+    s(
+      'st_w_apia',
+      'Samoa sets a date for its election',
+      'elections-governance',
+      at('Apia', -13.84, -171.76),
+      ['w-rnz2'],
+      { perspectives: ['asia-pacific-press'], updated: 26 },
+    ),
+    s(
+      'st_w_dhaka',
+      'Activists detained in Dhaka before a protest',
+      'rights-justice',
+      at('Dhaka', 23.72, 90.41),
+      ['w-hrw'],
+      { perspectives: ['ngo'], updated: 30 },
+    ),
+    s(
+      'st_w_rakhine',
+      'Aid cuts hit displaced families in Rakhine',
+      'humanitarian',
+      region('Rakhine State', 20.27, 93.64),
+      ['w-irrawaddy'],
+      { perspectives: ['asia-pacific-press'], updated: 35 },
+    ),
+    s(
+      'st_w_sanctions',
+      'Security Council renews a sanctions regime',
+      'diplomacy-sanctions',
+      null,
+      ['w-unnews'],
+      { kind: 'development', perspectives: ['un'], updated: 40 },
+    ),
+    s(
+      'st_w_georgia',
+      'Georgia certifies its election results',
+      'elections-governance',
+      at('Georgia', 32.7, -83.4, 'model'),
+      ['w-politico'],
+      { perspectives: ['north-america-press'], updated: 45 },
+    ),
+  ];
+  const digest = {
+    id: 'run_w1',
+    status: 'ok',
+    startedAt: iso(12),
+    finishedAt: iso(12),
+    itemCount: 12,
+    costUsd: 0.47,
+  };
+  return {
+    revision: 'world-1',
+    retrievedAt: new Date().toISOString(),
+    theater: {
+      id: 'world',
+      name: 'World',
+      situationBrief: false,
+      categories: WORLD.categories,
+      perspectives: WORLD.perspectives,
+      actors: [],
+      drivers: [],
+      tracks: [],
+    },
+    theaters: THEATERS,
+    items,
+    citations: [],
+    stories,
+    lastRun: digest,
+    lastDigest: digest,
+    brief: null,
+    briefRun: null,
+    briefStatus: {
+      digestsBehind: null,
+      retryable: false,
+      retryDisabledReason: null,
+    },
+    sources: [
+      {
+        id: 'bbcworld',
+        name: 'BBC News (World)',
+        folder: 'reporting',
+        kind: 'independent',
+        perspective: 'international-public',
+        health: { ok: true },
+      },
+      {
+        id: 'tass',
+        name: 'TASS',
+        folder: 'official',
+        kind: 'state',
+        perspective: 'russia-state',
+        health: { ok: true },
+      },
+      {
+        id: 'reuters',
+        name: 'Reuters',
+        folder: 'reporting',
+        kind: 'independent',
+        perspective: 'international-wire',
+        health: {
+          ok: false,
+          rateLimited: true,
+          degraded: true,
+          error: 'HTTP 429',
+        },
+      },
+    ],
+    // The last brief anywhere cost 12¢; World shows no brief cost.
+    budget: {
+      dailyUsd: 2,
+      spentTodayUsd: 0.83,
+      remainingUsd: 1.17,
+      exhausted: false,
+      lastRunCostUsd: 0.47,
+      lastBriefCostUsd: 0.12,
+    },
+    digest: {
+      provider: 'Perplexity Agent API',
+      model: 'anthropic/claude-sonnet-5-5',
+      keyConfigured: true,
+      running: false,
+      startedAt: null,
+      disabledReason: null,
+      undigestedCount: 1,
+    },
+  };
+}
+
 /** Answer the news routes in the page; count digest posts. */
 async function serveFixtures(page, state) {
   await page.setRequestInterception(true);
@@ -652,6 +974,11 @@ async function serveFixtures(page, state) {
       return;
     }
     if (url.pathname === '/api/news' || url.pathname === '/api/news/') {
+      if (url.searchParams.get('theater') === 'world') {
+        state.worldGets++;
+        void json(200, worldSnapshot());
+        return;
+      }
       void json(
         200,
         fixtureSnapshot({
@@ -910,6 +1237,7 @@ async function main() {
       digestPosts: 0,
       briefFailed: false,
       briefPosts: 0,
+      worldGets: 0,
     };
     if (fixtures) {
       await serveFixtures(page, state);
@@ -1589,6 +1917,267 @@ async function main() {
           }
           await page.setViewport(VIEWPORT);
           await wait(800);
+        },
+      );
+
+    // World: the second theater, picked from the panel's theater menu.
+    const pickTheater = async (id) => {
+      await page.evaluate((value) => {
+        const select = document.querySelector(
+          '#situation-panel .situation-theater',
+        );
+        select.value = value;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }, id);
+      await waitFor(
+        page,
+        (value) =>
+          window.__godsEyeView.dataManager.layers
+            .get('news')
+            .module.getSnapshot().theater?.id === value,
+        id,
+        `the ${id} theater`,
+      );
+      await wait(400);
+    };
+    const WORLD_PINS = [
+      'st_w_apia',
+      'st_w_caracas',
+      'st_w_darfur',
+      'st_w_dhaka',
+      'st_w_donbas',
+      'st_w_georgia',
+      'st_w_rakhine',
+      'st_w_suva',
+    ];
+
+    if (fixtures)
+      await step(
+        'switching to World shows its pins, chips, stories and Raw feed, and no Brief',
+        async () => {
+          assert.equal(
+            await page.$eval(
+              '#situation-panel .situation-theater',
+              (n) => n.disabled,
+            ),
+            false,
+            'two theaters: the menu is live',
+          );
+          await pickTheater('world');
+          let s = await newsState(page);
+          assert.ok(state.worldGets > 0);
+          // Nothing carries over from the Iran run: no Refresh outcome, no
+          // brief-line highlight.
+          assert.equal(s.notice, '');
+          assert.equal(
+            await page.$eval(
+              '#situation-panel .situation-cited-note',
+              (n) => n.hidden,
+            ),
+            true,
+          );
+          assert.deepEqual([...s.pins].sort(), WORLD_PINS);
+          assert.equal(s.stats.listOnly, 1, 'the sanctions development');
+          assert.equal(s.rows.length, 9);
+          assert.deepEqual(
+            await page.$$eval('#situation-panel .situation-chip', (chips) =>
+              chips.map((chip) => chip.textContent),
+            ),
+            WORLD.categories.map((category) => category.label),
+          );
+          assert.equal(
+            await page.$eval(
+              '#situation-panel .situation-brief',
+              (n) => n.hidden,
+            ),
+            true,
+            'World has no Brief section',
+          );
+          assert.equal(
+            await page.$('#situation-panel .situation-brief-retry'),
+            null,
+          );
+          assert.match(
+            s.digestLine,
+            /^Digest \d\d:\d\d · 9 stories from 12 items · 1 unassigned · last run 47¢ · budget \$1\.17 left$/,
+          );
+          await shot(page, '21-world-stories');
+          // The model-placed pin and the corroborated story read as such.
+          await page.click(
+            '#situation-panel .situation-story[data-story-id="st_w_georgia"] .situation-story-head',
+          );
+          await wait(400);
+          await shot(page, '22-world-model-placed');
+          await page.evaluate(() =>
+            window.__godsEyeView.dataManager.layers
+              .get('news')
+              .module.clearSelection(),
+          );
+          // Category chips filter World pins and stories together.
+          await page.click('#situation-panel .situation-chip:first-child');
+          await wait(300);
+          s = await newsState(page);
+          assert.equal(s.params.hiddenCategories, 'armed-conflict');
+          assert.ok(!s.pins.includes('st_w_darfur'));
+          assert.ok(!s.rows.includes('st_w_donbas'));
+          await page.click('#situation-panel .situation-chip:first-child');
+          await wait(300);
+          assert.equal((await newsState(page)).params.hiddenCategories, '');
+          await page.click('#situation-tab-raw');
+          await waitFor(
+            page,
+            () => !document.getElementById('situation-tabpanel-raw')?.hidden,
+            null,
+            'the World raw tab',
+          );
+          // The folder picked in the Iran run stays picked; open Reporting.
+          await page.click('#situation-panel .situation-folder:nth-child(1)');
+          await wait(300);
+          const folders = await page.$$eval(
+            '#situation-panel .situation-folder',
+            (buttons) =>
+              buttons.map((b) => [
+                b.textContent,
+                b.getAttribute('aria-pressed'),
+              ]),
+          );
+          assert.equal(folders.length, 7);
+          assert.deepEqual(folders[0], ['Reporting 6', 'true']);
+          assert.equal(
+            (
+              await page.$$eval(
+                '#situation-tabpanel-raw .situation-item',
+                (rows) => rows.map((row) => row.dataset.itemId),
+              )
+            ).length,
+            6,
+          );
+          await shot(page, '23-world-raw-feed');
+          await page.click('#situation-tab-stories');
+        },
+      );
+
+    if (fixtures)
+      await step(
+        'Frame theater over World faces the side of the globe with most pins',
+        async () => {
+          const requests = await page.evaluate(
+            () =>
+              new Promise((resolve) => {
+                const seen = [];
+                const listener = (event) => seen.push(event.detail);
+                window.addEventListener('gev:world-request-focus', listener);
+                document
+                  .querySelector('#situation-panel .situation-frame')
+                  .click();
+                setTimeout(() => {
+                  window.removeEventListener(
+                    'gev:world-request-focus',
+                    listener,
+                  );
+                  resolve(
+                    seen.map(({ kind, radiusM, position: p }) => ({
+                      kind,
+                      radiusM: Math.round(radiusM),
+                      lon: (Math.atan2(p.y, p.x) * 180) / Math.PI,
+                    })),
+                  );
+                }, 200);
+              }),
+          );
+          assert.equal(requests.length, 1);
+          assert.equal(requests[0].kind, 'theater');
+          assert.ok(
+            requests[0].radiusM > 3_000_000,
+            String(requests[0].radiusM),
+          );
+          // The pins' average longitude (82°E): Africa, Europe and Asia,
+          // not the near-empty middle of the Pacific.
+          assert.ok(
+            Math.abs(requests[0].lon - 81.975) < 0.5,
+            String(requests[0].lon),
+          );
+          await wait(2500);
+          await shot(page, '24-world-frame-theater');
+        },
+      );
+
+    if (fixtures)
+      await step(
+        'World in the Cyber theme and at 720 px and 390 px fits without horizontal scroll',
+        async () => {
+          await page.evaluate(() => {
+            const select = document.getElementById('hud-layout-select');
+            select.value = 'cyber';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          });
+          await waitFor(
+            page,
+            () => document.documentElement.dataset.uiTheme === 'cyber',
+            null,
+            'the Cyber theme',
+          );
+          await wait(800);
+          let fit = await overflow(page);
+          assert.ok(fit.body <= 1, JSON.stringify(fit));
+          await shot(page, '25-world-cyber');
+          await page.evaluate(() => {
+            const select = document.getElementById('hud-layout-select');
+            select.value = 'tactical';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+          });
+          await wait(500);
+          for (const [width, height, name] of [
+            [720, 900, '26-world-720'],
+            [390, 844, '27-world-390'],
+          ]) {
+            await page.setViewport({ width, height });
+            await wait(1200);
+            fit = await overflow(page);
+            assert.ok(fit.page <= 0, `${width}px page: ${JSON.stringify(fit)}`);
+            assert.ok(
+              fit.body <= 1,
+              `${width}px panel: ${JSON.stringify(fit)}`,
+            );
+            assert.ok(
+              fit.panelWidth > 200,
+              `${width}px: ${JSON.stringify(fit)}`,
+            );
+            assert.ok(
+              fit.panelRight <= width + 1,
+              `${width}px: ${JSON.stringify(fit)}`,
+            );
+            await shot(page, name);
+          }
+          await page.setViewport(VIEWPORT);
+          await wait(800);
+        },
+      );
+
+    if (fixtures)
+      await step(
+        'switching back to Iran · Israel · US restores its Brief, pins and chips',
+        async () => {
+          await pickTheater('iran-israel-us');
+          const s = await newsState(page);
+          assert.ok(s.pins.includes('st_bandar'), JSON.stringify(s.pins));
+          assert.ok(!s.pins.some((id) => id.startsWith('st_w_')));
+          assert.equal(
+            await page.$eval(
+              '#situation-panel .situation-brief',
+              (n) => n.hidden,
+            ),
+            false,
+          );
+          assert.ok((await briefState(page)).headline);
+          assert.deepEqual(
+            await page.$$eval('#situation-panel .situation-chip', (chips) =>
+              chips.map((chip) => chip.textContent),
+            ),
+            CATEGORIES.map((category) => category.label),
+          );
+          assert.match(s.digestLine, / · brief \d+¢ · /);
+          await shot(page, '28-back-to-iran');
         },
       );
 

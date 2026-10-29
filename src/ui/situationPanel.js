@@ -711,6 +711,8 @@ export function createSituationPanel({
     const theaterId = snapshot.theater?.id;
     if (!theaterId || theaterId === seenTheaterId) return;
     seenTheaterId = theaterId;
+    // A brief line's highlight names the previous theater's stories.
+    citedIds.clear();
     let stored = null;
     try {
       stored = JSON.parse(storage?.getItem(lastSeenKey(theaterId)) || 'null');

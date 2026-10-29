@@ -145,14 +145,29 @@ export function resolvePlace(name, gazetteer) {
   return best ? hit(byKey.get(best.candidate)) : null;
 }
 
+/** Whether some rows are flagged for the prompt (`prompt: true`). */
+export function hasPromptFlags(gazetteer) {
+  return Array.isArray(gazetteer) && gazetteer.some((e) => e?.prompt === true);
+}
+
 /**
  * Gazetteer names for the digest instructions: each canonical name with its
- * Latin-script aliases. Coordinates never leave the server's code path.
- * @param {Array<{name: string, aliases?: string[]}>} gazetteer
+ * Latin-script aliases. When some rows carry `prompt: true` (World's
+ * gazetteer with its aliases would add about 21,000 characters to every
+ * digest), only those rows are listed, by name alone; matching still uses
+ * every row and alias.
+ * Coordinates never leave the server's code path.
+ * @param {Array<{name: string, aliases?: string[], prompt?: boolean}>} gazetteer
  * @returns {string[]}
  */
 export function placeNamesForPrompt(gazetteer) {
   if (!Array.isArray(gazetteer)) return [];
+  if (hasPromptFlags(gazetteer))
+    return gazetteer
+      .filter(
+        (entry) => entry.prompt === true && typeof entry.name === 'string',
+      )
+      .map((entry) => entry.name);
   const lines = [];
   for (const entry of gazetteer) {
     if (!entry || typeof entry.name !== 'string') continue;

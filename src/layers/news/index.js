@@ -31,6 +31,33 @@ function formatAge(ms) {
   const hours = Math.round(minutes / 60);
   return hours < 48 ? `${hours}h` : `${Math.round(hours / 24)}d`;
 }
+
+/**
+ * Frame theater's centre longitude. Within half the globe: the midpoint of
+ * the shortest span covering every pin (the plain midpoint for one region;
+ * pins either side of the antimeridian frame the Pacific, not the far
+ * side). Pins all round the world (World): their average longitude, so the
+ * frame faces the side of the globe that holds most of them.
+ */
+function frameCentreLon(lons) {
+  const sorted = [...lons].sort((a, b) => a - b);
+  let gap = sorted[0] + 360 - sorted.at(-1);
+  let start = sorted[0];
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] - sorted[i - 1] > gap) {
+      gap = sorted[i] - sorted[i - 1];
+      start = sorted[i];
+    }
+  }
+  const rad = Math.PI / 180;
+  const x = lons.reduce((sum, lon) => sum + Math.cos(lon * rad), 0);
+  const y = lons.reduce((sum, lon) => sum + Math.sin(lon * rad), 0);
+  // An even spread has no average; it keeps the span midpoint.
+  if (360 - gap > 180 && Math.hypot(x, y) > lons.length * 0.05)
+    return Math.atan2(y, x) / rad;
+  const centre = start + (360 - gap) / 2;
+  return centre > 180 ? centre - 360 : centre;
+}
 const ENTITY_PREFIX = 'news:';
 
 /**
@@ -567,7 +594,7 @@ export function createNewsLayer({
       const lats = pinned.map((story) => story.location.lat);
       const lons = pinned.map((story) => story.location.lon);
       const centre = Cesium.Cartesian3.fromDegrees(
-        (Math.min(...lons) + Math.max(...lons)) / 2,
+        frameCentreLon(lons),
         (Math.min(...lats) + Math.max(...lats)) / 2,
       );
       const radiusM = Math.max(
@@ -663,6 +690,8 @@ export function createNewsLayer({
       _selectedId = null;
       _hoverId = null;
       _actorId = null;
+      // The last Refresh outcome describes the other theater.
+      _digestOutcome = null;
       return fetchSnapshot({ force: true });
     },
 

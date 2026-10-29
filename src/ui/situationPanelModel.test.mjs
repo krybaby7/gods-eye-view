@@ -88,6 +88,22 @@ test('the digest line reads time, stories, items, unassigned, cost and budget', 
     ),
     'Digest 14:02 · 2 stories from 2 items · 1 unassigned · last run 18¢ · brief 12¢ · budget $1.30 left',
   );
+  // A theater with the Brief off does not show another theater's brief cost.
+  assert.equal(
+    formatDigestLine(
+      snapshot({
+        theater: { id: 'world', situationBrief: false },
+        budget: {
+          remainingUsd: 1.3,
+          lastRunCostUsd: 0.18,
+          lastBriefCostUsd: 0.12,
+        },
+      }),
+      NOW,
+      UTC,
+    ),
+    'Digest 14:02 · 2 stories from 2 items · 1 unassigned · last run 18¢ · budget $1.30 left',
+  );
   assert.equal(
     formatDigestLine(
       snapshot({

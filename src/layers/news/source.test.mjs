@@ -356,6 +356,20 @@ test('the snapshot carries the brief, its run and status, and the theater actors
   assert.deepEqual(bare.theater.actors, []);
 });
 
+test('the Situation Brief is on unless the theater says situationBrief: false', () => {
+  assert.equal(normalizeNewsSnapshot(minimal).theater.situationBrief, true);
+  const off = normalizeNewsSnapshot({
+    ...minimal,
+    theater: { ...minimal.theater, situationBrief: false },
+  });
+  assert.equal(off.theater.situationBrief, false);
+  const junk = normalizeNewsSnapshot({
+    ...minimal,
+    theater: { ...minimal.theater, situationBrief: 'no' },
+  });
+  assert.equal(junk.theater.situationBrief, true);
+});
+
 test('Retry brief posts to its own route; refusals are outcomes', async () => {
   let request;
   const ok = createNewsSource({

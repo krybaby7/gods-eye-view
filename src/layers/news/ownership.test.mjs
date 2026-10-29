@@ -444,6 +444,26 @@ test('hovering a pin shows its card with category, sources and verification', as
   ]);
 });
 
+test('switching theater drops the previous theater’s Refresh outcome', async () => {
+  const h = harness({
+    source: {
+      getSnapshot: async ({ theater } = {}) =>
+        normalizeNewsSnapshot(
+          payload({
+            theater: { id: theater || 'iran-israel-us', name: 'T', categories },
+          }),
+        ),
+      requestDigest: async () => ({ ok: true, run: { costUsd: 0.18 } }),
+    },
+  });
+  await h.layer.update();
+  await h.layer.requestDigest();
+  assert.ok(h.layer.getSnapshot().digest.outcome);
+  await h.layer.setTheater('world');
+  assert.equal(h.layer.getSnapshot().theater.id, 'world');
+  assert.equal(h.layer.getSnapshot().digest.outcome, null);
+});
+
 test('pins on the far side of the globe are hidden', async () => {
   const h = harness({
     cameraPosition: Cesium.Cartesian3.fromDegrees(-130, -28, 2e7),
@@ -702,6 +722,50 @@ test('Frame theater asks for one flight over every visible pin', async () => {
   h.layer.toggleCategory('humanitarian-casualties');
   assert.equal(h.layer.frameTheater(), false, 'no pin, no flight');
   assert.equal(h.focus.length, 1);
+});
+
+test('Frame theater centres on the pins across the antimeridian, and on most of them worldwide', async () => {
+  const pin = (id, lat, lon) =>
+    story(id, {
+      location: { lat, lon, precision: 'city', method: 'gazetteer', name: id },
+    });
+  const frame = async (stories) => {
+    const h = harness({
+      source: {
+        getSnapshot: async () => normalizeNewsSnapshot(payload({ stories })),
+        requestDigest: async () => ({ ok: true }),
+      },
+    });
+    await h.layer.update();
+    assert.equal(h.layer.frameTheater(), true);
+    const [request] = h.focus;
+    const centre = Cesium.Cartographic.fromCartesian(request.position);
+    return {
+      lat: Cesium.Math.toDegrees(centre.latitude),
+      lon: Cesium.Math.toDegrees(centre.longitude),
+      radiusM: request.radiusM,
+    };
+  };
+  // Suva and Apia sit either side of the antimeridian, 10° apart.
+  const pacific = await frame([
+    pin('suva', -18.13, 178.44),
+    pin('apia', -13.84, -171.76),
+  ]);
+  assert.ok(Math.abs(pacific.lon - -176.66) < 0.01, String(pacific.lon));
+  assert.ok(Math.abs(pacific.lat - -15.985) < 0.01, String(pacific.lat));
+  assert.ok(pacific.radiusM < 1_000_000, String(pacific.radiusM));
+  // Pins all round the world: the average longitude, so the frame faces
+  // the Atlantic side that holds four of the five, not the empty Pacific.
+  const world = await frame([
+    pin('washington', 38.9, -77.04),
+    pin('caracas', 10.5, -66.92),
+    pin('kyiv', 50.45, 30.52),
+    pin('khartoum', 15.59, 32.53),
+    pin('beijing', 39.93, 116.39),
+  ]);
+  assert.ok(Math.abs(world.lon - 1.431) < 0.01, String(world.lon));
+  assert.ok(Math.abs(world.lat - 30.475) < 0.01, String(world.lat));
+  assert.ok(world.radiusM > 3_000_000, String(world.radiusM));
 });
 
 test('Retry brief runs one brief, reloads and reports; it never overlaps a digest', async () => {

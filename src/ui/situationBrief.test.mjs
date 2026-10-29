@@ -669,6 +669,56 @@ test('with no brief yet the section says how one is made and still shows coverag
   assert.equal($('.situation-brief-meta'), null);
 });
 
+test('a theater with the Brief off shows no Brief section; switching back restores it', async () => {
+  const theaters = [
+    { id: 'iran-israel-us', name: 'Iran · Israel · US' },
+    { id: 'world', name: 'World' },
+  ];
+  const iran = payload({ theaters });
+  const world = payload({
+    revision: 'w1',
+    theater: {
+      id: 'world',
+      name: 'World',
+      situationBrief: false,
+      categories: [
+        { id: 'armed-conflict', label: 'Armed conflict', color: '#ef4444' },
+      ],
+      perspectives: [{ id: 'international-wire', label: 'International wire' }],
+    },
+    theaters,
+    stories: [story('st_w', { category: 'armed-conflict' })],
+    brief: null,
+    // A stale failure from another theater must not surface Retry brief.
+    briefRun: null,
+    briefStatus: { digestsBehind: null, retryable: true },
+  });
+  const { $, $$, layer } = await mount({
+    snapshot: iran,
+    source: {
+      getSnapshot: async ({ theater } = {}) =>
+        normalizeNewsSnapshot(theater === 'world' ? world : iran),
+    },
+  });
+  assert.equal($('.situation-brief').hidden, false);
+  // A brief line's highlight belongs to its theater's stories.
+  $('.situation-brief-headline').click();
+  assert.equal($('.situation-cited-note').hidden, false);
+  await layer.setTheater('world');
+  assert.equal($('.situation-brief').hidden, true);
+  assert.equal($('.situation-cited-note').hidden, true);
+  assert.deepEqual(
+    $$('.situation-story').map((row) => row.dataset.storyId),
+    ['st_w'],
+  );
+  await layer.setTheater('iran-israel-us');
+  assert.equal($('.situation-brief').hidden, false);
+  assert.equal(
+    text($('.situation-brief-headline')),
+    'Strikes and talks continue in parallel.',
+  );
+});
+
 test('Frame theater flies once over the pins and is off without any', async () => {
   const { $, focus, layer } = await mount();
   const frame = $('.situation-frame');

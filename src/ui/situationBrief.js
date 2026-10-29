@@ -374,7 +374,8 @@ export function createSituationBrief({
 
   function render(next) {
     snapshot = next;
-    if (!snapshot?.ready) {
+    // A theater with the Brief off (World) shows nothing here.
+    if (!snapshot?.ready || snapshot.theater?.situationBrief === false) {
       root.hidden = true;
       return;
     }

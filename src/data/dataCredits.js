@@ -203,6 +203,19 @@ export const DATA_CREDITS = [
       '(headline, snippet and link; publisher terms apply)',
   },
   {
+    key: 'war-monitor-world-feeds',
+    html:
+      'War monitor World headlines (RSS): BBC News, France 24, AllAfrica, Premium Times, ' +
+      'Daily Maverick, Radio Dabanga, Nation Africa, South China Morning Post, ' +
+      'The Japan Times, Rappler, The Irrawaddy, RNZ Pacific, Politico Europe, ' +
+      'Balkan Insight, Le Monde, MercoPress, Buenos Aires Times, Mexico News Daily, ' +
+      'Confidencial, The Haitian Times, NPR, PBS News, Politico, Dawn, The Hindu, ' +
+      'Amu TV, The Business Standard, Meduza, Ukrainska Pravda, OC Media, Eurasianet, ' +
+      'TASS, CGTN, Anadolu Agency, teleSUR, UN News, Human Rights Watch, InSight Crime ' +
+      '(headline, snippet and link; publisher terms apply). World place names: ' +
+      '<a href="https://www.naturalearthdata.com" target="_blank" rel="noopener">Natural Earth</a> (public domain)',
+  },
+  {
     key: 'war-monitor-gdelt',
     html:
       'War monitor headlines via the ' +

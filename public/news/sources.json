@@ -1,5 +1,5 @@
 {
-  "_about": "War monitor source directory. One entry per source. kind and perspective are editorial judgements the owner reviews; they drive the code-computed verification labels (see docs/WAR-MONITOR.md). Feed URLs were taken from the 2026-10-25 probe; /api/news/status reports each source's live health.",
+  "_about": "War monitor source directory. One entry per source. kind and perspective are editorial judgements the owner reviews; they drive the code-computed verification labels (see docs/WAR-MONITOR.md). Feed URLs were taken from the 2026-10-25 probe; the World theater's feeds (bbcworld onward) were probed with the app's own fetcher on 2026-10-28. /api/news/status reports each source's live health.",
   "sources": [
     {
       "id": "aljazeera",
@@ -547,6 +547,614 @@
       "caution": "No public feed located.",
       "transport": { "type": "link-only" },
       "credit": "IISS"
+    },
+    {
+      "id": "bbcworld",
+      "name": "BBC News (World)",
+      "homepage": "https://www.bbc.com/news/world",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "international-public",
+      "languages": ["en"],
+      "starred": true,
+      "caution": "UK public broadcaster funded by the licence fee; editorially independent under its Royal Charter.",
+      "transport": {
+        "type": "rss",
+        "url": "https://feeds.bbci.co.uk/news/world/rss.xml"
+      },
+      "credit": "BBC News"
+    },
+    {
+      "id": "france24",
+      "name": "France 24",
+      "homepage": "https://www.france24.com/en/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "international-public",
+      "languages": ["en"],
+      "starred": true,
+      "caution": "Owned by France Médias Monde, a French state-owned company; its charter guarantees editorial independence.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.france24.com/en/rss"
+      },
+      "credit": "France 24"
+    },
+    {
+      "id": "allafrica",
+      "name": "AllAfrica",
+      "homepage": "https://allafrica.com/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "africa-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Aggregator republishing about 100 African outlets, some of them government-owned; each headline names its country and the story its original publisher.",
+      "transport": {
+        "type": "rss",
+        "url": "https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf"
+      },
+      "credit": "AllAfrica"
+    },
+    {
+      "id": "premiumtimes",
+      "name": "Premium Times",
+      "homepage": "https://www.premiumtimesng.com/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "africa-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Abuja-based Nigerian investigative daily.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.premiumtimesng.com/feed"
+      },
+      "credit": "Premium Times"
+    },
+    {
+      "id": "dailymaverick",
+      "name": "Daily Maverick",
+      "homepage": "https://www.dailymaverick.co.za/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "africa-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Johannesburg-based South African daily.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.dailymaverick.co.za/dmrss/"
+      },
+      "credit": "Daily Maverick"
+    },
+    {
+      "id": "dabanga",
+      "name": "Radio Dabanga",
+      "homepage": "https://www.dabangasudan.org/en",
+      "folder": "local",
+      "kind": "independent",
+      "perspective": "africa-press",
+      "languages": ["en", "ar"],
+      "starred": false,
+      "caution": "Sudanese newsroom based in Amsterdam, funded by European donors; relies on correspondents and witnesses inside Sudan.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.dabangasudan.org/en/feed"
+      },
+      "credit": "Radio Dabanga"
+    },
+    {
+      "id": "nationafrica",
+      "name": "Nation (Kenya)",
+      "homepage": "https://nation.africa/kenya",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "africa-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Nairobi daily of the Nation Media Group.",
+      "transport": {
+        "type": "rss",
+        "url": "https://nation.africa/kenya/rss.xml"
+      },
+      "credit": "Nation Africa"
+    },
+    {
+      "id": "scmp",
+      "name": "South China Morning Post",
+      "homepage": "https://www.scmp.com/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "asia-pacific-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Hong Kong daily owned by Alibaba Group; operates under Hong Kong's national security law.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.scmp.com/rss/91/feed"
+      },
+      "credit": "South China Morning Post"
+    },
+    {
+      "id": "japantimes",
+      "name": "The Japan Times",
+      "homepage": "https://www.japantimes.co.jp/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "asia-pacific-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Tokyo-based English-language daily.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.japantimes.co.jp/feed/"
+      },
+      "credit": "The Japan Times"
+    },
+    {
+      "id": "rappler",
+      "name": "Rappler",
+      "homepage": "https://www.rappler.com/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "asia-pacific-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Manila-based independent news site.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.rappler.com/feed/"
+      },
+      "credit": "Rappler"
+    },
+    {
+      "id": "irrawaddy",
+      "name": "The Irrawaddy",
+      "homepage": "https://www.irrawaddy.com/",
+      "folder": "local",
+      "kind": "independent",
+      "perspective": "asia-pacific-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Founded by Burmese exiles; covers Myanmar's civil war and is openly critical of the military regime.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.irrawaddy.com/feed"
+      },
+      "credit": "The Irrawaddy"
+    },
+    {
+      "id": "rnzpacific",
+      "name": "RNZ Pacific",
+      "homepage": "https://www.rnz.co.nz/international",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "asia-pacific-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Pacific service of Radio New Zealand, the publicly funded broadcaster.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.rnz.co.nz/rss/pacific.xml"
+      },
+      "credit": "RNZ Pacific"
+    },
+    {
+      "id": "politicoeu",
+      "name": "Politico Europe",
+      "homepage": "https://www.politico.eu/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "europe-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Brussels-based; owned by Axel Springer.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.politico.eu/feed/"
+      },
+      "credit": "Politico Europe"
+    },
+    {
+      "id": "balkaninsight",
+      "name": "Balkan Insight (BIRN)",
+      "homepage": "https://balkaninsight.com/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "europe-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Published by the Balkan Investigative Reporting Network, funded mostly by foundations and European donors.",
+      "transport": {
+        "type": "rss",
+        "url": "https://balkaninsight.com/feed/"
+      },
+      "credit": "Balkan Insight"
+    },
+    {
+      "id": "lemonde",
+      "name": "Le Monde in English",
+      "homepage": "https://www.lemonde.fr/en/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "europe-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "English edition of the Paris daily.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.lemonde.fr/en/rss/une.xml"
+      },
+      "credit": "Le Monde"
+    },
+    {
+      "id": "mercopress",
+      "name": "MercoPress",
+      "homepage": "https://en.mercopress.com/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "latin-america-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Montevideo-based agency covering Mercosur and the South Atlantic, including the Falklands.",
+      "transport": {
+        "type": "rss",
+        "url": "https://en.mercopress.com/rss"
+      },
+      "credit": "MercoPress"
+    },
+    {
+      "id": "batimes",
+      "name": "Buenos Aires Times",
+      "homepage": "https://www.batimes.com.ar/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "latin-america-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "English-language weekly of Argentina's Perfil group.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.batimes.com.ar/feed"
+      },
+      "credit": "Buenos Aires Times"
+    },
+    {
+      "id": "mexiconewsdaily",
+      "name": "Mexico News Daily",
+      "homepage": "https://mexiconewsdaily.com/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "latin-america-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "English-language news site covering Mexico.",
+      "transport": {
+        "type": "rss",
+        "url": "https://mexiconewsdaily.com/feed/"
+      },
+      "credit": "Mexico News Daily"
+    },
+    {
+      "id": "confidencial",
+      "name": "Confidencial",
+      "homepage": "https://confidencial.digital/",
+      "folder": "local",
+      "kind": "independent",
+      "perspective": "latin-america-press",
+      "languages": ["es"],
+      "starred": false,
+      "caution": "Nicaraguan outlet working from exile in Costa Rica; critical of the Ortega-Murillo government. In Spanish.",
+      "transport": {
+        "type": "rss",
+        "url": "https://confidencial.digital/feed/"
+      },
+      "credit": "Confidencial"
+    },
+    {
+      "id": "haitiantimes",
+      "name": "The Haitian Times",
+      "homepage": "https://haitiantimes.com/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "latin-america-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "New York-based outlet of the Haitian diaspora, with reporters in Haiti.",
+      "transport": {
+        "type": "rss",
+        "url": "https://haitiantimes.com/feed/"
+      },
+      "credit": "The Haitian Times"
+    },
+    {
+      "id": "nprpolitics",
+      "name": "NPR (Politics)",
+      "homepage": "https://www.npr.org/sections/politics/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "north-america-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "US public radio network.",
+      "transport": {
+        "type": "rss",
+        "url": "https://feeds.npr.org/1014/rss.xml"
+      },
+      "credit": "NPR"
+    },
+    {
+      "id": "pbspolitics",
+      "name": "PBS News (Politics)",
+      "homepage": "https://www.pbs.org/newshour/politics",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "north-america-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "US public television news.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.pbs.org/newshour/feeds/rss/politics"
+      },
+      "credit": "PBS News"
+    },
+    {
+      "id": "politicous",
+      "name": "Politico (US)",
+      "homepage": "https://www.politico.com/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "north-america-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Washington-based; owned by Axel Springer.",
+      "transport": {
+        "type": "rss",
+        "url": "https://rss.politico.com/politics-news.xml"
+      },
+      "credit": "Politico"
+    },
+    {
+      "id": "dawn",
+      "name": "Dawn (Pakistan)",
+      "homepage": "https://www.dawn.com/pakistan",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "south-asia-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Karachi-based Pakistani daily of record.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.dawn.com/feeds/pakistan"
+      },
+      "credit": "Dawn"
+    },
+    {
+      "id": "thehindu",
+      "name": "The Hindu (National)",
+      "homepage": "https://www.thehindu.com/news/national/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "south-asia-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Chennai-based Indian national daily.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.thehindu.com/news/national/feeder/default.rss"
+      },
+      "credit": "The Hindu"
+    },
+    {
+      "id": "amutv",
+      "name": "Amu TV",
+      "homepage": "https://amu.tv/",
+      "folder": "local",
+      "kind": "independent",
+      "perspective": "south-asia-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Afghan outlet run from exile; critical of the Taliban government.",
+      "transport": {
+        "type": "rss",
+        "url": "https://amu.tv/feed/"
+      },
+      "credit": "Amu TV"
+    },
+    {
+      "id": "tbsnews",
+      "name": "The Business Standard (Bangladesh politics)",
+      "homepage": "https://www.tbsnews.net/bangladesh/politics",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "south-asia-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Dhaka-based daily; this is its politics section.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.tbsnews.net/bangladesh/politics/rss.xml"
+      },
+      "credit": "The Business Standard"
+    },
+    {
+      "id": "meduza",
+      "name": "Meduza",
+      "homepage": "https://meduza.io/en",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "eurasia-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Independent Russian outlet based in Riga; declared an 'undesirable organization' in Russia.",
+      "transport": {
+        "type": "rss",
+        "url": "https://meduza.io/rss/en/all"
+      },
+      "credit": "Meduza"
+    },
+    {
+      "id": "pravdaua",
+      "name": "Ukrainska Pravda",
+      "homepage": "https://www.pravda.com.ua/eng/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "eurasia-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Kyiv-based Ukrainian outlet; Ukraine is at war with Russia.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.pravda.com.ua/eng/rss/"
+      },
+      "credit": "Ukrainska Pravda"
+    },
+    {
+      "id": "ocmedia",
+      "name": "OC Media",
+      "homepage": "https://oc-media.org/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "eurasia-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Covers the North and South Caucasus from Tbilisi.",
+      "transport": {
+        "type": "rss",
+        "url": "https://oc-media.org/feed/"
+      },
+      "credit": "OC Media"
+    },
+    {
+      "id": "eurasianet",
+      "name": "Eurasianet",
+      "homepage": "https://eurasianet.org/",
+      "folder": "reporting",
+      "kind": "independent",
+      "perspective": "eurasia-press",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Covers Central Asia and the Caucasus; hosted by Columbia University's Harriman Institute.",
+      "transport": {
+        "type": "rss",
+        "url": "https://eurasianet.org/rss"
+      },
+      "credit": "Eurasianet"
+    },
+    {
+      "id": "tass",
+      "name": "TASS",
+      "homepage": "https://tass.com/",
+      "folder": "official",
+      "kind": "state",
+      "perspective": "russia-state",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "State-controlled: the Russian state news agency, which reports the Russian government's positions.",
+      "transport": {
+        "type": "rss",
+        "url": "https://tass.com/rss/v2.xml"
+      },
+      "credit": "TASS"
+    },
+    {
+      "id": "cgtn",
+      "name": "CGTN",
+      "homepage": "https://www.cgtn.com/",
+      "folder": "official",
+      "kind": "state",
+      "perspective": "china-state",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "State-controlled: the international channel of China Media Group, overseen by the Chinese Communist Party's Publicity Department.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.cgtn.com/subscribe/rss/section/world.xml"
+      },
+      "credit": "CGTN"
+    },
+    {
+      "id": "anadolu",
+      "name": "Anadolu Agency",
+      "homepage": "https://www.aa.com.tr/en",
+      "folder": "official",
+      "kind": "state",
+      "perspective": "turkey-state",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "State-controlled: Türkiye's state-run news agency.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.aa.com.tr/en/rss/default?cat=world"
+      },
+      "credit": "Anadolu Agency"
+    },
+    {
+      "id": "telesur",
+      "name": "teleSUR",
+      "homepage": "https://www.telesurenglish.net/",
+      "folder": "official",
+      "kind": "state",
+      "perspective": "venezuela-state",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "State-controlled: Caracas-based network funded mainly by the Venezuelan government.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.telesurenglish.net/feed/"
+      },
+      "credit": "teleSUR"
+    },
+    {
+      "id": "unnews",
+      "name": "UN News",
+      "homepage": "https://news.un.org/en/",
+      "folder": "humanitarian",
+      "kind": "humanitarian",
+      "perspective": "un",
+      "languages": ["en"],
+      "starred": true,
+      "caution": "The United Nations' own news service; it reports UN positions and agency statements.",
+      "transport": {
+        "type": "rss",
+        "url": "https://news.un.org/feed/subscribe/en/news/all/rss.xml"
+      },
+      "credit": "UN News"
+    },
+    {
+      "id": "hrw",
+      "name": "Human Rights Watch",
+      "homepage": "https://www.hrw.org/",
+      "folder": "humanitarian",
+      "kind": "humanitarian",
+      "perspective": "ngo",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "International rights organization; its releases are its own documented findings and advocacy.",
+      "transport": {
+        "type": "rss",
+        "url": "https://www.hrw.org/rss/news"
+      },
+      "credit": "Human Rights Watch"
+    },
+    {
+      "id": "insightcrime",
+      "name": "InSight Crime",
+      "homepage": "https://insightcrime.org/",
+      "folder": "analysis",
+      "kind": "analysis",
+      "perspective": "analysis-regional",
+      "languages": ["en"],
+      "starred": false,
+      "caution": "Research and analysis on organized crime in the Americas; not incident reporting.",
+      "transport": {
+        "type": "rss",
+        "url": "https://insightcrime.org/feed/"
+      },
+      "credit": "InSight Crime"
     }
   ]
 }
