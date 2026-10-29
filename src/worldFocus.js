@@ -19,6 +19,15 @@ export const WORLD_FOCUS_FRAMING = Object.freeze({
     pitchDeg: -65,
     fitToRequest: true,
   }),
+  // A news bubble (a country or region): the radius enclosing its stories,
+  // capped so the flight always ends below the news layer's pin threshold.
+  hotspot: Object.freeze({
+    radiusM: 600_000,
+    rangeM: 1_800_000,
+    pitchDeg: -65,
+    fitToRequest: true,
+    maxRadiusM: 1_000_000,
+  }),
 });
 /** Largest sphere a fitted request may frame (a theater, not a hemisphere). */
 const MAX_FIT_RADIUS_M = 3_000_000;
@@ -95,7 +104,10 @@ export function flyToWorldTarget(viewer, target = {}) {
       : WORLD_CLICK_FOCUS_DURATION_SEC;
   let { radiusM, rangeM } = framing;
   if (framing.fitToRequest && Number.isFinite(target.radiusM)) {
-    radiusM = Math.min(MAX_FIT_RADIUS_M, Math.max(radiusM, target.radiusM));
+    radiusM = Math.min(
+      framing.maxRadiusM ?? MAX_FIT_RADIUS_M,
+      Math.max(radiusM, target.radiusM),
+    );
     rangeM = Math.max(rangeM, radiusM * FIT_RANGE_PER_RADIUS);
   }
   camera.cancelFlight?.();

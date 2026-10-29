@@ -198,7 +198,7 @@ function validatePerspectives(perspectives) {
 function validateGazetteer(gazetteer) {
   if (!Array.isArray(gazetteer)) fail('theater gazetteer must be an array');
   const owners = new Map();
-  return gazetteer.map((entry, index) => {
+  const rows = gazetteer.map((entry, index) => {
     const name = entry?.name;
     if (!nonEmptyString(name)) fail(`gazetteer row ${index} needs a name`);
     if (
@@ -220,7 +220,9 @@ function validateGazetteer(gazetteer) {
         fail(`gazetteer spelling ${spelling} is ambiguous (${owner}, ${name})`);
       owners.set(key, name);
     }
-    return Object.freeze({
+    if (Object.hasOwn(entry, 'hotspot') && !nonEmptyString(entry.hotspot))
+      fail(`gazetteer ${name} hotspot must name a row`);
+    return {
       name,
       lat: entry.lat,
       lon: entry.lon,
@@ -229,8 +231,22 @@ function validateGazetteer(gazetteer) {
       aliases: Object.freeze(aliases),
       // Listed in the digest instructions (see placeNamesForPrompt).
       prompt: entry.prompt === true,
-    });
+      // The region or water bubble this place joins on the map.
+      ...(Object.hasOwn(entry, 'hotspot') ? { hotspot: entry.hotspot } : {}),
+    };
   });
+  const byName = new Map(rows.map((row) => [row.name, row]));
+  for (const row of rows) {
+    if (!row.hotspot) continue;
+    const target = byName.get(row.hotspot);
+    if (!target)
+      fail(`gazetteer ${row.name} names unknown hotspot ${row.hotspot}`);
+    if (target.precision !== 'region' && target.precision !== 'water')
+      fail(
+        `gazetteer ${row.name} hotspot ${row.hotspot} must be a region or water row`,
+      );
+  }
+  return rows.map((row) => Object.freeze(row));
 }
 
 function optionalList(value, what) {

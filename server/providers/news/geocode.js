@@ -145,6 +145,21 @@ export function resolvePlace(name, gazetteer) {
   return best ? hit(byKey.get(best.candidate)) : null;
 }
 
+/**
+ * Great-circle distance in kilometres between two {lat, lon} points.
+ * @param {{lat: number, lon: number}} a
+ * @param {{lat: number, lon: number}} b
+ */
+export function greatCircleKm(a, b) {
+  const rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad;
+  const dLon = (b.lon - a.lon) * rad;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
 /** Whether some rows are flagged for the prompt (`prompt: true`). */
 export function hasPromptFlags(gazetteer) {
   return Array.isArray(gazetteer) && gazetteer.some((e) => e?.prompt === true);

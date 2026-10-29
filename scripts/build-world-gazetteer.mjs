@@ -13,11 +13,14 @@
  *     disputed territories that make political news, at Natural Earth's
  *     label point (not a geometric centroid, which can fall in the sea);
  *   - ne_10m_populated_places: every national capital, and every city whose
- *     metro population (POP_MAX) is 1 million or more;
+ *     metro population (POP_MAX) is 300,000 or more;
  *   - ne_10m_admin_1_states_provinces: label points for the hotspots below
  *     that are provinces or groups of provinces.
  * Hotspots that are not provinces (seas, cross-border regions) are placed by
  * hand at an approximate centre; each names the reference it was read from.
+ * Conflict towns below the threshold (TOWNS) are hand-written the same way.
+ * CITY_HOTSPOTS links a city or town to the region it belongs to on the
+ * map's hotspot view (Hebron to the West Bank, Donetsk to Donbas).
  *
  * Aliases: English variants and the Arabic, Persian, Hebrew, Russian,
  * Chinese, Spanish, French and Portuguese names from Natural Earth, plus the
@@ -31,6 +34,10 @@
  * Countries and capitals carry `prompt: true`: the digest instructions list
  * only them, by name (see placeNamesForPrompt). Matching uses every row and
  * alias.
+ *
+ * The log lists, among others, every qualified name (read it for foreign
+ * namesakes that now win a bare name: fix them in PLACE_NAMES and DROPPED)
+ * and every hand-written town that duplicates a Natural Earth row (prune it).
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -52,7 +59,7 @@ const NE_FILES = Object.freeze({
   places: 'ne_10m_populated_places',
   provinces: 'ne_10m_admin_1_states_provinces',
 });
-const CITY_MIN_POPULATION = 1_000_000;
+export const CITY_MIN_POPULATION = 300_000;
 /** Two rows closer than this with one spelling are one place. */
 const SAME_PLACE_KM = 100;
 
@@ -169,10 +176,42 @@ const CITY_NAMES = {
   Djibouti: 'Djibouti City',
   'Nur-Sultan': 'Astana',
   Victoria: 'Victoria, Seychelles',
+  // Natural Earth's English name for Ha'il is "Saudi Arabia".
+  Hail: "Ha'il",
 };
 const CITY_ALIASES = {
   'Washington, D.C.': ['Washington', 'Washington DC'],
   'New York City': ['NYC'],
+  // English press spellings of Natural Earth's names.
+  'Al-Ubayyid': ['El Obeid', 'Obeid'],
+  "Ta'izz": ['Taiz'],
+  'Al Hudaydah': ['Hodeidah', 'Hudaydah', 'Hodeida'],
+  'Cebu City': ['Cebu'],
+  Zaporizhzhia: ['Zaporizhia', 'Zaporozhye'],
+  Erbil: ['Arbil', 'Hawler'],
+  Sulaymaniyah: ['Sulaimaniya', 'Slemani'],
+  Duhok: ['Dohuk', 'Dahuk'],
+};
+/**
+ * Row names by Natural Earth country and NAME for a city that would
+ * otherwise win the bare name of a better-known namesake (below the
+ * threshold, or in the gazetteer under a longer name). The renamed row loses
+ * the bare spelling, so the namesake keeps it or it matches nothing.
+ */
+const PLACE_NAMES = {
+  'USA:Toledo': 'Toledo, Ohio',
+  'USA:St. Petersburg': 'St. Petersburg, Florida',
+  'USA:Pasadena': 'Pasadena, Texas',
+  'AUS:Newcastle': 'Newcastle, Australia',
+  'CAN:Windsor': 'Windsor, Ontario',
+};
+/**
+ * Natural Earth files Crimea's cities under Russia; like the Crimea hotspot
+ * row, their `country` is the internationally recognised one.
+ */
+const PLACE_COUNTRY_FIXES = {
+  'RUS:Sevastopol': 'UKR',
+  'RUS:Simferopol': 'UKR',
 };
 /** Capitals Natural Earth lists as "capital alt" that are seats of power. */
 const SEATS_OF_GOVERNMENT = new Set([
@@ -187,10 +226,28 @@ const SEATS_OF_GOVERNMENT = new Set([
 /** Natural Earth country codes that differ between its two datasets. */
 const PLACE_A3 = { SSD: 'SDS' };
 /**
- * Natural Earth errata, by NE_ID: a village in Amapá that carries the
- * population of Vila Velha (Espírito Santo), which is kept.
+ * Natural Earth errata, by NE_ID: places that carry another city's
+ * population, which is kept: a village in Amapá (Vila Velha, Espírito
+ * Santo), a Saudi Al Hillah (Hillah, Iraq), an Algerian Arak (Arak, Iran)
+ * and a Sonoran Mazatán (Mazatlán, Sinaloa).
  */
-const PLACE_ERRATA = new Set([1159148899]);
+const PLACE_ERRATA = new Set([1159148899, 1159128275, 1159149029, 1159138371]);
+/**
+ * Natural Earth errata, by NE_ID, renamed: NAME_EN is another place's name
+ * (a governorate, a neighbour, a city 1,000 km away). Left alone, the
+ * 300,000 threshold would put these on the map under the wrong name
+ * ("Juarez" at Mazatlán, "Taza" at Oujda) and the real name would match
+ * nothing. The row keeps NAME as an alias and drops the wrong NAME_EN.
+ */
+export const PLACE_RENAMES = new Map([
+  [1159150011, 'Cuttack'], // NAME_EN "Pochinki"
+  [1159129345, 'Celaya'], // "Guanajuato", the state
+  [1159149507, 'Oujda'], // "Taza", 200 km away
+  [1159150755, 'Mazatlán'], // "Juarez"
+  [1159140381, 'Mansoura'], // "sharkia", the governorate
+  [1159142649, 'Al Amarah'], // "Thi Qar", the neighbouring governorate
+  [1159130209, 'Hangu'], // "Lunan", a Tangshan district
+]);
 
 /**
  * Spellings that also name another well-known place, so a match would put
@@ -218,7 +275,7 @@ const DROPPED = new Map(
  * admin-1 label points ([country code, ...province names]); otherwise `at`
  * is a hand-placed approximate centre read from `ref`.
  */
-const HOTSPOTS = [
+export const HOTSPOTS = [
   // Middle East and North Africa
   {
     name: 'Gaza Strip',
@@ -734,7 +791,505 @@ const HOTSPOTS = [
   },
 ];
 
-const RANK = { hotspot: 0, country: 1, capital: 2, city: 3 };
+const NE_PLACES = 'Natural Earth 5.1.2 populated places (below the threshold)';
+const IRAN_THEATER = 'iran-israel-us.json gazetteer';
+
+/**
+ * Conflict-relevant towns the population threshold does not reach, placed
+ * at `at` as read from `ref`. A town that duplicates a Natural Earth row
+ * (same spelling within SAME_PLACE_KM) is dropped and logged for pruning.
+ */
+export const TOWNS = [
+  // West Bank
+  {
+    name: 'Hebron',
+    country: 'Palestine',
+    at: [31.541, 35.096],
+    ref: NE_PLACES,
+    aliases: ['Al-Khalil', 'Al Khalil', 'الخليل', 'חברון'],
+  },
+  {
+    name: 'Jenin',
+    country: 'Palestine',
+    at: [32.4646, 35.2939],
+    ref: IRAN_THEATER,
+    aliases: ['جنين'],
+  },
+  {
+    name: 'Nablus',
+    country: 'Palestine',
+    at: [32.221, 35.254],
+    ref: NE_PLACES,
+    aliases: ['نابلس'],
+  },
+  {
+    name: 'Tulkarm',
+    country: 'Palestine',
+    at: [32.3104, 35.0286],
+    ref: IRAN_THEATER,
+    aliases: ['Tulkarem', 'طولكرم'],
+  },
+  {
+    name: 'Qalqilya',
+    country: 'Palestine',
+    at: [32.1896, 34.9706],
+    ref: IRAN_THEATER,
+    aliases: ['Qalqiliya', 'قلقيلية'],
+  },
+  {
+    name: 'Jericho',
+    country: 'Palestine',
+    at: [31.8667, 35.45],
+    ref: IRAN_THEATER,
+    aliases: ['Ariha', 'أريحا'],
+  },
+  {
+    name: 'Bethlehem',
+    country: 'Palestine',
+    at: [31.7054, 35.2024],
+    ref: IRAN_THEATER,
+    aliases: ['بيت لحم'],
+  },
+  // Gaza Strip
+  {
+    name: 'Khan Younis',
+    country: 'Palestine',
+    at: [31.3462, 34.306],
+    ref: IRAN_THEATER,
+    aliases: ['Khan Yunis', 'خان يونس'],
+  },
+  {
+    name: 'Rafah',
+    country: 'Palestine',
+    at: [31.2969, 34.2455],
+    ref: IRAN_THEATER,
+    aliases: ['رفح'],
+  },
+  {
+    name: 'Deir al-Balah',
+    country: 'Palestine',
+    at: [31.4181, 34.3517],
+    ref: IRAN_THEATER,
+    aliases: ['Deir el-Balah', 'دير البلح'],
+  },
+  {
+    name: 'Jabalia',
+    country: 'Palestine',
+    at: [31.5272, 34.4835],
+    ref: IRAN_THEATER,
+    aliases: ['Jabalya', 'Jabaliya', 'جباليا'],
+  },
+  {
+    name: 'Beit Lahia',
+    country: 'Palestine',
+    at: [31.5464, 34.4951],
+    ref: IRAN_THEATER,
+    aliases: ['Beit Lahiya', 'بيت لاهيا'],
+  },
+  // Southern Lebanon
+  {
+    name: 'Tyre',
+    country: 'Lebanon',
+    at: [33.2705, 35.2038],
+    ref: IRAN_THEATER,
+    aliases: ['Sour', 'صور'],
+  },
+  {
+    name: 'Nabatieh',
+    country: 'Lebanon',
+    at: [33.383, 35.45],
+    ref: NE_PLACES,
+    aliases: ['Nabatiyeh', 'An Nabatiyah', 'النبطية'],
+  },
+  {
+    name: 'Bint Jbeil',
+    country: 'Lebanon',
+    at: [33.1194, 35.4331],
+    ref: IRAN_THEATER,
+    aliases: ['بنت جبيل'],
+  },
+  // Northeast Syria
+  {
+    name: 'Raqqa',
+    country: 'Syria',
+    at: [35.93, 39.02],
+    ref: NE_PLACES,
+    aliases: ['Ar Raqqah', 'Al-Raqqa', 'الرقة'],
+  },
+  {
+    name: 'Qamishli',
+    country: 'Syria',
+    at: [37.03, 41.23],
+    ref: NE_PLACES,
+    aliases: ['Al Qamishli', 'Qamishlo', 'القامشلي'],
+  },
+  {
+    name: 'Al-Hasakah',
+    country: 'Syria',
+    at: [36.483, 40.75],
+    ref: NE_PLACES,
+    aliases: ['Hasakah', 'Al Hasakah', 'Hasaka', 'الحسكة'],
+  },
+  {
+    name: 'Kobani',
+    country: 'Syria',
+    at: [36.891, 38.354],
+    ref: 'Wikipedia: Kobani',
+    aliases: ['Kobane', 'Ayn al-Arab', 'عين العرب'],
+  },
+  // Yemen
+  {
+    name: 'Marib',
+    country: 'Yemen',
+    at: [15.421, 45.334],
+    ref: NE_PLACES,
+    aliases: ["Ma'rib", 'مأرب'],
+  },
+  {
+    name: 'Saada',
+    country: 'Yemen',
+    at: [16.94, 43.76],
+    ref: IRAN_THEATER,
+    aliases: ["Sa'dah", 'Sadah', 'صعدة'],
+  },
+  // Donbas
+  {
+    name: 'Bakhmut',
+    country: 'Ukraine',
+    at: [48.595, 38.0],
+    ref: 'Wikipedia: Bakhmut',
+    aliases: ['Artemivsk', 'Artyomovsk', 'Бахмут'],
+  },
+  {
+    name: 'Pokrovsk',
+    country: 'Ukraine',
+    at: [48.282, 37.176],
+    ref: 'Wikipedia: Pokrovsk, Ukraine',
+    aliases: ['Krasnoarmiisk', 'Покровськ'],
+  },
+  {
+    name: 'Avdiivka',
+    country: 'Ukraine',
+    at: [48.139, 37.743],
+    ref: 'Wikipedia: Avdiivka',
+    aliases: ['Avdeyevka', 'Авдіївка', 'Авдеевка'],
+  },
+  {
+    name: 'Kramatorsk',
+    country: 'Ukraine',
+    at: [48.719, 37.534],
+    ref: NE_PLACES,
+    aliases: ['Краматорськ', 'Краматорск'],
+  },
+  {
+    name: 'Sloviansk',
+    country: 'Ukraine',
+    at: [48.853, 37.605],
+    ref: 'Wikipedia: Sloviansk',
+    aliases: ['Slovyansk', 'Slavyansk', 'Славянск'],
+  },
+  {
+    name: 'Kostiantynivka',
+    country: 'Ukraine',
+    at: [48.527, 37.707],
+    ref: 'Wikipedia: Kostiantynivka',
+    aliases: ['Konstantinovka', 'Костянтинівка'],
+  },
+  {
+    name: 'Chasiv Yar',
+    country: 'Ukraine',
+    at: [48.586, 37.835],
+    ref: 'Wikipedia: Chasiv Yar',
+    aliases: ['Часів Яр'],
+  },
+  {
+    name: 'Toretsk',
+    country: 'Ukraine',
+    at: [48.398, 37.847],
+    ref: 'Wikipedia: Toretsk',
+    aliases: ['Торецьк'],
+  },
+  // Zaporizhzhia Oblast and Crimea
+  {
+    name: 'Melitopol',
+    country: 'Ukraine',
+    at: [46.838, 35.377],
+    ref: NE_PLACES,
+    aliases: ['Мелітополь', 'Мелитополь'],
+  },
+  {
+    name: 'Berdyansk',
+    country: 'Ukraine',
+    at: [46.757, 36.787],
+    ref: NE_PLACES,
+    aliases: ['Berdiansk', 'Бердянськ', 'Бердянск'],
+  },
+  {
+    name: 'Enerhodar',
+    country: 'Ukraine',
+    at: [47.499, 34.656],
+    ref: 'Wikipedia: Enerhodar',
+    aliases: ['Energodar', 'Енергодар', 'Энергодар'],
+  },
+  {
+    name: 'Kerch',
+    country: 'Ukraine',
+    at: [45.369, 36.488],
+    ref: NE_PLACES,
+    aliases: ['Керчь'],
+  },
+  // Elsewhere in Ukraine
+  {
+    name: 'Sumy',
+    country: 'Ukraine',
+    at: [50.924, 34.781],
+    ref: NE_PLACES,
+    aliases: ['Суми', 'Сумы'],
+  },
+  {
+    name: 'Kupiansk',
+    country: 'Ukraine',
+    at: [49.722, 37.598],
+    ref: NE_PLACES,
+    aliases: ['Kupyansk', 'Купянск'],
+  },
+  {
+    name: 'Izium',
+    country: 'Ukraine',
+    at: [49.212, 37.256],
+    ref: 'Wikipedia: Izium',
+    aliases: ['Izyum', 'Ізюм', 'Изюм'],
+  },
+  // Darfur and Kordofan
+  {
+    name: 'El Fasher',
+    country: 'Sudan',
+    at: [13.63, 25.35],
+    ref: NE_PLACES,
+    aliases: ['Al-Fashir', 'Al Fashir', 'El-Fasher', 'الفاشر'],
+  },
+  {
+    name: 'Geneina',
+    country: 'Sudan',
+    at: [13.45, 22.44],
+    ref: NE_PLACES,
+    aliases: ['El Geneina', 'El-Geneina', 'Al-Junaynah', 'الجنينة'],
+  },
+  {
+    name: 'Zalingei',
+    country: 'Sudan',
+    at: [12.909, 23.474],
+    ref: 'Wikipedia: Zalingei',
+    aliases: ['زالنجي'],
+  },
+  {
+    name: 'Ed Daein',
+    country: 'Sudan',
+    at: [11.462, 26.126],
+    ref: 'Wikipedia: Ed Daein',
+    aliases: ["Ed Da'ein", 'Al-Daein', 'الضعين'],
+  },
+  {
+    name: 'Kadugli',
+    country: 'Sudan',
+    at: [11.01, 29.7],
+    ref: NE_PLACES,
+    aliases: ['Kaduqli', 'كادقلي'],
+  },
+  {
+    name: 'Dilling',
+    country: 'Sudan',
+    at: [12.05, 29.65],
+    ref: 'Wikipedia: Dilling',
+    aliases: ['الدلنج'],
+  },
+  // Ethiopia
+  {
+    name: 'Mekelle',
+    country: 'Ethiopia',
+    at: [13.5, 39.47],
+    ref: NE_PLACES,
+    aliases: ['Mekele', "Mek'ele", 'መቐለ'],
+  },
+  {
+    name: 'Bahir Dar',
+    country: 'Ethiopia',
+    at: [11.6, 37.383],
+    ref: NE_PLACES,
+    aliases: ['Bahar Dar', 'ባሕር ዳር'],
+  },
+  {
+    name: 'Gondar',
+    country: 'Ethiopia',
+    at: [12.61, 37.46],
+    ref: NE_PLACES,
+    aliases: ['Gonder', 'ጎንደር'],
+  },
+  // Central and southern Africa
+  {
+    name: 'Goma',
+    country: 'Democratic Republic of the Congo',
+    at: [-1.679, 29.222],
+    ref: NE_PLACES,
+    aliases: [],
+  },
+  {
+    name: 'Butembo',
+    country: 'Democratic Republic of the Congo',
+    at: [0.13, 29.28],
+    ref: NE_PLACES,
+    aliases: [],
+  },
+  {
+    name: 'Buea',
+    country: 'Cameroon',
+    at: [4.155, 9.231],
+    ref: NE_PLACES,
+    aliases: [],
+  },
+  {
+    name: 'Pemba',
+    country: 'Mozambique',
+    at: [-12.983, 40.532],
+    ref: NE_PLACES,
+    aliases: [],
+  },
+  {
+    name: 'Mocímboa da Praia',
+    country: 'Mozambique',
+    at: [-11.32, 40.35],
+    ref: NE_PLACES,
+    aliases: ['Mocimboa da Praia', 'Mocímboa'],
+  },
+  // Caucasus and Moldova
+  {
+    name: 'Stepanakert',
+    country: 'Azerbaijan',
+    at: [39.816, 46.752],
+    ref: NE_PLACES,
+    aliases: ['Khankendi', 'Xankəndi', 'Степанакерт'],
+  },
+  {
+    name: 'Tskhinvali',
+    country: 'Georgia',
+    at: [42.232, 43.975],
+    ref: NE_PLACES,
+    aliases: ['Цхинвал', 'ცხინვალი'],
+  },
+  {
+    name: 'Tiraspol',
+    country: 'Moldova',
+    at: [46.853, 29.64],
+    ref: NE_PLACES,
+    aliases: ['Тирасполь'],
+  },
+  // South and Southeast Asia
+  {
+    name: 'Muzaffarabad',
+    country: 'Pakistan',
+    at: [34.37, 73.471],
+    ref: 'Wikipedia: Muzaffarabad',
+    aliases: ['مظفرآباد'],
+  },
+  {
+    name: 'Gwadar',
+    country: 'Pakistan',
+    at: [25.139, 62.329],
+    ref: NE_PLACES,
+    aliases: ['گوادر'],
+  },
+  {
+    name: 'Sittwe',
+    country: 'Myanmar',
+    at: [20.14, 92.88],
+    ref: NE_PLACES,
+    aliases: ['Akyab'],
+  },
+  {
+    name: 'Marawi',
+    country: 'Philippines',
+    at: [8.0, 124.283],
+    ref: 'Wikipedia: Marawi',
+    aliases: ['Marawi City'],
+  },
+  {
+    name: 'Cotabato City',
+    country: 'Philippines',
+    at: [7.217, 124.248],
+    ref: NE_PLACES,
+    aliases: [],
+  },
+];
+
+/**
+ * The region or water row a city or town joins on the hotspot view, by row
+ * name, whether Natural Earth brought the row in or TOWNS did. A name that
+ * matches no row is logged as unlinked.
+ */
+export const CITY_HOTSPOTS = {
+  'West Bank': [
+    'Hebron',
+    'Jenin',
+    'Nablus',
+    'Tulkarm',
+    'Qalqilya',
+    'Jericho',
+    'Bethlehem',
+    'Ramallah',
+  ],
+  'Gaza Strip': [
+    'Gaza City',
+    'Khan Younis',
+    'Rafah',
+    'Deir al-Balah',
+    'Jabalia',
+    'Beit Lahia',
+  ],
+  'Southern Lebanon': ['Tyre', 'Nabatieh', 'Bint Jbeil'],
+  'Northeast Syria': ['Raqqa', 'Qamishli', 'Al-Hasakah', 'Kobani'],
+  'Kurdistan Region': ['Erbil', 'Sulaymaniyah', 'Duhok'],
+  Donbas: [
+    'Donetsk',
+    'Luhansk',
+    'Mariupol',
+    'Bakhmut',
+    'Pokrovsk',
+    'Avdiivka',
+    'Kramatorsk',
+    'Sloviansk',
+    'Kostiantynivka',
+    'Chasiv Yar',
+    'Toretsk',
+    'Horlivka',
+    'Makiivka',
+  ],
+  'Zaporizhzhia Oblast': [
+    'Zaporizhzhia',
+    'Melitopol',
+    'Berdyansk',
+    'Enerhodar',
+  ],
+  'Kherson Oblast': ['Kherson'],
+  Crimea: ['Sevastopol', 'Simferopol', 'Kerch'],
+  Transnistria: ['Tiraspol'],
+  Abkhazia: ['Sukhumi'],
+  'South Ossetia': ['Tskhinvali'],
+  'Nagorno-Karabakh': ['Stepanakert'],
+  Darfur: ['El Fasher', 'Nyala', 'Geneina', 'Zalingei', 'Ed Daein'],
+  Kordofan: ['Al-Ubayyid', 'Kadugli', 'Dilling'],
+  Tigray: ['Mekelle'],
+  'Amhara Region': ['Bahir Dar', 'Gondar'],
+  'North Kivu': ['Goma', 'Butembo', 'Beni'],
+  'Cabo Delgado': ['Pemba', 'Mocímboa da Praia'],
+  'Anglophone Cameroon': ['Bamenda', 'Buea'],
+  'Lake Chad Basin': ['Maiduguri'],
+  Kashmir: ['Srinagar', 'Muzaffarabad'],
+  Balochistan: ['Quetta', 'Gwadar'],
+  'Rakhine State': ['Sittwe'],
+  Mindanao: ['Marawi', 'Cotabato City'],
+};
+
+const RANK = { hotspot: 0, country: 1, capital: 2, city: 3, town: 3 };
 
 function round(value, digits) {
   const scale = 10 ** digits;
@@ -824,7 +1379,7 @@ function countryRows(countries, log) {
   return rows;
 }
 
-function placeRows(places, countriesByA3, log) {
+function placeRows(places, countriesByA3, log, minPopulation) {
   const rows = [];
   const seen = new Set();
   for (const props of places) {
@@ -833,10 +1388,12 @@ function placeRows(places, countriesByA3, log) {
       (props.FEATURECLA === 'Admin-0 capital alt' &&
         SEATS_OF_GOVERNMENT.has(props.NAME));
     const regionCapital = props.FEATURECLA === 'Admin-0 region capital';
-    if (!capital && !regionCapital && !(props.POP_MAX >= CITY_MIN_POPULATION))
+    if (!capital && !regionCapital && !(props.POP_MAX >= minPopulation))
       continue;
     if (PLACE_ERRATA.has(props.NE_ID)) continue;
-    const a3 = PLACE_A3[props.ADM0_A3] ?? props.ADM0_A3;
+    const neKey = `${props.ADM0_A3}:${props.NAME}`;
+    const a3 =
+      PLACE_COUNTRY_FIXES[neKey] ?? PLACE_A3[props.ADM0_A3] ?? props.ADM0_A3;
     const country = countriesByA3.get(a3);
     if (!country) {
       log.skipped.push(
@@ -844,17 +1401,31 @@ function placeRows(places, countriesByA3, log) {
       );
       continue;
     }
-    const name = CITY_NAMES[props.NAME] ?? props.NAME_EN ?? props.NAME;
+    const renamed = PLACE_RENAMES.get(props.NE_ID);
+    const name =
+      renamed ??
+      PLACE_NAMES[neKey] ??
+      CITY_NAMES[props.NAME] ??
+      props.NAME_EN ??
+      props.NAME;
     // Natural Earth lists a few cities twice.
     const dedupe = `${a3}:${normalizePlaceName(name)}:${Math.round(props.LATITUDE)}`;
     if (seen.has(dedupe)) continue;
     seen.add(dedupe);
+    // The spelling the row must not keep: a hand-renamed namesake drops its
+    // bare name, a renamed erratum drops the wrong English name in every
+    // language Natural Earth copied it into.
+    const bare = PLACE_NAMES[neKey]
+      ? normalizePlaceName(props.NAME)
+      : renamed
+        ? normalizePlaceName(props.NAME_EN)
+        : null;
     const spellings = strings(
       props.NAME,
       props.NAMEASCII,
       props.NAME_EN,
       languageNames(props, [...LANGUAGES, ...(NATIVE[a3] || [])]),
-    );
+    ).filter((spelling) => normalizePlaceName(spelling) !== bare);
     // Natural Earth cuts some alternate names short ("Ciudad de M").
     const alternates = strings(props.NAMEALT).filter((alias) => {
       if (!truncated(alias, spellings)) return true;
@@ -905,6 +1476,21 @@ function hotspotRows(provinces) {
       aliases: [...spot.aliases],
     };
   });
+}
+
+function townRows(countries) {
+  const byLabel = new Map(countries.map((row) => [row.display, row]));
+  return TOWNS.map((town) => ({
+    kind: 'town',
+    a3: byLabel.get(town.country)?.a3 ?? null,
+    name: town.name,
+    display: town.country,
+    adm1: null,
+    lat: town.at[0],
+    lon: town.at[1],
+    precision: 'city',
+    aliases: [...town.aliases],
+  }));
 }
 
 /**
@@ -973,6 +1559,10 @@ function uniqueNames(rows, log) {
         throw new Error(`${row.name} is also ${owner.name}: fix by hand`);
     } else if (owner && distanceKm(owner, row) < SAME_PLACE_KM) {
       log.merged.push(`${row.name} (${row.kind}): same place as ${owner.name}`);
+      if (row.kind === 'town')
+        log.duplicateTowns.push(
+          `${row.name}: already ${owner.name} (${owner.kind}), prune it from TOWNS`,
+        );
       continue;
     } else if (names.has(key)) qualify(row, names.get(key));
     kept.push(row);
@@ -1025,7 +1615,7 @@ function uniqueAliases(rows, log) {
   }
 }
 
-function toEntry(row) {
+function toEntry(row, links) {
   return {
     name: row.name,
     lat: round(row.lat, 4),
@@ -1036,6 +1626,7 @@ function toEntry(row) {
     ...(row.kind === 'country' || row.kind === 'capital'
       ? { prompt: true }
       : {}),
+    ...(links.has(row.name) ? { hotspot: links.get(row.name) } : {}),
   };
 }
 
@@ -1049,9 +1640,13 @@ export function serializeTheater(doc) {
 
 /**
  * @param {{countries: object[], places: object[], provinces: object[]}} ne
+ * @param {{cityMinPopulation?: number}} [options]
  * @returns {{gazetteer: object[], log: object}}
  */
-export function buildWorldGazetteer(ne) {
+export function buildWorldGazetteer(
+  ne,
+  { cityMinPopulation = CITY_MIN_POPULATION } = {},
+) {
   const log = {
     skipped: [],
     merged: [],
@@ -1059,14 +1654,26 @@ export function buildWorldGazetteer(ne) {
     ambiguous: [],
     truncated: [],
     fixed: [],
+    duplicateTowns: [],
+    unlinked: [],
   };
   const countries = countryRows(ne.countries, log);
   const countriesByA3 = new Map(countries.map((row) => [row.a3, row]));
-  const places = placeRows(ne.places, countriesByA3, log).sort(
-    (a, b) => RANK[a.kind] - RANK[b.kind] || b.population - a.population,
-  );
+  const places = placeRows(
+    ne.places,
+    countriesByA3,
+    log,
+    cityMinPopulation,
+  ).sort((a, b) => RANK[a.kind] - RANK[b.kind] || b.population - a.population);
+  // Natural Earth rows first: a hand-written town spelled like one of them
+  // nearby is that place, and is dropped.
   const rows = uniqueNames(
-    [...hotspotRows(ne.provinces), ...countries, ...places],
+    [
+      ...hotspotRows(ne.provinces),
+      ...countries,
+      ...places,
+      ...townRows(countries),
+    ],
     log,
   );
   for (const row of rows)
@@ -1082,8 +1689,18 @@ export function buildWorldGazetteer(ne) {
     ...of('country').sort(byName),
     ...of('capital').sort(byName),
     ...of('city').sort((a, b) => b.population - a.population || byName(a, b)),
+    ...of('town').sort(byName),
   ];
-  return { gazetteer: ordered.map(toEntry), log };
+  const links = new Map();
+  const names = new Set(rows.map((row) => row.name));
+  for (const [hotspot, cities] of Object.entries(CITY_HOTSPOTS))
+    for (const city of cities)
+      if (names.has(city)) links.set(city, hotspot);
+      else log.unlinked.push(`${city} → ${hotspot}: no row has this name`);
+  return {
+    gazetteer: ordered.map((row) => toEntry(row, links)),
+    log,
+  };
 }
 
 async function main() {
@@ -1103,9 +1720,16 @@ async function main() {
     new Map(sources.map((source) => [source.id, source])),
   );
   const count = (test) => gazetteer.filter(test).length;
+  const towns = new Set(TOWNS.map((town) => town.name));
   console.log(
-    `countries ${count((r) => r.precision === 'country')} · capitals ${count((r) => r.precision === 'city' && r.prompt)} · cities ${count((r) => r.precision === 'city' && !r.prompt)} · hotspots ${count((r) => r.precision === 'region' || r.precision === 'water')} · aliases ${gazetteer.reduce((sum, r) => sum + r.aliases.length, 0)}`,
+    `countries ${count((r) => r.precision === 'country')} · capitals ${count((r) => r.precision === 'city' && r.prompt)} · cities ${count((r) => r.precision === 'city' && !r.prompt && !towns.has(r.name))} · towns ${count((r) => towns.has(r.name))} · hotspots ${count((r) => r.precision === 'region' || r.precision === 'water')} · linked ${count((r) => r.hotspot)} · aliases ${gazetteer.reduce((sum, r) => sum + r.aliases.length, 0)}`,
   );
+  const labels = new Set(
+    gazetteer.filter((r) => r.precision === 'country').map((r) => r.country),
+  );
+  for (const town of TOWNS)
+    if (!labels.has(town.country))
+      throw new Error(`town ${town.name}: no country row ${town.country}`);
   for (const [what, lines] of Object.entries(log)) {
     console.log(`\n${what} (${lines.length}):`);
     for (const line of lines) console.log(`  ${line}`);

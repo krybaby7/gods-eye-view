@@ -18,8 +18,16 @@ import {
   newsMarkerImage,
   newsMarkerStyle,
 } from './model.js';
+import {
+  aggregateHotspots,
+  buildHotspotCard,
+  hotspotBubbleImage,
+  hotspotStyle,
+  newsMapMode,
+} from './hotspots.js';
 export * from './records.js';
 export * from './model.js';
+export * from './hotspots.js';
 export { createNewsSource } from './source.js';
 
 const HOVER_THROTTLE_MS = 90;
@@ -59,6 +67,7 @@ function frameCentreLon(lons) {
   return centre > 180 ? centre - 360 : centre;
 }
 const ENTITY_PREFIX = 'news:';
+const HOTSPOT_ENTITY_PREFIX = `${ENTITY_PREFIX}hotspot:`;
 
 /**
  * War monitor layer: one pin per located event story, never per item.
@@ -66,6 +75,11 @@ const ENTITY_PREFIX = 'news:';
  * Category toggles and the Situation Brief's actor filter narrow the pins
  * and the Situation panel's stories together; the actor filter is a passing
  * view, not a share-link parameter.
+ *
+ * Zoomed out (camera above NEWS_BUBBLE_HEIGHT_M) the layer draws one bubble
+ * per server-computed hotspot instead of pins; never both. Clicking a bubble
+ * flies there and sets the place filter, which narrows only the Situation
+ * panel's list (pins, bubbles, HUD and analyst records stay unfiltered).
  *
  * @param {{
  *   source: {getSnapshot: Function, requestDigest: Function},
@@ -115,7 +129,13 @@ export function createNewsLayer({
   let _contextIds = new Set();
   let _dataManager = null;
   let _rowListener = null;
+  let _mode = 'pins';
+  let _hoverHotspot = null;
+  let _placeFilter = null;
   const _entities = new Map();
+  // Bubble mode: entity and bubble per hotspot key.
+  const _bubbles = new Map();
+  const _bubbleData = new Map();
   const _listeners = new Set();
 
   function notify(reason = 'state') {
@@ -175,11 +195,58 @@ export function createNewsLayer({
     _viewer?.scene?.requestRender?.();
   }
 
-  /** Rebuild pins for the visible, located stories. */
+  function cameraHeight() {
+    return _viewer?.camera?.positionCartographic?.height;
+  }
+
+  /** Visible pinned stories grouped into bubbles. */
+  function currentBubbles() {
+    return aggregateHotspots(visibleStories().filter(isPinnedStory), {
+      categories: categories(),
+      newSinceMs: _newSinceMs,
+      selectedId: _selectedId,
+    });
+  }
+
+  /** Rebuild the markers for the current mode: pins or bubbles, never both. */
   function renderPins() {
     if (!_dataSource) return;
     _dataSource.entities.removeAll();
     _entities.clear();
+    _bubbles.clear();
+    _bubbleData.clear();
+    if (_mode === 'bubbles') renderBubbles();
+    else renderStoryPins();
+    _lastCullCamera = null;
+    cullBehindHorizon();
+    requestRender();
+  }
+
+  function renderBubbles() {
+    for (const bubble of currentBubbles()) {
+      const entity = new Cesium.Entity({
+        id: `${HOTSPOT_ENTITY_PREFIX}${bubble.key}`,
+        position: Cesium.Cartesian3.fromDegrees(bubble.lon, bubble.lat),
+        billboard: {
+          image: hotspotBubbleImage(hotspotStyle(bubble)),
+          verticalOrigin: Cesium.VerticalOrigin.CENTER,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+        properties: {
+          hotspotKey: bubble.key,
+          label: bubble.label,
+          storyCount: bubble.count,
+        },
+      });
+      entity.gevNewsHotspotKey = bubble.key;
+      _dataSource.entities.add(entity);
+      _bubbles.set(bubble.key, entity);
+      _bubbleData.set(bubble.key, bubble);
+    }
+  }
+
+  function renderStoryPins() {
     for (const story of visibleStories()) {
       if (!isPinnedStory(story)) continue;
       const color = newsCategoryColor(story.category, categories());
@@ -210,9 +277,37 @@ export function createNewsLayer({
       _dataSource.entities.add(entity);
       _entities.set(story.id, entity);
     }
-    _lastCullCamera = null;
+  }
+
+  /**
+   * Switch between pins and bubbles by camera height (with a dead band);
+   * the markers and cards follow. Returns whether the mode changed.
+   */
+  function updateMode() {
+    const next = newsMapMode(cameraHeight(), _mode);
+    if (next === _mode) return false;
+    _mode = next;
+    _hoverId = null;
+    _hoverHotspot = null;
+    if (_enabled) {
+      renderPins();
+      renderCards();
+      registerContexts();
+      // Bubble mode dropped the contexts; the selected pin is shared again.
+      const entity = _selectedId && _entities.get(_selectedId);
+      try {
+        if (entity) context.selectEntityContext?.(entity);
+      } catch {
+        /* context store unavailable */
+      }
+    }
+    return true;
+  }
+
+  /** Each frame: the mode check first, then the horizon cull. */
+  function onPreRender() {
+    updateMode();
     cullBehindHorizon();
-    requestRender();
   }
 
   /**
@@ -222,7 +317,7 @@ export function createNewsLayer({
   function cullBehindHorizon() {
     const camera = _viewer?.camera;
     const cameraPosition = camera?.positionWC;
-    if (!cameraPosition || !_entities.size) return;
+    if (!cameraPosition || (!_entities.size && !_bubbles.size)) return;
     if (
       _lastCullCamera &&
       Cesium.Cartesian3.equalsEpsilon(cameraPosition, _lastCullCamera, 0, 1)
@@ -234,21 +329,36 @@ export function createNewsLayer({
       cameraPosition,
     );
     const at = Cesium.JulianDate.now();
-    for (const entity of _entities.values()) {
+    for (const entity of [..._entities.values(), ..._bubbles.values()]) {
       const visible = occluder.isPointVisible(entity.position.getValue(at));
       if (entity.billboard.show?.getValue?.(at) !== visible)
         entity.billboard.show = visible;
     }
   }
 
-  /** Selected and hovered story cards through the overlay host. */
+  /**
+   * Selected and hovered story cards through the overlay host; in bubble
+   * mode only the hovered bubble's card.
+   */
   function renderCards() {
     if (!_enabled) return;
     const entries = [];
-    for (const [id, selected] of [
-      [_selectedId, true],
-      [_hoverId, false],
-    ]) {
+    const bubble = _mode === 'bubbles' && _bubbleData.get(_hoverHotspot);
+    if (bubble)
+      entries.push({
+        ...buildHotspotCard(bubble, {
+          position: Cesium.Cartesian3.fromDegrees(bubble.lon, bubble.lat),
+        }),
+        activate: () => layer.focusHotspot(bubble.key),
+      });
+    const storyCards =
+      _mode === 'bubbles'
+        ? []
+        : [
+            [_selectedId, true],
+            [_hoverId, false],
+          ];
+    for (const [id, selected] of storyCards) {
       if (!id || (!selected && id === _selectedId)) continue;
       const story = storyById(id);
       if (!isPinnedStory(story) || !isVisible(story)) continue;
@@ -269,9 +379,13 @@ export function createNewsLayer({
     });
   }
 
-  /** Register located stories so voice context can resolve them. */
+  /** Register pinned stories so voice context can resolve them; bubbles none. */
   function registerContexts() {
     if (typeof context.registerEntityContext !== 'function') return;
+    if (_mode === 'bubbles') {
+      clearContexts();
+      return;
+    }
     const next = new Set();
     try {
       for (const story of visibleStories()) {
@@ -321,12 +435,23 @@ export function createNewsLayer({
     return typeof id === 'string' && _entities.has(id) ? id : null;
   }
 
+  function pickedHotspotKey(picked) {
+    const key =
+      picked?.id?.gevNewsHotspotKey ?? picked?.primitive?.id?.gevNewsHotspotKey;
+    return typeof key === 'string' && _bubbles.has(key) ? key : null;
+  }
+
   function installHandlers() {
     if (_handler || !_viewer) return;
     _handler = screenSpaceEventHandlerFactory(_viewer);
     _handler.setInputAction((click) => {
       if (!isPointerFree()) return;
       const picked = _viewer.scene.pick(click.position);
+      const key = pickedHotspotKey(picked);
+      if (key) {
+        layer.focusHotspot(key);
+        return;
+      }
       const id = pickedStoryId(picked);
       if (id) {
         layer.selectStory(id, { focus: true });
@@ -343,6 +468,10 @@ export function createNewsLayer({
           sourceId: NEWS_OVERLAY_SOURCE_ID,
         },
       );
+      if (cardHit?.entryId?.startsWith('hotspot:')) {
+        layer.focusHotspot(cardHit.entryId.slice('hotspot:'.length));
+        return;
+      }
       if (cardHit?.entryId?.startsWith('story:')) {
         layer.selectStory(cardHit.entryId.slice('story:'.length), {
           focus: true,
@@ -355,9 +484,12 @@ export function createNewsLayer({
       const at = now();
       if (at - _lastHoverAt < HOVER_THROTTLE_MS) return;
       _lastHoverAt = at;
-      const id = pickedStoryId(_viewer?.scene.pick(movement.endPosition));
-      if (id === _hoverId) return;
+      const picked = _viewer?.scene.pick(movement.endPosition);
+      const key = pickedHotspotKey(picked);
+      const id = key ? null : pickedStoryId(picked);
+      if (id === _hoverId && key === _hoverHotspot) return;
       _hoverId = id;
+      _hoverHotspot = key;
       renderCards();
       requestRender();
     }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
@@ -368,7 +500,7 @@ export function createNewsLayer({
     );
     const scene = _viewer.scene;
     if (scene?.preRender?.addEventListener)
-      _removeCull = scene.preRender.addEventListener(cullBehindHorizon);
+      _removeCull = scene.preRender.addEventListener(onPreRender);
   }
 
   function removeHandlers() {
@@ -384,6 +516,7 @@ export function createNewsLayer({
     _theaterId ??= snapshot.theater.id;
     if (_selectedId && !storyById(_selectedId)) _selectedId = null;
     if (_hoverId && !storyById(_hoverId)) _hoverId = null;
+    _mode = newsMapMode(cameraHeight(), _mode);
     if (_enabled) {
       renderPins();
       renderCards();
@@ -469,6 +602,7 @@ export function createNewsLayer({
       if (_dataSource) _dataSource.show = true;
       overlayHost.setVisible(NEWS_OVERLAY_SOURCE_ID, true);
       installHandlers();
+      _mode = newsMapMode(cameraHeight(), _mode);
       if (_snapshot) applySnapshot(_snapshot);
       notify('state');
     },
@@ -479,7 +613,9 @@ export function createNewsLayer({
       _loading = false;
       _enabled = false;
       _hoverId = null;
+      _hoverHotspot = null;
       _selectedId = null;
+      _placeFilter = null;
       if (_dataSource) _dataSource.show = false;
       removeHandlers();
       overlayHost.clearSource(NEWS_OVERLAY_SOURCE_ID);
@@ -510,6 +646,8 @@ export function createNewsLayer({
       _dataSource = null;
       _viewer = null;
       _entities.clear();
+      _bubbles.clear();
+      _bubbleData.clear();
       _listeners.clear();
       _rowListener = null;
       _dataManager = null;
@@ -612,6 +750,47 @@ export function createNewsLayer({
       return true;
     },
 
+    /**
+     * Click on a bubble: one flight framing its visible stories (the
+     * `hotspot` kind caps the radius so the flight ends in pin mode), and
+     * the place filter on the Situation panel's list. Selects no story.
+     * @param {string} key Hotspot key, e.g. "country:Sudan".
+     */
+    focusHotspot(key) {
+      if (!_enabled) return false;
+      const bubble = currentBubbles().find((entry) => entry.key === key);
+      if (!bubble) return false;
+      _hoverHotspot = null;
+      focus.requestWorldFocus?.({
+        kind: 'hotspot',
+        id: `${HOTSPOT_ENTITY_PREFIX}${bubble.key}`,
+        label: 'PLACE',
+        position: Cesium.Cartesian3.fromDegrees(bubble.lon, bubble.lat),
+        radiusM: bubble.radiusM,
+      });
+      renderCards();
+      layer.setPlaceFilter(bubble.key);
+      return true;
+    },
+
+    /**
+     * Narrow the Situation panel's list (and its tab count) to one hotspot;
+     * null, or a key no open story has, clears it. Pins and bubbles stay
+     * unfiltered. Not a share parameter.
+     * @param {?string} key
+     */
+    setPlaceFilter(key) {
+      const story = key
+        ? openStories().find((entry) => entry.hotspot?.key === key)
+        : null;
+      const next = story
+        ? { key: story.hotspot.key, label: story.hotspot.label }
+        : null;
+      if (next?.key === _placeFilter?.key) return;
+      _placeFilter = next;
+      notify('filter');
+    },
+
     /** Category chips for the data-panel row. */
     getRowControls() {
       if (!categories().length) return null;
@@ -689,7 +868,9 @@ export function createNewsLayer({
       _theaterId = theaterId;
       _selectedId = null;
       _hoverId = null;
+      _hoverHotspot = null;
       _actorId = null;
+      _placeFilter = null;
       // The last Refresh outcome describes the other theater.
       _digestOutcome = null;
       return fetchSnapshot({ force: true });
@@ -798,11 +979,15 @@ export function createNewsLayer({
         categories: categories(),
         hiddenCategories: [..._hidden].sort(),
         actorFilter: _actorId,
+        placeFilter: _placeFilter ? { ..._placeFilter } : null,
         newSinceMs: _newSinceMs,
         stories,
+        // The list and its tab count: category, actor and place filters.
         visibleStories: filterStoriesByActor(
           filterNewsStories(stories, _hidden),
           _actorId,
+        ).filter(
+          (story) => !_placeFilter || story.hotspot?.key === _placeFilter.key,
         ),
         items: _snapshot?.items || [],
         citations: _snapshot?.citations || [],
@@ -914,9 +1099,11 @@ export function createNewsLayer({
       };
     },
 
-    /** Test seam: pins currently drawn, by story id. */
+    /** Test seam: pins (by story id) or bubbles (by key) currently drawn. */
     _testing: {
       pinIds: () => [..._entities.keys()],
+      hotspotKeys: () => [..._bubbles.keys()],
+      mode: () => _mode,
       contextIds: () => [..._contextIds],
     },
   };

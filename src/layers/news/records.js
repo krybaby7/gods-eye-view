@@ -117,6 +117,22 @@ function normalizeLocation(raw) {
   };
 }
 
+const HOTSPOT_KINDS = new Set(['region', 'water', 'country', 'place']);
+
+/** The server's bubble for a located story ({key, label, kind, lat, lon}). */
+function normalizeHotspot(raw) {
+  const location = normalizeLocation(raw);
+  const key = text(raw?.key, 200);
+  if (!location || !key || !HOTSPOT_KINDS.has(raw.kind)) return null;
+  return {
+    key,
+    label: text(raw.label, 160) || key,
+    kind: raw.kind,
+    lat: location.lat,
+    lon: location.lon,
+  };
+}
+
 function normalizeStory(raw) {
   if (!raw || typeof raw.id !== 'string' || typeof raw.title !== 'string')
     return null;
@@ -127,6 +143,7 @@ function normalizeStory(raw) {
     category: text(raw.category, 64),
     place: textOrNull(raw.place?.name, 160),
     location: normalizeLocation(raw.location),
+    hotspot: normalizeHotspot(raw.hotspot),
     eventAt: isoOrNull(raw.eventAt),
     firstSeenAt: isoOrNull(raw.firstSeenAt),
     updatedAt: isoOrNull(raw.updatedAt),

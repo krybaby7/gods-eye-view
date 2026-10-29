@@ -761,3 +761,100 @@ test('an actor with no open stories leaves the strip but keeps its id', async ()
   );
   assert.equal(layer.getSnapshot().actorFilter, 'egypt');
 });
+
+const IRAN = {
+  key: 'country:Iran',
+  label: 'Iran',
+  kind: 'country',
+  lat: 32.43,
+  lon: 53.69,
+};
+const GAZA = {
+  key: 'region:Gaza Strip',
+  label: 'Gaza Strip',
+  kind: 'region',
+  lat: 31.42,
+  lon: 34.37,
+};
+
+/** The fixture with the server's hotspots: st_a in Iran, st_b in Gaza. */
+function withHotspots() {
+  const snapshot = payload();
+  snapshot.stories = snapshot.stories.map((entry) => ({
+    ...entry,
+    hotspot: entry.id === 'st_a' ? IRAN : entry.id === 'st_b' ? GAZA : null,
+  }));
+  return snapshot;
+}
+
+test('a place filter shows a chip above the list; its clear button restores the list', async () => {
+  const { $, document, layer, rows, focus } = await mount({
+    snapshot: withHotspots(),
+  });
+  assert.equal($('.situation-place-filter').hidden, true);
+  assert.equal(layer.focusHotspot('region:Gaza Strip'), true);
+  assert.equal(focus.at(-1).kind, 'hotspot');
+  assert.deepEqual(
+    rows().map((row) => row.id),
+    ['st_b'],
+  );
+  assert.equal(
+    text(document.getElementById('situation-tab-stories')),
+    'Stories (1)',
+  );
+  assert.equal(text(document.getElementById('situation-panel-count')), '1');
+  const chip = $('.situation-place-filter');
+  assert.equal(chip.hidden, false);
+  const clear = chip.querySelector('button');
+  assert.equal(text(clear), 'Gaza Strip ✕');
+  assert.equal(
+    clear.getAttribute('aria-label'),
+    'Clear place filter: Gaza Strip',
+  );
+  // The chip sits above the list and its note.
+  const panel = document.getElementById('situation-tabpanel-stories');
+  assert.equal(panel.childNodes[0], chip);
+  // The pins stay unfiltered.
+  assert.deepEqual(layer._testing.pinIds(), ['st_a', 'st_b']);
+  clear.click();
+  assert.equal(layer.getSnapshot().placeFilter, null);
+  assert.equal($('.situation-place-filter').hidden, true);
+  assert.deepEqual(
+    rows().map((row) => row.id),
+    ['st_a', 'st_b', 'st_c', 'st_d'],
+  );
+});
+
+test('with a place filter the empty-list note and the cited hint name the place', async () => {
+  const { $, layer } = await mount({
+    snapshot: withHotspots(),
+    storage: createFakeStorage({ [BRIEF_EXPANDED_KEY]: '1' }),
+  });
+  layer.setPlaceFilter('region:Gaza Strip');
+  // The headline cites st_a (Iran) and st_c: both outside Gaza.
+  $('.situation-brief-headline').click();
+  assert.match(
+    text($('.situation-cited-note')),
+    /^Highlighted: the 2 stories this brief line cites; 2 hidden by the category, actor or place filter \(Gaza Strip\) · Clear$/,
+  );
+  $('[data-focus-key="chip-humanitarian-casualties"]').click();
+  assert.equal(
+    text($('.situation-note')),
+    'No stories in Gaza Strip under these categories.',
+  );
+  layer.setPlaceFilter(null);
+  $('[data-focus-key="chip-humanitarian-casualties"]').click();
+  for (const id of [
+    'war-military',
+    'humanitarian-casualties',
+    'political-diplomatic',
+  ])
+    if (
+      $(`[data-focus-key="chip-${id}"]`).getAttribute('aria-pressed') === 'true'
+    )
+      $(`[data-focus-key="chip-${id}"]`).click();
+  assert.equal(
+    text($('.situation-note')),
+    'No stories under these categories.',
+  );
+});

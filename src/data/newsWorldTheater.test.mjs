@@ -124,7 +124,8 @@ test('the gazetteer has every country, every capital, big cities and named hotsp
   const hotspots = [...rows('region'), ...rows('water')];
   assert.ok(countries.length >= 195, `countries ${countries.length}`);
   assert.ok(capitals.length >= 190, `capitals ${capitals.length}`);
-  assert.ok(cities.length >= 300, `cities ${cities.length}`);
+  // Every city of 300,000 or more, and the hand-written conflict towns.
+  assert.ok(cities.length >= 1300, `cities ${cities.length}`);
   assert.ok(
     hotspots.length >= 35 && hotspots.length <= 50,
     `hotspots ${hotspots.length}`,
@@ -149,8 +150,8 @@ test('World places resolve: countries, capitals, hotspots and other scripts', ()
     ['الخرطوم', 'Khartoum', 'city'],
     ['Ciudad de México', 'Mexico City', 'city'],
     ['Lagos, Nigeria', 'Lagos', 'city'],
-    // Goma is below a million in Natural Earth: its province is the place.
-    ['Goma, North Kivu', 'North Kivu', 'region'],
+    // Goma is a hand-written town; the finer place wins over its province.
+    ['Goma, North Kivu', 'Goma', 'city'],
     ['Copenhagen', 'Copenhagen', 'city'],
     ['DR Congo', 'Democratic Republic of the Congo', 'country'],
     ['Gaza', 'Gaza Strip', 'region'],
@@ -270,4 +271,94 @@ test('the World digest instructions list countries and capitals only, within a b
   assert.doesNotMatch(places, /Москва/);
   // About 3,000 tokens at four characters a token.
   assert.ok(text.length < 13_000, `${text.length} characters`);
+});
+
+test('towns, links and English spellings: fewer stories are model-placed', () => {
+  const at = (spelling) => resolvePlace(spelling, theater.gazetteer);
+  const row = (name) => theater.gazetteer.find((entry) => entry.name === name);
+  for (const [spelling, name, hotspot] of [
+    // Hand-written towns below the population threshold.
+    ['Hebron', 'Hebron', 'West Bank'],
+    ['Jenin', 'Jenin', 'West Bank'],
+    ['Khan Yunis', 'Khan Younis', 'Gaza Strip'],
+    ['Bakhmut', 'Bakhmut', 'Donbas'],
+    ['Pokrovsk', 'Pokrovsk', 'Donbas'],
+    ['El Fasher', 'El Fasher', 'Darfur'],
+    ['Kadugli', 'Kadugli', 'Kordofan'],
+    ['Marib', 'Marib', null],
+    ['Sumy', 'Sumy', null],
+    // Natural Earth cities the threshold brings in, linked by name.
+    ['Gaza City', 'Gaza City', 'Gaza Strip'],
+    ['Ramallah', 'Ramallah', 'West Bank'],
+    ['Donetsk', 'Donetsk', 'Donbas'],
+    ['Mariupol', 'Mariupol', 'Donbas'],
+    ['Horlivka', 'Horlivka', 'Donbas'],
+    ['Makiivka', 'Makiivka', 'Donbas'],
+    ['Nyala', 'Nyala', 'Darfur'],
+    ['Sevastopol', 'Sevastopol', 'Crimea'],
+    ['Wonsan', 'Wonsan', null],
+    // English press spellings of Natural Earth's names.
+    ['El Obeid', 'Al-Ubayyid', 'Kordofan'],
+    ['Taizz', "Ta'izz", null],
+    ['Hodeidah', 'Al Hudaydah', null],
+    ['Cebu', 'Cebu City', null],
+  ]) {
+    assert.equal(at(spelling)?.name, name, spelling);
+    assert.equal(row(name).hotspot ?? null, hotspot, spelling);
+  }
+  // Every link names a region or water row (the registry checks it too).
+  for (const entry of theater.gazetteer.filter((r) => r.hotspot))
+    assert.ok(
+      ['region', 'water'].includes(row(entry.hotspot)?.precision),
+      entry.name,
+    );
+  // Crimea's cities carry the internationally recognised country.
+  assert.equal(row('Sevastopol').country, 'Ukraine');
+});
+
+test('a smaller city never takes the bare name of a better-known namesake', () => {
+  const at = (spelling) => resolvePlace(spelling, theater.gazetteer)?.name;
+  // Toledo, Spain is below the threshold: the bare name matches nothing,
+  // so a Toledo story keeps the model's coordinates.
+  assert.equal(at('Toledo'), undefined);
+  assert.equal(at('Toledo, Ohio'), 'Toledo, Ohio');
+  assert.equal(at('Windsor'), undefined);
+  assert.equal(at('Pasadena'), undefined);
+  assert.equal(at('St. Petersburg'), 'Saint Petersburg');
+  assert.equal(at('St. Petersburg, Florida'), 'St. Petersburg, Florida');
+  assert.equal(at('Newcastle'), 'Newcastle upon Tyne');
+  // Natural Earth errata: an Algerian Arak and a Saudi Al Hillah carried
+  // the populations of Arak, Iran and Hillah, Iraq; Ha'il's English name
+  // was "Saudi Arabia".
+  assert.equal(at('Arak'), 'Arak');
+  assert.equal(
+    theater.gazetteer.find((entry) => entry.name === 'Arak').country,
+    'Iran',
+  );
+  assert.equal(at("Ha'il"), "Ha'il");
+  assert.equal(at('Al Hillah'), 'Hillah');
+  // Rows whose Natural Earth English name is another place's: renamed, the
+  // wrong name matching nothing, and the Sonoran "Mazatán" row dropped.
+  for (const [wrong, right] of [
+    ['Taza', 'Oujda'],
+    ['Juarez', 'Mazatlán'],
+    ['Pochinki', 'Cuttack'],
+    ['Guanajuato', 'Celaya'],
+    ['Thi Qar', 'Al Amarah'],
+    ['Lunan', 'Hangu'],
+  ]) {
+    assert.equal(at(right), right);
+    assert.notEqual(at(wrong), right, wrong);
+  }
+  assert.equal(at('Mansoura'), 'Mansoura');
+  assert.equal(at('El Mansura'), 'Mansoura');
+  assert.equal(at('Mazatán'), undefined);
+  assert.equal(
+    theater.gazetteer.find((entry) => entry.name === 'Mazatlán').country,
+    'Mexico',
+  );
+  assert.equal(
+    theater.gazetteer.find((entry) => entry.name === 'Hillah').country,
+    'Iraq',
+  );
 });
