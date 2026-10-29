@@ -308,8 +308,22 @@
 
 .situation-brief[hidden],
 .situation-brief-more[hidden],
-.situation-cited-note[hidden] {
+.situation-cited-note[hidden],
+.situation-place-filter[hidden] {
   display: none;
+}
+
+/* "Sudan ✕": the bubble's place filter on the Stories list. */
+.situation-place-filter {
+  display: flex;
+  margin-bottom: 6px;
+}
+
+.situation-place-chip {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .situation-brief-head {
