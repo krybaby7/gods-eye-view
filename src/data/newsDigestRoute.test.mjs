@@ -236,7 +236,7 @@ async function setup(
   const options = {
     cacheDir,
     now: () => NOW,
-    env: { PERPLEXITY_API_KEY: KEY, ...env },
+    env: { PERPLEXITY_API_KEY: KEY, NEWS_GDELT_FILES: 'on', ...env },
     fetchImpl: upstream({ perplexity, brief, calls }),
     gdeltQueue: createGdeltQueue({ sleep: async () => {} }),
     gdeltFiles: createGdeltFileFeed({ log: () => {} }),

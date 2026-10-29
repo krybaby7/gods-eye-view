@@ -9,8 +9,8 @@ import {
 
 /**
  * GDELT DOC 2.0 `domainis:` queries for outlets that are bot-protected or
- * publish no feed: the fallback when `NEWS_GDELT_FILES=off` (gdeltFiles.js
- * is the default). GDELT allows one request per five seconds per IP, so
+ * publish no feed: the default path (gdeltFiles.js reads the 15-minute
+ * files instead with `NEWS_GDELT_FILES=on`). GDELT allows one request per five seconds per IP, so
  * every query in the process goes through one queue: 5.5 s between
  * requests; after a 429 nothing is sent for at least 15 minutes, doubling
  * up to an hour; and one request per group per cycle.

@@ -81,7 +81,7 @@ async function service(t, overrides = {}) {
   const news = createNewsService({
     cacheDir,
     now: () => NOW,
-    env: {},
+    env: { NEWS_GDELT_FILES: 'on' },
     fetchImpl: fakeUpstream(calls),
     gdeltQueue: createGdeltQueue({ sleep: async () => {} }),
     gdeltFiles: createGdeltFileFeed({ log: () => {} }),
@@ -177,9 +177,9 @@ test('first snapshot starts collection; items, sources and health follow', async
   assert.equal(intervals[0].cleared, true);
 });
 
-test('NEWS_GDELT_FILES=off queries the search API instead, ten domains at most', async (t) => {
+test('by default GDELT outlets use the search API, ten domains at most', async (t) => {
   const { news, calls } = await service(t, {
-    env: { NEWS_GDELT_FILES: 'off' },
+    env: {},
   });
   await news.snapshot('iran-israel-us');
   await (await news.context('iran-israel-us')).collector.collectAll();
@@ -271,7 +271,7 @@ test('a restart does not read the same GDELT files again', async (t) => {
   const restarted = createNewsService({
     cacheDir,
     now: () => NOW,
-    env: {},
+    env: { NEWS_GDELT_FILES: 'on' },
     fetchImpl: fakeUpstream(calls),
     gdeltFiles: createGdeltFileFeed({ log: () => {} }),
     timers: { setInterval: () => ({}), clearInterval() {} },

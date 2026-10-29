@@ -72,7 +72,7 @@ Starting the dev server alone fetches nothing.
 | Transport         | Cadence | How                                                                                                                                                  |
 | ----------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `rss`             | 10 min  | RSS 2.0 and Atom, gzip/deflate, charset-aware, 4 MB cap. The parser is shared with the cockpit regional briefing (`server/providers/common/rss.js`). |
-| `gdelt-domain`    | 15 min  | GDELT 2.0's 15-minute data files by default; the DOC 2.0 search API with `NEWS_GDELT_FILES=off`. See [GDELT outlets](#gdelt-outlets).                |
+| `gdelt-domain`    | 15 min  | the DOC 2.0 search API by default; GDELT 2.0's 15-minute data files with `NEWS_GDELT_FILES=on`. See [GDELT outlets](#gdelt-outlets).                 |
 | `telegram-public` | 5 min   | The public web preview at `t.me/s/<channel>`. No account, bot or API. Flagged **fragile**: the markup can change.                                    |
 | `reliefweb`       | 30 min  | ReliefWeb API v2 reports for the theater's countries. Off unless `RELIEFWEB_APPNAME` is set.                                                         |
 | `link-only`       | never   | Listed in the Raw feed folders as a link to the publisher.                                                                                           |
@@ -82,9 +82,13 @@ through GDELT with a link to the publisher.
 
 ### GDELT outlets
 
-By default these outlets come from GDELT 2.0's Global Knowledge Graph (GKG)
-files: one zipped table of articles every 15 minutes, with no search API and
-no per-IP query limit.
+By default these outlets come from GDELT's DOC 2.0 search API (below). With
+`NEWS_GDELT_FILES=on` they come from GDELT 2.0's Global Knowledge Graph (GKG)
+files instead: one zipped table of articles every 15 minutes, with no search
+API and no per-IP query limit. The files path is off by default because on
+2026-10-28 a full day of files (about 120,000 articles from 6,400 websites)
+held none of the registered outlets, while reading them costs about 514 MB a
+day.
 
 - Each cycle reads `lastupdate.txt` and downloads every GKG file newer than the
   last one read: at most the last four (one hour) on first start or after a
@@ -113,7 +117,7 @@ no per-IP query limit.
   translated into English) is not read. It would add about 9 MB a file (about
   870 MB a day), and a day of it held none of the registered outlets.
 
-`NEWS_GDELT_FILES=off` switches back to the DOC 2.0 search API: `domainis:`
+Without `NEWS_GDELT_FILES=on`, the DOC 2.0 search API is used: `domainis:`
 OR-groups of up to 10 domains, at most 239 query characters with the terms, a
 24 h window, and one process-wide queue with 5.5 s between requests. After a
 429 the whole queue sends nothing for at least 15 minutes, doubling up to an
@@ -471,7 +475,7 @@ usual vantage point, not any one article.
 | `PERPLEXITY_API_KEY`           | unset   | Turns on the digest. Without it, collection and the Raw feed still work and Refresh is disabled with "no key". |
 | `NEWS_DIGEST_DAILY_BUDGET_USD` | `2.00`  | Daily spend cap.                                                                                               |
 | `RELIEFWEB_APPNAME`            | unset   | Turns on the ReliefWeb source.                                                                                 |
-| `NEWS_GDELT_FILES`             | on      | `off` reads GDELT outlets through the DOC 2.0 search API instead of the 15-minute files.                       |
+| `NEWS_GDELT_FILES`             | off     | `on` reads GDELT outlets from the 15-minute files instead of the DOC 2.0 search API (about 514 MB a day).      |
 
 Sources live in `public/news/sources.json`. The theater lives in
 `public/news/theaters/<id>.json`: a short scope note (`brief`; it names the

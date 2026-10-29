@@ -44,12 +44,16 @@ const TRANSLATED_LANGUAGES = new Map([
   ['tur', 'tr'],
 ]);
 
-/** `NEWS_GDELT_FILES=off` falls back to the DOC search API. */
+/**
+ * The files path is opt-in with `NEWS_GDELT_FILES=on`. On 2026-10-28 a full
+ * day of files held none of the registered outlets, and reading them costs
+ * about 514 MB a day, so GDELT outlets use the DOC search API by default.
+ */
 export function gdeltFilesEnabled(env = {}) {
   return (
     String(env.NEWS_GDELT_FILES || '')
       .trim()
-      .toLowerCase() !== 'off'
+      .toLowerCase() === 'on'
   );
 }
 

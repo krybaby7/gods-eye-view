@@ -481,9 +481,9 @@ test('sources report counts, and one clear error when the files fail', async () 
   );
 });
 
-test('NEWS_GDELT_FILES=off switches the files path off', () => {
-  assert.equal(gdeltFilesEnabled({}), true);
+test('the files path is opt-in with NEWS_GDELT_FILES=on', () => {
+  assert.equal(gdeltFilesEnabled({}), false);
   assert.equal(gdeltFilesEnabled({ NEWS_GDELT_FILES: 'on' }), true);
+  assert.equal(gdeltFilesEnabled({ NEWS_GDELT_FILES: ' ON ' }), true);
   assert.equal(gdeltFilesEnabled({ NEWS_GDELT_FILES: 'off' }), false);
-  assert.equal(gdeltFilesEnabled({ NEWS_GDELT_FILES: ' OFF ' }), false);
 });
