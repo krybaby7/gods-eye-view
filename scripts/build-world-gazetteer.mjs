@@ -183,7 +183,7 @@ const CITY_ALIASES = {
   'Washington, D.C.': ['Washington', 'Washington DC'],
   'New York City': ['NYC'],
   // English press spellings of Natural Earth's names.
-  'Al-Ubayyid': ['El Obeid', 'El-Obeid', 'Obeid'],
+  'Al-Ubayyid': ['El Obeid', 'Obeid'],
   "Ta'izz": ['Taiz'],
   'Al Hudaydah': ['Hodeidah', 'Hudaydah', 'Hodeida'],
   'Cebu City': ['Cebu'],
