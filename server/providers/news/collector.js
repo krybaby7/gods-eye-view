@@ -5,6 +5,11 @@ import {
   gdeltQueue,
   groupGdeltSources,
 } from './fetchers/gdeltDomain.js';
+import {
+  fetchGdeltFileSources,
+  gdeltFileFeed,
+  gdeltFilesEnabled,
+} from './fetchers/gdeltFiles.js';
 import { fetchReliefwebSource } from './fetchers/reliefweb.js';
 import { statementHosts } from './fetchers/text.js';
 import { ITEM_RETENTION_MS } from './store.js';
@@ -24,6 +29,7 @@ export const NEWS_POLL_CADENCE_MS = Object.freeze({
 });
 const TICK_MS = 60_000;
 const FEED_CONCURRENCY = 4;
+const GDELT_FILES_CURSOR = 'gdeltFiles';
 
 async function mapLimited(list, limit, worker) {
   const results = new Array(list.length);
@@ -75,6 +81,7 @@ function laterIso(iso, ms) {
  *   env?: Record<string, string|undefined>,
  *   now?: () => number,
  *   queue?: ReturnType<import('./fetchers/gdeltDomain.js').createGdeltQueue>,
+ *   gdeltFiles?: ReturnType<import('./fetchers/gdeltFiles.js').createGdeltFileFeed>,
  *   timers?: {setInterval: Function, clearInterval: Function},
  *   onUpdate?: () => void,
  * }} options
@@ -86,12 +93,17 @@ export function createNewsCollector({
   env = process.env,
   now = Date.now,
   queue = gdeltQueue,
+  gdeltFiles = gdeltFileFeed,
   timers = globalThis,
   onUpdate = () => {},
 }) {
   const { theater, sourcesById } = registry;
   const sources = theater.sourceIds.map((id) => sourcesById.get(id));
   const linkHosts = statementHosts([...sourcesById.values()]);
+  // Every theater's GDELT outlets, so the shared file feed keeps their rows.
+  const gdeltDomains = [...sourcesById.values()]
+    .filter((source) => source.transport.type === 'gdelt-domain')
+    .map((source) => source.transport.domain);
   const health = new Map(sources.map((s) => [s.id, initialHealth(s)]));
   const lastRunAt = new Map();
   const running = new Map();
@@ -120,6 +132,18 @@ export function createNewsCollector({
           }),
         );
       case 'gdelt-domain': {
+        if (gdeltFilesEnabled(env)) {
+          const { results, cursor } = await fetchGdeltFileSources(list, {
+            ...options,
+            feed: gdeltFiles,
+            after: store.cursor(GDELT_FILES_CURSOR),
+            domains: gdeltDomains,
+            terms: theater.gdeltTerms,
+            now,
+          });
+          store.setCursor(GDELT_FILES_CURSOR, cursor);
+          return results;
+        }
         const results = [];
         for (const group of groupGdeltSources(list, theater.gdeltTerms)) {
           const { items, statuses } = await fetchGdeltDomainGroup(group, {
@@ -142,6 +166,7 @@ export function createNewsCollector({
     const list = sourcesOf(type);
     if (!list.length) return { added: 0 };
     const attemptAt = now();
+    const cursorBefore = store.cursor(GDELT_FILES_CURSOR);
     for (const source of list) health.get(source.id).loading = true;
     let results;
     try {
@@ -192,7 +217,12 @@ export function createNewsCollector({
       console.warn(
         `[news] ${theater.id} ${type}: ${results.length - failing}/${results.length} sources ok`,
       );
-    if (outcome.added || outcome.pruned) await store.save();
+    if (
+      outcome.added ||
+      outcome.pruned ||
+      store.cursor(GDELT_FILES_CURSOR) !== cursorBefore
+    )
+      await store.save();
     onUpdate();
     return outcome;
   }

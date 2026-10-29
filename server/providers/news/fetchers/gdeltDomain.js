@@ -9,9 +9,11 @@ import {
 
 /**
  * GDELT DOC 2.0 `domainis:` queries for outlets that are bot-protected or
- * publish no feed. GDELT allows one request per five seconds per IP, so every
- * query in the process goes through one queue: 5.5 s between requests, and
- * an exponential pause after a 429.
+ * publish no feed: the default path (gdeltFiles.js reads the 15-minute
+ * files instead with `NEWS_GDELT_FILES=on`). GDELT allows one request per five seconds per IP, so
+ * every query in the process goes through one queue: 5.5 s between
+ * requests; after a 429 nothing is sent for at least 15 minutes, doubling
+ * up to an hour; and one request per group per cycle.
  */
 
 export const GDELT_DOMAINS_PER_QUERY = 10;
@@ -22,8 +24,11 @@ export const GDELT_DOMAINS_PER_QUERY = 10;
  */
 export const GDELT_MAX_QUERY_CHARS = 239;
 export const GDELT_SPACING_MS = 5_500;
-const GDELT_BACKOFF_MS = 60_000;
-const GDELT_MAX_BACKOFF_MS = 15 * 60_000;
+const GDELT_BACKOFF_MS = 15 * 60_000;
+const GDELT_MAX_BACKOFF_MS = 60 * 60_000;
+// A minute under the 15-minute cadence, so a cycle that starts a little
+// early still asks.
+const GDELT_REPEAT_MS = 14 * 60_000;
 const GDELT_ENDPOINT = 'https://api.gdeltproject.org/api/v2/doc/doc';
 const GDELT_LANGUAGES = new Map([
   ['english', 'en'],
@@ -36,46 +41,65 @@ const GDELT_LANGUAGES = new Map([
 ]);
 
 /**
- * A serial request queue with minimum spacing and 429 backoff.
- * @param {{spacingMs?: number, backoffMs?: number, maxBackoffMs?: number, now?: () => number, sleep?: (ms: number) => Promise<void>}} [options]
+ * A serial request queue with minimum spacing and 429 backoff. After a 429
+ * the whole queue pauses: tasks reaching the head before the pause ends are
+ * not run and resolve to `{status: 429, ok: false, backoffUntil}` at once. A
+ * task with a `key` (the query) that ran within `repeatMs` is not run again;
+ * it resolves to that run's result.
+ * @param {{spacingMs?: number, backoffMs?: number, maxBackoffMs?: number, repeatMs?: number, now?: () => number, sleep?: (ms: number) => Promise<void>}} [options]
  */
 export function createGdeltQueue({
   spacingMs = GDELT_SPACING_MS,
   backoffMs = GDELT_BACKOFF_MS,
   maxBackoffMs = GDELT_MAX_BACKOFF_MS,
+  repeatMs = GDELT_REPEAT_MS,
   now = Date.now,
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms).unref?.()),
 } = {}) {
   let tail = Promise.resolve();
   let nextAt = 0;
   let backoff = 0;
+  let backoffUntil = 0;
   let pending = 0;
+  /** @type {Map<string, {at: number, result: unknown}>} */
+  const answered = new Map();
   return {
     /**
      * Run `task` after the previous task settles and the spacing elapses.
-     * A task result with `status === 429` doubles the pause before the next.
+     * A task result with `status === 429` pauses the queue.
      * @template T
      * @param {() => Promise<T>} task
+     * @param {{key?: string}} [options]
      * @returns {Promise<T>}
      */
-    run(task) {
+    run(task, { key } = {}) {
       pending += 1;
       const job = tail.then(async () => {
-        const wait = nextAt - now();
-        if (wait > 0) await sleep(wait);
         try {
-          const result = await task();
-          if (result?.status === 429) {
-            backoff = backoff ? Math.min(backoff * 2, maxBackoffMs) : backoffMs;
-            nextAt = now() + backoff;
-          } else {
-            backoff = 0;
+          const last = key === undefined ? null : answered.get(key);
+          if (last && now() - last.at < repeatMs) return last.result;
+          if (now() < backoffUntil)
+            return { status: 429, ok: false, text: '', backoffUntil };
+          const wait = nextAt - now();
+          if (wait > 0) await sleep(wait);
+          try {
+            const result = await task();
+            if (result?.status === 429) {
+              backoff = backoff
+                ? Math.min(backoff * 2, maxBackoffMs)
+                : backoffMs;
+              backoffUntil = now() + backoff;
+              nextAt = backoffUntil;
+            } else {
+              backoff = 0;
+              nextAt = now() + spacingMs;
+              if (key !== undefined) answered.set(key, { at: now(), result });
+            }
+            return result;
+          } catch (error) {
             nextAt = now() + spacingMs;
+            throw error;
           }
-          return result;
-        } catch (error) {
-          nextAt = now() + spacingMs;
-          throw error;
         } finally {
           pending -= 1;
         }
@@ -84,7 +108,7 @@ export function createGdeltQueue({
       return job;
     },
     state() {
-      return { pending, nextAt, backoffMs: backoff };
+      return { pending, nextAt, backoffMs: backoff, backoffUntil };
     },
   };
 }
@@ -191,13 +215,23 @@ export async function fetchGdeltDomainGroup(sources, options = {}) {
     timespan,
   });
   try {
-    const response = await queue.run(() =>
-      fetchNewsBody(`${GDELT_ENDPOINT}?${params}`, {
-        ...fetchOptions,
-        timeoutMs: 30_000,
-        headers: { Accept: 'application/json' },
-      }),
+    const response = await queue.run(
+      () =>
+        fetchNewsBody(`${GDELT_ENDPOINT}?${params}`, {
+          ...fetchOptions,
+          timeoutMs: 30_000,
+          headers: { Accept: 'application/json' },
+        }),
+      { key: params.get('query') },
     );
+    if (response.backoffUntil)
+      return {
+        items: [],
+        statuses: statuses({
+          ...httpFailure(429),
+          error: `GDELT: rate limited, next try after ${new Date(response.backoffUntil).toISOString().slice(11, 16)} UTC`,
+        }),
+      };
     if (!response.ok)
       return { items: [], statuses: statuses(httpFailure(response.status)) };
     let payload;

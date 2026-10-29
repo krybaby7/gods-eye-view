@@ -1,5 +1,11 @@
 # Changelog
 
+- War monitor: GDELT outlets come from GDELT 2.0's 15-minute data files
+  instead of its search API, which answered with rate limits and no results
+  on 2026-10-28; `NEWS_GDELT_FILES=off` switches back. On the search API path,
+  a 429 now pauses the whole queue for at least 15 minutes. A Telegram channel
+  whose public preview redirects away reports "no public preview".
+
 - Add Air, Sea, Space, Conflict, Hazards, City and Signals lenses above DATA
   LAYERS, with derived status, shared-layer protection and Shift+1–7 shortcuts.
   Missing keys and local receivers are skipped using catalog configuration;

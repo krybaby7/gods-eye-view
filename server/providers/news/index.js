@@ -5,6 +5,7 @@ import { admitSameSite } from '../common/same-site.js';
 import { clientKey, makeRateLimiter } from '../common/rate-limit.js';
 import { defaultSourceRoot } from '../common/source-root.js';
 import { gdeltQueue as defaultGdeltQueue } from './fetchers/gdeltDomain.js';
+import { gdeltFileFeed as defaultGdeltFileFeed } from './fetchers/gdeltFiles.js';
 import { createNewsCollector } from './collector.js';
 import { loadNewsRegistry } from './registry.js';
 import { createNewsItemStore } from './store.js';
@@ -66,6 +67,7 @@ function roundUsd(value) {
  *   env?: Record<string, string|undefined>,
  *   now?: () => number,
  *   gdeltQueue?: object,
+ *   gdeltFiles?: object,
  *   timers?: {setInterval: Function, clearInterval: Function},
  *   digestRunner?: typeof runDigest,
  *   briefRunner?: typeof runBrief,
@@ -79,6 +81,7 @@ export function createNewsService(options = {}) {
     env = process.env,
     now = Date.now,
     gdeltQueue = defaultGdeltQueue,
+    gdeltFiles = defaultGdeltFileFeed,
     timers = globalThis,
     digestRunner = runDigest,
     briefRunner = runBrief,
@@ -141,6 +144,7 @@ export function createNewsService(options = {}) {
       env,
       now,
       queue: gdeltQueue,
+      gdeltFiles,
       timers,
       onUpdate: () => {
         ctx.healthRevision++;

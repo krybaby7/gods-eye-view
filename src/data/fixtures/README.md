@@ -41,3 +41,13 @@
   2026-09-25. Each record names its XYZ tile and expected traffic eligibility.
   Modified, test-only OpenStreetMap data; same ODbL attribution and database
   share-alike terms as the OpenFreeMap fixtures above.
+
+- `gdelt-gkg-20261028.csv` — eight rows of GDELT 2.0 Global Knowledge Graph
+  2.1 files from `https://data.gdeltproject.org/gdeltv2/`, retrieved
+  2026-10-28: six from `20261028210000.gkg.csv` and two from
+  `20261028000000.translation.gkg.csv`, one of them with line breaks inside its
+  extras XML. All 27 tab-separated columns are kept; long list fields are cut
+  to their first entry. Used by the GDELT files fetcher tests; never loaded at
+  runtime. GDELT data is free to use with citation and a link (GDELT Project,
+  https://www.gdeltproject.org/about.html#termsofuse); the titles and URLs
+  belong to their publishers.

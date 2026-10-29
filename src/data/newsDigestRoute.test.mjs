@@ -5,10 +5,12 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { createGdeltQueue } from '../../server/providers/news/fetchers/gdeltDomain.js';
+import { createGdeltFileFeed } from '../../server/providers/news/fetchers/gdeltFiles.js';
 import {
   createNewsService,
   newsProxy,
 } from '../../server/providers/news/index.js';
+import { gdeltDataResponse, gkgZip } from '../testSupport/gdeltFiles.mjs';
 
 const NOW = Date.parse('2026-10-26T12:00:00Z');
 const KEY = 'pplx-fixture-secret';
@@ -28,7 +30,19 @@ function upstream({ perplexity, brief, calls }) {
     }
     calls.push(url.hostname);
     if (url.hostname === 'api.perplexity.ai') return perplexity(body, init);
-    // CENTCOM has no current feed and arrives through GDELT.
+    // CENTCOM has no current feed and arrives through GDELT's files.
+    if (url.hostname === 'data.gdeltproject.org')
+      return gdeltDataResponse(url, {
+        latest: '20261026080000',
+        files: {
+          20261026080000: gkgZip('20261026080000', [
+            [
+              'https://www.centcom.mil/story',
+              'CENTCOM strikes drone storage site near Bandar Abbas',
+            ],
+          ]),
+        },
+      });
     if (url.hostname === 'api.gdeltproject.org')
       return Response.json({
         articles: url.searchParams.get('query').includes('domainis:centcom.mil')
@@ -222,9 +236,10 @@ async function setup(
   const options = {
     cacheDir,
     now: () => NOW,
-    env: { PERPLEXITY_API_KEY: KEY, ...env },
+    env: { PERPLEXITY_API_KEY: KEY, NEWS_GDELT_FILES: 'on', ...env },
     fetchImpl: upstream({ perplexity, brief, calls }),
     gdeltQueue: createGdeltQueue({ sleep: async () => {} }),
+    gdeltFiles: createGdeltFileFeed({ log: () => {} }),
     timers: { setInterval: () => ({}), clearInterval() {} },
     ...(digestRunner ? { digestRunner } : {}),
   };
