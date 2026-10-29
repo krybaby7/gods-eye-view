@@ -21,6 +21,7 @@ import {
   encodeLayerStateParams,
   normalizeLayerState,
 } from '../src/data/layerState.js';
+import { assignHotspots } from '../server/providers/news/hotspots.js';
 
 export const ARTIFACT_DIR = 'qa-artifacts/news';
 const VIEWPORT = { width: 1440, height: 900 };
@@ -529,7 +530,8 @@ export function fixtureSnapshot({
     theaters: THEATERS,
     items,
     citations: [],
-    stories,
+    // GET /api/news serves stories with their hotspot already assigned.
+    stories: assignHotspots(stories, THEATER.gazetteer),
     lastRun: {
       id: digested ? 'run_2' : 'run_1',
       status: 'ok',
@@ -612,9 +614,11 @@ const region = (name, lat, lon) => ({
 /**
  * The World theater after one digest: pins on every continent (two either
  * side of the date line), a list-only development, a model-placed pin, and
- * no Situation Brief.
+ * no Situation Brief. `crowded` adds a second Darfur story, so that one
+ * bubble counts more than one; the hotspot steps serve it and then restore
+ * the plain snapshot, which the older World steps assert against.
  */
-export function worldSnapshot() {
+export function worldSnapshot({ crowded = false } = {}) {
   const w = { theater: 'world', digested: true };
   const items = [
     item(
@@ -829,6 +833,17 @@ export function worldSnapshot() {
       { perspectives: ['north-america-press'], updated: 45 },
     ),
   ];
+  if (crowded)
+    stories.push(
+      s(
+        'st_w_elfasher',
+        'Hospital shelled in El Fasher',
+        'humanitarian',
+        region('Darfur', 13.63, 25.35),
+        ['w-dabanga'],
+        { perspectives: ['africa-press'], updated: 8 },
+      ),
+    );
   const digest = {
     id: 'run_w1',
     status: 'ok',
@@ -838,7 +853,7 @@ export function worldSnapshot() {
     costUsd: 0.47,
   };
   return {
-    revision: 'world-1',
+    revision: crowded ? 'world-1-crowded' : 'world-1',
     retrievedAt: new Date().toISOString(),
     theater: {
       id: 'world',
@@ -853,7 +868,7 @@ export function worldSnapshot() {
     theaters: THEATERS,
     items,
     citations: [],
-    stories,
+    stories: assignHotspots(stories, WORLD.gazetteer),
     lastRun: digest,
     lastDigest: digest,
     brief: null,
@@ -976,7 +991,7 @@ async function serveFixtures(page, state) {
     if (url.pathname === '/api/news' || url.pathname === '/api/news/') {
       if (url.searchParams.get('theater') === 'world') {
         state.worldGets++;
-        void json(200, worldSnapshot());
+        void json(200, worldSnapshot({ crowded: state.worldCrowded }));
         return;
       }
       void json(
@@ -1199,6 +1214,187 @@ function overflow(page) {
   });
 }
 
+/**
+ * Put the camera straight above a point. The layer picks bubbles or pins from
+ * the camera height on the next render, so wait one out.
+ */
+async function setCamera(page, view) {
+  await page.evaluate(({ lon, lat, heightM }) => {
+    const { camera } = window.__godsEyeView.viewer;
+    camera.cancelFlight();
+    camera.setView({
+      destination: camera.position.constructor.fromDegrees(lon, lat, heightM),
+      orientation: { heading: 0, pitch: -Math.PI / 2, roll: 0 },
+    });
+  }, view);
+  await wait(1200);
+}
+
+/** The map mode, camera height and position, and what the layer drew. */
+function mapView(page) {
+  return page.evaluate(() => {
+    const { camera } = window.__godsEyeView.viewer;
+    const news = window.__godsEyeView.dataManager.layers.get('news').module;
+    const { x, y, z } = camera.position;
+    return {
+      mode: news._testing.mapMode(),
+      heightKm: Math.round(camera.positionCartographic.height / 1000),
+      position: { x, y, z },
+      pins: news._testing.pinIds(),
+      hotspots: news._testing.hotspotKeys(),
+    };
+  });
+}
+
+/** The view once the camera has stopped moving (a flight takes about 2 s). */
+async function settledView(page) {
+  let view = await mapView(page);
+  for (let i = 0; i < 12; i++) {
+    await wait(600);
+    const next = await mapView(page);
+    const moved = Math.hypot(
+      next.position.x - view.position.x,
+      next.position.y - view.position.y,
+      next.position.z - view.position.z,
+    );
+    view = next;
+    if (moved < 1) break;
+  }
+  return view;
+}
+
+/** Straight-line distance between two camera positions, in metres. */
+const cameraTravel = (a, b) =>
+  Math.hypot(
+    a.position.x - b.position.x,
+    a.position.y - b.position.y,
+    a.position.z - b.position.z,
+  );
+
+/**
+ * Every news entity id, and each bubble with its count (read from the SVG,
+ * where the layer draws it), whether it is on the near side of the globe, and
+ * where it sits in the page. `free` marks a bubble nothing but the map covers.
+ */
+function bubbleEntities(page) {
+  return page.evaluate(() => {
+    const { viewer } = window.__godsEyeView;
+    let source = null;
+    for (let i = 0; i < viewer.dataSources.length; i++)
+      if (viewer.dataSources.get(i).name === 'news')
+        source = viewer.dataSources.get(i);
+    const time = viewer.clock.currentTime;
+    const canvas = viewer.canvas.getBoundingClientRect();
+    const panel = document
+      .getElementById('situation-panel')
+      .getBoundingClientRect();
+    const entities = source.entities.values;
+    return {
+      ids: entities.map((entity) => entity.id),
+      bubbles: entities
+        .filter((entity) => entity.gevNewsHotspotKey)
+        .map((entity) => {
+          const svg = decodeURIComponent(entity.billboard.image.getValue());
+          const screen = viewer.scene.cartesianToCanvasCoordinates(
+            entity.position.getValue(time),
+          );
+          const x = screen ? canvas.left + screen.x : null;
+          const y = screen ? canvas.top + screen.y : null;
+          const near = entity.billboard.show?.getValue?.(time) !== false;
+          const inside =
+            screen &&
+            x > canvas.left + 30 &&
+            x < Math.min(canvas.right, panel.left) - 30 &&
+            y > canvas.top + 60 &&
+            y < canvas.bottom - 60;
+          const top = inside ? document.elementFromPoint(x, y) : null;
+          return {
+            key: entity.gevNewsHotspotKey,
+            count: Number(/<text[^>]*>(\d+)<\/text>/.exec(svg)?.[1]),
+            x,
+            y,
+            free: Boolean(
+              near && inside && top && !top.closest('#situation-panel'),
+            ),
+          };
+        }),
+    };
+  });
+}
+
+/** The Stories list and tab as the panel shows them. */
+function storiesView(page) {
+  return page.evaluate(() => {
+    const chip = document.querySelector(
+      '#situation-panel .situation-place-chip',
+    );
+    const panel = document
+      .getElementById('situation-panel')
+      .getBoundingClientRect();
+    const box = chip?.getBoundingClientRect();
+    return {
+      rows: [
+        ...document.querySelectorAll('#situation-panel .situation-story'),
+      ].map((row) => row.dataset.storyId),
+      tab: document.getElementById('situation-tab-stories').textContent,
+      chip: chip
+        ? {
+            text: chip.textContent,
+            label: chip.getAttribute('aria-label'),
+            fits:
+              box.width > 0 &&
+              box.left >= panel.left - 1 &&
+              box.right <= panel.right + 1 &&
+              chip.scrollWidth <= chip.clientWidth + 1,
+          }
+        : null,
+    };
+  });
+}
+
+/** The painted hover card for a bubble, and the accessible mirror of it. */
+function hotspotCard(page, key) {
+  return page.evaluate(async (entryId) => {
+    const { getOverlayPaintRect, hitTestWorldOverlay } =
+      await import('/src/overlays/worldOverlay.js');
+    const rect = getOverlayPaintRect('news', entryId);
+    const hit = rect
+      ? hitTestWorldOverlay(rect.x + rect.w / 2, rect.y + rect.h / 2, {
+          sourceId: 'news',
+        })
+      : null;
+    return {
+      painted: Boolean(rect),
+      entryId: hit?.entryId ?? null,
+      title: hit?.entry?.title ?? null,
+      mirror: [
+        ...document.querySelectorAll(
+          '#world-overlay-actions button[data-overlay-action-key]',
+        ),
+      ]
+        .filter((button) => button.dataset.overlayActionKey.endsWith(entryId))
+        .map((button) => button.getAttribute('aria-label')),
+    };
+  }, `hotspot:${key}`);
+}
+
+/**
+ * The bubbles a World snapshot implies: open stories that pin (an event with
+ * a location), grouped by hotspot key.
+ */
+function expectedBubbles(snapshot) {
+  const counts = {};
+  for (const story of snapshot.stories)
+    if (
+      story.status === 'open' &&
+      story.kind !== 'development' &&
+      story.location &&
+      story.hotspot
+    )
+      counts[story.hotspot.key] = (counts[story.hotspot.key] || 0) + 1;
+  return counts;
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const urlIndex = args.indexOf('--url');
@@ -1238,6 +1434,7 @@ async function main() {
       briefFailed: false,
       briefPosts: 0,
       worldGets: 0,
+      worldCrowded: false,
     };
     if (fixtures) {
       await serveFixtures(page, state);
@@ -1768,6 +1965,7 @@ async function main() {
       await step(
         'Frame theater flies once over every visible pin',
         async () => {
+          const before = await mapView(page);
           const requests = await page.evaluate(
             () =>
               new Promise((resolve) => {
@@ -1795,6 +1993,13 @@ async function main() {
           assert.equal(requests[0].kind, 'theater');
           assert.ok(requests[0].radiusM > 500_000, String(requests[0].radiusM));
           await wait(2500);
+          // Recorded, not asserted: the spec leaves which map a regional
+          // theater frames as to the owner.
+          const after = await settledView(page);
+          assert.ok(cameraTravel(before, after) > 1000, 'the camera flew');
+          console.log(
+            `  frame theater iran-israel-us: mode ${after.mode}, height ${after.heightKm} km`,
+          );
           await shot(page, '17-frame-theater');
         },
       );
@@ -1940,6 +2145,10 @@ async function main() {
       );
       await wait(400);
     };
+    // Camera views: under the 3,000 km pin threshold, and over 3,500 km.
+    const WORLD_PIN_VIEW = { lon: 55, lat: 20, heightM: 2_000_000 };
+    const IRAN_PIN_VIEW = { lon: 52, lat: 31, heightM: 2_000_000 };
+    const WORLD_BUBBLE_VIEW = { lon: 45, lat: 25, heightM: 12_000_000 };
     const WORLD_PINS = [
       'st_w_apia',
       'st_w_caracas',
@@ -1964,6 +2173,9 @@ async function main() {
             'two theaters: the menu is live',
           );
           await pickTheater('world');
+          // Frame theater left the camera high enough for bubbles; the pin
+          // assertions below need the pin map.
+          await setCamera(page, WORLD_PIN_VIEW);
           let s = await newsState(page);
           assert.ok(state.worldGets > 0);
           // Nothing carries over from the Iran run: no Refresh outcome, no
@@ -2057,10 +2269,208 @@ async function main() {
         },
       );
 
+    // Hotspot view. The World fixture serves a second Darfur story while these
+    // steps run, so one bubble counts more than one.
+    const setWorldCrowded = async (crowded) => {
+      state.worldCrowded = crowded;
+      await page.evaluate(() =>
+        window.__godsEyeView.dataManager.layers.get('news').module.refresh(),
+      );
+      await waitFor(
+        page,
+        (want) =>
+          window.__godsEyeView.dataManager.layers
+            .get('news')
+            .module.getSnapshot()
+            .stories.some((story) => story.id === 'st_w_elfasher') === want,
+        crowded,
+        'the World fixture to reload',
+      );
+      await wait(400);
+    };
+    const waitForMode = (mode) =>
+      waitFor(
+        page,
+        (want) =>
+          window.__godsEyeView.dataManager.layers
+            .get('news')
+            .module._testing.mapMode() === want,
+        mode,
+        `the ${mode} map`,
+      );
+    const crowdedWorld = worldSnapshot({ crowded: true });
+    const expected = expectedBubbles(crowdedWorld);
+    const storiesIn = (key) =>
+      crowdedWorld.stories
+        .filter((story) => story.hotspot?.key === key)
+        .map((story) => story.id)
+        .sort();
+    let fullWorld = null;
+    let opened = null;
+
+    if (fixtures)
+      await step(
+        'World zoomed out shows one bubble per hotspot, counted from the stories, and no pins',
+        async () => {
+          await setWorldCrowded(true);
+          fullWorld = await storiesView(page);
+          await setCamera(page, WORLD_BUBBLE_VIEW);
+          await waitForMode('bubbles');
+          const view = await mapView(page);
+          assert.ok(view.heightKm > 3500, `${view.heightKm} km`);
+          assert.deepEqual(view.pins, [], 'no pins in bubble mode');
+          const { ids, bubbles } = await bubbleEntities(page);
+          assert.ok(
+            ids.length > 0 && ids.every((id) => id.startsWith('news:hotspot:')),
+            JSON.stringify(ids),
+          );
+          assert.deepEqual(
+            Object.fromEntries(
+              bubbles
+                .map(({ key, count }) => [key, count])
+                .sort(([a], [b]) => a.localeCompare(b)),
+            ),
+            Object.fromEntries(
+              Object.entries(expected).sort(([a], [b]) => a.localeCompare(b)),
+            ),
+          );
+          assert.deepEqual(
+            [...view.hotspots].sort(),
+            Object.keys(expected).sort(),
+          );
+          // The development has no hotspot; the crowded Darfur counts two.
+          assert.equal(expected['region:Darfur'], 2);
+          console.log(
+            `  bubbles: ${Object.entries(expected)
+              .map(([key, count]) => `${key}=${count}`)
+              .join(', ')}`,
+          );
+          await shot(page, '29-world-bubbles');
+        },
+      );
+
+    if (fixtures)
+      await step(
+        'hovering a bubble shows its card: place, story count, and the accessible mirror',
+        async () => {
+          const { bubbles } = await bubbleEntities(page);
+          const free = bubbles.filter((bubble) => bubble.free);
+          assert.ok(free.length > 0, JSON.stringify(bubbles));
+          // The busiest bubble on screen.
+          const target = free.sort((a, b) => b.count - a.count)[0];
+          console.log(
+            `  hovering ${target.key} (${target.count}) at ${Math.round(target.x)},${Math.round(target.y)} of ${free.length} free bubbles`,
+          );
+          await page.mouse.move(target.x - 40, target.y - 40);
+          await page.mouse.move(target.x, target.y, { steps: 6 });
+          await waitFor(
+            page,
+            async (key) => {
+              const { getOverlayPaintRect } =
+                await import('/src/overlays/worldOverlay.js');
+              return Boolean(getOverlayPaintRect('news', `hotspot:${key}`));
+            },
+            target.key,
+            `the card for ${target.key}`,
+            10_000,
+          );
+          const card = await hotspotCard(page, target.key);
+          const place = crowdedWorld.stories.find(
+            (story) => story.hotspot?.key === target.key,
+          ).hotspot.label;
+          const stories =
+            target.count === 1 ? '1 story' : `${target.count} stories`;
+          assert.equal(card.entryId, `hotspot:${target.key}`);
+          assert.equal(card.title, `${place} · ${stories}`);
+          assert.deepEqual(card.mirror, [
+            `Hotspot: ${place}, ${stories}. Opens its stories.`,
+          ]);
+          // Bubble mode draws no story cards.
+          assert.equal((await mapView(page)).pins.length, 0);
+          await shot(page, '30-world-bubble-hover');
+          opened = { ...target, place };
+        },
+      );
+
+    if (fixtures)
+      await step(
+        'clicking a bubble flies in to its pins and narrows the Stories list to that place',
+        async () => {
+          await page.evaluate(() => {
+            window.__qaFocus = [];
+            window.addEventListener('gev:world-request-focus', (event) =>
+              window.__qaFocus.push(event.detail.kind),
+            );
+          });
+          await page.mouse.click(opened.x, opened.y);
+          await waitForMode('pins');
+          const view = await settledView(page);
+          assert.deepEqual(await page.evaluate(() => window.__qaFocus), [
+            'hotspot',
+          ]);
+          assert.ok(view.heightKm < 3000, `${view.heightKm} km`);
+          console.log(
+            `  hotspot flight ended ${view.heightKm} km up in ${view.mode} mode`,
+          );
+          assert.equal(view.hotspots.length, 0, 'bubbles gave way to pins');
+          assert.ok(view.pins.length > 0);
+          const list = await storiesView(page);
+          assert.deepEqual([...list.rows].sort(), storiesIn(opened.key));
+          assert.equal(list.rows.length, opened.count);
+          assert.equal(list.tab, `Stories (${opened.count})`);
+          assert.equal(list.chip.text, `${opened.place} ✕`);
+          assert.equal(list.chip.label, `Clear place filter: ${opened.place}`);
+          assert.equal(list.chip.fits, true);
+          // The filter narrows the list only; the pins are the whole map.
+          assert.equal(
+            view.pins.length,
+            Object.values(expected).reduce((sum, count) => sum + count, 0),
+          );
+          await shot(page, '31-world-bubble-opened');
+        },
+      );
+
+    if (fixtures)
+      await step(
+        'clearing the place filter restores the full list and its tab count',
+        async () => {
+          await page.click('#situation-panel .situation-place-chip');
+          await wait(400);
+          const list = await storiesView(page);
+          assert.equal(list.chip, null);
+          assert.deepEqual(list.rows, fullWorld.rows);
+          assert.equal(list.tab, fullWorld.tab);
+          assert.equal(
+            await page.$('#situation-panel .situation-place-chip'),
+            null,
+          );
+          await shot(page, '32-world-place-cleared');
+        },
+      );
+
+    if (fixtures)
+      await step(
+        'zooming back out brings the bubbles back, and the plain World fixture returns',
+        async () => {
+          await setCamera(page, WORLD_BUBBLE_VIEW);
+          await waitForMode('bubbles');
+          const view = await mapView(page);
+          assert.deepEqual(view.pins, []);
+          assert.deepEqual(
+            [...view.hotspots].sort(),
+            Object.keys(expected).sort(),
+          );
+          await shot(page, '33-world-bubbles-again');
+          await setWorldCrowded(false);
+          assert.equal((await storiesView(page)).rows.length, 9);
+        },
+      );
+
     if (fixtures)
       await step(
         'Frame theater over World faces the side of the globe with most pins',
         async () => {
+          const before = await mapView(page);
           const requests = await page.evaluate(
             () =>
               new Promise((resolve) => {
@@ -2098,7 +2508,81 @@ async function main() {
             String(requests[0].lon),
           );
           await wait(2500);
+          const after = await settledView(page);
+          assert.ok(cameraTravel(before, after) > 1000, 'the camera flew');
+          console.log(
+            `  frame theater world: mode ${after.mode}, height ${after.heightKm} km`,
+          );
           await shot(page, '24-world-frame-theater');
+        },
+      );
+
+    if (fixtures)
+      await step(
+        'World bubbles and the place-filter chip in the Cyber theme and at 720 px and 390 px',
+        async () => {
+          const chipKey = 'region:Rakhine State';
+          const setTheme = async (value) => {
+            await page.evaluate((layout) => {
+              const select = document.getElementById('hud-layout-select');
+              select.value = layout;
+              select.dispatchEvent(new Event('change', { bubbles: true }));
+            }, value);
+            await wait(800);
+          };
+          const filterBy = async (key) => {
+            await page.evaluate(
+              (value) =>
+                window.__godsEyeView.dataManager.layers
+                  .get('news')
+                  .module.setPlaceFilter(value),
+              key,
+            );
+            await wait(400);
+          };
+          // A fixed view keeps the shots comparable with the earlier ones.
+          await setCamera(page, WORLD_BUBBLE_VIEW);
+          await waitForMode('bubbles');
+          const checkChip = async (label) => {
+            await filterBy(chipKey);
+            const list = await storiesView(page);
+            assert.equal(list.chip?.text, 'Rakhine State ✕', label);
+            assert.equal(list.chip.fits, true, `${label}: chip inside panel`);
+            assert.equal((await mapView(page)).mode, 'bubbles', label);
+            await page.evaluate(() =>
+              document
+                .querySelector('#situation-panel .situation-place-chip')
+                .scrollIntoView({ block: 'center' }),
+            );
+            await wait(300);
+          };
+          await setTheme('cyber');
+          assert.equal((await newsState(page)).theme, 'cyber');
+          await shot(page, '34-world-bubbles-cyber');
+          await checkChip('cyber');
+          await shot(page, '35-world-chip-cyber');
+          await filterBy(null);
+          await setTheme('tactical');
+          for (const [width, height, bubbles, chip] of [
+            [720, 900, '36-world-bubbles-720', '37-world-chip-720'],
+            [390, 844, '38-world-bubbles-390', '39-world-chip-390'],
+          ]) {
+            await page.setViewport({ width, height });
+            await wait(1200);
+            assert.equal((await mapView(page)).mode, 'bubbles');
+            await shot(page, bubbles);
+            await checkChip(`${width}px`);
+            const fit = await overflow(page);
+            assert.ok(fit.page <= 0, `${width}px page: ${JSON.stringify(fit)}`);
+            assert.ok(
+              fit.body <= 1,
+              `${width}px panel: ${JSON.stringify(fit)}`,
+            );
+            await shot(page, chip);
+            await filterBy(null);
+          }
+          await page.setViewport(VIEWPORT);
+          await wait(800);
         },
       );
 
@@ -2159,6 +2643,8 @@ async function main() {
         'switching back to Iran · Israel · US restores its Brief, pins and chips',
         async () => {
           await pickTheater('iran-israel-us');
+          // World left the camera high; the pin map is what comes back.
+          await setCamera(page, IRAN_PIN_VIEW);
           const s = await newsState(page);
           assert.ok(s.pins.includes('st_bandar'), JSON.stringify(s.pins));
           assert.ok(!s.pins.some((id) => id.startsWith('st_w_')));
