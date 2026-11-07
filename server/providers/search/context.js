@@ -4,7 +4,10 @@ import { defaultSourceRoot } from '../common/source-root.js';
 import { createDigestStore } from '../news/digest/store.js';
 import { loadNewsRegistry } from '../news/registry.js';
 import { canonicalizeUrl } from '../news/store.js';
-import { fetchNominatimSearch } from '../regional/place.js';
+import {
+  createNominatimSearchProvider,
+  fetchNominatimSearch,
+} from '../regional/place.js';
 
 const THEATERS = ['iran-israel-us', 'world'];
 
@@ -39,7 +42,11 @@ export function nominatimFindingLocation(result) {
 export function createSearchContext({
   cacheDir = path.join(process.cwd(), '.gev-cache'),
   sourceRoot = defaultSourceRoot,
+  geocodeEndpoint = process.env.SEARCH_NOMINATIM_ENDPOINT,
 } = {}) {
+  const lookup = geocodeEndpoint?.trim()
+    ? createNominatimSearchProvider({ endpoint: geocodeEndpoint.trim() })
+    : fetchNominatimSearch;
   let context;
   return {
     loadContext() {
@@ -82,7 +89,7 @@ export function createSearchContext({
     },
 
     async geocode(name, { signal } = {}) {
-      const result = await fetchNominatimSearch(name, null, { signal });
+      const result = await lookup(name, null, { signal });
       return nominatimFindingLocation(result.results[0]);
     },
 

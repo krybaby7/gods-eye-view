@@ -67,3 +67,28 @@ test('war links use saved citations without writing or running a digest', async 
     },
   ]);
 });
+
+test('a local installation can switch Nominatim endpoints without a code change', async (t) => {
+  const calls = [];
+  t.mock.method(globalThis, 'fetch', async (url) => {
+    calls.push(new URL(url));
+    return Response.json([
+      {
+        lat: '12',
+        lon: '44',
+        name: 'Fixture City',
+        addresstype: 'city',
+        display_name: 'Fixture City, Test Country',
+      },
+    ]);
+  });
+  const endpoint = 'http://127.0.0.1:17170/search';
+  const result = await createSearchContext({
+    geocodeEndpoint: endpoint,
+  }).geocode('Fixture City', {
+    signal: AbortSignal.timeout(1500),
+  });
+  assert.equal(calls[0]?.origin, 'http://127.0.0.1:17170');
+  assert.equal(calls[0]?.searchParams.get('q'), 'Fixture City');
+  assert.equal(result.name, 'Fixture City');
+});

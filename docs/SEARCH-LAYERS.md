@@ -23,3 +23,5 @@ The day picker uses UTC. A selected day shows the latest run finished by the end
 ## Local data
 
 Search records and run history are stored on the server machine in `.gev-cache/searches/`. Each agent run uses an ephemeral working directory under `.gev-cache/search-runs/`, removed after the run. Search endpoints are localhost-only. Questions and source material are sent to Claude and its web tools during a run. Search-layer source details and geocoding attribution are in [Data Sources](../DATA_SOURCES.md#search-layers).
+
+For unresolved named places, the app uses Nominatim only when you ask or update a search. It caches queries, shares the app's 1.1-second queue, and makes at most 15 lookups per run. The public endpoint is for moderate use. For a local or alternate Nominatim instance, set `SEARCH_NOMINATIM_ENDPOINT` to its complete `/search` URL and restart the app. [Nominatim usage policy](https://operations.osmfoundation.org/policies/nominatim/)
