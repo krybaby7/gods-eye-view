@@ -1,50 +1,63 @@
 # Search layers: ask the globe, get a layer
 
-Date: 2026-11-06. Status: design, drafted with the owner, not built. Section 13 lists the points this
-spec proposes and the owner still has to confirm.
-Builds on `docs/WAR-MONITOR.md`, `2026-10-25-war-monitor-design.md` and
+Date: 2026-11-06, revised 2026-11-07 with the owner's answers. Status: design, agreed with the
+owner, not built. Builds on `docs/WAR-MONITOR.md`, `2026-10-25-war-monitor-design.md` and
 `2026-10-29-world-hotspot-view-design.md`.
-
-The Perplexity request and response fields below were read from the official SDK's generated types
-(`@perplexity-ai/perplexity_ai` 0.41.0, `dist/generated/api.d.ts`, published 2026-10-22), because
-docs.perplexity.ai could not be reached from the cloud session that wrote this. Section 4.1 lists
-what still has to be checked against a live response.
 
 ## 0. Shape in one paragraph
 
 The owner asks the globe a question in plain words: "what's going on with crypto?", "who's talking
-about the Sudan ceasefire?", "where are the world's lithium mines?". A research call searches the
-web. A second call turns what it found into **findings**: events, statements, places and
-country-wide facts, each tied to a place and to the pages it came from. Code checks them, places
-them and saves them as a **search layer**: a row in a new Searches panel, labelled by the question,
-toggled on and off on its own, drawn on the globe in its own colour. Every new question adds
-another layer. When two searches find the same thing, code draws it once and says it belongs to
-both. The war monitor's rule carries over: the model writes the content; code decides where it
-goes, how it looks, which links are real and what counts as corroborated.
+about the Sudan ceasefire?", "where are the world's lithium mines?". A research agent (Claude or
+Codex, running on the owner's own subscriptions) searches the web. A second call turns what it found
+into **findings**: events, statements, places and country-wide facts, each tied to a place and to
+the pages it came from. Code checks them, places them and saves them as a **search layer**: a row in
+a new Searches panel, labelled by the question, toggled on and off on its own, drawn on the globe in
+its own colour. Every new question adds another layer. Updates keep every earlier answer, so the
+owner can go back to any past day and see what the globe said then. When two searches find the same
+thing, code draws it once and says it belongs to both. The war monitor's rule carries over: the
+model writes the content; code decides where it goes, how it looks, which links are real and what
+counts as corroborated.
 
-## 1. Decisions (owner, 2026-11-06)
+## 1. Decisions (owner)
+
+2026-11-06:
 
 - Same globe, no separate mode. Live layers (flights, ships, fires, the war monitor) stay usable
   next to search layers. Seeing an answer next to live data is the point of the feature.
 - Any question the owner would ask a globe: news about anything, who is saying what, and where
-  things are. Not how-to questions. The answer always comes back as findings on the globe; the
-  text answer is a short summary over them, and every finding can be opened for detail.
-- Each search becomes its own layer, labelled by the question and toggled on its own. Searches
-  add up.
+  things are. Not how-to questions. The answer always comes back as findings on the globe; the text
+  answer is a short summary over them, and every finding can be opened for detail.
+- Each search becomes its own layer, labelled by the question and toggled on its own. Searches add
+  up.
 - Duplicates across searches are merged by code.
-- Phase 1 uses Perplexity's Agent API, already wired in for the digest.
-- **Phase 2 (recorded 2026-11-06):** the agent becomes Claude or Codex instead of Perplexity, and
-  its toolkit grows with MCP servers and APIs that reach stable sources faster. Phase 1 keeps the
-  research step behind one function so Phase 2 replaces only that (section 4.1).
+
+2026-11-07:
+
+- **No Perplexity.** The search agents run on the owner's **Claude and Codex subscriptions**,
+  through the official command-line tools signed in on the owner's machine (section 4.1). The owner
+  chooses the default agent in Provider Settings and can override it per search.
+- **No budget.** Searches are never refused for cost. Each run still shows what it used (time, and
+  tokens or cost when the tool reports them).
+- **History.** Updates keep every earlier answer. The owner can go back to any past day and see each
+  search as it stood then, and searches stay organized by day in a history (section 7).
+- **Code organizes the globe**, not a second agent: colour by search, shape by kind. The owner will
+  develop this code further later.
+- **Two calls per run:** research, then map.
+- **At most 8 searches visible at once**, as one constant, to revisit after seeing it on the globe.
+- **Phase 2** gives the agents a toolkit of MCP servers and APIs that reach stable sources faster,
+  and tunes their web access and speed (section 14).
 
 ## 2. Words used here
 
-- **Search:** one question and everything it produced. Stored, toggleable, updatable. One row in
-  the Searches panel, one colour on the globe.
+- **Search:** one question and everything it produced, across all its runs. One row in the Searches
+  panel, one colour on the globe.
+- **Run:** one execution of a search: the first ask, a retry or an Update. Every finished run is kept
+  as a snapshot.
 - **Finding:** one thing a search found that can sit on the map. Four kinds (section 3.2).
-- **Source:** one web page the research call actually retrieved. Code numbers them; findings cite
+- **Source:** one web page the research step actually retrieved. Code numbers them; findings cite
   those numbers.
-- **Run:** one execution of a search: the first ask, a retry or an Update.
+- **Agent:** the program that does the research and map calls: Claude (Claude Code) or Codex (Codex
+  CLI), behind one adapter interface.
 
 ## 3. Data
 
@@ -55,19 +68,12 @@ goes, how it looks, which links are real and what counts as corroborated.
   "id": "sr_9c41",
   "question": "What's going on with crypto?",
   "label": "Crypto this week",
+  "agent": "claude",
   "colorIndex": 2,
   "visible": true,
+  "pinned": false,
   "createdAt": "2026-11-06T14:02:00Z",
-  "asOf": "2026-11-06T14:03:10Z",
   "status": "ready",
-  "answer": {
-    "summary": [{ "text": "US and EU regulators both moved on stablecoins...", "sourceIds": ["s3", "s7"] }],
-    "groups": [
-      { "id": "g1", "label": "Regulation" },
-      { "id": "g2", "label": "Markets" },
-      { "id": "g3", "label": "Hacks and fraud" }
-    ]
-  },
   "sources": [
     {
       "id": "s3",
@@ -78,27 +84,32 @@ goes, how it looks, which links are real and what counts as corroborated.
       "date": "2026-11-05",
       "snippet": "...",
       "registeredSourceId": "reuters",
-      "runId": "run_..."
+      "checkedBy": "tool-result",
+      "firstRunId": "run_..."
     }
   ],
-  "findings": ["section 3.2"],
+  "findings": ["section 3.2: every finding any run produced"],
   "runs": [
     {
       "id": "run_...",
       "kind": "ask",
-      "startedAt": "...",
-      "durationMs": 61000,
+      "agent": "claude",
+      "agentModel": "...",
+      "startedAt": "2026-11-06T14:02:00Z",
+      "finishedAt": "2026-11-06T14:03:10Z",
       "status": "ok",
-      "costUsd": 0.31,
-      "researchCostUsd": 0.22,
-      "toolCallsCostUsd": 0.05,
-      "mapCostUsd": 0.09,
-      "steps": 5,
+      "answer": {
+        "summary": [{ "text": "US and EU regulators both moved on stablecoins...", "sourceIds": ["s3", "s7"] }],
+        "groups": [
+          { "id": "g1", "label": "Regulation" },
+          { "id": "g2", "label": "Markets" }
+        ]
+      },
+      "findingIds": ["f_2b7e", "..."],
+      "usage": { "durationMs": 70000, "inputTokens": null, "outputTokens": null, "costUsd": null },
       "sourceCount": 38,
-      "findingCount": 24,
       "droppedNoSource": 2,
-      "listOnly": 3,
-      "model": "..."
+      "listOnly": 3
     }
   ]
 }
@@ -106,15 +117,20 @@ goes, how it looks, which links are real and what counts as corroborated.
 
 - `label`: written by the model (at most 40 characters), editable by the owner. `question` is kept
   verbatim.
+- `agent`: the default agent for this search's Updates; each run records the agent that ran it.
 - `colorIndex`: assigned by code: the lowest palette slot no other visible search uses (6.1).
-- `visible`: the owner's toggle, stored on the server so it survives a reload. Not in share links:
-  searches exist only on this machine.
+- `visible` and `pinned`: the owner's toggles, stored on the server so they survive a reload. Not in
+  share links: searches exist only on this machine.
 - `status`: `running | ready | failed`. A failed first run keeps the record so the owner can retry
   or delete it. On server start, a record still `running` becomes `failed` with reason
   `interrupted`.
-- Index: `.gev-cache/searches/index.json` holds id, label, status, `asOf` and `colorIndex` for each
-  search, so the panel loads fast. Every write is atomic (temporary file, then rename), as the
-  digest store does.
+- **Snapshots.** A run's `findingIds` and `answer` are that run's answer as it stood. Findings are
+  stored once per search and never rewritten by a later run, except `lastSeenAt`. That keeps history
+  cheap and exact (section 7).
+- `usage`: whatever the agent reports. `null` fields are normal on a subscription.
+- Index: `.gev-cache/searches/index.json` holds id, label, status, `createdAt`, the latest run's
+  `finishedAt`, `colorIndex`, `visible` and `pinned` for each search, so the panel loads fast. Every
+  write is atomic (temporary file, then rename), as the digest store does.
 
 ### 3.2 Finding
 
@@ -133,6 +149,7 @@ goes, how it looks, which links are real and what counts as corroborated.
   "sourceIds": ["s3", "s9"],
   "verification": "reported",
   "sourceCount": 2,
+  "firstRunId": "run_...",
   "firstSeenAt": "2026-11-06T14:03:10Z",
   "lastSeenAt": "2026-11-06T14:03:10Z"
 }
@@ -156,84 +173,87 @@ optional lat/lon, `eventAt`, `sourceIds`, and `sameAs` (on an Update, the id of 
 this one continues).
 
 **Code owns, and the model cannot set:** `id`, `location`, `hotspot`, `verification`,
-`sourceCount`, `firstSeenAt`, `lastSeenAt`, every URL, `colorIndex`, and the merges across searches
-(section 5).
+`sourceCount`, `firstRunId`, `firstSeenAt`, `lastSeenAt`, every URL, `colorIndex`, and the merges
+across searches (section 5).
 
 ### 3.3 Caps
 
-- 60 findings per run; 6 groups per search; 80 sources passed to the map call (most-cited by the
-  notes first, then newest, when there are more).
+- 60 findings per run; 6 groups per run; 80 sources passed to the map call (most-cited by the notes
+  first, then newest, when there are more).
 - Questions longer than 500 characters are refused in the panel.
 - 15 Nominatim lookups per run (4.3).
-- At most 8 searches visible at once, the palette size. Turning on a ninth is refused with "Hide a
-  search first: all 8 colours are in use".
-- No cap on stored searches. Deleting a search removes its file.
+- `MAX_VISIBLE_SEARCHES = 8`, one constant. Turning on a ninth is refused with "Hide a search first:
+  all 8 colours are in use".
+- One run at a time per agent. A run that passes its time limit (`SEARCH_RUN_TIMEOUT_MS`, default 10
+  minutes) is stopped and marked failed.
+- No cap on stored searches or runs. Deleting a search removes its file.
 
 ## 4. The run
 
 ```
-question ─▶ research call ─▶ numbered sources + notes ─▶ map call ─▶ findings JSON ─▶ code checks ─▶ saved search ─▶ globe and panel
-            (web search on)                               (no tools, strict JSON)
+question ─▶ research step ─▶ numbered sources + notes ─▶ map step ─▶ findings JSON ─▶ code checks ─▶ saved run ─▶ globe and panel
+            (web access on)                              (no tools, JSON only)
 ```
 
-Two calls rather than one, on purpose:
+Two steps rather than one, on purpose:
 
-1. Strict JSON output never has to share a request with tool use. The SDK types accept `tools` and
-   `response_format` together, but nothing read for this spec says how the agent behaves with both.
-2. The map call works like the digest: the model sees numbered sources and cites numbers, never
-   URLs. Code already enforces that contract.
-3. Phase 2 replaces the research call alone.
+1. JSON output never has to share a step with tool use.
+2. The map step works like the war monitor's digest: the model sees numbered sources and cites
+   numbers, never URLs. Code already enforces that contract.
+3. Phase 2 changes the research step's tools without touching the rest.
 
-### 4.1 Research call (the Phase 2 seam)
+### 4.1 Agents (the seam)
 
-One function, `research({ question, since, previousFindings, signal })` in
-`server/providers/search/research.js`, returns `{ notes, sources, costUsd, toolCallsCostUsd,
-model, steps }`. Nothing else in the feature knows which provider ran.
+One interface, in `server/providers/search/agents/`:
 
-Phase 1: `POST https://api.perplexity.ai/v1/agent`, as the digest does, model
-`anthropic/claude-sonnet-5-5`:
-
-```json
-{
-  "instructions": "...",
-  "input": ["the question, today's date, and on an Update the previous findings"],
-  "tools": [
-    { "type": "web_search", "search_type": "web", "search_context_size": "medium" },
-    { "type": "fetch_url", "max_urls": 5 }
-  ],
-  "max_steps": 8,
-  "max_output_tokens": 16000
-}
+```js
+research({ question, since, previousFindings, signal }) → { notes, sources, usage, agentModel }
+mapFindings({ prompt, schema, signal })                 → { json, usage, agentModel }
 ```
 
-- No `preset` or `effort`, as in the digest, so only these two tools attach.
-- On an Update the `web_search` tool gets
-  `filters: { "search_after_date_filter": <the previous asOf> }`. The types also offer
-  `search_domain_filter` and `search_recency_filter`; Phase 1 doesn't use them.
-- Instructions (fixed, so they cache): today's date; the answer will be shown on a globe, so find
-  where things happen, who is involved and where they are based, and where things are; prefer
-  primary and established sources; for questions about now, prefer the last two weeks unless the
-  question asks for history; name places precisely (city and country, or coordinates when a source
-  gives them).
-- **Sources:** code reads every `search_results` output item (`results[]`: `id`, `url`, `title`,
-  `snippet`, `date`, `last_updated`, `source`) and every `fetch_url_results` item (`contents[]`).
-  It canonicalizes URLs with `canonicalizeUrl` (`server/providers/news/store.js`), drops repeats
-  and numbers them `s1…sN` in order of first appearance. Only these pages can ever be shown as a
-  finding's source.
-- **Notes:** the text of the final message.
-- **Cost:** `usage.cost.total_cost`; the run also keeps `usage.cost.tool_calls_cost`.
-- `max_steps: 8` is a starting value; the types don't say what a step is.
+Two adapters implement it, and nothing else in the feature knows which one ran:
 
-To verify against a live response before relying on it, and record in the PR: that `search_results`
-items appear in `output` on a non-streamed response; what one step is; the date format
-`search_after_date_filter` accepts; and the cost and steps of two real questions.
+- `claude.js`: Claude Code, signed in with the owner's Claude subscription. It runs non-interactively
+  with machine-readable output (headless mode).
+- `codex.js`: the Codex CLI, signed in with the owner's ChatGPT subscription, run non-interactively
+  (`codex exec` or its documented successor).
 
-### 4.2 Map call
+Rules for both:
 
-Same endpoint and model, `tools: []`, `max_steps: 1`, strict `json_schema` output,
-`max_output_tokens: 32000`, built the way `server/providers/news/digest/runner.js` builds the
-digest request. Reuse its request and cost helpers; move them to a shared module if the boundary
-checker requires it.
+- **Official, documented mechanisms only.** The server starts the installed command-line tool as a
+  child process, with the owner's existing sign-in. It never reads, copies or forwards session
+  tokens, and never calls private endpoints. Before building, the implementer confirms against each
+  product's current documentation and terms that this use, by the owner, on the owner's machine, is
+  supported. If it is not, they stop and ask the owner instead of working around it.
+- **No secrets in this repository.** Sign-in stays with each tool. Provider Settings shows whether
+  each tool is installed and signed in (from its own status command), which agent is the default,
+  and how to sign in.
+- **Contained runs.** Each run gets a fresh empty working directory under `.gev-cache/search-runs/`,
+  no file-writing or shell tools, only the web tools the step needs, and a timeout. Cancel kills the
+  child process tree.
+- **Research step:** web search and page fetch on (in Phase 1, each tool's built-in web access).
+  Instructions: today's date; the answer will be shown on a globe, so find where things happen, who
+  is involved and where they are based, and where things are; prefer primary and established
+  sources; for questions about now, prefer the last two weeks unless the question asks for history;
+  name places precisely (city and country, or coordinates when a source gives them). On an Update,
+  also the previous findings and "since <date of the previous run>".
+- **Map step:** no tools, a JSON schema, and the tool's structured-output option if it has one.
+  Otherwise code parses the reply strictly and asks once for a corrected reply when it fails to
+  parse.
+
+**Links are real.** The research adapter returns as sources only pages its tools actually returned,
+read from the tool's machine-readable event output (the web search results and fetched URLs). If a
+tool cannot expose them, code confirms each cited URL itself before accepting it: one capped GET
+through the server's existing capped-fetch helpers, timeouts on, redirects followed only within the
+same site. Such sources are marked `checkedBy: "fetch"`, the others `"tool-result"`. Code
+canonicalizes URLs with `canonicalizeUrl` (`server/providers/news/store.js`), drops repeats and
+numbers them `s1…sN`. Only these pages can ever be shown as a finding's source.
+
+**Tests never need a subscription.** Each adapter's command line is built by a pure function, and
+its output is read by a pure parser. Tests drive them with recorded output fixtures and a fake
+executable. Live runs happen only on the owner's machine.
+
+### 4.2 Map step
 
 Input: the question; the research notes; the numbered sources (id, registered publisher name or
 domain, date, title, snippet); the place names of the World and Iran · Israel · US gazetteers
@@ -278,12 +298,13 @@ In order:
    label, only "N sources".
 6. **Ids.** A new finding gets `f_` and 4 hex characters from a hash of the search id, kind, title
    and place. On an Update, a valid `sameAs` keeps the earlier id.
-7. **Times.** `firstSeenAt` when a finding is created; `lastSeenAt` whenever a run cites it again.
+7. **Times.** `firstRunId` and `firstSeenAt` when a finding is created; `lastSeenAt` whenever a run
+   cites it again.
 
 ## 5. Duplicates across searches (`server/providers/search/dedupe.js`, pure)
 
-Applied when `GET /api/searches` is served, across visible and hidden searches, so a stored search
-never changes because of another one.
+Applied when `GET /api/searches` is served, over the snapshots being shown (the latest runs, or the
+runs of the chosen day in history), so a stored search never changes because of another one.
 
 Two findings from different searches are the same thing when they have the same kind and:
 
@@ -296,33 +317,35 @@ These thresholds are starting values. Fixture tests pin them with realistic pair
 searches, two Sudan searches, and lithium mines asked twice.
 
 Each merged group gets a `mergeKey`. While any member search is visible, the globe draws the
-finding once, with its marker split between the visible members' colours. In the panel each
-member search lists it with "Also in: Crypto this week". Hiding one search keeps the marker as
-long as another member is visible.
+finding once, with its marker split between the visible members' colours. In the panel each member
+search lists it with "Also in: Crypto this week". Hiding one search keeps the marker as long as
+another member is visible.
 
 A finding that cites a URL also cited by a story in the war monitor's current snapshot shows "Also
 in the war monitor: <story title>", with a link that opens that story. It is not merged with war
-monitor pins in Phase 1.
+monitor pins.
 
 ## 6. Globe: the `searches` layer
 
 ### 6.1 Look
 
-- One new catalog layer, **Searches**, in the layer panel's Events group after War Monitor, with
-  its own share token from `npm run layer-token:next`. The token only records that the layer is on.
+- One new catalog layer, **Searches**, in the layer panel's Events group after War Monitor, with its
+  own share token from `npm run layer-token:next`. The token only records that the layer is on.
 - **Colour is the search.** A fixed palette of 8 colours that stay distinct from each other on the
   dark and satellite map styles and differ from the war monitor's category colours.
 - **Shape is the kind:** event ● circle; statement ■ rounded square; place ◆ diamond; area ◯ hollow
   ring at the country or region's position.
-- Size follows source count, as for news pins (`newsMarkerSizePx`). A dashed outline means the
-  model placed it. A dot means new since the last Update.
+- Size follows source count, as for news pins (`newsMarkerSizePx`). A dashed outline means the model
+  placed it. A dot means new in the run being shown.
 - Zoomed out, above 3,500 km and with the news layer's hysteresis (`newsMapMode`): one bubble per
   hotspot, its ring split by search colour, the count inside. Reuse `aggregateHotspots` by passing
   each search as a category (id and colour).
-- Hover card: title, the search's label and colour, kind, place and basis ("placed where the
-  speaker is based"), time, source count, verification label.
-- Clicking a marker selects it, flies there (`requestWorldFocus`) and opens the finding in the
-  panel. Clicking a bubble flies in and sets a place filter in the panel, as in the hotspot view.
+- Hover card: title, the search's label and colour, kind, place and basis ("placed where the speaker
+  is based"), time, source count, verification label.
+- Clicking a marker selects it, flies there (`requestWorldFocus`) and opens the finding in the panel.
+  Clicking a bubble flies in and sets a place filter in the panel, as in the hotspot view.
+- While the panel shows a past day (section 7), the layer draws that day's snapshots and the panel
+  says so with an "As of 4 Nov · Back to now" bar.
 
 ### 6.2 Code
 
@@ -339,22 +362,36 @@ monitor pins in Phase 1.
   `src/app/constructCatalog.js`, `src/app/sourceComposition.js`, `src/standalone/layerSources.js`,
   `src/data/layerState.js` with `src/data/layerStateTokenReservations.json`, the Events group in
   `src/ui/layerPanel.js`, `src/voice/layerManifest.js`, `src/data/dataCredits.js`.
-- Data loads when the layer turns on, after each run and after panel actions. There is no timer,
-  as in the news layer. While a run is in flight the panel polls `GET /api/searches?rev=` every 3 s
-  and stops when the run ends.
+- Data loads when the layer turns on, after each run and after panel actions. There is no timer, as
+  in the news layer. While a run is in flight the panel polls `GET /api/searches?rev=` every 3 s and
+  stops when the run ends.
 
-## 7. Updating a search
+## 7. Updates and history
 
-A search is a snapshot as of the moment it ran. Its row has **Update**, which runs both calls
-again with the same question, the previous findings and a date filter from the previous `asOf`.
-After an Update:
+**Update.** Each search row has **Update**, which runs both steps again with the same question, the
+previous findings and "since <date of the previous run>". The result is a new run, a new snapshot:
 
 - new findings appear with the "new" dot;
-- findings the Update cites again (`sameAs`) get a new `lastSeenAt`;
-- findings it doesn't mention stay, marked "not seen since <date>".
+- findings the Update cites again (`sameAs`) get a new `lastSeenAt` and are part of the new snapshot;
+- findings it doesn't mention are not in the new snapshot. They stay in the earlier ones and in the
+  search's "Earlier findings" list, marked "not seen since <date>".
 
-An Update never deletes; the owner can delete a single finding. Updates are manual only and never
-run on a timer, like Refresh.
+Nothing is ever deleted by an Update. The owner can delete a single finding (from every snapshot) or
+a whole search. Updates are manual only and never run on a timer.
+
+**Going back in time.** The panel has a day picker: Now, then every day that has a run.
+
+- Choosing a day shows, for each search, its latest run that finished on or before the end of that
+  day. Searches created later are hidden while the day is chosen.
+- The globe, the counts, the merges and the finding lists all follow the chosen day.
+- Each search's row also lists its runs ("Asked 4 Nov 14:02 · Updated 6 Nov 09:15 · Updated today
+  08:40"). Choosing one shows that search as of that run, alone or with the others at the same day.
+- A **Changes** view compares two runs of a search: added, seen again, not seen since.
+- "Back to now" returns to the latest runs.
+
+**Organized history.** The search list is grouped by day of the latest run: Today, Yesterday, then
+dates. Pinned searches stay at the top. The owner can rename a search and filter the list by text.
+Folders or tags are later work (section 14).
 
 ## 8. Searches panel
 
@@ -365,69 +402,71 @@ It is mounted through an `attachSearches(factory)` hook in `src/ui/layerPanel.js
 
 **Top:**
 
-- An ask box (a textarea: Enter asks, Shift+Enter starts a new line) and **Ask**.
+- An ask box (a textarea: Enter asks, Shift+Enter starts a new line), an agent choice (Claude or
+  Codex, defaulting to the Provider Settings choice) and **Ask**.
 - While running: "Searching the web… 0:41", then "Placing findings… 1:02", with **Cancel**.
-  Cancelling aborts the request; what was already spent is logged.
-- A cost line: "Last search 31¢ · $1.37 of today's budget left".
-- Ask is disabled, with the reason shown, when there is no Perplexity key, today's budget is spent,
-  a search or digest is running, or the box is empty.
+- A usage line for the last run: its time, and tokens or cost when the agent reported them.
+- Ask is disabled, with the reason shown, when the chosen agent isn't installed or signed in, a run
+  is already going on that agent, or the box is empty.
+- The day picker and the "As of … · Back to now" bar (section 7).
 
-**Search rows, newest first:**
+**Search list,** grouped by day as in section 7:
 
 - A colour swatch that toggles visibility; the label; "as of 14:03"; counts such as "21 on the
-  globe · 3 list-only · 2 also in other searches"; a status (running, or failed with Retry).
-- A menu: Update, Rename, Show question, Delete (confirmed inside the panel).
+  globe · 3 list-only · 2 also in other searches"; a status (running, or failed with Retry); a pin.
+- A menu: Update, Changes, Rename, Show question, Delete (confirmed inside the panel).
 
-**An open row:**
+**An open search:**
 
-- The summary sentences, each with its source chips.
+- The summary sentences of the run being shown, each with its source chips.
+- Its runs, to step through history.
 - Group chips that filter the list and that search's markers.
 - The findings by group: kind icon, title, place, time, verification label, "also in". Each one
-  expands to its summary, placement basis and sources (publisher, date, title, link to the
-  original).
-- List-only findings at the end, under "Not on the globe".
+  expands to its summary, placement basis and sources (publisher, date, title, link to the original,
+  and "checked by fetch" when that applies).
+- List-only findings under "Not on the globe", and findings from earlier runs under "Earlier
+  findings".
 - The place chip from a bubble click, as in the Situation panel.
 
 ## 9. Server: `server/providers/search/`
 
-A new package, `search-provider`, in `scripts/package-boundaries.json`, depending on
-`news-provider` for the pure functions it reuses.
+A new package, `search-provider`, in `scripts/package-boundaries.json`, depending on `news-provider`
+for the pure functions it reuses.
 
 | File | Job |
 |---|---|
-| `research.js` | The research call (4.1). Phase 2 replaces this file. |
-| `mapper.js` | The map call, its JSON schema and parsing (4.2). |
+| `agents/index.js` | The interface, agent selection and status. |
+| `agents/claude.js`, `agents/codex.js` | The two adapters (4.1): command lines, process control, output parsing. |
+| `research.js` | The research step's instructions and source collection. |
+| `mapper.js` | The map step's prompt, JSON schema and validation. |
 | `findings.js` | The code checks (4.3), pure. |
 | `dedupe.js` | Merges across searches (5), pure. |
+| `history.js` | Snapshots by run and by day, and run comparisons (7), pure. |
 | `store.js` | Search files and the index, atomic writes. |
-| `index.js` | Routes and the run queue. |
+| `index.js` | Routes and the per-agent run queue. |
 
 Routes, same-site gated and rate limited like `/api/news`:
 
-- `GET /api/searches?rev=`: every search with its findings, merge keys, war monitor links, the
-  budget and `disabledReason`; `{ unchanged: true }` when `rev` matches.
-- `POST /api/searches` with `{ question }`: 202 with the new id; the run continues on the server.
-  409 while a search, digest or brief runs; 429 over budget; 503 without a key.
+- `GET /api/searches?rev=&asOf=`: every search with the findings of the snapshot being shown, merge
+  keys, war monitor links, agent status and `disabledReason`; `{ unchanged: true }` when `rev`
+  matches. `asOf` is a day; without it, the latest runs.
+- `GET /api/searches/:id/runs/:runId` and `GET /api/searches/:id/changes?from=&to=`.
+- `POST /api/searches` with `{ question, agent? }`: 202 with the new id; the run continues on the
+  server. 409 while that agent is busy; 503 when it isn't installed or signed in.
 - `POST /api/searches/:id/update`, `POST /api/searches/:id/retry`, `POST /api/searches/:id/cancel`.
-- `PATCH /api/searches/:id` with `{ label?, visible? }`.
+- `PATCH /api/searches/:id` with `{ label?, visible?, pinned?, agent? }`.
 - `DELETE /api/searches/:id` and `DELETE /api/searches/:id/findings/:findingId`.
 
-One paid call runs at a time across searches, digests and briefs, through one lock module both
-providers import.
-
-**Budget.** One daily budget for the whole app: `NEWS_DIGEST_DAILY_BUDGET_USD` (default $2.00)
-now covers digests, briefs and searches, and `budget()` in `server/providers/news/index.js` adds
-the day's search runs. A run is refused when the remaining budget is below a worst-case estimate,
-as the brief does. Start at $0.75 and adjust after the first measurements. If the owner searches
-often, raising the budget is an environment change, not code.
+No budget and no daily cap for searches. The war monitor's digest keeps its own Perplexity setup
+and budget unchanged; moving it to these agents is a separate, later decision.
 
 ## 10. Voice
 
 - An `ask_globe` action in `src/voice/actionSchemas.js` and `src/voice/gevActions.js`: "ask the
-  globe what's going on with crypto". It turns the layer on, posts the question, says "Searching",
-  and when the run ends reads back the label and count ("Crypto this week: 21 findings on the
-  globe"). Its hint in `server/providers/openai/toolDescriptions.js` says it costs money and runs
-  only when asked.
+  globe what's going on with crypto". It turns the layer on, posts the question with the default
+  agent, says "Searching", and when the run ends reads back the label and count ("Crypto this week:
+  21 findings on the globe"). Its hint in `server/providers/openai/toolDescriptions.js` says it runs
+  a web search and should run only when asked.
 - A `searches` entry in `src/voice/layerManifest.js`. Aliases: searches, search layers, findings.
   Query fields: title, kind, search label, place, actor, verification. Time field: `eventAt`. So
   "which of my searches mention Binance?" is an analyst query over stored findings, never a new
@@ -437,51 +476,53 @@ often, raising the budget is an environment change, not code.
 
 | Rule | UI |
 |---|---|
-| Links are real | Every source shown came from the search tool; findings without one are dropped and counted |
+| Links are real | Every source shown came from the agent's own tool results, or was fetched and confirmed by code; findings without one are dropped and counted |
 | Placement is honest | A basis line on every finding; a dashed outline when the model placed it; list-only when no place fits |
 | Uncertainty stays visible | A verification label on events and statements; "N sources" on places and areas |
-| Answers age | "as of" on every search; "not seen since" on findings an Update didn't confirm |
-| Nothing disappears silently | Dropped, list-only and merged counts on each row |
-| Cost is visible | Each run's cost and the day's remaining budget next to Ask |
+| Answers age | "as of" on every search; history by day; "not seen since" on findings an Update didn't confirm |
+| Nothing disappears silently | Dropped, list-only, earlier and merged counts on each search |
+| Work is visible | Each run's duration, agent and reported usage |
 
 ## 12. Testing
 
-- Unit tests for `findings.js`, `dedupe.js`, `mapper.js` (schema and parsing), `research.js`
-  (request shape, and reading `search_results` and `fetch_url_results` from recorded response
-  fixtures), `store.js`, the budget sum, the client records and the marker shapes.
-- `scripts/qa-searches.mjs --fixtures`, modelled on `scripts/qa-news.mjs`, stubs both calls in the
-  page. It covers: ask and the running state; a finished search on the globe; a second search with
-  a merged finding; toggles and the 8-colour limit; Update; delete; bubbles and the place chip;
-  Cyber and narrow widths; Cockpit collapse. No test makes a live call.
-- Live: after merge, the owner asks two real questions, one about news and one "where are". The PR
-  records their cost, steps and timings.
-- Docs: `docs/SEARCH-LAYERS.md`, a `DATA_SOURCES.md` entry (Perplexity web search, Nominatim), a
+- Unit tests for `findings.js`, `dedupe.js`, `history.js`, `mapper.js` (schema and parsing),
+  `research.js` (source collection), both adapters (command lines, parsing recorded output, a fake
+  executable for process control, cancel and timeout), `store.js`, and the client records and
+  marker shapes.
+- `scripts/qa-searches.mjs --fixtures`, modelled on `scripts/qa-news.mjs`, stubs the agents in the
+  page. It covers: ask and the running state; a finished search on the globe; a second search with a
+  merged finding; toggles and the 8-colour limit; Update and the "new" dot; the day picker, a past
+  day and Back to now; Changes; delete; bubbles and the place chip; Cyber and narrow widths; Cockpit
+  collapse. No test makes a live call.
+- Live: on the owner's machine, two real questions per agent (one news, one "where are"), recorded in
+  the PR with their durations and reported usage.
+- Docs: `docs/SEARCH-LAYERS.md`, a `DATA_SOURCES.md` entry (the agents' web access, Nominatim), a
   changelog entry and `docs/CURRENT-STATE.md`.
 
-## 13. Open points for the owner
+## 13. Open points
 
-Proposed by this spec, to confirm or change:
-
-1. **Updating (section 7):** a snapshot plus a manual Update that keeps old findings. Alternative:
-   Update replaces them.
-2. **Code organizes the globe, not a second agent:** colour by search, shape by kind.
-3. **Two calls per run:** research, then map.
-4. **One shared daily budget**, $2.00 unless raised.
-5. **At most 8 searches visible** at once.
+None blocking. Revisit after first use: the visible-search limit, the merge thresholds, and the
+palette.
 
 ## 14. Phases
 
-- **Phase 1 (this spec, one PR):** everything above.
-- **Phase 2 (owner, recorded 2026-11-06):** the research step moves from Perplexity to Claude or
-  Codex, with a toolkit of MCP servers and APIs for stable, faster sources. Candidates to evaluate
-  then: GDELT, ReliefWeb (needs the app id), ACLED, Wikidata and OpenStreetMap for places, official
-  statistics and market-data APIs, and the app's own MCP tools for live flights, ships and fires
-  (`server/mcp/`). The Perplexity SDK also declares an `mcp` tool type (`server_url`,
-  `allowed_tools`), so remote MCP servers are reachable from the current provider too; that is
-  context for the choice, not a change to the decision.
-- **Later:** lines between places (trade or migration routes), areas drawn as outlines, follow-up
-  questions inside a search, pinning a search as a theater that updates with each Refresh, a Brief
-  per search, and the war monitor's "evidence nearby" from live layers.
+- **Phase 1:** everything above, with each agent's built-in web access.
+- **Phase 2:** a toolkit for the research step.
+  - MCP servers and APIs for stable, faster sources, chosen after a short evaluation. Candidates:
+    GDELT, ReliefWeb (needs the app id), ACLED, Wikidata and OpenStreetMap for places, official
+    statistics and market-data APIs.
+  - The app's own MCP server (`server/mcp/stdio.js`; `docs/MCP_SETUP.md` already shows how Claude
+    Code and the Codex CLI add it), so the agent can check live flights, ships and fires near a
+    finding.
+  - One MCP configuration that the server generates per run for whichever agent runs it, with a
+    per-tool allowlist. Keys the owner adds go in Provider Settings, never in the repository.
+  - Measure, per agent, the speed and quality on a fixed set of questions, before and after the
+    toolkit, and record it in `docs/SEARCH-LAYERS.md`.
+  - Phase 2 changes only `research.js` and the adapters' tool configuration.
+- **Later:** folders or tags in the history; lines between places (trade or migration routes);
+  areas drawn as outlines; follow-up questions inside a search; pinning a search as a theater; a
+  Brief per search; the war monitor's "evidence nearby" from live layers; moving the war monitor's
+  digest off Perplexity.
 
 **The existing roadmap:** this feature replaces the war monitor's Phase 2 "per-story deep dive with
 web search". War monitor Phase 3 and Brief phases B and C wait until search layers ship.
