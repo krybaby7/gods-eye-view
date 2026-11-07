@@ -1,9 +1,10 @@
 import { fileURLToPath } from 'node:url';
 
-import { DEFAULT_API_BASE } from '../../../mcp/services.js';
-
 const SERVER = 'gev_search';
 const PREFIX = 'mcp__' + SERVER + '__';
+// The documented standalone app and MCP default. The subprocess owns the
+// MCP service graph, so building its arguments does not load that graph.
+const DEFAULT_API_BASE = 'http://localhost:4173';
 export const WIKIDATA_TOOL = 'wikidata_places';
 export const RELIEFWEB_TOOL = 'reliefweb_reports';
 export const LIVE_TOOLS = Object.freeze([

@@ -112,7 +112,10 @@ function liveDependencies(cacheDir, env) {
   // Each service accepts one ask. Keep its admission check for snapshots so
   // polling cannot launch more Claude authentication subprocesses.
   return {
-    ...createSearchContext({ cacheDir }),
+    ...createSearchContext({
+      cacheDir,
+      geocodeEndpoint: env.SEARCH_NOMINATIM_ENDPOINT,
+    }),
     agents: {
       ...agents,
       status: (options) => (status ??= agents.status(options)),
@@ -188,7 +191,7 @@ export async function runBenchmark({
   if (!fixtures) {
     const { loadEnv } = await import('vite');
     const root = fileURLToPath(new URL('..', import.meta.url));
-    baseEnv = { ...loadEnv('development', root, ''), ...process.env };
+    baseEnv = { ...loadEnv('development', root, 'SEARCH_'), ...process.env };
     baseEnv.SEARCH_MCP_API_BASE = loopbackOrigin(
       url ?? baseEnv.SEARCH_MCP_API_BASE ?? DEFAULT_URL,
     );
