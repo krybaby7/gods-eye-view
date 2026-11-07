@@ -253,6 +253,71 @@ numbers them `s1…sN`. Only these pages can ever be shown as a finding's source
 its output is read by a pure parser. Tests drive them with recorded output fixtures and a fake
 executable. Live runs happen only on the owner's machine.
 
+### 4.1a Adapter details (verified 2026-11-07)
+
+Start each installed executable from Node with an argument array, a fresh working directory,
+stdin for the prompt, and separate stdout and stderr. The executable owns sign-in. Do not load
+its credential files or supply a session token.
+
+**Claude Code.** Use `claude -p --output-format stream-json --verbose` for research, with
+`--restricted --no-chrome --no-session-persistence --permission-mode dontAsk`.
+`--tools WebSearch,WebFetch` selects the built-ins and `--allowedTools WebSearch,WebFetch`
+preapproves them. Use `--strict-mcp-config` and deny `mcp__*` for Phase 1. Pair
+`assistant.message.content` tool-use blocks with matching successful
+`user.message.content` tool-result blocks via the tool-use ID. Read search URLs from the
+result payload. Use a WebFetch URL only when the paired response confirms retrieval. The
+final `result` event includes text and usage. For mapping, use `--tools ""`,
+`--output-format json --json-schema <schema>` and read `structured_output`. For one-run MCP
+configuration, use `--strict-mcp-config --mcp-config <json-file>` with a per-tool allowlist.
+`--model <alias-or-id>` chooses the model. `claude --version` checks installation and
+`claude auth status --json` checks for `loggedIn` with `authMethod: "claude.ai"`. The installed
+version was 2.1.302 and reported subscription sign-in. Anthropic's consumer terms allow
+automation where Anthropic explicitly permits it. Anthropic documents `claude -p` on a
+signed-in subscriber's plan and recommends API credentials for tools built for others.
+[CLI reference](https://code.claude.com/docs/en/cli-reference) ·
+[Headless output](https://code.claude.com/docs/en/headless) ·
+[MCP configuration](https://code.claude.com/docs/en/mcp) ·
+[Subscription usage](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan) ·
+[Sign-in guidance](https://support.claude.com/en/articles/13189465-log-in-to-your-claude-account) ·
+[Consumer terms](https://www.anthropic.com/legal/consumer-terms)
+
+**Codex CLI.** Use `codex exec --json --skip-git-repo-check --ephemeral -` for JSON Lines and
+stdin. `-m <model-id>` chooses the model. `-c 'web_search="live"'` enables built-in live search
+and page opening. Completed `web_search` items can include `item.results`. Use URLs in those
+results. An `open_page` action URL describes the request. If the response omits result
+URLs, section 4.1's capped GET fallback applies. The final `agent_message` contains the
+answer and `turn.completed.usage` reports tokens. Use `--output-schema <file>` for the map
+response and `-c 'web_search="disabled"'` to turn off web access. Pass MCP servers as
+invocation-only TOML overrides (`-c mcp_servers.<id>…`) with `enabled_tools` and
+`--ignore-user-config`. `codex --version` and `codex login status` verify installation and
+ChatGPT sign-in. The installed version was 0.164.0 and reported ChatGPT sign-in.
+[Non-interactive mode](https://learn.chatgpt.com/docs/non-interactive-mode) ·
+[Web search](https://learn.chatgpt.com/docs/web-search) ·
+[CLI reference](https://learn.chatgpt.com/docs/cli/reference) ·
+[Config reference](https://learn.chatgpt.com/docs/config-file/config-reference) ·
+[JSONL event schema](https://github.com/openai/codex/blob/rust-v0.164.0/codex-rs/exec/src/exec_events.rs)
+
+**Codex containment and terms gate.** The documented `--disable shell_tool` disables shell
+execution tools. In both 0.164.0 and 0.167.0, `apply_patch` is registered separately for
+models that advertise it. A read-only sandbox restricts writes while the tool remains
+available. The public CLI and app-server documentation do not provide an allowlist for the
+entire tool set. The documented local catalog override can change model metadata, but
+editing internal tool fields is not a documented guarantee that every other tool is absent.
+OpenAI documents scripted JSONL consumption and reuse of saved CLI authentication.
+Its individual Terms of Use also restrict programmatic extraction of data or output.
+The public documentation does not expressly reconcile that clause for this app integration.
+The agreed build stops at this gate pending an owner decision. Options are Claude-only
+initially, a metered OpenAI API adapter with explicit tool selection, or waiting for OpenAI
+to confirm subscription use and provide supported controls for the required tool set.
+[Installed version tool registration](https://github.com/openai/codex/blob/rust-v0.164.0/codex-rs/core/src/tools/spec_plan.rs) ·
+[Current release tool registration](https://github.com/openai/codex/blob/rust-v0.167.0/codex-rs/core/src/tools/spec_plan.rs) ·
+[App-server protocol](https://learn.chatgpt.com/docs/app-server) ·
+[Codex subscription terms guidance](https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan) ·
+[OpenAI individual Terms of Use](https://openai.com/policies/row-terms-of-use/)
+
+Only the installed version and sign-in status were checked locally. No live research or map
+prompts were sent.
+
 ### 4.2 Map step
 
 Input: the question; the research notes; the numbered sources (id, registered publisher name or
