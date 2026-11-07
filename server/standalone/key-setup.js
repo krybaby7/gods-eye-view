@@ -70,7 +70,10 @@ const DEV_FRESH_EXTERNAL_KEYS_AT_BOOT = new Set(
  * keys exist. Prod builds never register this middleware (apply: 'serve'), so
  * the panel's status fetch fails and the client removes the whole surface.
  */
-function keySetupEndpoint({ sourceRoot = defaultSourceRoot } = {}) {
+function keySetupEndpoint({
+  sourceRoot = defaultSourceRoot,
+  searchAgentStatus,
+} = {}) {
   const respond = (res, statusCode, payload) => {
     res.statusCode = statusCode;
     res.setHeader('Content-Type', 'application/json');
@@ -245,6 +248,25 @@ function keySetupEndpoint({ sourceRoot = defaultSourceRoot } = {}) {
     apply: (_config, { command, isPreview }) =>
       command === 'serve' && !isPreview,
     configureServer(server) {
+      if (searchAgentStatus) {
+        server.middlewares.use('/api/setup/search-agents', async (req, res) => {
+          if (req.method !== 'GET')
+            return respond(res, 405, { error: 'Method not allowed' });
+          const admission = admit(req);
+          if (!admission.ok)
+            return respond(res, admission.status, { error: admission.error });
+          try {
+            return respond(res, 200, {
+              agents: await searchAgentStatus(),
+              defaultAgent: 'claude',
+            });
+          } catch {
+            return respond(res, 503, {
+              error: 'Search agent status unavailable',
+            });
+          }
+        });
+      }
       server.middlewares.use('/api/setup/status', (req, res) => {
         if (req.method !== 'GET')
           return respond(res, 405, { error: 'Method not allowed' });
