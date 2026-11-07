@@ -35,7 +35,11 @@ counts as corroborated.
 
 - **No Perplexity.** The search agents run on the owner's **Claude and Codex subscriptions**,
   through the official command-line tools signed in on the owner's machine (section 4.1). The owner
-  chooses the default agent in Provider Settings and can override it per search.
+  chooses the default agent in Provider Settings and can override it per search once multiple agents ship.
+- **Claude first.** Phases 1 and 2 ship only Claude Code. Codex is deferred because the documented
+  public controls do not establish the web-only and tools-off modes this feature requires, and
+  the subscription terms for this integration remain unconfirmed. Provider Settings shows Codex
+  as "not available yet" and the Searches panel offers Claude only.
 - **No budget.** Searches are never refused for cost. Each run still shows what it used (time, and
   tokens or cost when the tool reports them).
 - **History.** Updates keep every earlier answer. The owner can go back to any past day and see each
@@ -211,12 +215,11 @@ research({ question, since, previousFindings, signal }) → { notes, sources, us
 mapFindings({ prompt, schema, signal })                 → { json, usage, agentModel }
 ```
 
-Two adapters implement it, and nothing else in the feature knows which one ran:
+Adapters implement it, and the rest of the run pipeline uses the same interface for every agent:
 
 - `claude.js`: Claude Code, signed in with the owner's Claude subscription. It runs non-interactively
   with machine-readable output (headless mode).
-- `codex.js`: the Codex CLI, signed in with the owner's ChatGPT subscription, run non-interactively
-  (`codex exec` or its documented successor).
+- The Codex adapter is deferred to Later (§14).
 
 Rules for both:
 
@@ -306,9 +309,8 @@ editing internal tool fields is not a documented guarantee that every other tool
 OpenAI documents scripted JSONL consumption and reuse of saved CLI authentication.
 Its individual Terms of Use also restrict programmatic extraction of data or output.
 The public documentation does not expressly reconcile that clause for this app integration.
-The agreed build stops at this gate pending an owner decision. Options are Claude-only
-initially, a metered OpenAI API adapter with explicit tool selection, or waiting for OpenAI
-to confirm subscription use and provide supported controls for the required tool set.
+The owner decided on 2026-11-07 to ship Claude only in both phases. This preserves the
+adapter interface for a future Codex or OpenAI API integration.
 [Installed version tool registration](https://github.com/openai/codex/blob/rust-v0.164.0/codex-rs/core/src/tools/spec_plan.rs) ·
 [Current release tool registration](https://github.com/openai/codex/blob/rust-v0.167.0/codex-rs/core/src/tools/spec_plan.rs) ·
 [App-server protocol](https://learn.chatgpt.com/docs/app-server) ·
@@ -571,8 +573,8 @@ palette.
 
 ## 14. Phases
 
-- **Phase 1:** everything above, with each agent's built-in web access.
-- **Phase 2:** a toolkit for the research step.
+- **Phase 1:** everything above, with Claude Code's built-in web access.
+- **Phase 2:** a toolkit and benchmark for Claude Code.
   - MCP servers and APIs for stable, faster sources, chosen after a short evaluation. Candidates:
     GDELT, ReliefWeb (needs the app id), ACLED, Wikidata and OpenStreetMap for places, official
     statistics and market-data APIs.
@@ -584,7 +586,8 @@ palette.
   - Measure, per agent, the speed and quality on a fixed set of questions, before and after the
     toolkit, and record it in `docs/SEARCH-LAYERS.md`.
   - Phase 2 changes only `research.js` and the adapters' tool configuration.
-- **Later:** folders or tags in the history; lines between places (trade or migration routes);
+- **Later:** Codex adapter: subscription with read-only sandbox, or metered OpenAI API.
+  Folders or tags in the history; lines between places (trade or migration routes);
   areas drawn as outlines; follow-up questions inside a search; pinning a search as a theater; a
   Brief per search; the war monitor's "evidence nearby" from live layers; moving the war monitor's
   digest off Perplexity.
