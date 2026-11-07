@@ -155,6 +155,7 @@ async function testAgents(t, env = {}, options = {}) {
 test('uses stdin, restricted argv and a separate empty scratch directory for each step', async (t) => {
   const { agents, log, cacheDir } = await testAgents(t, {
     ANTHROPIC_API_KEY: 'fake-key',
+    SEARCH_TOOLKIT: 'off',
     SEARCH_CLAUDE_MODEL: 'sonnet',
   });
   const adapter = agents.get('claude');
@@ -307,4 +308,168 @@ test('cancel stops descendants as well as the CLI', async (t) => {
     );
     await delay(20);
   }
+});
+
+test('writes and cleans the private toolkit config for research only', async (t) => {
+  const { agents, log, cacheDir } = await testAgents(t, {
+    SEARCH_TOOLKIT: '',
+    SEARCH_MCP_API_BASE: 'http://127.0.0.1:4321',
+    SEARCH_RELIEFWEB_APPNAME: 'approved-abc',
+    UNRELATED_KEY: 'never-pass',
+  });
+  const adapter = agents.get('claude');
+  await adapter.research({ question: 'Cairo' });
+  const research = JSON.parse(await readFile(log, 'utf8'));
+  const configPath = research.args[research.args.indexOf('--mcp-config') + 1];
+  assert.equal(path.dirname(configPath), research.cwd);
+  assert.deepEqual(research.files, [path.basename(configPath)]);
+  assert.equal(research.appname, undefined);
+  assert.deepEqual(Object.keys(research.mcpConfig.mcpServers), ['gev_search']);
+  const server = research.mcpConfig.mcpServers.gev_search;
+  assert.equal(server.command, process.execPath);
+  assert.deepEqual(server.env, {
+    GEV_SEARCH_API_BASE: 'http://127.0.0.1:4321',
+    GEV_SEARCH_RELIEFWEB_APPNAME: 'approved-abc',
+  });
+  assert.equal(
+    research.args[research.args.indexOf('--tools') + 1],
+    'WebSearch,WebFetch',
+  );
+  assert.deepEqual(
+    research.args[research.args.indexOf('--allowedTools') + 1].split(','),
+    [
+      'WebSearch',
+      'WebFetch',
+      'mcp__gev_search__wikidata_places',
+      'mcp__gev_search__reliefweb_reports',
+      'mcp__gev_search__aircraft_in_area',
+      'mcp__gev_search__vessels_in_area',
+      'mcp__gev_search__get_active_fires',
+    ],
+  );
+  assert.match(research.prompt, /Wikidata/);
+  assert.match(research.prompt, /ReliefWeb/);
+  assert.match(research.prompt, /aircraft, vessels, and fires/);
+  await adapter.mapFindings({ prompt: 'map', schema: { type: 'object' } });
+  const map = JSON.parse(await readFile(log, 'utf8'));
+  assert.deepEqual(map.files, []);
+  assert.deepEqual(map.mcpConfig, { mcpServers: {} });
+  assert.equal(map.args[map.args.indexOf('--disallowedTools') + 1], 'mcp__*');
+  assert.deepEqual(await readdir(path.join(cacheDir, 'search-runs')), []);
+});
+
+test('accepts only paired successful toolkit result URLs from enabled tools', async () => {
+  const { parseClaudeResearch } = await importAdapter();
+  const prefix = 'mcp__gev_search__';
+  const calls = [
+    [
+      'wikidata_places',
+      {
+        sources: [
+          { url: 'https://www.wikidata.org/wiki/Q85', title: 'Cairo' },
+          { url: 'https://www.wikidata.org.example.org/wiki/Q85' },
+          { url: 'http://www.wikidata.org/wiki/Q86' },
+        ],
+      },
+    ],
+    [
+      'get_active_fires',
+      {
+        view: { url: 'http://localhost:4173/#something' },
+        sources: [
+          { url: 'http://localhost:4173/' },
+          { url: 'https://firms.modaps.eosdis.nasa.gov/map/' },
+          { url: 'https://firms.modaps.eosdis.nasa.gov/api/area/csv/key/' },
+        ],
+      },
+    ],
+    [
+      'reliefweb_reports',
+      { sources: [{ url: 'https://reliefweb.int/node/42' }] },
+    ],
+    [
+      'wikidata_places',
+      { sources: [{ url: 'https://www.wikidata.org/wiki/Q42' }] },
+      true,
+    ],
+    [
+      'panel_request',
+      { sources: [{ url: 'https://www.wikidata.org/wiki/Q33' }] },
+    ],
+  ];
+  const jsonl = [
+    {
+      type: 'assistant',
+      message: {
+        content: calls.map(([name], index) => ({
+          type: 'tool_use',
+          id: String(index),
+          name: prefix + name,
+          input: { url: 'https://www.wikidata.org/wiki/Q34' },
+        })),
+      },
+    },
+    {
+      type: 'user',
+      message: {
+        content: calls.map(([, data, is_error], index) => ({
+          type: 'tool_result',
+          tool_use_id: String(index),
+          is_error,
+          content: [
+            { type: 'text', text: 'Context' },
+            { type: 'text', text: JSON.stringify(data) },
+          ],
+        })),
+      },
+    },
+    {
+      type: 'result',
+      subtype: 'success',
+      result: 'https://www.wikidata.org/wiki/Q999999',
+    },
+  ]
+    .map((event) => JSON.stringify(event))
+    .join('\n');
+  assert.deepEqual(
+    parseClaudeResearch(jsonl, [
+      prefix + 'wikidata_places',
+      prefix + 'get_active_fires',
+    ]).sources.map(({ url }) => url),
+    [
+      'https://www.wikidata.org/wiki/Q85',
+      'https://firms.modaps.eosdis.nasa.gov/map/',
+    ],
+  );
+});
+
+test('reads an exact JSON toolkit payload from a single text result', async () => {
+  const { parseClaudeResearch } = await importAdapter();
+  const name = 'mcp__gev_search__reliefweb_reports';
+  const data = JSON.stringify({
+    sources: [{ url: 'https://reliefweb.int/node/42' }],
+  });
+  const jsonl = (content) =>
+    [
+      {
+        type: 'assistant',
+        message: { content: [{ type: 'tool_use', id: 'one', name }] },
+      },
+      {
+        type: 'user',
+        message: {
+          content: [{ type: 'tool_result', tool_use_id: 'one', content }],
+        },
+      },
+      { type: 'result', subtype: 'success', result: 'Notes' },
+    ]
+      .map((event) => JSON.stringify(event))
+      .join('\n');
+  assert.deepEqual(parseClaudeResearch(jsonl(data), [name]).sources, [
+    { url: 'https://reliefweb.int/node/42' },
+  ]);
+  assert.deepEqual(
+    parseClaudeResearch(jsonl('Other text: ' + data), [name]).sources,
+    [],
+  );
 });

@@ -118,7 +118,9 @@ export function createProcessRunner({
       if (signal?.aborted) throw agentError('SEARCH_AGENT_CANCELED');
       await mkdir(root, { recursive: true, mode: 0o700 });
       cwd = await mkdtemp(path.join(root, 'claude-'));
-      return await capture(executable, [...executableArgs, ...args], {
+      const invocationArgs =
+        typeof args === 'function' ? await args(cwd) : args;
+      return await capture(executable, [...executableArgs, ...invocationArgs], {
         cwd,
         env,
         prompt,

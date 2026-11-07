@@ -21,11 +21,17 @@ if (args[0] === '--version') {
   );
 } else {
   const prompt = readFileSync(0, 'utf8');
+  const configArg = args[args.indexOf('--mcp-config') + 1];
+  const mcpConfig = configArg.startsWith('{')
+    ? JSON.parse(configArg)
+    : JSON.parse(readFileSync(configArg, 'utf8'));
   if (log)
     writeFileSync(
       log,
       JSON.stringify({
         args,
+        mcpConfig,
+        appname: process.env.SEARCH_RELIEFWEB_APPNAME,
         prompt,
         cwd: process.cwd(),
         files: readdirSync(process.cwd()),
