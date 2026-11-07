@@ -77,45 +77,89 @@ function citedSources(ids, local) {
   return [...new Set((ids ?? []).map((id) => local.get(id)).filter(Boolean))];
 }
 
-function areaGazetteer(gazetteer) {
-  const rowsByName = new Map();
-  for (const row of gazetteer) {
-    if (!AREA_PRECISIONS.has(row?.precision)) continue;
-    for (const name of [row.name, ...(row.aliases ?? [])]) {
-      const key = normalizePlaceName(name);
-      if (key && !rowsByName.has(key)) rowsByName.set(key, [row]);
-    }
-  }
-  return rowsByName;
+function placeKey(name) {
+  return normalizePlaceName(name).replace(/^the /, '');
 }
 
-function gazetteerLocation(finding, gazetteer, areas) {
+// Keep the whole name first ("Washington, D.C.") before trying prefixes
+// introduced by explicit qualifiers. Names that occur only in a qualifier
+// cannot identify the thing being placed.
+function placePrefixes(name) {
+  if (!name) return [];
+  return [
+    placeKey(name),
+    ...[...name.matchAll(/[,\(]/g)]
+      .reverse()
+      .map(({ index }) => placeKey(name.slice(0, index))),
+  ].filter(Boolean);
+}
+
+function indexGazetteer(gazetteer) {
+  const places = new Map();
+  const areas = new Map();
+  for (const row of gazetteer) {
+    if (!row) continue;
+    for (const name of [row.name, ...(row.aliases ?? [])]) {
+      const key = placeKey(name);
+      if (!key) continue;
+      if (!places.has(key)) places.set(key, [row]);
+      if (AREA_PRECISIONS.has(row.precision) && !areas.has(key)) {
+        areas.set(key, [row]);
+      }
+    }
+  }
+  return { places, areas };
+}
+
+function gazetteerLocation(finding, { places, areas }) {
   const placeName = finding.place?.name;
   if (finding.kind === 'area') {
-    // A substring like "Sudan" in "Khartoum, Sudan" cannot justify a ring
-    // over the entire country. The area must be named directly.
-    const rows = areas.get(normalizePlaceName(placeName));
+    // An area ring requires the direct name of a region or country.
+    const rows = areas.get(placeKey(placeName));
     return rows ? resolveLocation({ placeName }, rows) : null;
   }
+  const rows = placePrefixes(placeName)
+    .map((key) => places.get(key))
+    .find(Boolean);
+  if (!rows) return null;
   const location = resolveLocation(
     { placeName, lat: finding.lat, lon: finding.lon },
-    gazetteer,
+    rows,
   );
   return location?.method === 'gazetteer' ? location : null;
 }
 
-function finalLocation(finding, { gazetteer, areas, geocodes }) {
-  const location = gazetteerLocation(finding, gazetteer, areas);
+function matchingGeocode(finding, candidate) {
+  const requested = placePrefixes(finding.place?.name);
+  const returned = placePrefixes(candidate.name);
+  if (!requested.length || !returned.length) return false;
+  if (finding.kind === 'area') {
+    return (
+      AREA_PRECISIONS.has(candidate.precision) && requested[0] === returned[0]
+    );
+  }
+  if (requested.includes(returned[0]) || returned.includes(requested[0])) {
+    return true;
+  }
+  // A specific site can add a descriptor to the requested name. Require
+  // the finding title to name that same site before accepting the addition.
+  const title = placeKey(finding.title);
+  return (
+    finding.kind === 'place' &&
+    returned.some(
+      (name) =>
+        requested.some((subject) => name.startsWith(subject + ' ')) &&
+        (title === name || title.startsWith(name + ' ')),
+    )
+  );
+}
+function finalLocation(finding, { names, geocodes }) {
+  const location = gazetteerLocation(finding, names);
   if (location) return location;
   const name = finding.place?.name ?? null;
   const candidate = geocodes.get(normalizePlaceName(name));
   const point = candidate && resolveLocation(candidate, []);
-  if (
-    point &&
-    (finding.kind !== 'area' ||
-      (AREA_PRECISIONS.has(candidate.precision) &&
-        normalizePlaceName(name) === normalizePlaceName(candidate.name)))
-  ) {
+  if (point && matchingGeocode(finding, candidate)) {
     return {
       lat: point.lat,
       lon: point.lon,
@@ -133,22 +177,22 @@ function finalLocation(finding, { gazetteer, areas, geocodes }) {
 
 export function getUnresolvedPlaces({ mapped, sources, gazetteer = [] }) {
   const local = new Set(sources.filter(sourceUrl).map((source) => source.id));
-  const areas = areaGazetteer(gazetteer);
-  const names = new Map();
+  const names = indexGazetteer(gazetteer);
+  const unresolved = new Map();
   for (const finding of mapped.findings) {
     const name = finding.place?.name?.trim();
     const key = normalizePlaceName(name);
     if (
       !key ||
-      names.has(key) ||
+      unresolved.has(key) ||
       !finding.sourceIds?.some((id) => local.has(id)) ||
-      gazetteerLocation(finding, gazetteer, areas)
+      gazetteerLocation(finding, names)
     )
       continue;
-    names.set(key, name);
-    if (names.size === LOOKUP_CAP) break;
+    unresolved.set(key, name);
+    if (unresolved.size === LOOKUP_CAP) break;
   }
-  return [...names.values()];
+  return [...unresolved.values()];
 }
 
 function nextFindingId(searchId, finding, used) {
@@ -195,8 +239,7 @@ export function completeRun({
       ),
     );
   const placement = {
-    gazetteer,
-    areas: areaGazetteer(gazetteer),
+    names: indexGazetteer(gazetteer),
     geocodes: new Map(
       [...geocodes].map(([name, candidate]) => [
         normalizePlaceName(name),

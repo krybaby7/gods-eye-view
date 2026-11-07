@@ -92,7 +92,9 @@ test('derives citation counts, source facts, verification and truthful location'
       finding('Gazetteer misses', 'Lookup', { lat: 12, lon: 12 }),
     ],
     {
-      geocodes: new Map([['Lookup', { lat: 10, lon: 10, precision: 'city' }]]),
+      geocodes: new Map([
+        ['Lookup', { lat: 10, lon: 10, precision: 'city', name: 'Lookup' }],
+      ]),
     },
   );
   assert.equal(first.label, 'Sudan news');
@@ -231,4 +233,124 @@ test('area geocodes need a named country or region', () => {
   );
   assert.equal(result.findings[0].location?.precision, 'region');
   assert.equal(result.findings[1].location, null);
+});
+
+const mineGazetteer = [
+  ...gazetteer,
+  { name: 'Australia', lat: -24, lon: 134, precision: 'country' },
+  { name: 'Western Australia', lat: -27, lon: 121, precision: 'region' },
+  { name: 'Antofagasta', lat: -23.6, lon: -70.4, precision: 'city' },
+  {
+    name: 'Washington, D.C.',
+    aliases: ['Washington DC', 'District of Columbia'],
+    lat: 38.9,
+    lon: -77,
+    precision: 'city',
+  },
+  { name: 'Netherlands', lat: 52, lon: 5, precision: 'country' },
+];
+
+test('queues full site names when the gazetteer only knows their qualifiers', () => {
+  const findings = [
+    finding('Lithium mine', 'Greenbushes, Western Australia', {
+      kind: 'place',
+    }),
+    finding('Salt flat', 'Salar de Atacama, Antofagasta Region, Chile', {
+      kind: 'place',
+    }),
+    finding('Capital', 'Washington, D.C., United States'),
+    finding('Capital alias', 'District of Columbia (United States)'),
+    finding('Capital with alias punctuation', 'Washington DC, United States'),
+    finding('Capital in Sudan', 'Khartoum, Sudan'),
+    finding('Country', 'the Netherlands'),
+    finding('Country alone', 'Australia'),
+  ];
+  assert.deepEqual(
+    getUnresolvedPlaces({
+      mapped: { findings },
+      sources,
+      gazetteer: mineGazetteer,
+    }),
+    [
+      'Greenbushes, Western Australia',
+      'Salar de Atacama, Antofagasta Region, Chile',
+    ],
+  );
+  assert.deepEqual(
+    complete(findings, { gazetteer: mineGazetteer }).findings.map(
+      (item) => item.location?.name,
+    ),
+    [
+      undefined,
+      undefined,
+      'Washington, D.C.',
+      'Washington, D.C.',
+      'Washington, D.C.',
+      'Khartoum',
+      'Netherlands',
+      'Australia',
+    ],
+  );
+});
+
+test('uses the geocoded subject or falls back without using an unrelated qualifier', () => {
+  const findings = [
+    finding('Greenbushes Lithium Mine', 'Greenbushes, Western Australia', {
+      kind: 'place',
+    }),
+    finding(
+      'Salar de Atacama lithium extraction',
+      'Salar de Atacama, Antofagasta Region, Chile',
+      { kind: 'place', lat: -23.5, lon: -68 },
+    ),
+    finding('Unknown deposit', 'Unknown Deposit, Western Australia', {
+      kind: 'place',
+    }),
+    finding('Town', 'Ravensthorpe, Western Australia', { kind: 'place' }),
+    finding('Grota do Cirilo lithium mine', 'Grota do Cirilo, Minas Gerais', {
+      kind: 'place',
+    }),
+    finding('Australian mine', 'Bald Hill, Western Australia', {
+      kind: 'place',
+    }),
+  ];
+  const geocodes = new Map([
+    [
+      'Greenbushes, Western Australia',
+      { name: 'Greenbushes Lithium Mine', lat: -33.86, lon: 116.06 },
+    ],
+    [
+      'Salar de Atacama, Antofagasta Region, Chile',
+      { name: 'Antofagasta', lat: -23.6, lon: -70.4, precision: 'city' },
+    ],
+    [
+      'Unknown Deposit, Western Australia',
+      { name: 'Western Australia', lat: -27, lon: 121, precision: 'region' },
+    ],
+    [
+      'Ravensthorpe, Western Australia',
+      { name: 'Ravensthorpe', lat: -33.58, lon: 120.05, precision: 'city' },
+    ],
+    [
+      'Grota do Cirilo, Minas Gerais',
+      { name: 'Grota do Cirilo (lithium mine)', lat: -16.53, lon: -41.98 },
+    ],
+    [
+      'Bald Hill, Western Australia',
+      { name: 'Bald Hill Road', lat: -32, lon: 116 },
+    ],
+  ]);
+  assert.deepEqual(
+    complete(findings, { gazetteer: mineGazetteer, geocodes }).findings.map(
+      (item) => [item.location?.method, item.location?.lat],
+    ),
+    [
+      ['nominatim', -33.86],
+      ['model', -23.5],
+      [undefined, undefined],
+      ['nominatim', -33.58],
+      ['nominatim', -16.53],
+      [undefined, undefined],
+    ],
+  );
 });
