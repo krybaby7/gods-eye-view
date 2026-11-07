@@ -340,6 +340,12 @@ NOAA density imagery with the raw GLM product.
 
 ---
 
+## Search layers
+
+Searches use the owner's locally installed Claude Code and subscription for research and mapping. Claude's built-in web tools return source evidence; where needed, the server checks a source with a bounded same-origin fetch. Publisher websites and their terms apply to their content. See [Claude Code non-interactive usage](https://code.claude.com/docs/en/headless), [authentication](https://code.claude.com/docs/en/authentication), and Anthropic's [subscription and credential rules](https://code.claude.com/docs/en/legal-and-compliance). Source links and publisher names are shown with findings.
+
+Locations first use the World and Iran · Israel · US gazetteers described under [War monitor](#war-monitor). Unresolved names may use the shared Nominatim queue, with at most 15 lookups per run and 1.1-second spacing. The public service's [usage policy](https://operations.osmfoundation.org/policies/nominatim/) limits aggregate application traffic to one request per second, requires an identifying User-Agent or Referer and attribution, and prohibits systematic queries. Place data is © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), available under the ODbL. See [Search layers](docs/SEARCH-LAYERS.md) for operation and local storage.
+
 ## War monitor
 
 The **War monitor** layer (Events group) and its Situation panel collect headlines for each theater (**Iran · Israel · US**, and **World**: political news from every continent) from the registry in [`public/news/sources.json`](public/news/sources.json); a source can serve several theaters, and each theater lists its own in `public/news/theaters/<id>.json`. Collection is keyless and runs on timers inside the dev/preview server (`/api/news`); nothing is fetched until the first request. Stories are made only when someone presses **Refresh** or says "refresh news": one digest call per press, never on a timer. Design and behaviour are in [`docs/WAR-MONITOR.md`](docs/WAR-MONITOR.md).

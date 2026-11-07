@@ -1,5 +1,7 @@
 # God's Eye View Current State
 
+Search layers use locally installed Claude Code for owner-initiated research and map source-backed findings in Events > Searches. Runs, updates, UTC history and comparisons are stored locally; there is no scheduled refresh. Claude is the Phase 1 agent and Codex is not available yet. See [Search layers](SEARCH-LAYERS.md) for setup and operation.
+
 The Lenses bar is the first left-rail surface: Air, Sea, Space, Conflict,
 Hazards, City and Signals switch groups of existing data layers. Its status is
 derived from effective layer intent, including transitions; there is no lens

@@ -7,8 +7,7 @@ owner, not built. Builds on `docs/WAR-MONITOR.md`, `2026-10-25-war-monitor-desig
 ## 0. Shape in one paragraph
 
 The owner asks the globe a question in plain words: "what's going on with crypto?", "who's talking
-about the Sudan ceasefire?", "where are the world's lithium mines?". A research agent (Claude or
-Codex, running on the owner's own subscriptions) searches the web. A second call turns what it found
+about the Sudan ceasefire?", "where are the world's lithium mines?". Claude Code, running on the owner's subscription, searches the web. A second call turns what it found
 into **findings**: events, statements, places and country-wide facts, each tied to a place and to
 the pages it came from. Code checks them, places them and saves them as a **search layer**: a row in
 a new Searches panel, labelled by the question, toggled on and off on its own, drawn on the globe in
@@ -469,8 +468,7 @@ It is mounted through an `attachSearches(factory)` hook in `src/ui/layerPanel.js
 
 **Top:**
 
-- An ask box (a textarea: Enter asks, Shift+Enter starts a new line), an agent choice (Claude or
-  Codex, defaulting to the Provider Settings choice) and **Ask**.
+- An ask box (a textarea: Enter asks, Shift+Enter starts a new line), an agent choice (Claude for Phases 1 and 2) and **Ask**.
 - While running: "Searching the web… 0:41", then "Placing findings… 1:02", with **Cancel**.
 - A usage line for the last run: its time, and tokens or cost when the agent reported them.
 - Ask is disabled, with the reason shown, when the chosen agent isn't installed or signed in, a run
@@ -503,7 +501,7 @@ for the pure functions it reuses.
 | File | Job |
 |---|---|
 | `agents/index.js` | The interface, agent selection and status. |
-| `agents/claude.js`, `agents/codex.js` | The two adapters (4.1): command lines, process control, output parsing. |
+| `agents/claude.js` | Claude adapter (4.1): command lines, process control, output parsing. |
 | `research.js` | The research step's instructions and source collection. |
 | `mapper.js` | The map step's prompt, JSON schema and validation. |
 | `findings.js` | The code checks (4.3), pure. |
