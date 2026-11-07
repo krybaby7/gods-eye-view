@@ -4,6 +4,7 @@ import { initDrawTool } from '../annotations/drawTool.js';
 import { initImageryBoxTool } from '../ui/imageryBoxTool.js';
 import { createRecentImageryPanel } from '../ui/recentImagery.js';
 import { createSituationPanel } from '../ui/situationPanel.js';
+import { createSearchesPanel } from '../ui/searchesPanel.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
 import { installViews, isEmbeddedInline } from './embed.js';
 import { installScopeMask, destroyScopeMask } from '../scopeMask.js';
@@ -101,6 +102,33 @@ export function createApplicationTools({
       createSituationPanel({ container, layer: news }),
     );
     defer(() => data.presentation.attachSituation(null));
+  }
+  const searches = dataManager.layers.get('searches')?.module;
+  if (searches) {
+    data.presentation.attachSearches((container) =>
+      createSearchesPanel(container, {
+        layer: searches,
+        onOpenWarStory: news
+          ? async ({ id, theaterId }) => {
+              if (!news.getSnapshot().enabled)
+                await dataManager.setEnabled('news', true, { origin: 'user' });
+              if (theaterId && news.getSnapshot().theater?.id !== theaterId)
+                await news.setTheater(theaterId);
+              if (!news.selectStory(id, { focus: true }))
+                throw new Error(
+                  'This War Monitor story is no longer available.',
+                );
+              const situation =
+                container.ownerDocument.getElementById('situation-panel');
+              if (situation?.classList.contains('collapsed'))
+                situation
+                  .querySelector('[data-collapse-target="situation-panel"]')
+                  ?.click();
+            }
+          : null,
+      }),
+    );
+    defer(() => data.presentation.attachSearches(null));
   }
   if (startChrome)
     defer(startChrome({ loadingScreen, styleManager, dataManager, signal }));
