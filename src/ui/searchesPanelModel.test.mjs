@@ -143,3 +143,27 @@ test('history rows group by the latest attempted run even when it failed', () =>
     'Today',
   );
 });
+
+test('Today and Yesterday follow the browser calendar around local midnight', (t) => {
+  const originalZone = process.env.TZ;
+  process.env.TZ = 'Europe/Paris';
+  t.after(() => {
+    if (originalZone == null) delete process.env.TZ;
+    else process.env.TZ = originalZone;
+  });
+  const searches = [
+    { id: 'today', createdAt: '2026-10-25T23:15:00Z' },
+    { id: 'yesterday', createdAt: '2026-10-25T22:50:00Z' },
+  ];
+  const now = new Date('2026-10-25T23:30:00Z');
+  assert.deepEqual(
+    groupSearches(searches, '', now).map(({ label, searches }) => [
+      label,
+      searches.map(({ id }) => id),
+    ]),
+    [
+      ['Today', ['today']],
+      ['Yesterday', ['yesterday']],
+    ],
+  );
+});

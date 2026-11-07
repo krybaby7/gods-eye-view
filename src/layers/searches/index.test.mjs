@@ -82,6 +82,29 @@ test('layer draws pins, filters a historical run and clears rendering resources 
   assert.deepEqual(sources, []);
 });
 
+test('an exact run uses the browser calendar day of its stored timestamp', async (t) => {
+  const originalZone = process.env.TZ;
+  process.env.TZ = 'Europe/Paris';
+  t.after(() => {
+    if (originalZone == null) delete process.env.TZ;
+    else process.env.TZ = originalZone;
+  });
+  const { layer, viewer } = fixture({
+    source: {
+      getRun: async () => ({
+        id: 'sr_1234',
+        run: { id: 'run_1', finishedAt: '2026-11-05T23:15:00Z' },
+        findings: [],
+      }),
+    },
+  });
+  t.after(() => layer.destroy());
+  layer.init(viewer);
+  layer.enable();
+  await layer.setRun('sr_1234', 'run_1');
+  assert.equal(layer.getSnapshot().asOf, '2026-11-06');
+});
+
 test('disabling the layer cancels a pending snapshot and ignores its result', async () => {
   let complete;
   let signal;

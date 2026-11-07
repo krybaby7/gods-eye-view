@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildRunSnapshot, compareRuns, listSearchDays } from './history.js';
+import {
+  buildRunSnapshot,
+  compareRuns,
+  createHistoryDayKey,
+  listSearchDays,
+} from './history.js';
 
 const search = {
   id: 'sr_history',
@@ -120,4 +125,37 @@ test('comparison does not show recency from runs after the target', () => {
   const changes = compareRuns(later, 'ask', 'update');
   assert.equal(changes.notSeenSince[0].lastSeenAt, '2026-11-04T09:00:00Z');
   assert.equal(changes.seenAgain[0].lastSeenAt, '2026-11-05T09:00:00Z');
+});
+
+test('local history includes the end of the selected day across DST transitions', () => {
+  const dayKey = createHistoryDayKey('Europe/Berlin');
+  for (const [day, nextDay, midnight] of [
+    ['2026-03-29', '2026-03-30', '2026-03-29T22:00:00.000Z'],
+    ['2026-10-25', '2026-10-26', '2026-10-25T23:00:00.000Z'],
+  ]) {
+    const lastMoment = new Date(Date.parse(midnight) - 1).toISOString();
+    const localSearch = {
+      ...search,
+      createdAt: lastMoment,
+      runs: [
+        { id: 'last', status: 'ok', finishedAt: lastMoment },
+        { id: 'next', status: 'ok', finishedAt: midnight },
+      ],
+    };
+    assert.deepEqual(listSearchDays([localSearch], { dayKey }), [nextDay, day]);
+    const snapshot = buildRunSnapshot(localSearch, { asOf: day, dayKey });
+    assert.equal(snapshot.run.id, 'last');
+    assert.equal(snapshot.run.finishedAt, lastMoment);
+    assert.deepEqual(
+      snapshot.runs.map(({ id }) => id),
+      ['last'],
+    );
+    assert.equal(
+      buildRunSnapshot(
+        { ...localSearch, createdAt: midnight },
+        { asOf: day, dayKey },
+      ),
+      null,
+    );
+  }
 });

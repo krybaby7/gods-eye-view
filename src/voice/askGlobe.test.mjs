@@ -74,6 +74,23 @@ test('ask_globe enables Searches, announces progress, waits and reads back mappe
   assert.equal(progressLine('search', 'Austin'), 'Looking up Austin.');
 });
 
+test('ask_globe says when a completed search was saved hidden', async () => {
+  const { run } = harness(
+    {
+      ask: async () => ({ id: 'search-1', runId: 'run-1' }),
+      waitForRun: async () => ({
+        label: 'Crypto this week',
+        visible: false,
+        findings: [{ location: { lat: 0, lon: 0 } }],
+      }),
+    },
+    true,
+  );
+  const result = await run('ask_globe', { question: 'Ask about crypto' });
+  assert.equal(result.ok, true);
+  assert.equal(result.say, 'Crypto this week was saved but is hidden.');
+});
+
 test('ask_globe rejects invalid questions before enabling the layer', async () => {
   const { run, calls } = harness({});
   for (const question of [null, 4, '', '   ', 'x'.repeat(501)]) {

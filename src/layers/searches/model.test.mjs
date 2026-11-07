@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildSearchMarkers, searchMarkerImage } from './model.js';
+import {
+  buildSearchMarkers,
+  searchFindingCard,
+  searchMarkerImage,
+} from './model.js';
 import { normalizeSearchSnapshot, SEARCH_COLORS } from './records.js';
 
 const point = { lat: 12, lon: 34, name: 'A place' };
@@ -102,4 +106,25 @@ test('all eight colour segments intersect the filled marker', () => {
   const result = svg({ kind: 'event', colors: SEARCH_COLORS, size: 22 });
   assert.match(result, /id="part0"><rect x="4"/);
   assert.match(result, /id="part7"><rect x="21.5"/);
+});
+
+test('the globe finding card shows the event time in the browser zone', (t) => {
+  const originalZone = process.env.TZ;
+  process.env.TZ = 'Europe/Paris';
+  t.after(() => {
+    if (originalZone == null) delete process.env.TZ;
+    else process.env.TZ = originalZone;
+  });
+  const snapshot = normalizeSearchSnapshot({
+    searches: [
+      {
+        ...search,
+        label: 'Lithium',
+        findings: [{ ...finding, eventAt: '2026-11-05T23:15:00Z' }],
+      },
+    ],
+  });
+  const [marker] = buildSearchMarkers(snapshot.searches);
+  const card = searchFindingCard(marker);
+  assert.equal(card.details[2], 'Nov 6, 2026, 12:15 AM · 2 sources');
 });

@@ -99,3 +99,61 @@ test('matches lithium mines by normalized names within 25 km', () => {
     0,
   );
 });
+
+test('keeps two findings from one search apart when their merged groups meet', () => {
+  const hotspot = { key: 'country:Sudan' };
+  const a = layer('a', 'Ceasefire announced', { id: 'f_a001', hotspot });
+  a.sources.push({ id: 's2', url: 'https://example.org/another-report' });
+  a.findings.push({
+    ...a.findings[0],
+    id: 'f_a002',
+    title: 'Ceasefire violated',
+    sourceIds: ['s2'],
+  });
+  const b = layer(
+    'b',
+    'Ceasefire announcement and response',
+    { hotspot },
+    a.sources[0].url,
+  );
+  const c = layer(
+    'c',
+    'Ceasefire violations and response',
+    { hotspot },
+    a.sources[1].url,
+  );
+  for (const search of [b, c]) {
+    search.sources.push({ id: 's2', url: 'https://example.org/response' });
+    search.findings[0].sourceIds.push('s2');
+  }
+
+  // A1 matches B, A2 matches C, and B matches C. The B–C match
+  // cannot join the two components because both already contain A.
+  const [resultA, resultB, resultC] = decorateSearchSnapshots([a, b, c]);
+  const [first, second] = resultA.findings;
+  assert.notEqual(first.mergeKey, second.mergeKey);
+  assert.equal(first.mergeKey, resultB.findings[0].mergeKey);
+  assert.equal(second.mergeKey, resultC.findings[0].mergeKey);
+  assert.deepEqual(
+    first.alsoIn.map(({ searchId }) => searchId),
+    ['b'],
+  );
+  assert.deepEqual(
+    second.alsoIn.map(({ searchId }) => searchId),
+    ['c'],
+  );
+
+  const connected = decorateSearchSnapshots([
+    { ...a, findings: [a.findings[0]] },
+    b,
+    c,
+  ]);
+  assert.equal(
+    new Set(connected.map((search) => search.findings[0].mergeKey)).size,
+    1,
+  );
+  assert.deepEqual(
+    connected[0].findings[0].alsoIn.map(({ searchId }) => searchId),
+    ['b', 'c'],
+  );
+});

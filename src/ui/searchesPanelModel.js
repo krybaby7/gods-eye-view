@@ -1,3 +1,6 @@
+import { localSearchDay } from '../layers/searches/records.js';
+
+// Calendar keys already identify a local day. Keep the label on that date.
 const dayFormat = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'medium',
   timeZone: 'UTC',
@@ -10,6 +13,10 @@ const usdFormat = new Intl.NumberFormat('en-US', {
 });
 
 export const MAX_SEARCH_QUESTION = 500;
+
+export function formatSearchDay(day) {
+  return dayFormat.format(Date.parse(day));
+}
 
 export function askDisabledReason(question, agent, { pending, history } = {}) {
   if (pending) return 'Starting search…';
@@ -58,10 +65,10 @@ function activity(search) {
 
 export function groupSearches(searches, query, now = new Date()) {
   const filter = query.trim().toLowerCase();
-  const today = dayFormat.format(now);
+  const today = localSearchDay(now);
   const yesterday = new Date(now);
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  const previous = dayFormat.format(yesterday);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const previous = localSearchDay(yesterday);
   const buckets = new Map();
   const ordered = searches
     .filter(
@@ -76,14 +83,14 @@ export function groupSearches(searches, query, now = new Date()) {
         activity(b) - activity(a),
     );
   for (const search of ordered) {
-    const day = dayFormat.format(activity(search));
+    const day = localSearchDay(activity(search));
     const label = search.pinned
       ? 'Pinned'
       : day === today
         ? 'Today'
         : day === previous
           ? 'Yesterday'
-          : day;
+          : formatSearchDay(day);
     if (!buckets.has(label)) buckets.set(label, []);
     buckets.get(label).push(search);
   }

@@ -3,6 +3,7 @@ import { normalizeSearchRecord, normalizeSearchSnapshot } from './records.js';
 export function createSearchesSource({
   fetchImpl = (...args) => globalThis.fetch(...args),
   endpoint = '/api/searches',
+  timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone,
 } = {}) {
   async function request(path = '', { method = 'GET', signal, body } = {}) {
     signal?.throwIfAborted();
@@ -35,6 +36,7 @@ export function createSearchesSource({
       const params = new URLSearchParams();
       if (rev) params.set('rev', rev);
       if (asOf) params.set('asOf', asOf);
+      if (timeZone) params.set('timeZone', timeZone);
       const payload = await request(params.size ? `?${params}` : '', {
         signal,
       });

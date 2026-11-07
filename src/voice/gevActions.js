@@ -2819,6 +2819,7 @@ async function askGlobe(
       ok: true,
       action,
       label: search.label,
+      hidden: search.visible === false,
       mappedCount: search.findings.filter((finding) => finding.location).length,
     };
   } catch (error) {

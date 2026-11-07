@@ -75,6 +75,7 @@ export function decorateSearchSnapshots(searches, { warStories = [] } = {}) {
   const linksByUrl = warByUrl(warStories);
   const entries = searches.flatMap(searchFindings);
   const parents = entries.map((_, index) => index);
+  const searchIds = entries.map(({ search }) => new Set([search.id]));
   function root(index) {
     while (index !== parents[index]) {
       parents[index] = parents[parents[index]];
@@ -84,7 +85,14 @@ export function decorateSearchSnapshots(searches, { warStories = [] } = {}) {
   }
   for (let i = 0; i < entries.length; i++) {
     for (let j = i + 1; j < entries.length; j++) {
-      if (sameFinding(entries[i], entries[j])) parents[root(j)] = root(i);
+      if (!sameFinding(entries[i], entries[j])) continue;
+      const first = root(i);
+      const second = root(j);
+      // Earlier compatible matches take precedence when a later match would
+      // put two findings from the same search into one group.
+      if (!searchIds[first].isDisjointFrom(searchIds[second])) continue;
+      parents[second] = first;
+      for (const id of searchIds[second]) searchIds[first].add(id);
     }
   }
 

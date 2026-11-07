@@ -154,6 +154,40 @@ test('reserves one slot per agent, cancels through the signal and retries with a
   await until(request, ({ searches }) => searches[0]?.run?.id === retry.runId);
 });
 
+test('uses the snapshot time zone for both available days and the selected day', async (t) => {
+  const { request } = await setup(t, {
+    now: () => Date.parse('2026-11-05T23:30:00.000Z'),
+  });
+  assert.equal((await request('', 'POST', { question: 'Reports?' }))[0], 202);
+  const utc = await until(
+    request,
+    ({ searches }) => searches[0]?.status === 'ready',
+  );
+  assert.deepEqual(utc.days, ['2026-11-05']);
+
+  const zone = '?timeZone=Europe%2FBerlin';
+  const [status, local] = await request(zone + '&rev=' + utc.revision);
+  assert.equal(status, 200);
+  assert.notEqual(local.revision, utc.revision);
+  assert.deepEqual(local.days, ['2026-11-06']);
+  assert.equal(local.searches[0].run.finishedAt, '2026-11-05T23:30:00.000Z');
+  const [, previous] = await request(zone + '&asOf=2026-11-05');
+  assert.deepEqual(previous.searches, []);
+  const [, selected] = await request(zone + '&asOf=2026-11-06');
+  assert.equal(selected.searches[0].run.id, local.searches[0].run.id);
+});
+
+test('rejects a snapshot time zone that is not an IANA identifier', async (t) => {
+  const { request } = await setup(t);
+  for (const timeZone of ['Europe/Unknown', '+01:00', '']) {
+    const [status, result] = await request(
+      '?timeZone=' + encodeURIComponent(timeZone),
+    );
+    assert.equal(status, 400);
+    assert.equal(result.error, 'invalid_request');
+  }
+});
+
 test('allocates the lowest free colour and refuses a ninth visible search', async (t) => {
   const { request } = await setup(t, { mutationRate: 40 });
   const ids = [];

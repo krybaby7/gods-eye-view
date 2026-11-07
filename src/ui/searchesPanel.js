@@ -3,6 +3,7 @@ import {
   askDisabledReason,
   elapsedTime,
   formatRunUsage,
+  formatSearchDay,
   groupSearches,
   searchFindingSections,
 } from './searchesPanelModel.js';
@@ -21,16 +22,12 @@ const dateTime = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'medium',
   timeStyle: 'short',
 });
-const dayDate = new Intl.DateTimeFormat('en-US', {
-  dateStyle: 'medium',
-  timeZone: 'UTC',
-});
 const isoDay = /^\d{4}-\d{2}-\d{2}$/;
 
 function formatTime(value) {
   const time = Date.parse(value);
   if (!Number.isFinite(time)) return '';
-  return isoDay.test(value) ? dayDate.format(time) : dateTime.format(time);
+  return isoDay.test(value) ? formatSearchDay(value) : dateTime.format(time);
 }
 
 function sourceUrl(value) {
@@ -290,7 +287,7 @@ export function createSearchesPanel(container, { layer, onOpenWarStory } = {}) {
       const source = sources.get(id);
       if (!source) return [];
       const href = sourceUrl(source.url || source.canonicalUrl);
-      const publisher = source.domain || 'Source';
+      const publisher = source.publisher || source.domain || 'Source';
       const checked = source.checkedBy === 'fetch';
       const description = [
         publisher,
@@ -828,7 +825,7 @@ export function createSearchesPanel(container, { layer, onOpenWarStory } = {}) {
     );
     if (search.color) swatch.style.setProperty('--search-color', search.color);
     const counts = [
-      `${search.findings.filter(({ location }) => location).length} on the globe`,
+      `${search.findings.filter(({ location }) => location).length} ${search.visible ? 'on the globe' : 'mapped'}`,
       `${search.findings.filter(({ location }) => !location).length} list-only`,
       `${search.findings.filter(({ alsoIn }) => alsoIn?.length).length} also in other searches`,
       search.earlierFindings?.length
@@ -869,6 +866,9 @@ export function createSearchesPanel(container, { layer, onOpenWarStory } = {}) {
         }),
       ),
       note([time ? `As of ${time}` : '', counts].filter(Boolean).join(' · ')),
+      !search.visible && search.colorIndex === null
+        ? note('Saved hidden: all 8 colours are in use')
+        : null,
       running ? note('Running') : null,
       failed
         ? row(

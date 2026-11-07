@@ -13,6 +13,7 @@ import {
   searchBubbleCard,
   searchFindingCard,
 } from './model.js';
+import { localSearchDay } from './records.js';
 
 export { createSearchesSource } from './source.js';
 
@@ -448,7 +449,7 @@ export function createSearchesLayer({
         loading,
         error,
         searches: displayed(),
-        asOf: runRecord?.run?.finishedAt?.slice(0, 10) ?? shownDay,
+        asOf: localSearchDay(runRecord?.run?.finishedAt) ?? shownDay,
         selectedRun: runChoice,
         selected,
         placeFilter,
