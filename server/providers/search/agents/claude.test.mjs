@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile, mkdtemp, readdir, rm } from 'node:fs/promises';
+import { readFile, mkdtemp, readdir, realpath, rm } from 'node:fs/promises';
 import { createConnection } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -234,7 +234,7 @@ test('status checks coalesce and cache briefly but a fresh check probes again', 
 test('cancels and times out subprocesses and cleans scratch directories', async (t) => {
   const { agents, cacheDir } = await testAgents(
     t,
-    { FAKE_MODE: 'hang' },
+    { FAKE_MODE: 'hang', SEARCH_TOOLKIT: 'off' },
     { timeoutMs: 150 },
   );
   const adapter = agents.get('claude');
@@ -249,13 +249,16 @@ test('cancels and times out subprocesses and cleans scratch directories', async 
 });
 
 test('caps stdout and keeps subprocess failures private', async (t) => {
-  const failed = await testAgents(t, { FAKE_MODE: 'fail' });
+  const failed = await testAgents(t, {
+    FAKE_MODE: 'fail',
+    SEARCH_TOOLKIT: 'on',
+  });
   const overflowing = await testAgents(
     t,
-    { FAKE_MODE: 'overflow' },
+    { FAKE_MODE: 'overflow', SEARCH_TOOLKIT: 'on' },
     { maxOutputBytes: 1024 },
   );
-  for (const { agents } of [failed, overflowing]) {
+  for (const { agents, log } of [failed, overflowing]) {
     await assert.rejects(
       agents.get('claude').research({ question: 'test' }),
       (error) => {
@@ -264,6 +267,8 @@ test('caps stdout and keeps subprocess failures private', async (t) => {
         return true;
       },
     );
+    const { cwd } = JSON.parse(await readFile(log, 'utf8'));
+    await assert.rejects(readdir(cwd), { code: 'ENOENT' });
   }
 });
 
@@ -283,7 +288,10 @@ test('cancel stops descendants as well as the CLI', async (t) => {
         connection.destroy(new Error('Descendant socket timed out')),
       );
     });
-  const { agents, log } = await testAgents(t, { FAKE_MODE: 'tree' });
+  const { agents, log } = await testAgents(t, {
+    FAKE_MODE: 'tree',
+    SEARCH_TOOLKIT: 'on',
+  });
   const controller = new AbortController();
   t.after(() => controller.abort());
   const run = agents
@@ -298,8 +306,10 @@ test('cancel stops descendants as well as the CLI', async (t) => {
     await delay(20);
   }
   assert.ok(await listening(port), 'descendant listens before cancellation');
+  const { cwd } = JSON.parse(await readFile(log, 'utf8'));
   controller.abort();
   await rejected;
+  await assert.rejects(readdir(cwd), { code: 'ENOENT' });
   const stopDeadline = Date.now() + 4_000;
   while (await listening(port)) {
     assert.ok(
@@ -321,6 +331,10 @@ test('writes and cleans the private toolkit config for research only', async (t)
   await adapter.research({ question: 'Cairo' });
   const research = JSON.parse(await readFile(log, 'utf8'));
   const configPath = research.args[research.args.indexOf('--mcp-config') + 1];
+  assert.equal(
+    await realpath(path.dirname(research.cwd)),
+    await realpath(tmpdir()),
+  );
   assert.equal(path.dirname(configPath), research.cwd);
   assert.deepEqual(research.files, [path.basename(configPath)]);
   assert.equal(research.appname, undefined);
@@ -350,12 +364,26 @@ test('writes and cleans the private toolkit config for research only', async (t)
   assert.match(research.prompt, /Wikidata/);
   assert.match(research.prompt, /ReliefWeb/);
   assert.match(research.prompt, /aircraft, vessels, and fires/);
+  await assert.rejects(readFile(configPath), { code: 'ENOENT' });
   await adapter.mapFindings({ prompt: 'map', schema: { type: 'object' } });
   const map = JSON.parse(await readFile(log, 'utf8'));
   assert.deepEqual(map.files, []);
   assert.deepEqual(map.mcpConfig, { mcpServers: {} });
   assert.equal(map.args[map.args.indexOf('--disallowedTools') + 1], 'mcp__*');
   assert.deepEqual(await readdir(path.join(cacheDir, 'search-runs')), []);
+});
+
+test('reads the shared agent registry’s live app address at research time', async (t) => {
+  const { agents, log } = await testAgents(t, {
+    SEARCH_TOOLKIT: 'on',
+    SEARCH_MCP_API_BASE: undefined,
+  });
+  let origin = 'http://[::1]:4174';
+  agents.setToolkitOrigin(() => origin);
+  origin = 'http://127.0.0.1:4175';
+  await agents.get('claude').research({ question: 'Cairo' });
+  const { mcpConfig } = JSON.parse(await readFile(log, 'utf8'));
+  assert.equal(mcpConfig.mcpServers.gev_search.env.GEV_SEARCH_API_BASE, origin);
 });
 
 test('accepts only paired successful toolkit result URLs from enabled tools', async () => {

@@ -2,9 +2,6 @@ import { fileURLToPath } from 'node:url';
 
 const SERVER = 'gev_search';
 const PREFIX = 'mcp__' + SERVER + '__';
-// The documented standalone app and MCP default. The subprocess owns the
-// MCP service graph, so building its arguments does not load that graph.
-const DEFAULT_API_BASE = 'http://localhost:4173';
 export const WIKIDATA_TOOL = 'wikidata_places';
 export const RELIEFWEB_TOOL = 'reliefweb_reports';
 export const LIVE_TOOLS = Object.freeze([
@@ -38,27 +35,21 @@ export function loopbackOrigin(value) {
   }
 }
 
-function defaultApiBase(env, argv) {
-  const flag = argv.findLastIndex(
-    (arg) => arg === '--port' || arg.startsWith('--port='),
-  );
-  const port =
-    flag < 0
-      ? env.PORT
-      : argv[flag] === '--port'
-        ? argv[flag + 1]
-        : argv[flag].slice(7);
-  return (
-    (port && loopbackOrigin('http://localhost:' + port)) || DEFAULT_API_BASE
-  );
+export function boundToolkitOrigin(listener, encrypted = false) {
+  const { address, port } = listener ?? {};
+  const host = {
+    '127.0.0.1': '127.0.0.1',
+    '0.0.0.0': '127.0.0.1',
+    '::1': '[::1]',
+    '::': '[::1]',
+  }[address];
+  if (!host || !Number.isInteger(port)) return null;
+  return loopbackOrigin(`${encrypted ? 'https' : 'http'}://${host}:${port}`);
 }
 
-export function createSearchToolkit(env, argv = process.argv.slice(2)) {
+export function createSearchToolkit(env, boundOrigin) {
   if (env.SEARCH_TOOLKIT === 'off') return null;
-  const apiBase =
-    env.SEARCH_MCP_API_BASE == null
-      ? defaultApiBase(env, argv)
-      : loopbackOrigin(env.SEARCH_MCP_API_BASE);
+  const apiBase = loopbackOrigin(env.SEARCH_MCP_API_BASE ?? boundOrigin);
   const appname = reliefWebAppname(env.SEARCH_RELIEFWEB_APPNAME);
   return {
     apiBase,

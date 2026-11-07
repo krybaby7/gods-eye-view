@@ -51,7 +51,7 @@ const QUESTIONS = [
 ];
 const MODES = { baseline: 'off', toolkit: 'on' };
 const AGENT = 'claude';
-const DEFAULT_URL = 'http://127.0.0.1:4173';
+const DEFAULT_URL = 'http://localhost:4173';
 const DEFAULT_OUT = 'qa-artifacts/searches/benchmark.json';
 const DEFAULT_TIMEOUT_MS = 600_000;
 const TERMINAL_FAILURES = new Set([

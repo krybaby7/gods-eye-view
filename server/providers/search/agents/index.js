@@ -22,11 +22,18 @@ function waitForStatus(check, signal) {
 }
 
 export function createSearchAgents(options) {
-  const claude = createClaudeAdapter(options);
+  let getToolkitOrigin;
+  const claude = createClaudeAdapter({
+    ...options,
+    getToolkitOrigin: () => getToolkitOrigin?.(),
+  });
   let cached;
   let expiresAt = 0;
   let pending;
   return {
+    setToolkitOrigin(resolveOrigin) {
+      getToolkitOrigin = resolveOrigin;
+    },
     get(id) {
       return id === 'claude' ? claude : null;
     },

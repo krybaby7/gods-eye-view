@@ -268,6 +268,7 @@ export function createClaudeAdapter({
   timeoutMs = Number(env.SEARCH_RUN_TIMEOUT_MS),
   statusTimeoutMs = 5_000,
   maxOutputBytes = 8 * 1024 * 1024,
+  getToolkitOrigin,
 } = {}) {
   const cliEnv = Object.fromEntries(
     Object.entries(env).filter(([key]) => OS_ENV.test(key)),
@@ -327,7 +328,7 @@ export function createClaudeAdapter({
       }
     },
     async research({ question, since, previousFindings, signal }) {
-      const toolkit = createSearchToolkit(env);
+      const toolkit = createSearchToolkit(env, getToolkitOrigin?.());
       const prompt = buildResearchPrompt({
         question,
         since,
@@ -353,7 +354,7 @@ export function createClaudeAdapter({
               });
             }
           : buildClaudeArgs(args),
-        { prompt, signal, timeoutMs: runTimeout },
+        { prompt, signal, timeoutMs: runTimeout, privateScratch: !!toolkit },
       );
       return parseClaudeResearch(stdout, toolkit?.tools);
     },

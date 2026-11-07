@@ -10,8 +10,8 @@ const call = (name, args) => message('tools/call', { name, arguments: args });
 test('builds the exact allowlist and exposes only configured loopback live tools', async () => {
   const { createSearchToolkit } = await toolkit();
   assert.equal(createSearchToolkit({ SEARCH_TOOLKIT: 'off' }), null);
-  const config = createSearchToolkit({}, ['--port', '4321']);
-  assert.equal(config.apiBase, 'http://localhost:4321');
+  const config = createSearchToolkit({}, 'http://[::1]:4322');
+  assert.equal(config.apiBase, 'http://[::1]:4322');
   assert.deepEqual(config.tools, [
     'mcp__gev_search__wikidata_places',
     'mcp__gev_search__aircraft_in_area',
@@ -23,29 +23,59 @@ test('builds the exact allowlist and exposes only configured loopback live tools
       SEARCH_MCP_API_BASE: 'https://example.com',
       SEARCH_RELIEFWEB_APPNAME: 'approved-abc',
     },
-    [],
+    'http://127.0.0.1:4321',
   );
   assert.deepEqual(external.tools, [
     'mcp__gev_search__wikidata_places',
     'mcp__gev_search__reliefweb_reports',
   ]);
-  assert.equal(createSearchToolkit({}, []).apiBase, 'http://localhost:4173');
+  assert.deepEqual(createSearchToolkit({}).tools, [
+    'mcp__gev_search__wikidata_places',
+  ]);
+  assert.equal(
+    createSearchToolkit(
+      { SEARCH_MCP_API_BASE: 'http://localhost:5182' },
+      'http://[::1]:4322',
+    ).apiBase,
+    'http://localhost:5182',
+  );
   for (const origin of [
     'http://127.0.0.1/api',
     'http://user@localhost',
     'http://localhost/#',
   ]) {
     assert.equal(
-      createSearchToolkit({ SEARCH_MCP_API_BASE: origin }, []).apiBase,
+      createSearchToolkit({ SEARCH_MCP_API_BASE: origin }).apiBase,
       null,
     );
   }
   assert.ok(
-    !createSearchToolkit(
-      { SEARCH_RELIEFWEB_APPNAME: 'REPLACE-WITH-APP-NAME' },
-      [],
-    ).tools.includes('mcp__gev_search__reliefweb_reports'),
+    !createSearchToolkit({
+      SEARCH_RELIEFWEB_APPNAME: 'REPLACE-WITH-APP-NAME',
+    }).tools.includes('mcp__gev_search__reliefweb_reports'),
   );
+});
+
+test('uses the bound listener family and port for live tools', async () => {
+  const { boundToolkitOrigin } = await toolkit();
+  assert.equal(
+    boundToolkitOrigin({ address: '127.0.0.1', port: 4174 }),
+    'http://127.0.0.1:4174',
+  );
+  assert.equal(
+    boundToolkitOrigin({ address: '::1', port: 5182 }, true),
+    'https://[::1]:5182',
+  );
+  assert.equal(
+    boundToolkitOrigin({ address: '0.0.0.0', port: 4174 }),
+    'http://127.0.0.1:4174',
+  );
+  assert.equal(
+    boundToolkitOrigin({ address: '::', port: 4174 }),
+    'http://[::1]:4174',
+  );
+  assert.equal(boundToolkitOrigin({ address: '192.0.2.1', port: 4173 }), null);
+  assert.equal(boundToolkitOrigin(null), null);
 });
 
 test('lists and dispatches only the intended tools and hides globe resources', async () => {
