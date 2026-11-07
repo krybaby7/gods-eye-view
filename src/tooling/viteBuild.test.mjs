@@ -21,6 +21,8 @@ test('explicit build inputs preserve browser-only defines, plugin order and loop
   assert.deepEqual(config.server.allowedHosts, ['localhost', '127.0.0.1']);
   assert.ok(config.server.fs.deny.includes('**/ENVIRONMENT'));
   assert.ok(config.server.fs.deny.includes('.env.*'));
+  assert.ok(config.server.fs.deny.includes('**/.gev-cache/searches/**'));
+  assert.ok(config.server.fs.deny.includes('**/.gev-cache/search-runs/**'));
   assert.equal(config.server.headers['X-Frame-Options'], 'DENY');
   assert.equal(config.server.headers['X-Content-Type-Options'], 'nosniff');
   const csp = config.server.headers['Content-Security-Policy'];

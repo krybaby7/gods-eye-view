@@ -95,7 +95,15 @@ export function createBrowserViteConfig({
       // build/allowedHosts.js); IP addresses are always accepted.
       allowedHosts: [...allowedHosts],
       fs: {
-        deny: ['.env', '.env.*', '*.{crt,pem}', '**/.git/**', '**/ENVIRONMENT'],
+        deny: [
+          '.env',
+          '.env.*',
+          '*.{crt,pem}',
+          '**/.git/**',
+          '**/ENVIRONMENT',
+          '**/.gev-cache/searches/**',
+          '**/.gev-cache/search-runs/**',
+        ],
       },
       // These headers protect the document containing Provider Settings and
       // give the whole page a real Content-Security-Policy (BROWSER_CSP).
