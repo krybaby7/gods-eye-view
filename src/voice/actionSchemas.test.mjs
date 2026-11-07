@@ -39,7 +39,8 @@ test('the complete Realtime tool payload pins the manifest-generated layer relea
     // Street Level adds its toggle enum values and generated alias hint.
     // The war monitor adds the news layer to the generated enums and hint,
     // the Situation panel to set_panel_open and the refresh_news tool.
-    'b54ecda2b671d2da26039c06f6f53785bc82859f5a4a350ae33f86137943f505',
+    // Search Layers adds its manifest entry, panel and ask_globe action.
+    'cf8cc886c442252135b462514d0390e16c60429fb52511f3ca54ee06b29fdf0f',
   );
 });
 
@@ -98,9 +99,12 @@ test('metadata cannot add tools, fields, types or enum values', () => {
 test('all legacy action arguments are byte-identical after removing the deliberate additions', () => {
   const legacy = structuredClone(GEV_ACTION_SCHEMAS).filter(
     (tool) =>
-      !['next_satellite_pass', 'set_cyber_sonar', 'refresh_news'].includes(
-        tool.name,
-      ),
+      ![
+        'next_satellite_pass',
+        'set_cyber_sonar',
+        'refresh_news',
+        'ask_globe',
+      ].includes(tool.name),
   );
   // Layer enums are generated from the voice layer manifest and pinned by
   // layerManifest.test.mjs; the two shipped right-rail panels are additive.
@@ -113,9 +117,12 @@ test('all legacy action arguments are byte-identical after removing the delibera
   const panels = property('set_panel_open').panelId;
   panels.enum = panels.enum.filter(
     (id) =>
-      !['weather-panel', 'recent-imagery-panel', 'situation-panel'].includes(
-        id,
-      ),
+      ![
+        'weather-panel',
+        'recent-imagery-panel',
+        'situation-panel',
+        'searches-panel',
+      ].includes(id),
   );
   for (const tool of legacy) {
     // Point-and-ask adds `referent` arguments and 'pointer' enum values.

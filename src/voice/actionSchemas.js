@@ -179,6 +179,7 @@ const schemas = [
             'weather-panel',
             'recent-imagery-panel',
             'situation-panel',
+            'searches-panel',
           ],
         },
         open: {
@@ -865,6 +866,17 @@ const schemas = [
           minimum: 5,
           maximum: 60,
         },
+      },
+    },
+  },
+  {
+    name: 'ask_globe',
+    parameters: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['question'],
+      properties: {
+        question: { type: 'string', minLength: 1, maxLength: 500 },
       },
     },
   },
