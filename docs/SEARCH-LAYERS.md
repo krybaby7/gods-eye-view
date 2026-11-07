@@ -13,6 +13,9 @@ Set these in `.env` and restart the dev server after editing the file.
 - Set `SEARCH_CLAUDE_MODEL=sonnet` to try a faster model, or supply a full model ID. The Claude CLI default applies when this setting is unset. [Claude Code model configuration](https://code.claude.com/docs/en/model-config#model-aliases)
 - Set `SEARCH_RUN_TIMEOUT_MS` to a positive number of milliseconds for the run timeout. The default is `600000`.
 - Set `SEARCH_NOMINATIM_ENDPOINT` to the full `/search` URL for an alternate Nominatim instance. The public Nominatim endpoint is the default.
+- Set `SEARCH_TOOLKIT=off` to run Claude research with its built-in web tools alone. The toolkit is enabled by default.
+- Set `SEARCH_MCP_API_BASE` to a loopback HTTP(S) origin to override the app address used by the toolkit. The app uses its bound loopback address by default.
+- Save an approved ReliefWeb appname in **Provider Settings → ReliefWeb · Search Layers**. The app stores the value as `SEARCH_RELIEFWEB_APPNAME` and enables the reports tool.
 
 ## Reading a search
 
