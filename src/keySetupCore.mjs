@@ -85,6 +85,14 @@ export const KEY_SETUP_KEYS = Object.freeze([
     tier: 'metered',
   }),
   Object.freeze({
+    id: 'search-reliefweb',
+    title: 'RELIEFWEB · SEARCH LAYERS',
+    unlocks: 'Optional humanitarian reports for globe research. Enter your approved ReliefWeb appname',
+    getUrl: 'https://apidoc.reliefweb.int/#appname',
+    envVars: Object.freeze(['SEARCH_RELIEFWEB_APPNAME']),
+    tier: 'free',
+  }),
+  Object.freeze({
     id: 'tomtom',
     title: 'TOMTOM',
     unlocks: 'Real live traffic (keyless runs a simulation)',

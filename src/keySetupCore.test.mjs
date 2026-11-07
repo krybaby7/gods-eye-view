@@ -389,3 +389,16 @@ test('the war monitor digest key is a metered Provider Settings row', () => {
     'Needs PERPLEXITY_API_KEY — add it in Provider Settings',
   );
 });
+
+test('Provider Settings accepts the optional Search Layers ReliefWeb appname', () => {
+  const appname = 'owner-approved-reliefweb';
+  assert.deepEqual(
+    validateKeySetupUpdates({ SEARCH_RELIEFWEB_APPNAME: appname }),
+    { ok: true, updates: { SEARCH_RELIEFWEB_APPNAME: appname } },
+  );
+  const status = keySetupStatus({ SEARCH_RELIEFWEB_APPNAME: appname });
+  const entry = status.keys.find(({id}) => id === 'search-reliefweb');
+  assert.equal(entry?.set, true);
+  assert.equal(entry.clientExposed, false);
+  assert.equal(JSON.stringify(status).includes(appname), false);
+});
