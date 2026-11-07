@@ -101,8 +101,7 @@ export function createBrowserViteConfig({
           '*.{crt,pem}',
           '**/.git/**',
           '**/ENVIRONMENT',
-          '**/.gev-cache/searches/**',
-          '**/.gev-cache/search-runs/**',
+          '**/.gev-cache/**',
         ],
       },
       // These headers protect the document containing Provider Settings and

@@ -1,8 +1,23 @@
 const finishTime = (run) => Date.parse(run.finishedAt ?? '');
+const utcDayKey = (time) => new Date(time).toISOString().slice(0, 10);
 
-/** End of the selected UTC calendar day. */
-function cutoffTime(day) {
-  return Date.parse(day + 'T23:59:59.999Z');
+export function createHistoryDayKey(timeZone) {
+  if (timeZone === 'UTC') return utcDayKey;
+  const formatter = new Intl.DateTimeFormat('en', {
+    timeZone,
+    calendar: 'gregory',
+    numberingSystem: 'latn',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  return (time) => {
+    const parts = formatter.formatToParts(time);
+    const year = parts.find(({ type }) => type === 'year').value;
+    const month = parts.find(({ type }) => type === 'month').value;
+    const day = parts.find(({ type }) => type === 'day').value;
+    return year.padStart(4, '0') + '-' + month + '-' + day;
+  };
 }
 
 function runMetadata({ findingIds, answer, ...metadata }) {
@@ -25,11 +40,18 @@ function findingsThrough(search, knownRuns) {
 }
 
 /** Project a search as it stood at a point in its history. */
-export function buildRunSnapshot(search, { asOf, runId } = {}) {
-  const cutoff = asOf ? cutoffTime(asOf) : Infinity;
-  if (Date.parse(search.createdAt) > cutoff) return null;
+export function buildRunSnapshot(
+  search,
+  { asOf, runId, dayKey = utcDayKey } = {},
+) {
+  const createdAt = Date.parse(search.createdAt);
+  if (asOf && Number.isFinite(createdAt) && dayKey(createdAt) > asOf)
+    return null;
   const runs = (search.runs ?? [])
-    .filter((run) => finishTime(run) <= cutoff)
+    .filter((run) => {
+      const time = finishTime(run);
+      return Number.isFinite(time) && (!asOf || dayKey(time) <= asOf);
+    })
     .sort((a, b) => finishTime(a) - finishTime(b));
   const index = runId
     ? runs.findIndex(({ id }) => id === runId)
@@ -73,13 +95,12 @@ export function buildRunSnapshot(search, { asOf, runId } = {}) {
   };
 }
 
-export function listSearchDays(searches) {
+export function listSearchDays(searches, { dayKey = utcDayKey } = {}) {
   const days = new Set();
   for (const search of searches) {
     for (const run of search.runs ?? []) {
       const time = finishTime(run);
-      if (Number.isFinite(time))
-        days.add(new Date(time).toISOString().slice(0, 10));
+      if (Number.isFinite(time)) days.add(dayKey(time));
     }
   }
   return [...days].sort().reverse();

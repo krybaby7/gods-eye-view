@@ -20,6 +20,16 @@ export const FINDING_BASIS = Object.freeze({
 const FINDING_KINDS = new Set(['event', 'statement', 'place', 'area']);
 const array = (value) => (Array.isArray(value) ? value : []);
 
+export function localSearchDay(value) {
+  if (value == null) return null;
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+  const year = String(date.getFullYear()).padStart(4, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function location(value) {
   if (
     !Number.isFinite(value?.lat) ||

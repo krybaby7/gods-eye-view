@@ -152,7 +152,14 @@ export function searchFindingCard(marker, position, selected) {
   });
   const basis = FINDING_BASIS[marker.place?.basis];
   const verification = NEWS_VERIFICATION_LABELS[marker.verification];
-  const time = marker.eventAt?.slice(0, 16).replace('T', ' ');
+  const eventTime = Date.parse(marker.eventAt);
+  const time =
+    Number.isFinite(eventTime) && marker.eventAt.length > 10
+      ? new Date(eventTime).toLocaleString('en-US', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        })
+      : marker.eventAt;
   return {
     ...card,
     id: `finding:${marker.id}`,

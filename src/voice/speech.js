@@ -430,6 +430,7 @@ function askGlobe(result) {
   if (result.cancelled) return { say: null };
   if (!result.ok) return { say: spokenLabel(result.error, 160) };
   const label = spokenLabel(result.label, 120) || 'Search';
+  if (result.hidden) return { say: `${label} was saved but is hidden.` };
   const noun = result.mappedCount === 1 ? 'finding' : 'findings';
   return { say: `${label}: ${result.mappedCount} ${noun} on the globe` };
 }

@@ -6,7 +6,12 @@ import { createSearchAgents } from './agents/index.js';
 import { boundToolkitOrigin } from './agents/toolkit.js';
 import { decorateSearchSnapshots } from './dedupe.js';
 import { completeRun, getUnresolvedPlaces } from './findings.js';
-import { buildRunSnapshot, compareRuns, listSearchDays } from './history.js';
+import {
+  buildRunSnapshot,
+  compareRuns,
+  createHistoryDayKey,
+  listSearchDays,
+} from './history.js';
 import { runMapStep } from './mapper.js';
 import { runResearch } from './research.js';
 import { createSearchStore, failSearch, SEARCH_ID } from './store.js';
@@ -134,6 +139,17 @@ function validateDay(day) {
   ) {
     throw badRequest('Use a calendar day in YYYY-MM-DD format.');
   }
+}
+
+function snapshotDayKey(timeZone) {
+  try {
+    if (typeof timeZone === 'string' && !/^[+-]/.test(timeZone)) {
+      return createHistoryDayKey(timeZone);
+    }
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error;
+  }
+  throw badRequest('Use an IANA time zone identifier.');
 }
 
 export function createSearchService({
@@ -453,19 +469,20 @@ export function createSearchService({
     }
   }
 
-  async function snapshot({ rev, asOf = null } = {}) {
+  async function snapshot({ rev, asOf = null, timeZone = 'UTC' } = {}) {
     validateDay(asOf);
+    const dayKey = snapshotDayKey(timeZone);
     const [status, warStories] = await Promise.all([
       agents.status({ signal: lifecycle.signal }),
       getWarStories(),
     ]);
     const records = await store.list();
     const searches = records
-      .map((record) => buildRunSnapshot(record, { asOf }))
+      .map((record) => buildRunSnapshot(record, { asOf, dayKey }))
       .filter(Boolean);
     const data = {
       asOf,
-      days: listSearchDays(records),
+      days: listSearchDays(records, { dayKey }),
       agents: {
         claude: { ...status.claude, busy: active.has(DEFAULT_AGENT) },
         codex: CODEX_STATUS,
@@ -504,7 +521,11 @@ export function createSearchService({
       if (method === 'GET')
         return [
           200,
-          await snapshot({ rev: params.get('rev'), asOf: params.get('asOf') }),
+          await snapshot({
+            rev: params.get('rev'),
+            asOf: params.get('asOf'),
+            timeZone: params.get('timeZone') ?? undefined,
+          }),
         ];
       if (method === 'POST') return [202, await ask(await jsonBody(req))];
       throw requestError(405, 'method_not_allowed', 'Use GET or POST.');

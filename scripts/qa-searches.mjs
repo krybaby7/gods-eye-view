@@ -10,6 +10,7 @@ import { decorateSearchSnapshots } from '../server/providers/search/dedupe.js';
 import {
   buildRunSnapshot,
   compareRuns,
+  createHistoryDayKey,
   listSearchDays,
 } from '../server/providers/search/history.js';
 
@@ -18,12 +19,16 @@ const VIEWPORT = { width: 1440, height: 900 };
 const PANEL = '#searches-panel';
 const FIRST = 'sr_00000001';
 const SECOND = 'sr_00000002';
+const OVERFLOW = 'sr_00000003';
 const OLD_DAY = '2026-11-04';
 const NEW_DAY = '2026-11-06';
 const QUESTION = 'What changed at the port?';
 const FOLLOW_UP = 'What are others reporting about the port?';
+const OVERFLOW_QUESTION = 'What else has happened at the port?';
 const FIRST_LABEL = 'Port research';
 const SECOND_LABEL = 'Port follow-up';
+const OVERFLOW_LABEL = 'More port research';
+const TIME_ZONE = 'Europe/Paris';
 const UPDATE_TITLE = 'Port publishes new schedule';
 const MAX_VISIBLE = 8;
 const HOTSPOT = {
@@ -147,6 +152,7 @@ function results(search, kind) {
 }
 
 function fixtureServer() {
+  const dayKey = createHistoryDayKey(TIME_ZONE);
   const records = new Map();
   const requests = [];
   const unexpected = [];
@@ -175,7 +181,7 @@ function fixtureServer() {
       createdAt: startedAt,
       status: 'ready',
       visible: false,
-      colorIndex: null,
+      colorIndex: i - 1,
       sources: [],
       findings: [],
       runs: [
@@ -219,7 +225,8 @@ function fixtureServer() {
         {
           id: 'source',
           url: 'https://example.com/port',
-          domain: 'Fixture News',
+          domain: 'example.com',
+          publisher: 'Fixture News',
           title: 'Port report',
           date: day,
           checkedBy: 'fetch',
@@ -274,13 +281,15 @@ function fixtureServer() {
   function respond(method, route, params, body) {
     if (!route && method === 'GET') {
       const asOf = params.get('asOf');
+      const timeZone = params.get('timeZone');
+      assert.equal(timeZone, TIME_ZONE, 'Fixture browser calendar');
       const all = [...records.values()];
       const projected = all
-        .map((record) => buildRunSnapshot(record, { asOf }))
+        .map((record) => buildRunSnapshot(record, { asOf, dayKey }))
         .filter(Boolean);
       const data = {
         asOf,
-        days: listSearchDays(all),
+        days: listSearchDays(all, { dayKey }),
         agents: {
           claude: {
             installed: true,
@@ -300,8 +309,9 @@ function fixtureServer() {
     }
     if (!route && method === 'POST') {
       const first = body.question === QUESTION;
+      const overflow = body.question === OVERFLOW_QUESTION;
       assert.ok(
-        first || body.question === FOLLOW_UP,
+        first || overflow || body.question === FOLLOW_UP,
         'Unexpected fixture question',
       );
       assert.equal(body.agent, 'claude');
@@ -309,8 +319,8 @@ function fixtureServer() {
       const day = first ? OLD_DAY : NEW_DAY;
       const colorIndex = freeColor();
       const record = {
-        id: first ? FIRST : SECOND,
-        label: first ? FIRST_LABEL : SECOND_LABEL,
+        id: first ? FIRST : overflow ? OVERFLOW : SECOND,
+        label: first ? FIRST_LABEL : overflow ? OVERFLOW_LABEL : SECOND_LABEL,
         agent: 'claude',
         question: body.question,
         createdAt: day + 'T11:00:00Z',
@@ -639,6 +649,7 @@ async function main() {
 
   try {
     page.on('pageerror', (error) => errors.push(error.message));
+    await page.emulateTimezone(TIME_ZONE);
     await fixture.install(page);
     await page.goto(base, { waitUntil: 'domcontentloaded', timeout: 120_000 });
     await until(
@@ -758,7 +769,8 @@ async function main() {
         );
         const links = await page.$$eval(
           PANEL + ' a.searches-evidence',
-          (nodes) => nodes.map((node) => [node.href, node.rel]),
+          (nodes) =>
+            nodes.map((node) => [node.href, node.rel, node.textContent]),
         );
         assert.ok(links.length > 0);
         assert.ok(
@@ -768,6 +780,7 @@ async function main() {
               rel === 'noopener noreferrer',
           ),
         );
+        assert.ok(links.every(([, , text]) => text.startsWith('Fixture News')));
         await shot('02-markers');
       },
     );
@@ -843,6 +856,34 @@ async function main() {
         assert.equal(new Set(colors).size, MAX_VISIBLE);
         await click(page, control('sr_f0000007', 'visible'));
         await panelText(page, 'all 8 colours are in use');
+        await page.type(question, OVERFLOW_QUESTION);
+        await click(page, ask);
+        await panelText(page, OVERFLOW_LABEL);
+        await until(
+          page,
+          (sel) => {
+            const swatch = document.querySelector(sel);
+            return (
+              swatch?.getAttribute('aria-pressed') === 'false' &&
+              swatch
+                .closest('article')
+                ?.innerText.includes('Saved hidden: all 8 colours are in use')
+            );
+          },
+          control(OVERFLOW, 'visible'),
+          'the new search is visibly saved hidden',
+        );
+        fixture.complete();
+        await until(
+          page,
+          (sel) =>
+            document
+              .querySelector(sel)
+              ?.closest('article')
+              ?.innerText.includes('1 mapped'),
+          control(OVERFLOW, 'title'),
+          'the hidden search finishes',
+        );
         assert.equal(
           await page.$$eval(swatches, (els) => els.length),
           MAX_VISIBLE,
@@ -886,7 +927,10 @@ async function main() {
         assert.equal(await page.$$eval(searchRows, (els) => els.length), 1);
         assert.equal(await page.$eval(ask, (el) => el.disabled), true);
         assert.ok(
-          fixture.requests.some(({ params }) => params.asOf === OLD_DAY),
+          fixture.requests.some(
+            ({ params }) =>
+              params.asOf === OLD_DAY && params.timeZone === TIME_ZONE,
+          ),
         );
         await shot('05-history');
         await clickText(page, 'Back to now');

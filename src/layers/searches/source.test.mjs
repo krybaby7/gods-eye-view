@@ -6,6 +6,7 @@ import { createSearchesSource } from './source.js';
 test('search source builds history queries and uses revision responses without replacing records', async () => {
   const calls = [];
   const source = createSearchesSource({
+    timeZone: 'Europe/Paris',
     fetchImpl: async (url, options) => {
       calls.push({ url, options });
       return Response.json({ unchanged: true, revision: '4' });
@@ -15,7 +16,10 @@ test('search source builds history queries and uses revision responses without r
     unchanged: true,
     revision: '4',
   });
-  assert.equal(calls[0].url, '/api/searches?rev=4&asOf=2026-11-06');
+  assert.equal(
+    calls[0].url,
+    '/api/searches?rev=4&asOf=2026-11-06&timeZone=Europe%2FParis',
+  );
   assert.equal(calls[0].options.cache, 'no-store');
 });
 
