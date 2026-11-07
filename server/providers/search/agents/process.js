@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 const MAX_STDERR_BYTES = 64 * 1024;
@@ -110,15 +111,21 @@ export function createProcessRunner({
 }) {
   return async (
     args,
-    { prompt, signal, timeoutMs, acceptExitFailure } = {},
+    { prompt, signal, timeoutMs, acceptExitFailure, privateScratch } = {},
   ) => {
-    const root = path.resolve(cacheDir, 'search-runs');
     let cwd;
     try {
       if (signal?.aborted) throw agentError('SEARCH_AGENT_CANCELED');
-      await mkdir(root, { recursive: true, mode: 0o700 });
-      cwd = await mkdtemp(path.join(root, 'claude-'));
-      return await capture(executable, [...executableArgs, ...args], {
+      if (privateScratch) {
+        cwd = await mkdtemp(path.join(tmpdir(), 'gev-claude-'));
+      } else {
+        const root = path.resolve(cacheDir, 'search-runs');
+        await mkdir(root, { recursive: true, mode: 0o700 });
+        cwd = await mkdtemp(path.join(root, 'claude-'));
+      }
+      const invocationArgs =
+        typeof args === 'function' ? await args(cwd) : args;
+      return await capture(executable, [...executableArgs, ...invocationArgs], {
         cwd,
         env,
         prompt,

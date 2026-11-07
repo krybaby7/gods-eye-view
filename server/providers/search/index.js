@@ -3,6 +3,7 @@ import { admitSameSiteRequest } from '../../../src/localRequestGate.mjs';
 import { clientKey, makeCostRateLimiter } from '../common/rate-limit.js';
 import { readRequestBody } from '../common/request.js';
 import { createSearchAgents } from './agents/index.js';
+import { boundToolkitOrigin } from './agents/toolkit.js';
 import { decorateSearchSnapshots } from './dedupe.js';
 import { completeRun, getUnresolvedPlaces } from './findings.js';
 import {
@@ -676,8 +677,12 @@ function sendJson(res, status, payload) {
 }
 
 export function searchesProxy(options = {}) {
-  function install(server) {
-    const service = createSearchService(options);
+  function install(server, encrypted) {
+    const agents = options.agents ?? createSearchAgents(options);
+    agents.setToolkitOrigin?.(() =>
+      boundToolkitOrigin(server.httpServer?.address(), encrypted),
+    );
+    const service = createSearchService({ ...options, agents });
     void service.store
       .ready?.()
       .catch((error) =>
@@ -693,7 +698,9 @@ export function searchesProxy(options = {}) {
   }
   return {
     name: 'gev-searches',
-    configureServer: install,
-    configurePreviewServer: install,
+    configureServer: (server) =>
+      install(server, Boolean(server.config?.server?.https)),
+    configurePreviewServer: (server) =>
+      install(server, Boolean(server.config?.preview?.https)),
   };
 }

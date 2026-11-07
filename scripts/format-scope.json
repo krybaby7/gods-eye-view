@@ -1031,5 +1031,9 @@
   "src/layers/searches/source.test.mjs",
   "server/standalone/search-agent-settings.test.mjs",
   "src/ui/searchesPanelModel.test.mjs",
-  "src/voice/askGlobe.test.mjs"
+  "src/voice/askGlobe.test.mjs",
+  "scripts/bench-searches.mjs",
+  "scripts/bench-searches.fixtures.mjs",
+  "scripts/bench-searches.test.mjs",
+  "server/providers/search/agents/toolkit.test.mjs"
 ]

@@ -1,5 +1,9 @@
+import { writeFile } from 'node:fs/promises';
+import path from 'node:path';
+
 import { buildResearchPrompt } from '../research.js';
 import { agentError, createProcessRunner } from './process.js';
+import { createSearchToolkit, toolkitSources } from './toolkit.js';
 
 const WEB_TOOLS = 'WebSearch,WebFetch';
 const MIN_VERSION = [2, 1, 248];
@@ -41,7 +45,15 @@ function claudeSchema(schema) {
   return shape;
 }
 
-export function buildClaudeArgs({ step, schema, model }) {
+export function buildClaudeArgs({
+  step,
+  schema,
+  model,
+  mcpConfigPath,
+  mcpTools = [],
+}) {
+  const useToolkit =
+    step === 'research' && mcpConfigPath && mcpTools.length > 0;
   const args = [
     '-p',
     '--restricted',
@@ -51,9 +63,9 @@ export function buildClaudeArgs({ step, schema, model }) {
     'dontAsk',
     '--strict-mcp-config',
     '--mcp-config',
-    '{"mcpServers":{}}',
+    useToolkit ? mcpConfigPath : '{"mcpServers":{}}',
     '--disallowedTools',
-    'mcp__*',
+    useToolkit ? 'ListMcpResourcesTool,ReadMcpResourceTool' : 'mcp__*',
   ];
   if (model) args.push('--model', model);
   if (step === 'research') {
@@ -65,7 +77,7 @@ export function buildClaudeArgs({ step, schema, model }) {
       '--tools',
       WEB_TOOLS,
       '--allowedTools',
-      WEB_TOOLS,
+      (useToolkit ? [WEB_TOOLS, ...mcpTools] : [WEB_TOOLS]).join(','),
     ];
   }
   return [
@@ -156,7 +168,8 @@ function confirmsFetch(content) {
   );
 }
 
-export function parseClaudeResearch(stdout) {
+export function parseClaudeResearch(stdout, mcpTools = []) {
+  const enabled = new Set(mcpTools);
   const toolUses = new Map();
   const sources = [];
   let agentModel = null;
@@ -205,6 +218,8 @@ export function parseClaudeResearch(stdout) {
           confirmsFetch(block.content)
         ) {
           sources.push({ url: call.input.url });
+        } else if (enabled.has(call.name)) {
+          sources.push(...toolkitSources(call.name, block.content, output));
         }
       }
     }
@@ -253,6 +268,7 @@ export function createClaudeAdapter({
   timeoutMs = Number(env.SEARCH_RUN_TIMEOUT_MS),
   statusTimeoutMs = 5_000,
   maxOutputBytes = 8 * 1024 * 1024,
+  getToolkitOrigin,
 } = {}) {
   const cliEnv = Object.fromEntries(
     Object.entries(env).filter(([key]) => OS_ENV.test(key)),
@@ -312,13 +328,35 @@ export function createClaudeAdapter({
       }
     },
     async research({ question, since, previousFindings, signal }) {
-      const prompt = buildResearchPrompt({ question, since, previousFindings });
-      const stdout = await run(buildClaudeArgs({ step: 'research', model }), {
-        prompt,
-        signal,
-        timeoutMs: runTimeout,
+      const toolkit = createSearchToolkit(env, getToolkitOrigin?.());
+      const prompt = buildResearchPrompt({
+        question,
+        since,
+        previousFindings,
+        toolkit: toolkit && {
+          reliefWeb: toolkit.reliefWeb,
+          live: Boolean(toolkit.apiBase),
+        },
       });
-      return parseClaudeResearch(stdout);
+      const args = { step: 'research', model };
+      const stdout = await run(
+        toolkit
+          ? async (cwd) => {
+              const mcpConfigPath = path.join(cwd, 'search-mcp.json');
+              await writeFile(mcpConfigPath, JSON.stringify(toolkit.config), {
+                mode: 0o600,
+                flag: 'wx',
+              });
+              return buildClaudeArgs({
+                ...args,
+                mcpConfigPath,
+                mcpTools: toolkit.tools,
+              });
+            }
+          : buildClaudeArgs(args),
+        { prompt, signal, timeoutMs: runTimeout, privateScratch: !!toolkit },
+      );
+      return parseClaudeResearch(stdout, toolkit?.tools);
     },
     async mapFindings({ prompt, schema, signal }) {
       const stdout = await run(

@@ -357,7 +357,9 @@
       "src/localRequestGate.mjs",
       "src/nominatimGeocode.js",
       "src/sources/httpBody.js",
-      "src/sources/rateLimit.js"
+      "src/sources/rateLimit.js",
+      "server/providers/search/agents/toolkit.js",
+      "server/providers/search/agents/toolkit-mcp.js"
     ],
     "external": []
   },
