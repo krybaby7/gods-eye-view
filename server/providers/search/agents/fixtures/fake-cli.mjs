@@ -37,7 +37,7 @@ if (args[0] === '--version') {
       process.execPath,
       [
         '-e',
-        'const fs = require("node:fs"); const file = process.argv[1]; fs.writeFileSync(file, "started"); setTimeout(() => fs.writeFileSync(file, "survived"), 900);',
+        'const fs = require("node:fs"); const net = require("node:net"); const server = net.createServer(socket => socket.end()); server.listen(0, "127.0.0.1", () => fs.writeFileSync(process.argv[1], String(server.address().port))); setTimeout(() => server.close(), 20_000).unref();',
         log + '.child',
       ],
       { stdio: 'ignore', windowsHide: true },

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile, mkdtemp, readdir, rm } from 'node:fs/promises';
+import { createConnection } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -266,6 +267,21 @@ test('caps stdout and keeps subprocess failures private', async (t) => {
 });
 
 test('cancel stops descendants as well as the CLI', async (t) => {
+  const listening = (port) =>
+    new Promise((resolve, reject) => {
+      const connection = createConnection({ host: '127.0.0.1', port });
+      connection.once('connect', () => {
+        connection.end();
+        resolve(true);
+      });
+      connection.once('error', (error) => {
+        if (error.code === 'ECONNREFUSED') resolve(false);
+        else reject(error);
+      });
+      connection.setTimeout(2_000, () =>
+        connection.destroy(new Error('Descendant socket timed out')),
+      );
+    });
   const { agents, log } = await testAgents(t, { FAKE_MODE: 'tree' });
   const controller = new AbortController();
   t.after(() => controller.abort());
@@ -274,13 +290,21 @@ test('cancel stops descendants as well as the CLI', async (t) => {
     .research({ question: 'wait', signal: controller.signal });
   const rejected = assert.rejects(run, { code: 'SEARCH_AGENT_CANCELED' });
   const marker = log + '.child';
-  const deadline = Date.now() + 2_000;
-  while ((await readFile(marker, 'utf8').catch(() => null)) === null) {
-    assert.ok(Date.now() < deadline, 'fake child did not start');
+  const startDeadline = Date.now() + 8_000;
+  let port;
+  while (!(port = Number(await readFile(marker, 'utf8').catch(() => 0)))) {
+    assert.ok(Date.now() < startDeadline, 'fake child did not start');
     await delay(20);
   }
+  assert.ok(await listening(port), 'descendant listens before cancellation');
   controller.abort();
   await rejected;
-  await delay(950);
-  assert.equal(await readFile(marker, 'utf8'), 'started');
+  const stopDeadline = Date.now() + 4_000;
+  while (await listening(port)) {
+    assert.ok(
+      Date.now() < stopDeadline,
+      'descendant still listens after cancellation',
+    );
+    await delay(20);
+  }
 });
