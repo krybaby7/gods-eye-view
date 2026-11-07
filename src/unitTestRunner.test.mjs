@@ -6,6 +6,7 @@ import {
   allocationTestArgs,
   assertNode24AllocationRuntime,
   buildUnitTestPlan,
+  discoverUnitTestFiles,
   isCalibratedAllocationRuntime,
 } from '../scripts/run-unit-tests.mjs';
 
@@ -64,4 +65,10 @@ test('npm test stays green on every supported engine, not only the calibrated on
   const runner = readFileSync(new URL('../scripts/run-unit-tests.mjs', import.meta.url), 'utf8');
   assert.match(runner, /GEV_REQUIRE_ALLOCATION_GATE/);
   assert.match(runner, /SKIPPED .*allocation microbenchmarks/);
+});
+
+test('unit discovery includes colocated search provider tests', () => {
+  const files = discoverUnitTestFiles();
+  assert.ok(files.includes('server/providers/search/index.test.mjs'));
+  assert.ok(files.includes('server/providers/search/agents/claude.test.mjs'));
 });
