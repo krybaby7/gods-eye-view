@@ -326,6 +326,30 @@ export async function initKeySetup({
     syncCloudVoiceAuth();
   };
 
+  const refreshSearchAgents = async () => {
+    const section = root.querySelector('[data-key-setup-search-agents]');
+    if (!section) return;
+    try {
+      const response = await doFetch('/api/setup/search-agents', {
+        cache: 'no-store',
+      });
+      if (!response.ok) return;
+      const { agents, defaultAgent } = await response.json();
+      if (disposed) return;
+      const claude = agents?.claude;
+      const label = claude?.signedIn
+        ? 'Signed in'
+        : claude?.installed
+          ? 'Sign-in required'
+          : 'Claude Code is not installed';
+      section.querySelector('[data-key-setup-claude]').textContent =
+        `Claude Code${defaultAgent === 'claude' ? ' · default' : ''} · ${label}`;
+      section.hidden = false;
+    } catch {
+      // Other Provider Settings remain available if the local CLI check fails.
+    }
+  };
+
   const visible = () =>
     root.isConnected &&
     root.classList.contains('visible') &&
@@ -342,6 +366,7 @@ export async function initKeySetup({
     if (disposed || open) return;
     open = true;
     keyboard.activate();
+    void refreshSearchAgents();
     root.hidden = false;
     globalThis.requestAnimationFrame?.(() => {
       if (!open) return;

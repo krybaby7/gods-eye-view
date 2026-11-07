@@ -426,6 +426,15 @@ function analystQuery(result) {
   };
 }
 
+function askGlobe(result) {
+  if (result.cancelled) return { say: null };
+  if (!result.ok) return { say: spokenLabel(result.error, 160) };
+  const label = spokenLabel(result.label, 120) || 'Search';
+  if (result.hidden) return { say: `${label} was saved but is hidden.` };
+  const noun = result.mappedCount === 1 ? 'finding' : 'findings';
+  return { say: `${label}: ${result.mappedCount} ${noun} on the globe` };
+}
+
 /** Default builders by tool name. */
 export const SPEECH_BUILDERS = Object.freeze({
   set_layer_visibility: setLayerVisibility,
@@ -436,6 +445,7 @@ export const SPEECH_BUILDERS = Object.freeze({
   get_current_view_state: getCurrentViewState,
   annotate_map: annotateMap,
   analyst_query: analystQuery,
+  ask_globe: askGlobe,
 });
 
 /**
@@ -543,6 +553,7 @@ const STEP_LABELS = Object.freeze({
 
 /** On-screen label for a progress step. */
 export function progressStepLabel(step, label) {
+  if (step === 'search' && label === 'Searching') return label;
   const base = STEP_LABELS[step] || spokenLabel(step || 'Working', 24);
   return label ? `${base}: ${spokenLabel(label, 32)}` : base;
 }
@@ -557,6 +568,7 @@ export function progressLine(step, label) {
     case 'resolve':
       return place ? `Finding ${place} on the map.` : 'Finding those places.';
     case 'search':
+      if (label === 'Searching') return 'Searching.';
       return place ? `Looking up ${place}.` : null;
     case 'fly':
       return place ? `Heading to ${place}.` : null;

@@ -172,6 +172,22 @@ const layers = [
     },
   },
   {
+    id: 'searches',
+    aliases: ['searches', 'search layers', 'findings'],
+    query: {
+      fields: {
+        title: ['t'],
+        kind: ['t'],
+        searchLabel: ['t'],
+        place: ['t'],
+        actor: ['t'],
+        verification: ['t'],
+        eventAt: ['ms'],
+      },
+      timeField: 'eventAt',
+    },
+  },
+  {
     id: 'local-firms',
     aliases: ['fires', 'wildfires', 'active fires', 'firms'],
     context: true,

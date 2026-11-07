@@ -75,6 +75,10 @@ export class LayerPresentation {
     if (factory) this.panel.attachSituation(factory);
     else this._panel?.attachSituation(null);
   }
+  attachSearches(factory) {
+    if (factory) this.panel.attachSearches(factory);
+    else this._panel?.attachSearches(null);
+  }
   /** Hand the Recent Imagery readout factory to the panel (see LayerPanel). */
   attachRecentImagery(factory) {
     // Detaching never builds a panel that teardown already released.

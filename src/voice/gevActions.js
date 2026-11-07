@@ -94,6 +94,9 @@ const PANEL_ALIASES = new Map([
   ['situation panel', 'situation-panel'],
   ['news panel', 'situation-panel'],
   ['war monitor', 'situation-panel'],
+  ['searches', 'searches-panel'],
+  ['searches panel', 'searches-panel'],
+  ['search layers', 'searches-panel'],
 ]);
 
 const PANEL_IDS = new Set([
@@ -108,6 +111,7 @@ const PANEL_IDS = new Set([
   'weather-panel',
   'recent-imagery-panel',
   'situation-panel',
+  'searches-panel',
 ]);
 const CONTEXT_MODE_ALIASES = new Map([
   ['off', 'off'],
@@ -1006,6 +1010,16 @@ export function createGevActionRunner({
 
     if (name === 'next_satellite_pass') {
       return nextSatellitePass(viewer, dataManager, args);
+    }
+
+    if (name === 'ask_globe') {
+      return askGlobe(
+        dataManager,
+        args.question,
+        reportProgress,
+        current,
+        runOptions.signal,
+      );
     }
 
     if (name === 'refresh_news') {
@@ -2769,6 +2783,49 @@ const COMPASS_16 = [
   'NW',
   'NNW',
 ];
+
+async function askGlobe(
+  dataManager,
+  question,
+  reportProgress,
+  current,
+  signal,
+) {
+  const action = 'ask_globe';
+  const fail = (error) => ({ ok: false, action, error });
+  const cancelled = { ok: false, action, cancelled: true };
+  if (typeof question !== 'string' || !question.trim() || question.length > 500)
+    return fail('Ask a question of 1 to 500 characters.');
+  if (!current()) return cancelled;
+
+  const layer = dataManager?.layers?.get('searches')?.module;
+  if (!layer?.ask || !layer?.waitForRun)
+    return fail('Search Layers is not available.');
+
+  try {
+    if (!dataManager.isEnabled('searches')) {
+      await dataManager.setEnabled('searches', true, { origin: 'voice' });
+      if (!current()) return cancelled;
+      if (!dataManager.isEnabled('searches'))
+        return fail('Could not turn on Search Layers.');
+    }
+
+    reportProgress('search', 'Searching');
+    const { id } = await layer.ask(question.trim());
+    if (!current()) return cancelled;
+    const search = await layer.waitForRun(id, signal ? { signal } : undefined);
+    if (!current()) return cancelled;
+    return {
+      ok: true,
+      action,
+      label: search.label,
+      hidden: search.visible === false,
+      mappedCount: search.findings.filter((finding) => finding.location).length,
+    };
+  } catch (error) {
+    return current() ? fail(error?.message || 'The search failed.') : cancelled;
+  }
+}
 
 /**
  * "Refresh news": run one war monitor digest (the Situation panel's Refresh)

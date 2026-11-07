@@ -3,6 +3,9 @@ import { celestrakProxy, rocketLaunchesProxy } from './space.js';
 import { tomtomProxy } from './traffic.js';
 import { firmsProxy } from './firms.js';
 import { newsProxy } from './news/index.js';
+import { createSearchAgents } from './search/agents/index.js';
+import { createSearchContext } from './search/context.js';
+import { searchesProxy } from './search/index.js';
 import { terrainHeightsProxy } from './terrain.js';
 import { adsbdbProxy } from './aircraft/enrichment.js';
 import { overpassProxy } from './overpass.js';
@@ -33,6 +36,8 @@ import { windProxy } from './wind.js';
  * `realtime` configures the voice session token endpoint.
  */
 function localProviderPlugins({ realtime } = {}) {
+  const searchContext = createSearchContext();
+  const searchAgents = createSearchAgents();
   return [
     openSkyProxy(),
     celestrakProxy(),
@@ -62,7 +67,8 @@ function localProviderPlugins({ realtime } = {}) {
     mapillaryProxy(),
     firePerimetersProxy(),
     newsProxy(),
-    keySetupEndpoint(),
+    searchesProxy({ ...searchContext, agents: searchAgents }),
+    keySetupEndpoint({ searchAgentStatus: () => searchAgents.status() }),
   ];
 }
 

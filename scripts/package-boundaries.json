@@ -323,6 +323,44 @@
     ],
     "external": []
   },
+  "search-provider": {
+    "runtime": "node",
+    "exports": ["./server/providers/search"],
+    "modules": [
+      "server/providers/common/http.js",
+      "server/providers/common/rate-limit.js",
+      "server/providers/common/request.js",
+      "server/providers/common/source-root.js",
+      "server/providers/news/digest/actors.js",
+      "server/providers/news/digest/store.js",
+      "server/providers/news/digest/stories.js",
+      "server/providers/news/geocode.js",
+      "server/providers/news/hotspots.js",
+      "server/providers/news/registry.js",
+      "server/providers/news/store.js",
+      "server/providers/regional/http.js",
+      "server/providers/regional/place.js",
+      "server/providers/search/agents/claude.js",
+      "server/providers/search/agents/index.js",
+      "server/providers/search/agents/process.js",
+      "server/providers/search/context.js",
+      "server/providers/search/dedupe.js",
+      "server/providers/search/findings.js",
+      "server/providers/search/history.js",
+      "server/providers/search/index.js",
+      "server/providers/search/mapper.js",
+      "server/providers/search/research.js",
+      "server/providers/search/store.js",
+      "src/data/bundledJson.js",
+      "src/data/naturalEarthRegions.js",
+      "src/data/retryableLoad.js",
+      "src/localRequestGate.mjs",
+      "src/nominatimGeocode.js",
+      "src/sources/httpBody.js",
+      "src/sources/rateLimit.js"
+    ],
+    "external": []
+  },
   "news-digest": {
     "runtime": "node",
     "exports": [
@@ -2302,7 +2340,14 @@
       "src/ui/situationPanel.js",
       "src/ui/situationBrief.js",
       "src/ui/situationBriefModel.js",
-      "src/ui/situationPanelModel.js"
+      "src/ui/situationPanelModel.js",
+      "src/app/layers/searches.js",
+      "src/layers/searches/index.js",
+      "src/layers/searches/model.js",
+      "src/layers/searches/records.js",
+      "src/layers/searches/source.js",
+      "src/ui/searchesPanel.js",
+      "src/ui/searchesPanelModel.js"
     ],
     "external": [
       "hls.js",
@@ -2838,7 +2883,12 @@
       "src/layers/news/model.js",
       "src/layers/news/hotspots.js",
       "src/layers/news/records.js",
-      "src/layers/news/source.js"
+      "src/layers/news/source.js",
+      "src/app/layers/searches.js",
+      "src/layers/searches/index.js",
+      "src/layers/searches/model.js",
+      "src/layers/searches/records.js",
+      "src/layers/searches/source.js"
     ],
     "external": [
       "hls.js",

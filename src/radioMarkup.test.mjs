@@ -25,12 +25,13 @@ const css = readStylesheet(new URL('../style.css', import.meta.url));
 
 function realtimeTools() { return GEV_REALTIME_TOOLS; }
 
-test('Realtime schema exposes the authoritative 31-tool inventory', () => {
+test('Realtime schema exposes the authoritative 32-tool inventory', () => {
   const tools = realtimeTools();
-  assert.equal(tools.length, 31);
+  assert.equal(tools.length, 32);
   const names = tools.map((tool) => tool.name);
-  assert.equal(new Set(names).size, 31, 'tool names are unique');
+  assert.equal(new Set(names).size, 32, 'tool names are unique');
   assert.ok(names.includes('refresh_news'));
+  assert.ok(names.includes('ask_globe'));
   assert.ok(names.includes('set_context_mode'));
   assert.ok(names.includes('control_cockpit'));
   assert.ok(names.includes('select_nearest_aircraft'));
@@ -154,7 +155,7 @@ test('the edited existing tools changed exactly as intended', () => {
   const panel = byName.get('set_panel_open');
   assert.deepEqual(
     panel.parameters.properties.panelId.enum,
-    ['data-panel', 'location-bar', 'control-panel', 'cctv-panel', 'radio-panel', 'scene-panel', 'pp-toggles', 'global-context-panel', 'weather-panel', 'recent-imagery-panel', 'situation-panel'],
+    ['data-panel', 'location-bar', 'control-panel', 'cctv-panel', 'radio-panel', 'scene-panel', 'pp-toggles', 'global-context-panel', 'weather-panel', 'recent-imagery-panel', 'situation-panel', 'searches-panel'],
   );
   assert.deepEqual(panel.parameters.required, ['panelId', 'open']);
 
@@ -167,6 +168,11 @@ test('the edited existing tools changed exactly as intended', () => {
   const location = byName.get('fly_to_location');
   assert.equal(location.parameters.properties.waitForArrival.type, 'boolean');
   assert.match(location.parameters.properties.waitForArrival.description, /arrived=true/);
+
+  // Stored Search Layers findings are available to the analyst.
+  const analyst = byName.get('analyst_query').parameters.properties;
+  assert.ok(analyst.layers.items.enum.includes('searches'));
+  assert.match(analyst.filters.description, /searches: title,kind,searchLabel,place,actor,verification,eventAt/);
 });
 
 test('no unchanged Realtime tool definition drifts silently', () => {
@@ -202,6 +208,7 @@ test('no unchanged Realtime tool definition drifts silently', () => {
     'annotate_map',
     // The war monitor adds refresh_news.
     'refresh_news',
+    'ask_globe',
   ]);
   const unchanged = realtimeTools()
     .filter((tool) => !TOUCHED.has(tool.name))

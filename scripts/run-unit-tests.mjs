@@ -23,7 +23,6 @@ export function assertNode24AllocationRuntime(version = process.versions.node) {
 
 /** Discover repository unit tests in stable path order. */
 export function discoverUnitTestFiles(root = process.cwd()) {
-  const sourceRoot = path.join(root, 'src');
   const files = [];
   const visit = (directory) => {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
@@ -34,7 +33,8 @@ export function discoverUnitTestFiles(root = process.cwd()) {
       }
     }
   };
-  visit(sourceRoot);
+  visit(path.join(root, 'src'));
+  visit(path.join(root, 'server'));
   return files.sort();
 }
 

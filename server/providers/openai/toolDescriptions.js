@@ -615,6 +615,10 @@ export const ACTION_DESCRIPTIONS = {
       },
     },
   },
+  ask_globe: {
+    description:
+      'Run a web search and map its findings with Search Layers. Use only when the user explicitly asks to run a new globe search. For questions about stored searches or their findings, use analyst_query with layer searches. Read back the returned say line.',
+  },
   refresh_news: {
     description:
       'Run one war monitor digest now (the Situation panel Refresh): newly collected headlines become stories on the globe. Costs money and takes up to a minute; use only when the user asks to refresh or update the news, never on your own. Read back the returned summary, including any refusal (no key, budget used up, nothing new). For questions about existing stories use analyst_query with layer news.',

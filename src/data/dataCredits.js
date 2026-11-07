@@ -191,6 +191,14 @@ export const DATA_CREDITS = [
       '<a href="https://www.gdeltproject.org/about.html" target="_blank" rel="noopener">GDELT Project</a> ' +
       '(location-matched article links; publisher terms apply)',
   },
+  {
+    key: 'searches-research',
+    html: 'Searches web research: <a href="https://code.claude.com/docs/en/headless" target="_blank" rel="noopener">Claude Code</a>',
+  },
+  {
+    key: 'searches-geocoding',
+    html: 'Searches geocoding: <a href="https://nominatim.org/" target="_blank" rel="noopener">OpenStreetMap Nominatim</a>',
+  },
   // War monitor: headline, snippet, link and publisher only. One group per
   // transport; every fetched source in public/news/sources.json is named here.
   {

@@ -106,6 +106,8 @@
 
 ## [Unreleased]
 
+- Search layers: ask a question using the owner’s Claude Code subscription and explore source-backed findings on the globe. Searches support manual updates, UTC history, comparisons and local storage; see [Search layers](docs/SEARCH-LAYERS.md).
+
 - Street Level: Google Street View is the second provider. On the Google 3D
   map (Google's terms keep it off other maps), light its chip (off by
   default: every panorama is billed to the Google Maps key, which needs the

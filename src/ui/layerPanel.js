@@ -55,6 +55,7 @@ const PANEL_GROUPS = [
       'local-firms',
       'fire-perimeters',
       'news',
+      'searches',
     ],
   },
   {
@@ -146,6 +147,8 @@ export class LayerPanel {
     this._recentImageryPanel = null;
     this._situationFactory = null;
     this._situationPanel = null;
+    this._searchesFactory = null;
+    this._searchesPanel = null;
   }
   mount(container) {
     if (this._destroyed) return;
@@ -160,6 +163,7 @@ export class LayerPanel {
     });
     this._mountRecentImagery();
     this._mountSituation();
+    this._mountSearches();
     this._renderToggles();
   }
   /**
@@ -201,6 +205,19 @@ export class LayerPanel {
     if (container && this._situationFactory)
       this._situationPanel = this._situationFactory(container) || null;
   }
+  attachSearches(factory) {
+    if (this._destroyed) return;
+    this._searchesFactory = typeof factory === 'function' ? factory : null;
+    this._mountSearches();
+  }
+  _mountSearches() {
+    this._searchesPanel?.destroy();
+    const container = this._toggleContainer?.ownerDocument?.getElementById?.(
+      'searches-panel-body',
+    );
+    this._searchesPanel =
+      (container && this._searchesFactory?.(container)) || null;
+  }
   _bind(element, type, listener) {
     element.addEventListener(type, listener);
     this._removers.push(() => element.removeEventListener(type, listener));
@@ -223,6 +240,9 @@ export class LayerPanel {
     this._situationPanel?.destroy();
     this._situationPanel = null;
     this._situationFactory = null;
+    this._searchesPanel?.destroy();
+    this._searchesPanel = null;
+    this._searchesFactory = null;
     this._toggleContainer = null;
   }
   _renderToggles() {
