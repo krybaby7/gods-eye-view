@@ -20,6 +20,24 @@ The panel reports research and placement progress. **Cancel** stops an active ru
 
 The day picker uses UTC. A selected day shows the latest run finished by the end of that day for each search. The history view hides searches created later. Select an exact run to inspect that search alone, and use **Back to now** to return to current results. **Changes** compares two runs as added, seen again, and not seen since. Delete a finding to remove it from the search's snapshots, or delete the entire search using the panel confirmation.
 
+## Research toolkit
+
+Claude gets a fresh MCP configuration for each research run. The mapping step still receives numbered evidence and uses structured output with tools off.
+
+| Source | Why it is included |
+| --- | --- |
+| Wikidata entity lookup | Keyless lookup for named places and coordinates when the item has them. Wikidata's structured data is CC0 and community-maintained. The adapter uses a bounded Action API lookup with an identifying User-Agent. [Data access](https://www.wikidata.org/wiki/Help:Data_access) · [API limits](https://www.mediawiki.org/wiki/Wikimedia_APIs/Rate_limits) |
+| ReliefWeb reports | Humanitarian reports give Claude an additional source. Add an approved appname in **Provider Settings → ReliefWeb · Search Layers** to enable the tool. ReliefWeb allows 10,000 read calls per day and original publishers retain their rights. [ReliefWeb API](https://apidoc.reliefweb.int/#appname) · [Response limits](https://apidoc.reliefweb.int/read/response/) |
+| God's Eye View | Three existing MCP tools can check aircraft, vessels and active fires in an area. For a custom address, set `SEARCH_MCP_API_BASE` to the app's loopback origin. Only confirmed public evidence URLs qualify as sources. [MCP setup](MCP_SETUP.md) |
+
+GDELT DOC is keyless, but this repo's War Monitor source checks encountered 429s and other failures. ACLED requires an account and OAuth, and its licence needs separate review for this use. Public Overpass shares rate-limited infrastructure. Nominatim stays in the existing geocoding queue. The World Bank Indicators API is a candidate for historical statistics. [GDELT DOC](https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/) · [War Monitor source notes](WAR-MONITOR.md) · [ACLED terms](https://acleddata.com/eula) · [Overpass limits](https://dev.overpass-api.de/overpass-doc/en/preface/commons.html) · [World Bank API](https://datahelpdesk.worldbank.org/knowledgebase/articles/889392)
+
+### Benchmark
+
+Start the app and run `node scripts/bench-searches.mjs` on the machine signed in to Claude. The benchmark asks eight fixed questions twice, once with built-in web access and once with the toolkit. It records duration, sources, findings placed, list-only and dropped findings, how the sources were checked, and reported usage.
+
+The report lands in `qa-artifacts/searches/benchmark.json`. Use `--url http://127.0.0.1:5182` for a different local port. Run `node scripts/bench-searches.mjs --fixtures` to exercise the report flow with synthetic answers and usage. Live before-and-after speed and coverage require a run on the owner's machine.
+
 ## Local data
 
 Search records and run history are stored on the server machine in `.gev-cache/searches/`. Each agent run uses an ephemeral working directory under `.gev-cache/search-runs/`, removed after the run. Search endpoints are localhost-only. Questions and source material are sent to Claude and its web tools during a run. Search-layer source details and geocoding attribution are in [Data Sources](../DATA_SOURCES.md#search-layers).
