@@ -1,0 +1,14 @@
+{
+  "type": "result",
+  "subtype": "success",
+  "is_error": false,
+  "result": "Ignored",
+  "structured_output": {
+    "label": "Example",
+    "summary": [],
+    "groups": [],
+    "findings": []
+  },
+  "usage": { "input_tokens": 2 },
+  "modelUsage": { "claude-sonnet-test": {} }
+}
