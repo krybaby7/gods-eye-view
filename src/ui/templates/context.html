@@ -9,6 +9,9 @@
           <button class="panel-collapse-btn panel-surface-control" data-collapse-target="world-character-sheet" type="button" aria-expanded="false" aria-label="Expand character sheet" title="Expand character sheet">◀</button>
         </header>
         <div id="world-sheet-body" data-panel-body data-rail-scroller>
+          <section id="world-card-content" hidden></section>
+          <div id="world-country-content">
+          <div id="world-sheet-extra" hidden></div>
           <div id="world-hp-label" class="world-kicker"></div>
           <div id="world-hp-track"></div>
           <p id="world-coverage" class="world-detail"></p>
@@ -16,6 +19,7 @@
           <div id="world-sheet-tabs" role="tablist" aria-label="Character sheet sections"></div>
           <div id="world-sheet-content" role="tabpanel"></div>
           <section id="world-since-turn" hidden></section>
+          </div>
         </div>
       </div>
     </section>
@@ -284,11 +288,7 @@
 
   <section id="world-lens-bar" class="world-board-hud" data-panel-surface aria-label="World Board lenses" hidden>
     <div class="world-lens-row">
-      <div role="group" aria-label="World Board lens" class="world-lens-options">
-        <button type="button" class="panel-surface-control world-control" data-world-lens="condition" aria-pressed="true">Condition</button>
-        <button type="button" class="panel-surface-control world-control" data-world-lens="strength" aria-pressed="false">Strength</button>
-        <button type="button" class="panel-surface-control world-control" data-world-lens="data-age" aria-pressed="false">Data age</button>
-      </div>
+      <div role="group" aria-label="World Board lens" class="world-lens-options"></div>
       <button id="world-refresh" type="button" class="panel-surface-control world-control">Refresh</button>
       <button id="world-turn" class="panel-surface-control world-control" type="button" aria-controls="world-turn-changes" aria-expanded="false" hidden></button>
       <div id="world-turn-changes" data-panel-popup role="region" aria-label="Turn changes" tabindex="0" hidden></div>

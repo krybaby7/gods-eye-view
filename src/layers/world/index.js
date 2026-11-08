@@ -2,7 +2,18 @@ import * as Cesium from 'cesium';
 import { loadCountryShapes } from '../../data/adminBoundaries.js';
 import { isPointerFree } from '../../data/inputOwnership.js';
 import { createWorldGeometry } from './geometry.js';
+import { baseWorldLenses, worldLensColor } from './lensRegistry.js';
 import { boardMapMode, worldPickId } from './model.js';
+import { worldCardPick, worldPhases } from './phaseRegistry.js';
+
+const lenses = [
+  ...baseWorldLenses,
+  ...worldPhases.flatMap((phase) => phase.lenses ?? []),
+].sort((a, b) => a.order - b.order);
+const lensById = new Map(
+  lenses.map((definition) => [definition.id, definition]),
+);
+const overlayFactories = worldPhases.flatMap((phase) => phase.overlays ?? []);
 
 const ID = 'world';
 const POLL_MS = 1000;
@@ -34,6 +45,7 @@ export function createWorldLayer({
   let lens = 'condition';
   let area = 'S1';
   let selected = null;
+  let card = null;
   let hovered = null;
   let hoverAt = 0;
   let mode = 'detail';
@@ -42,6 +54,8 @@ export function createWorldLayer({
   let needsPaint = false;
   let geometryReady = false;
   let borderReady = false;
+  let overlays = [];
+  let overlaysDirty = true;
 
   function notify() {
     for (const listener of listeners) listener();
@@ -62,17 +76,39 @@ export function createWorldLayer({
 
   function paint() {
     if (!geometry) return;
-    const year =
-      Number(snapshot.asOf?.slice(0, 4)) || new Date().getUTCFullYear();
+    const context = { ...snapshot, lens, area, selected };
+    const definition = lensById.get(lens);
     geometry.paint({
-      countries: snapshot.countries,
-      lens,
-      area,
-      year,
+      colorFor: (iso3) =>
+        worldLensColor(definition, snapshot.countries[iso3], context),
       opacity,
     });
     geometry.outline(selected, hovered?.iso3 ?? null, opacity);
     needsPaint = false;
+  }
+
+  function context() {
+    return {
+      ...snapshot,
+      lens,
+      area,
+      selected,
+      card,
+      visible: mode === 'board' && geometryReady,
+    };
+  }
+
+  function select(iso3) {
+    selected = iso3;
+    card = null;
+    needsPaint = overlaysDirty = true;
+    requestRender();
+    notify();
+  }
+
+  function openCard(type, id) {
+    card = { type, id };
+    notify();
   }
 
   function frame() {
@@ -82,6 +118,7 @@ export function createWorldLayer({
     const at = performance.now();
     if (next !== mode) {
       mode = next;
+      overlaysDirty = true;
       fade = { at, from: opacity, to: mode === 'board' ? 1 : 0 };
       if (mode === 'detail') clearHover();
       notify();
@@ -95,7 +132,7 @@ export function createWorldLayer({
     }
     if (!geometryReady && geometry.ready) {
       geometryReady = true;
-      needsPaint = true;
+      needsPaint = overlaysDirty = true;
       notify();
     }
     if (!borderReady && geometry.borderReady) {
@@ -103,12 +140,21 @@ export function createWorldLayer({
       needsPaint = true;
     }
     if (needsPaint) paint();
+    if (overlaysDirty) {
+      const state = context();
+      for (const overlay of overlays) overlay.update(state);
+      overlaysDirty = false;
+    }
     geometry.cullLabels(camera);
+    for (const overlay of overlays) overlay.frame?.(camera);
   }
 
-  function countryAt(position) {
+  function pickAt(position) {
     const picked = viewer.scene.pick(position, 1, 1);
-    const id = picking.resolvePickId?.(picked) ?? picked?.id;
+    return picking.resolvePickId?.(picked) ?? picked?.id;
+  }
+
+  function countryAt(id) {
     const iso3 = worldPickId(id);
     return iso3 && Object.hasOwn(snapshot.countries, iso3) ? iso3 : null;
   }
@@ -118,12 +164,11 @@ export function createWorldLayer({
     handler = new Cesium.ScreenSpaceEventHandler(canvas);
     handler.setInputAction(({ position }) => {
       if (mode !== 'board' || !geometryReady || !isPointerFree()) return;
-      const iso3 = countryAt(position);
-      if (!iso3 || selected === iso3) return;
-      selected = iso3;
-      geometry.outline(selected, hovered?.iso3 ?? null, opacity);
-      requestRender();
-      notify();
+      const id = pickAt(position);
+      const hit = worldCardPick(id);
+      if (hit) return openCard(hit.type, hit.id);
+      const iso3 = countryAt(id);
+      if (iso3 && (selected !== iso3 || card)) select(iso3);
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
     handler.setInputAction(({ endPosition }) => {
       if (mode !== 'board' || !geometryReady || !isPointerFree()) {
@@ -133,7 +178,7 @@ export function createWorldLayer({
       const at = performance.now();
       if (at - hoverAt < 45) return;
       hoverAt = at;
-      const iso3 = countryAt(endPosition);
+      const iso3 = countryAt(pickAt(endPosition));
       if (!iso3) {
         clearHover();
         return;
@@ -151,7 +196,9 @@ export function createWorldLayer({
     canvas.addEventListener('pointerleave', clearHover, {
       signal: lifecycle.signal,
     });
-    picking.registerPickOwner?.(ID, (id) => worldPickId(id) !== null);
+    picking.registerPickOwner?.(ID, (id) =>
+      Boolean(worldPickId(id) || worldCardPick(id)),
+    );
     removeFrame = viewer.scene.preRender.addEventListener(frame);
   }
 
@@ -178,7 +225,7 @@ export function createWorldLayer({
           snapshot.countryIndex,
         );
       }
-      needsPaint = true;
+      needsPaint = overlaysDirty = true;
       requestRender();
     } catch (failure) {
       if (!signal.aborted) error = failure.message;
@@ -212,7 +259,19 @@ export function createWorldLayer({
       mode = boardMapMode(viewer.camera.positionCartographic?.height, 'detail');
       opacity = mode === 'board' ? 1 : 0;
       geometry?.setActive(true);
-      needsPaint = true;
+      overlays = overlayFactories.map((create) =>
+        create({
+          viewer,
+          signal: lifecycle.signal,
+          requestRender,
+          labelPoint: (iso3) => geometry?.labelPoint(iso3),
+          fixtures: new URLSearchParams(globalThis.location?.search).has(
+            'world-fixtures',
+          ),
+          refresh: () => load('refresh'),
+        }),
+      );
+      needsPaint = overlaysDirty = true;
       installHandlers();
       notify();
       requestRender();
@@ -233,7 +292,9 @@ export function createWorldLayer({
       removeFrame?.();
       removeFrame = null;
       picking.unregisterPickOwner?.(ID);
-      selected = hovered = null;
+      for (const overlay of overlays) overlay.destroy();
+      overlays = [];
+      selected = hovered = card = null;
       error = fade = null;
       geometry?.outline(null, null, 0);
       geometry?.setActive(false);
@@ -250,14 +311,12 @@ export function createWorldLayer({
 
     getSnapshot() {
       return {
-        ...snapshot,
+        ...context(),
         enabled: lifecycle !== undefined && lifecycle !== null,
         loading: Boolean(pending),
         visible: Boolean(lifecycle) && mode === 'board' && geometryReady,
         error: error || snapshot.error || null,
-        lens,
-        area,
-        selected,
+        lenses,
         hovered,
       };
     },
@@ -268,14 +327,11 @@ export function createWorldLayer({
     },
 
     setLens(next, slot = area) {
-      if (
-        !['condition', 'strength', 'data-age'].includes(next) ||
-        !/^S(?:[1-9]|1[0-2])$/.test(slot)
-      )
-        return;
+      if (!lensById.has(next) || !/^S(?:[1-9]|1[0-2])$/.test(slot)) return;
       if (lens === next && area === slot) return;
       lens = next;
       area = slot;
+      overlaysDirty = true;
       if (geometryReady && lifecycle) paint();
       else needsPaint = true;
       requestRender();
@@ -287,10 +343,13 @@ export function createWorldLayer({
     },
 
     clearSelection() {
-      if (!selected) return;
-      selected = null;
-      geometry?.outline(null, hovered?.iso3 ?? null, opacity);
-      requestRender();
+      if (selected || card) select(null);
+    },
+
+    openCard,
+
+    closeCard() {
+      card = null;
       notify();
     },
   };

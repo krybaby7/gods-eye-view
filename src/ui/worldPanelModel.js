@@ -1,3 +1,5 @@
+export { worldLegend } from '../layers/world/lensRegistry.js';
+
 const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 
 function safeSourceUrl(value) {
@@ -140,29 +142,6 @@ export function describeWorldHover(snapshot, iso3) {
   return {
     name,
     value: `${strength ? '' : 'Weakest bar · '}${label} ${displayScore(result.score)}${period}`,
-  };
-}
-
-export function worldLegend(snapshot) {
-  if (snapshot.lens === 'data-age')
-    return {
-      name: 'Data age',
-      stops: ['8+ years old', '4 years old', 'Current year'],
-      note: 'Annual source data · forecasts excluded',
-    };
-  const area =
-    snapshot.lens === 'strength' &&
-    snapshot.indicators?.find(({ slot }) => slot === snapshot.area);
-  return {
-    name:
-      snapshot.lens === 'strength'
-        ? `Strength${area ? ` · ${area.shortLabel}` : ''}`
-        : 'Condition',
-    stops: ['Weak', 'Midrange', 'Strong'],
-    note: area
-      ? (snapshot.sources?.find(({ id }) => id === area.source)?.name ??
-        'Published source data')
-      : 'World Bank · IMF · UCDP · V-Dem',
   };
 }
 

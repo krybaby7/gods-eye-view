@@ -33,7 +33,7 @@ const readings = {
   PAK: { S1: 1e11 },
 };
 
-export function createFixtureWorld(cacheDir) {
+export function createFixtureWorld(cacheDir, extraAdapters) {
   let second = false;
   const adapters = Object.fromEntries(
     ['worldbank', 'imf', 'ucdp', 'vdem'].map((id) => [
@@ -71,7 +71,7 @@ export function createFixtureWorld(cacheDir) {
   );
   const service = createWorldService({
     cacheDir,
-    adapters,
+    adapters: { ...adapters, ...extraAdapters },
     now: () => new Date(second ? secondDate : firstDate),
     fetchImpl: () => {
       throw new Error('World Board fixture attempted a live source request.');

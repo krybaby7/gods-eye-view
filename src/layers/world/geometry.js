@@ -1,5 +1,5 @@
 import * as Cesium from 'cesium';
-import { lensValue, renderShapeIds, scoreColor } from './model.js';
+import { renderShapeIds } from './model.js';
 
 const FILL_ALPHA = 0.55;
 const BORDER = Cesium.Color.fromCssColorString('#b6f8fa');
@@ -197,6 +197,10 @@ export function createWorldGeometry(scene, shapes, countries) {
   }
 
   return {
+    labelPoint(iso3) {
+      return groups.get(iso3)?.label?.label;
+    },
+
     get ready() {
       return solid.ready && hatch.ready;
     },
@@ -214,7 +218,7 @@ export function createWorldGeometry(scene, shapes, countries) {
       }
     },
 
-    paint({ countries: values, lens, area, year, opacity }) {
+    paint({ colorFor, opacity }) {
       const shown = active && opacity > 0;
       // Unready primitives must still update in Cesium's render loop.
       solid.show = active && (shown || !solid.ready);
@@ -223,9 +227,8 @@ export function createWorldGeometry(scene, shapes, countries) {
       labels.show = shown;
       if (solid.ready && hatch.ready && shown) {
         for (const { iso3, ids } of groups.values()) {
-          const score = lensValue(values[iso3], lens, area, year);
-          const known = Number.isFinite(score);
-          const color = known ? scoreColor(score) : null;
+          const color = colorFor(iso3);
+          const known = color != null;
           for (const id of ids) {
             const solidAttr = solid.getGeometryInstanceAttributes(id);
             const hatchAttr = hatch.getGeometryInstanceAttributes(id);

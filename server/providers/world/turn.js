@@ -5,9 +5,16 @@ const SOURCE_NAMES = {
   vdem: 'V-Dem',
 };
 
-function sourceChange({ id, status, count, error, detail }) {
-  const name = SOURCE_NAMES[id] ?? id;
-  const loaded = `${count} observation${count === 1 ? '' : 's'}`;
+function sourceChange({
+  id,
+  name = SOURCE_NAMES[id] ?? id,
+  status,
+  count,
+  error,
+  detail,
+  unit = 'observation',
+}) {
+  const loaded = `${count} ${unit}${count === 1 ? '' : 's'}`;
   if (status === 'failed') {
     const outcome = count ? `loaded ${loaded} with errors` : 'failed';
     return `${name} ${outcome}${error ? ` (${error})` : ''}.`;
@@ -92,6 +99,7 @@ export function createTurn({
   previous,
   countries,
   newObservations,
+  featureChanges = [],
 }) {
   const changes = [];
   if (previous == null || number === 1) {
@@ -106,12 +114,13 @@ export function createTurn({
       const change = countryChange(iso3, previous[iso3], countries[iso3]);
       if (change) changes.push(change);
     }
-    if (!changes.length)
+    if (!changes.length && !featureChanges.length)
       changes.push({ iso3: null, text: 'No country changes.' });
     for (const source of sources.filter(({ status }) => status === 'failed')) {
       changes.push({ iso3: null, text: sourceChange(source) });
     }
   }
+  changes.push(...featureChanges);
   return {
     number,
     startedAt,

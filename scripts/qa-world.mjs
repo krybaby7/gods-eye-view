@@ -14,6 +14,7 @@ assert.ok(
   args.includes('--fixtures'),
   'Run with --fixtures against the World Board dev server.',
 );
+const hardware = args.includes('--hardware');
 const urlIndex = args.indexOf('--url');
 const url = new URL(
   urlIndex === -1 ? 'http://127.0.0.1:5183' : args[urlIndex + 1],
@@ -24,14 +25,35 @@ assert.ok(
   'World Board fixture QA requires a loopback HTTP dev server.',
 );
 url.searchParams.set('welcome', '0');
+url.searchParams.set('world-fixtures', '1');
 const evidence = fileURLToPath(
-  new URL('../qa-artifacts/world/', import.meta.url),
+  new URL(
+    hardware ? '../qa-artifacts/world-hardware/' : '../qa-artifacts/world/',
+    import.meta.url,
+  ),
+);
+// Phase modules default-export async (context) and may export fixtureAdapters.
+const phaseFiles = (
+  await fs.readdir(path.dirname(fileURLToPath(import.meta.url)))
+)
+  .filter((name) => /^qa-world\.phase-.*\.mjs$/.test(name))
+  .sort();
+const phaseChecks = await Promise.all(
+  phaseFiles.map((name) => import(new URL(name, import.meta.url))),
 );
 const cache = await fs.mkdtemp(path.join(os.tmpdir(), 'gev-world-qa-'));
-const world = createFixtureWorld(cache);
+const world = createFixtureWorld(
+  cache,
+  Object.assign({}, ...phaseChecks.map((phase) => phase.fixtureAdapters)),
+);
 const report = {
   url: url.href,
-  mode: 'Offline provider fixtures, real World Board service, temporary persisted state and software rendering with bundled Natural Earth imagery over ellipsoid terrain',
+  mode: `Offline provider fixtures, real World Board service, temporary persisted state and ${hardware ? 'requested hardware' : 'software'} rendering with bundled Natural Earth imagery over ellipsoid terrain`,
+  rendering: {
+    requested: hardware ? 'hardware' : 'software',
+    renderer: null,
+    hardwareTimingValid: false,
+  },
   checks: [],
   screenshots: [],
   lensSwitches: [],
@@ -423,9 +445,13 @@ try {
     args: [
       '--no-sandbox',
       '--disable-dev-shm-usage',
-      '--use-gl=angle',
-      '--use-angle=swiftshader',
-      '--enable-unsafe-swiftshader',
+      ...(!hardware
+        ? [
+            '--use-gl=angle',
+            '--use-angle=swiftshader',
+            '--enable-unsafe-swiftshader',
+          ]
+        : []),
     ],
   });
   page = await browser.newPage();
@@ -450,6 +476,17 @@ try {
   );
   await page.evaluate(
     () => window.__godsEyeView.styleManager.initialRestorePromise,
+  );
+  report.rendering.renderer = await page.evaluate(() => {
+    const gl = document.createElement('canvas').getContext('webgl');
+    const debug = gl?.getExtension('WEBGL_debug_renderer_info');
+    return debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : null;
+  });
+  // Unknown and software renderers cannot substantiate hardware timings.
+  report.rendering.hardwareTimingValid = Boolean(
+    hardware &&
+    report.rendering.renderer &&
+    !/swiftshader|software|llvmpipe|softpipe/i.test(report.rendering.renderer),
   );
   await page.evaluate(() =>
     document.getElementById('clear-selected-layers').click(),
@@ -478,261 +515,33 @@ try {
   await camera(82, 22, 9_000_000);
   await shot('layer-off-baseline');
 
-  await step(
-    'Enable World Board and persist the automatic first turn',
-    async () => {
-      await toggleWorld();
-      await page.waitForSelector('#world-progress:not([hidden])', {
-        visible: true,
-      });
-      await waitSettled(true);
-      await camera(82, 22, 9_000_000);
-      await page.waitForFunction(() => {
-        const viewer = window.__godsEyeView?.viewer;
-        if (!viewer || !window.worldQa) return false;
-        const ground = viewer.scene.groundPrimitives;
-        const batches = Array.from({ length: ground.length }, (_, i) =>
-          ground.get(i),
-        );
-        const hatch = batches.find(
-          (p) => p.appearance?.material?.type === 'GevWorldHatch',
-        );
-        const solid = batches.find(
-          (p) =>
-            p !== hatch &&
-            p.ready &&
-            p.getGeometryInstanceAttributes?.('world:IND:IND:0')?.color,
-        );
-        if (
-          !solid ||
-          !hatch?.ready ||
-          !solid.getGeometryInstanceAttributes('world:IND:IND:0').show[0]
-        )
-          return false;
-        Object.assign(window.worldQa, { solid, hatch });
-        return document.querySelector('#world-turn')?.textContent === 'Turn 1';
-      }, wait);
-      const saved = await world.store.read();
-      assert.deepEqual(
-        saved.turns.map(({ number }) => number),
-        [1],
-      );
-      assert.equal(saved.board.countries.KOS.slots.C1.observation.iso3, 'XKX');
-      assert.equal(saved.board.countries.KOS.slots.C4.observation.iso3, 'UVK');
-      assert.equal(Math.round(saved.board.countries.CHN.condition.score), 56);
-      assert.equal(await text('#world-legend-title'), 'Condition');
-      assert.equal(
-        await page.$eval(lens('condition'), (node) =>
-          node.getAttribute('aria-pressed'),
-        ),
-        'true',
-      );
-      await page.click('#world-turn');
-      assert.match(
-        await text('#world-turn-changes'),
-        /World Bank loaded \d+ observations/,
-      );
-      await page.click('#world-turn');
-      await shot('condition');
-    },
-  );
-
-  await step(
-    'Unknown and disputed fills use the visible Cesium hatch batch',
-    async () => {
-      const geometry = await readGeometry();
-      assert.deepEqual(geometry.batchesShown, [true, true]);
-      for (const id of ['IND', 'CHN', 'GBR', 'KOS']) {
-        assert.equal(geometry.countries[id].fill, true, id);
-        assert.equal(geometry.countries[id].hatch, false, id);
-      }
-      for (const id of ['PAK', 'SAH']) {
-        assert.equal(geometry.countries[id].fill, false, id);
-        assert.equal(geometry.countries[id].hatch, true, id);
-      }
-      assert.ok(geometry.hatchAlpha > 0);
-      await camera(-13, 25, 5_000_000);
-      await shot('disputed-hatching');
-      await camera(82, 22, 9_000_000);
-      await checkHatchPixels('disputed-hatching.png');
-    },
-    { fatal: false },
-  );
-
-  await step(
-    'All lenses recolour the same geometry and update the legend',
-    async () => {
-      await changeLens(lens('strength'), 'Strength · Economy');
-      assert.equal(
-        await page.$$eval('[data-world-area]', (nodes) => nodes.length),
-        12,
-      );
-      await changeLens(area('S3'), 'Strength · Government');
-      await changeLens(lens('data-age'), 'Data age');
-      assert.match(await text('#world-legend'), /8\+ years old.*Current year/s);
-      await shot('data-age');
-      await changeLens(lens('condition'), 'Condition');
-    },
-  );
-
-  await step(
-    'Pick India and verify Condition, Strength and the score explanation',
-    async () => {
-      await pickCountry(81.7, 21.2, 'IND');
-      assert.equal(await text('#world-sheet-name'), 'India');
-      assert.match(await text('#world-hover'), /Weakest bar.*24 \/ 100.*2024/s);
-      assert.match(await text('#world-coverage'), /17 of 18.*2026-11-08/);
-      assert.match(await text('#world-hp-label'), /Weakest bar.*24 \/ 100/);
-      const condition = await checkRows('condition', {
-        C1: 24,
-        C2: 67,
-        C3: 82,
-        C4: 86,
-        C5: 58,
-        C6: null,
-      });
-      assert.deepEqual(condition[0].flags, ['Weakest', 'Stale']);
-      assert.deepEqual(condition[5].flags, ['Unknown']);
-      await page.click(slot('C1'));
-      const why = await text('#world-why-C1');
-      assert.match(why, /GOV_WGI_PV\.SC.*2024.*Raw value\s*24/s);
-      assert.match(
-        why,
-        /100 × clip\(\(x − 0\) ÷ \(100 − 0\), 0, 1\).*Draft anchors/s,
-      );
-      assert.match(
-        await page.$eval('#world-why-C1 a', (a) => a.href),
-        /^https:\/\//,
-      );
-      await shot('india-condition-why');
-      const strength = await checkRows('strength', {
-        S1: 86,
-        S2: 63,
-        S3: 64,
-        S4: 66,
-        S5: 52,
-        S6: 50,
-        S7: 34,
-        S8: 77,
-        S9: 68,
-        S10: 56,
-        S11: 25,
-        S12: 60,
-      });
-      assert.ok(strength[10].flags.includes('Low conf.'));
-      await shot('india-strength');
-    },
-  );
-
-  await step('Picking Scotland selects the whole UK group', async () => {
-    await camera(-3.8, 56.5, 5_000_000);
-    await pickCountry(-3.8, 56.5, 'GBR');
-    assert.equal(await text('#world-sheet-name'), 'United Kingdom');
-    const board = await world.snapshot();
-    assert.deepEqual(
-      [
-        ...board.countryIndex.find(({ iso3 }) => iso3 === 'GBR').shapeIds,
-      ].sort(),
-      ['ENG', 'GBR', 'NIR', 'SCT', 'WLS'],
-    );
-    await shot('uk-selected-from-scotland');
-    await camera(82, 22, 9_000_000);
-    await pickCountry(81.7, 21.2, 'IND');
-  });
-
-  await step(
-    'Refresh writes turn 2 and shows its code-generated change list',
-    async () => {
-      await page.click('#world-refresh');
-      await page.waitForFunction(
-        () => document.querySelector('#world-turn')?.textContent === 'Turn 2',
-        wait,
-      );
-      const saved = await world.store.read();
-      assert.deepEqual(
-        saved.turns.map(({ number }) => number),
-        [1, 2],
-      );
-      const [change] = saved.turns[1].changes;
-      assert.equal(saved.turns[1].changes.length, 1);
-      assert.equal(change.iso3, 'IND');
-      assert.match(change.text, /C1 24\/100 → 37\/100, value 24 → 37/);
-      assert.equal(await text('#world-since-turn li'), change.text);
-      await page.click('#world-turn');
-      assert.equal(await text('#world-turn-changes li'), change.text);
-      await shot('turn-2');
-      await page.click('#world-turn');
-      assert.equal(report.transport.refreshes, 1);
-    },
-  );
-
-  await step(
-    'Zoom hides the fills and returning restores the original batches',
-    async () => {
-      await camera(82, 22, 2_500_000);
-      await page.waitForFunction(
-        () => !window.worldQa.solid.show && !window.worldQa.hatch.show,
-        wait,
-      );
-      assert.equal((await readGeometry()).hatchAlpha, 0);
-      await shot('zoom-detail');
-      await camera(82, 22, 9_000_000);
-      await page.waitForFunction(() => {
-        const { solid, hatch } = window.worldQa;
-        return (
-          solid.show &&
-          hatch.show &&
-          solid.getGeometryInstanceAttributes('world:IND:IND:0').color[3] ===
-            140
-        );
-      }, wait);
-      assert.ok((await readGeometry()).hatchAlpha > 0);
-    },
-  );
-
-  await step(
-    'HUD keeps controls clear on desktop and narrow screens',
-    async () => {
-      await page.click(lens('strength'));
-      await layout(1440, 900);
-      await layout(1280, 800);
-      await layout(390, 844);
-      await page.setViewport(desktop);
-    },
-  );
-
-  await step(
-    'Disable and re-enable without extra turns or new geometry',
-    async () => {
-      await toggleWorld();
-      await waitSettled(false);
-      await page.waitForFunction(
-        () =>
-          document.querySelector('#world-lens-bar').hidden &&
-          document.querySelector('#world-legend').hidden &&
-          document.querySelector('#world-character-sheet').hidden &&
-          !window.worldQa.solid.show &&
-          !window.worldQa.hatch.show,
-        wait,
-      );
-      await shot('layer-off');
-      await toggleWorld();
-      await waitSettled(true);
-      await camera(82, 22, 9_000_000);
-      await page.waitForFunction(
-        () =>
-          !document.querySelector('#world-lens-bar').hidden &&
-          window.worldQa.solid.show &&
-          window.worldQa.hatch.show,
-        wait,
-      );
-      assert.deepEqual(
-        (await world.store.read()).turns.map(({ number }) => number),
-        [1, 2],
-      );
-      assert.deepEqual(report.errors, []);
-    },
-  );
+  // Modules execute in filename order and share this browser state.
+  for (const { default: runPhase } of phaseChecks) {
+    await runPhase({
+      assert,
+      page,
+      world,
+      report,
+      step,
+      shot,
+      text,
+      camera,
+      toggleWorld,
+      waitSettled,
+      readGeometry,
+      checkHatchPixels,
+      changeLens,
+      pickCountry,
+      checkRows,
+      layout,
+      lens,
+      area,
+      tab,
+      slot,
+      wait,
+      desktop,
+    });
+  }
 } catch (error) {
   console.error(error);
   report.failure = error.stack;

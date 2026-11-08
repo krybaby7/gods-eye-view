@@ -1,15 +1,14 @@
 import { admitSameSiteRequest } from '../../../src/localRequestGate.mjs';
 import { loadWorldRegistry } from './registry.js';
+import { worldAdapters, worldRefreshSteps } from './refreshRegistry.js';
 import { scoreCountries } from './scores.js';
-import * as imf from './sources/imf.js';
-import * as ucdp from './sources/ucdp.js';
-import * as vdem from './sources/vdem.js';
-import * as worldbank from './sources/worldbank.js';
 import { createWorldStore } from './store.js';
 import { createTurn } from './turn.js';
 
-const defaultAdapters = { worldbank, imf, ucdp, vdem };
+const USER_AGENT =
+  'GodsEyeView-WorldBoard/0.2 (https://github.com/krybaby7/gods-eye-view)';
 const PREFIX = '/api/world';
+const EMPTY_FEATURES = Object.freeze({});
 const LOOPBACK_ADDRESSES = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 const LOCAL_HOST = /^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i;
 
@@ -42,8 +41,13 @@ function sendJson(res, status, payload) {
 
 export function createWorldService({
   cacheDir,
-  adapters = defaultAdapters,
-  fetchImpl = globalThis.fetch,
+  adapters = worldAdapters,
+  refreshSteps = worldRefreshSteps,
+  fetchImpl = (url, options) =>
+    globalThis.fetch(url, {
+      ...options,
+      headers: { 'User-Agent': USER_AGENT, ...options?.headers },
+    }),
   loadRegistry = loadWorldRegistry,
   now = () => new Date(),
   logger = console,
@@ -80,6 +84,7 @@ export function createWorldService({
     const startedAt = started.toISOString();
     const lastCheckedAt = { ...saved.lastCheckedAt };
     const sources = registry.sources;
+    const features = { ...saved.board?.features };
     const pending = new Set(sources.map(({ id }) => id));
 
     function addProgress() {
@@ -111,6 +116,9 @@ export function createWorldService({
           !adapter.shouldCheck({
             lastCheckedAt: dependencyUpdated ? null : lastCheckedAt[id],
             now: started,
+            observations,
+            data: features[id],
+            features,
           })
         ) {
           return {
@@ -124,11 +132,14 @@ export function createWorldService({
           registry,
           now: started,
           observations,
+          data: features[id],
+          features,
         });
         const additions = mergeObservations(
           observations,
-          result.observations,
+          result.observations ?? [],
         ).slice(observations.length);
+        if (result.data !== undefined) features[id] = result.data;
         if (!result.error) lastCheckedAt[id] = startedAt;
         return {
           status: {
@@ -136,10 +147,15 @@ export function createWorldService({
             status: result.error ? 'failed' : 'loaded',
             ...(result.error && { error: result.error }),
             checked,
-            count: additions.length,
+            count: result.count ?? additions.length,
+            ...(result.count !== undefined && {
+              unit: result.unit ?? 'record',
+            }),
             ...(result.detail && { detail: result.detail }),
           },
           observations: additions,
+          changes: result.changes,
+          dataUpdated: result.data !== undefined,
         };
       } catch (failure) {
         return {
@@ -148,7 +164,7 @@ export function createWorldService({
             status: 'failed',
             checked,
             count: 0,
-            error: failure?.message ?? String(failure),
+            error: failure?.cause?.code ?? failure?.message ?? String(failure),
           },
           observations: [],
         };
@@ -159,19 +175,28 @@ export function createWorldService({
     }
 
     addProgress();
-    const worldbank = sources.some(({ id }) => id === 'worldbank')
-      ? check('worldbank', saved.observations)
-      : null;
-    const results = await Promise.all(
-      sources.map(async ({ id }) => {
-        if (id === 'worldbank') return worldbank;
-        if (id === 'ucdp' && worldbank) {
-          const population = (await worldbank).observations;
-          return check(id, [...saved.observations, ...population]);
-        }
-        return check(id, saved.observations);
-      }),
-    );
+    const completed = new Map();
+    async function run(id) {
+      if (completed.has(id)) return completed.get(id);
+      const dependency = refreshSteps[id];
+      const prior = pending.has(dependency)
+        ? await run(dependency)
+        : completed.get(dependency);
+      const additions = prior?.observations ?? [];
+      const dependencyUpdated =
+        dependency === 'worldbank' && id === 'ucdp'
+          ? additions.some(({ indicator }) => indicator === 'population.total')
+          : Boolean(prior?.dataUpdated || additions.length);
+      const result = await check(
+        id,
+        [...saved.observations, ...additions],
+        dependencyUpdated,
+      );
+      completed.set(id, result);
+      return result;
+    }
+    const results = [];
+    for (const { id } of sources) results.push(await run(id));
     const observations = mergeObservations(
       saved.observations,
       results.flatMap((result) => result.observations),
@@ -182,13 +207,17 @@ export function createWorldService({
       number: (saved.turns.at(-1)?.number ?? 0) + 1,
       startedAt,
       endedAt: asOf,
-      sources: results.map(({ status }) => status),
+      sources: results.map(({ status }, i) => ({
+        ...status,
+        ...(sources[i].name && { name: sources[i].name }),
+      })),
       previous: saved.board?.countries ?? null,
       countries,
       newObservations: observations.length - saved.observations.length,
+      featureChanges: results.flatMap(({ changes }) => changes ?? []),
     });
     const next = {
-      board: { asOf, countries },
+      board: { asOf, countries, features },
       observations,
       turns: [...saved.turns, turn],
       lastCheckedAt,
@@ -218,6 +247,7 @@ export function createWorldService({
   function view() {
     return {
       ...board,
+      features: board.features ?? EMPTY_FEATURES,
       indicators: registry.indicators,
       sources: registry.sources,
       countryIndex: registry.countries,

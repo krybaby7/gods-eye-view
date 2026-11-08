@@ -4,8 +4,9 @@ import {
   worldLegend,
   worldTurn,
 } from './worldPanelModel.js';
+import { worldPhases } from '../layers/world/phaseRegistry.js';
 
-const TABS = [
+const baseTabs = [
   ['condition', 'Condition'],
   ['strength', 'Strength'],
   ['exposure', 'Exposure', 2],
@@ -14,6 +15,18 @@ const TABS = [
   ['stakes', 'Stakes', 7],
   ['people', 'People', 5],
 ];
+const phases = (key) => worldPhases.flatMap((phase) => phase[key] ?? []);
+const tabsById = new Map(
+  baseTabs.map(([id, label, phase], order) => [
+    id,
+    { id, label, phase, order: order * 10 },
+  ]),
+);
+for (const tab of phases('tabs')) {
+  tabsById.set(tab.id, { ...tabsById.get(tab.id), ...tab });
+}
+const tabsInOrder = [...tabsById.values()].sort((a, b) => a.order - b.order);
+const cards = new Map(phases('cards').map((card) => [card.type, card]));
 
 function element(document, tag, className, content) {
   const node = document.createElement(tag);
@@ -162,13 +175,30 @@ export function createWorldPanel({
   const tabs = find('world-sheet-tabs');
   const tabBody = find('world-sheet-content');
   const close = find('world-sheet-close');
-  const lensButtons = [...bar.querySelectorAll('[data-world-lens]')];
+  const lensOptions = bar.querySelector('.world-lens-options');
+  const lensButtons = layer.getSnapshot().lenses.map(({ id, label }) => {
+    const node = button(document, label);
+    node.dataset.worldLens = id;
+    return node;
+  });
+  lensOptions.replaceChildren(...lensButtons);
   const events = new AbortController();
   const { signal } = events;
   let previous = {};
   let tab = 'condition';
   let sheetModel = null;
+  let currentSnapshot;
   let areaButtons = [];
+  const countryContent = find('world-country-content');
+  const cardContent = find('world-card-content');
+  const extra = find('world-sheet-extra');
+  const openCard = (type, id) => layer.openCard(type, id);
+  const renderContext = () => ({
+    document,
+    snapshot: currentSnapshot,
+    sheetModel,
+    openCard,
+  });
 
   function setTurnOpen(open) {
     turnChip.setAttribute('aria-expanded', String(open));
@@ -176,14 +206,18 @@ export function createWorldPanel({
   }
 
   function renderTab({ preserve = false } = {}) {
-    const index = TABS.findIndex(([id]) => id === tab);
-    const [id, label, phase] = TABS[index];
+    const index = tabsInOrder.findIndex(({ id }) => id === tab);
+    const { id, label, phase, render } = tabsInOrder[index];
     tabs.querySelectorAll('button').forEach((node, i) => {
       node.setAttribute('aria-selected', String(i === index));
       node.tabIndex = i === index ? 0 : -1;
     });
     tabBody.setAttribute('aria-labelledby', `world-tab-${id}`);
-    tabBody.tabIndex = phase ? 0 : -1;
+    tabBody.tabIndex = phase || render ? 0 : -1;
+    if (render) {
+      tabBody.replaceChildren(render(renderContext()));
+      return;
+    }
     if (phase) {
       tabBody.replaceChildren(
         element(
@@ -212,7 +246,21 @@ export function createWorldPanel({
             ?.dataset.worldSlot
         : null;
     tabBody.replaceChildren(
-      ...rows.map((row) => slotRow(document, row, open.has(row.slot))),
+      ...rows.map((row) =>
+        slotRow(
+          document,
+          {
+            ...row,
+            flags: [
+              ...row.flags,
+              ...phases('rowFlags').flatMap((flags) =>
+                flags(row, renderContext()),
+              ),
+            ],
+          },
+          open.has(row.slot),
+        ),
+      ),
     );
     if (focusedSlot) {
       const row = [...tabBody.querySelectorAll('[data-world-slot]')].find(
@@ -223,7 +271,7 @@ export function createWorldPanel({
     }
   }
 
-  for (const [id, label] of TABS) {
+  for (const { id, label } of tabsInOrder) {
     const node = button(document, label);
     node.id = `world-tab-${id}`;
     node.dataset.worldTab = id;
@@ -249,8 +297,8 @@ export function createWorldPanel({
   tabs.addEventListener(
     'keydown',
     (event) => {
-      const current = TABS.findIndex(([id]) => id === tab);
-      const count = TABS.length;
+      const current = tabsInOrder.findIndex(({ id }) => id === tab);
+      const count = tabsInOrder.length;
       const indices = {
         ArrowLeft: (current + count - 1) % count,
         ArrowRight: (current + 1) % count,
@@ -260,19 +308,37 @@ export function createWorldPanel({
       const next = indices[event.key];
       if (!Number.isInteger(next)) return;
       event.preventDefault();
-      selectTab(TABS[next][0]);
+      selectTab(tabsInOrder[next].id);
       tabs.children[next].focus();
     },
     { signal },
   );
 
   function renderSheet(snapshot) {
+    currentSnapshot = snapshot;
     const selectionChanged = snapshot.selected !== previous.selected;
     sheetModel = snapshot.selected
       ? countrySheet(snapshot, snapshot.selected)
       : null;
-    sheet.hidden = !snapshot.enabled || !sheetModel;
+    const card = cards.get(snapshot.card?.type);
+    sheet.hidden = !snapshot.enabled || (!sheetModel && !card);
     if (sheet.hidden) return;
+    cardContent.hidden = !card;
+    countryContent.hidden = Boolean(card);
+    close.setAttribute(
+      'aria-label',
+      card ? 'Close World Board card' : 'Clear country selection',
+    );
+    if (card) {
+      find('world-sheet-name').textContent = card.label;
+      find('world-sheet-code').textContent = '';
+      cardContent.replaceChildren(
+        card.render({ ...renderContext(), id: snapshot.card.id }),
+      );
+      if (sheet.classList.contains('collapsed')) openSheet?.();
+      return;
+    }
+    cardContent.replaceChildren();
     if (selectionChanged) {
       tab = 'condition';
       find('world-sheet-body').scrollTop = 0;
@@ -281,6 +347,10 @@ export function createWorldPanel({
     find('world-sheet-name').textContent = name;
     find('world-sheet-code').textContent = iso3;
     find('world-coverage').textContent = coverage;
+    extra.replaceChildren(
+      ...phases('header').flatMap((render) => render(renderContext()) ?? []),
+    );
+    extra.hidden = !extra.childNodes.length;
     const noData = find('world-no-data');
     noData.hidden = hasData;
     noData.textContent = disputed
@@ -334,7 +404,8 @@ export function createWorldPanel({
       );
     }
     areas.hidden = snapshot.lens !== 'strength' || !areaButtons.length;
-    const definition = worldLegend(snapshot);
+    const lens = snapshot.lenses.find(({ id }) => id === snapshot.lens);
+    const definition = lens?.legend?.(snapshot) ?? worldLegend(snapshot);
     find('world-legend-title').textContent = definition.name;
     const stops = find('world-legend-stops');
     stops.replaceChildren(
@@ -379,8 +450,14 @@ export function createWorldPanel({
     if (!model) return;
     if (hoverName.textContent !== model.name)
       hoverName.textContent = model.name;
-    if (hoverValue.textContent !== model.value)
-      hoverValue.textContent = model.value;
+    const lens = snapshot.lenses.find(({ id }) => id === snapshot.lens);
+    const value =
+      lens?.hover?.(snapshot.countries[position.iso3], snapshot) ?? model.value;
+    const flags = phases('hoverFlags').flatMap((getFlags) =>
+      getFlags(position.iso3, snapshot),
+    );
+    const text = [value, ...flags].join(' · ');
+    if (hoverValue.textContent !== text) hoverValue.textContent = text;
     hover.style.setProperty('--world-hover-x', `${position.x + 16}px`);
     hover.style.setProperty('--world-hover-y', `${position.y + 16}px`);
   }
@@ -393,6 +470,8 @@ export function createWorldPanel({
     if (
       snapshot.lens !== previous.lens ||
       snapshot.area !== previous.area ||
+      snapshot.selected !== previous.selected ||
+      snapshot.features !== previous.features ||
       snapshot.indicators !== previous.indicators
     )
       renderLens(snapshot);
@@ -418,6 +497,8 @@ export function createWorldPanel({
     if (
       snapshot.enabled !== previous.enabled ||
       snapshot.selected !== previous.selected ||
+      snapshot.card !== previous.card ||
+      snapshot.features !== previous.features ||
       snapshot.countries !== previous.countries ||
       snapshot.indicators !== previous.indicators ||
       snapshot.turn !== previous.turn
@@ -443,6 +524,10 @@ export function createWorldPanel({
   close.addEventListener(
     'click',
     () => {
+      if (layer.getSnapshot().card) {
+        layer.closeCard();
+        return;
+      }
       lensButtons
         .find((node) => node.getAttribute('aria-pressed') === 'true')
         ?.focus();
@@ -493,6 +578,8 @@ export function createWorldPanel({
       setTurnOpen(false);
       tabs.replaceChildren();
       tabBody.replaceChildren();
+      cardContent.replaceChildren();
+      lensOptions.replaceChildren();
     },
   };
 }
