@@ -134,6 +134,19 @@ The record has:
 The board lists every state and every territory with data. A disputed area is drawn hatched, and
 its claims are recorded as relations (section 4.7).
 
+**Map units (found while building the mock, 2026-11-08).** The pack is Natural Earth's map-units
+edition, so a few countries come in pieces:
+
+- The UK is a `GBR` feature plus England, Scotland, Wales and Northern Ireland. They share the
+  pack's `country` field ("United Kingdom") and are grouped by it.
+- Other pieces need an alias table, kept in `public/world/countries.json`:
+  - `KOS` → `XKX` at the World Bank, `UVK` at the IMF;
+  - `PSX` → `PSE` at the World Bank, `WBG` at the IMF;
+  - `SDS` → `SSD`;
+  - `ALD` (Åland) → `FIN`.
+- Areas with no data of their own are `disputed` and hatched: Northern Cyprus, Somaliland,
+  Western Sahara, Siachen, Bir Tawil, Baykonur, the Cyprus buffer zone and the UK bases on Cyprus.
+
 ### 4.2 Indicator (registry, `public/world/indicators.json`)
 
 ```json
@@ -412,6 +425,13 @@ are checked.
 | C5 Fiscal and payment continuity | General government gross debt (% GDP) | `GGXWDG_NGDP` | IMF DataMapper | Current year, `source-forecast`. |
 | C6 Societal cooperation | Political polarisation | `v2cacamps` (code to verify) | V-Dem | CC BY-SA, so it is marked ShareAlike. |
 
+**Checked live on 2026-11-08, for the mock.** Each World Bank code in the table answered
+`api.worldbank.org/v2/country/all/indicator/<code>?format=json&per_page=20000&mrnev=1`, with
+latest values for 183–261 economies, regional aggregates included. IMF DataMapper answered
+`/external/datamapper/api/v1/<code>?periods=2025,2026` with 2026 values for 226 economies
+(inflation) and 224 (debt). Most countries' latest World Bank values are from 2024 or 2025. UCDP
+and V-Dem were not fetched.
+
 **No open global data for:**
 
 - military readiness and effectiveness;
@@ -654,7 +674,8 @@ one-run slot from PR #15.
 
 ## 11. Phases
 
-PR #15 merges first, because the board's Claude jobs share its adapter and slot.
+Phase 1 runs no Claude jobs, so it can start from `main` without waiting for PR #15. PR #15 must
+merge before phase 7, because the board's Claude jobs share its adapter and slot.
 
 Each phase below is one Codex pull request. Every one is tested by the owner before it merges.
 
