@@ -157,14 +157,12 @@ export function createSituationPanel({
     'aria-labelledby': 'situation-tab-raw',
     hidden: true,
   });
+  const credit = h('p', { className: 'situation-credit' });
   const footer = h(
     'footer',
     { className: 'situation-footer' },
     h('p', { text: SITUATION_DISCLAIMER }),
-    h('p', {
-      className: 'situation-credit',
-      text: 'Digest and Situation Brief: Claude Sonnet 5.5 (Anthropic) through the Perplexity Agent API. Items: the publishers named on each item, GDELT, Telegram public previews and ReliefWeb.',
-    }),
+    credit,
   );
   const brief = createSituationBrief({
     h,
@@ -201,6 +199,14 @@ export function createSituationPanel({
       void layer.requestDigest();
     },
   });
+  const cancelButton = h('button', {
+    type: 'button',
+    className: 'panel-surface-control',
+    text: 'Cancel',
+    'data-focus-key': 'cancel',
+    hidden: true,
+    onClick: () => layer.cancelDigest?.(),
+  });
   const frameButton = h('button', {
     type: 'button',
     className: 'panel-surface-control situation-frame',
@@ -229,6 +235,7 @@ export function createSituationPanel({
       theaterSelect,
       frameButton,
       refreshButton,
+      cancelButton,
     ),
     reasonLine,
     digestLine,
@@ -261,6 +268,12 @@ export function createSituationPanel({
       ? 'Fly to every located open story'
       : 'No located open stories to frame';
     renderRefresh();
+    const claudeStatus = snapshot.digest?.agentStatus;
+    const provider =
+      snapshot.digest?.agent === 'claude'
+        ? `Claude plan (${claudeStatus?.signedIn ? 'signed in' : claudeStatus?.disabledReason?.replace(/\.$/, '') || 'checking status'})`
+        : 'Claude Sonnet 5.5 (Anthropic) through the Perplexity Agent API';
+    credit.textContent = `Digest and Situation Brief: ${provider}. Perplexity is optional (set NEWS_DIGEST_AGENT=perplexity and restart). Items: the publishers named on each item, GDELT, Telegram public previews and ReliefWeb.`;
     digestLine.textContent = formatDigestLine(snapshot, now());
     const degraded = degradedSources(snapshot.sources);
     degradedLine.hidden = !degraded.count;
@@ -291,6 +304,7 @@ export function createSituationPanel({
     const state = refreshState(snapshot, now());
     refreshButton.textContent = state.label;
     refreshButton.disabled = state.disabled;
+    cancelButton.hidden = !snapshot.digest?.cancellable;
     refreshButton.setAttribute('aria-busy', state.running ? 'true' : 'false');
     if (state.reason) {
       refreshButton.setAttribute('aria-describedby', reasonLine.id);

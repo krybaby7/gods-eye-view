@@ -120,15 +120,29 @@ export function formatDigestLine(snapshot, nowMs, options = {}) {
   const digested = items.filter((item) => item.digestedAt).length;
   const budget = snapshot.budget || {};
   const tail = [];
-  if (Number.isFinite(budget.lastRunCostUsd))
-    tail.push(`last run ${formatUsdShort(budget.lastRunCostUsd)}`);
-  if (
-    Number.isFinite(budget.lastBriefCostUsd) &&
-    snapshot.theater?.situationBrief !== false
-  )
-    tail.push(`brief ${formatUsdShort(budget.lastBriefCostUsd)}`);
-  if (Number.isFinite(budget.remainingUsd))
-    tail.push(`budget $${budget.remainingUsd.toFixed(2)} left`);
+  if (snapshot.digest?.agent === 'claude') {
+    const run = snapshot.lastRun || snapshot.lastDigest;
+    if (run?.agent === 'claude' && run.status !== 'skipped') {
+      const elapsed = run.planUsage?.durationMs ?? run.durationMs;
+      if (Number.isFinite(elapsed)) {
+        const seconds = Math.max(0, Math.floor(elapsed / 1000));
+        tail.push(
+          `last run ${Math.floor(seconds / 60)}m ${pad(seconds % 60)}s`,
+        );
+      }
+    }
+    tail.push('Claude plan');
+  } else {
+    if (Number.isFinite(budget.lastRunCostUsd))
+      tail.push(`last run ${formatUsdShort(budget.lastRunCostUsd)}`);
+    if (
+      Number.isFinite(budget.lastBriefCostUsd) &&
+      snapshot.theater?.situationBrief !== false
+    )
+      tail.push(`brief ${formatUsdShort(budget.lastBriefCostUsd)}`);
+    if (Number.isFinite(budget.remainingUsd))
+      tail.push(`budget $${budget.remainingUsd.toFixed(2)} left`);
+  }
   const lastDigest = snapshot.lastDigest;
   if (!lastDigest)
     return [`No digest yet · ${items.length} items collected`, ...tail].join(

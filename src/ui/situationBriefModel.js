@@ -41,6 +41,7 @@ const BRIEF_ERRORS = Object.freeze({
   no_headline: 'it had no cited headline',
   malformed_output: 'its answer was not valid',
   timeout: 'it timed out',
+  cancelled: 'it was canceled',
   network: 'the connection failed',
   auth: 'the key was refused',
   rate_limited: 'Perplexity limited the request rate',

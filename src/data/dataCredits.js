@@ -250,9 +250,8 @@ export const DATA_CREDITS = [
   {
     key: 'war-monitor-digest',
     html:
-      'War monitor stories: digest by Claude Sonnet 5.5 (' +
-      '<a href="https://www.anthropic.com" target="_blank" rel="noopener">Anthropic</a>) through the ' +
-      '<a href="https://docs.perplexity.ai" target="_blank" rel="noopener">Perplexity Agent API</a>. ' +
+      'War monitor stories: digest by ' +
+      '<a href="https://code.claude.com/docs/en/headless" target="_blank" rel="noopener">Claude Code</a> (Anthropic) through the owner’s Claude plan by default, or the <a href="https://docs.perplexity.ai" target="_blank" rel="noopener">Perplexity Agent API</a>. ' +
       'Headlines and stories are reporting, not verified incidents or risk rankings.',
   },
   {
