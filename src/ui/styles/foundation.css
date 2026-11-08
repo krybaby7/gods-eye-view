@@ -6,6 +6,7 @@
 :root {
   --bg-dark: #0a0a0f;
   --glass-bg: rgba(12, 12, 20, 0.72);
+  --map-readout-bg: rgba(9, 20, 26, 0.86);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-border-hover: rgba(255, 255, 255, 0.15);
   --accent: #00d4ff;
@@ -652,4 +653,15 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   margin-top: 4px;
   text-shadow: 0 0 20px var(--accent-glow);
   transition: var(--transition-smooth);
+}
+
+:root:not([data-ui-theme='cyber']) #style-indicator {
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--map-readout-bg);
+}
+
+:root:not([data-ui-theme='cyber']) #style-indicator .indicator-label {
+  color: var(--text-primary);
+  opacity: 0.84;
 }
