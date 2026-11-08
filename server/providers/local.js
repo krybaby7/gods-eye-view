@@ -6,6 +6,7 @@ import { newsProxy } from './news/index.js';
 import { createSearchAgents } from './search/agents/index.js';
 import { createSearchContext } from './search/context.js';
 import { searchesProxy } from './search/index.js';
+import { worldProxy } from './world/index.js';
 import { terrainHeightsProxy } from './terrain.js';
 import { adsbdbProxy } from './aircraft/enrichment.js';
 import { overpassProxy } from './overpass.js';
@@ -35,7 +36,7 @@ import { windProxy } from './wind.js';
  * Construct the local provider plugins in their established order.
  * `realtime` configures the voice session token endpoint.
  */
-function localProviderPlugins({ realtime } = {}) {
+function localProviderPlugins({ realtime, world } = {}) {
   const searchContext = createSearchContext();
   const searchAgents = createSearchAgents();
   return [
@@ -68,6 +69,7 @@ function localProviderPlugins({ realtime } = {}) {
     firePerimetersProxy(),
     newsProxy(),
     searchesProxy({ ...searchContext, agents: searchAgents }),
+    worldProxy(world),
     keySetupEndpoint({ searchAgentStatus: () => searchAgents.status() }),
   ];
 }
