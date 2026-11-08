@@ -100,8 +100,15 @@ export function resultOk(result) {
 }
 
 export function parseClaudeStructured(stdout) {
-  const result = parseJson(stdout, 'SEARCH_MAP_INVALID');
+  let result;
+  try {
+    result = parseJson(stdout, 'SEARCH_MAP_INVALID');
+  } catch (error) {
+    error.mapIssue = 'The Claude Code response was not valid JSON.';
+    throw error;
+  }
   const usage = result?.type === 'result' ? usageOf(result) : null;
+  const agentModel = Object.keys(result?.modelUsage || {})[0] || null;
   try {
     resultOk(result);
     if (
@@ -109,10 +116,12 @@ export function parseClaudeStructured(stdout) {
       typeof result.structured_output !== 'object' ||
       Array.isArray(result.structured_output)
     ) {
-      throw agentError('SEARCH_MAP_INVALID');
+      throw Object.assign(agentError('SEARCH_MAP_INVALID'), {
+        mapIssue: 'Claude Code returned no structured map object.',
+      });
     }
   } catch (error) {
-    if (usage) error.usage = usage;
+    if (usage) Object.assign(error, { usage, agentModel });
     throw error;
   }
   return {
@@ -120,7 +129,7 @@ export function parseClaudeStructured(stdout) {
     usage,
     responseId:
       typeof result.session_id === 'string' ? result.session_id : null,
-    agentModel: Object.keys(result.modelUsage || {})[0] || null,
+    agentModel,
   };
 }
 

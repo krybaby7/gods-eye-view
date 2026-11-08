@@ -60,50 +60,63 @@ export const MAP_SCHEMA = object({
   ),
 });
 
-function invalidMap() {
+function invalidMap(mapIssue) {
   return Object.assign(new Error('Claude Code returned invalid map data.'), {
     code: 'SEARCH_MAP_INVALID',
+    mapIssue,
   });
 }
 
-function matches(value, schema) {
+// Paths contain only schema field names and array indices. Never include
+// rejected keys or values in the diagnostic stored in search history.
+function validate(value, schema, path) {
+  const fail = (rule) => {
+    throw invalidMap(`${path} ${rule}.`);
+  };
   switch (schema.type) {
     case 'string':
-      return (
-        typeof value === 'string' &&
-        value.trim().length >= (schema.minLength ?? 1) &&
-        [...value].length <= (schema.maxLength ?? 200) &&
-        !value.match(URL_TEXT) &&
-        (!schema.pattern || new RegExp(schema.pattern).test(value)) &&
-        (!schema.enum || schema.enum.includes(value))
-      );
+      if (typeof value !== 'string') fail('must be text');
+      if (value.trim().length < (schema.minLength ?? 1))
+        fail('must contain text');
+      if ([...value].length > (schema.maxLength ?? 200))
+        fail(`exceeded ${schema.maxLength ?? 200} characters`);
+      if (value.match(URL_TEXT)) fail('contained a URL');
+      if (schema.pattern && !new RegExp(schema.pattern).test(value))
+        fail('must be a numbered source ID');
+      if (schema.enum && !schema.enum.includes(value))
+        fail('used an unsupported value');
+      return;
     case 'number':
-      return (
-        Number.isFinite(value) &&
-        value >= schema.minimum &&
-        value <= schema.maximum
-      );
+      if (
+        !Number.isFinite(value) ||
+        value < schema.minimum ||
+        value > schema.maximum
+      )
+        fail('must be a number within the allowed range');
+      return;
     case 'array':
-      return (
-        Array.isArray(value) &&
-        value.length >= schema.minItems &&
-        value.length <= schema.maxItems &&
-        value.every((entry) => matches(entry, schema.items))
+      if (!Array.isArray(value)) fail('must be a list');
+      if (value.length < schema.minItems)
+        fail(`must contain at least ${schema.minItems} entries`);
+      if (value.length > schema.maxItems)
+        fail(`exceeded ${schema.maxItems} entries`);
+      value.forEach((entry, index) =>
+        validate(entry, schema.items, `${path}[${index}]`),
       );
+      return;
     case 'object':
-      return (
-        value &&
-        typeof value === 'object' &&
-        !Array.isArray(value) &&
-        schema.required.every((key) => Object.hasOwn(value, key)) &&
-        Object.keys(value).every(
-          (key) =>
-            Object.hasOwn(schema.properties, key) &&
-            matches(value[key], schema.properties[key]),
-        )
-      );
+      if (!value || typeof value !== 'object' || Array.isArray(value))
+        fail('must be an object');
+      for (const key of schema.required)
+        if (!Object.hasOwn(value, key)) fail(`is missing ${key}`);
+      for (const key of Object.keys(value)) {
+        if (!Object.hasOwn(schema.properties, key))
+          fail('contained an unexpected field');
+        validate(value[key], schema.properties[key], `${path}.${key}`);
+      }
+      return;
     default:
-      return false;
+      fail('has an unsupported schema type');
   }
 }
 
@@ -113,14 +126,16 @@ export function parseMappedFindings(json) {
     try {
       value = JSON.parse(json);
     } catch {
-      throw invalidMap();
+      throw invalidMap('The map response was not valid JSON.');
     }
   }
-  if (!matches(value, MAP_SCHEMA)) throw invalidMap();
-  for (const finding of value.findings) {
+  validate(value, MAP_SCHEMA, 'map');
+  for (const [index, finding] of value.findings.entries()) {
+    const path = `map.findings[${index}]`;
     if (finding.place && !BASIS[finding.kind].includes(finding.place.basis))
-      throw invalidMap();
-    if ((finding.lat == null) !== (finding.lon == null)) throw invalidMap();
+      throw invalidMap(`${path}.place.basis did not match the finding kind.`);
+    if ((finding.lat == null) !== (finding.lon == null))
+      throw invalidMap(`${path} must include both latitude and longitude.`);
   }
   return value;
 }
@@ -188,5 +203,9 @@ export async function runMapStep(adapter, { signal, ...input }) {
     schema: MAP_SCHEMA,
     signal,
   });
-  return { mapped: parseMappedFindings(json), usage, agentModel };
+  try {
+    return { mapped: parseMappedFindings(json), usage, agentModel };
+  } catch (error) {
+    throw Object.assign(error, { usage, agentModel });
+  }
 }

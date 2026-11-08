@@ -120,7 +120,9 @@ function terminalError(error, signal) {
     case 'SEARCH_MAP_INVALID':
       return {
         reason: 'invalid_map',
-        message: 'Claude Code returned invalid map data.',
+        message: ['Claude Code returned invalid map data.', error.mapIssue]
+          .filter(Boolean)
+          .join(' '),
       };
     default:
       return {
@@ -273,10 +275,14 @@ export function createSearchService({
         Object.assign(failed.runs.at(-1), {
           usage: usageTotal(
             research?.usage,
-            mapping?.usage,
+            mapping?.usage ?? error?.usage,
             Math.max(0, Date.parse(finishedAt) - Date.parse(run.startedAt)),
           ),
-          agentModel: mapping?.agentModel ?? research?.agentModel ?? null,
+          agentModel:
+            mapping?.agentModel ??
+            error?.agentModel ??
+            research?.agentModel ??
+            null,
         });
         return failed;
       });

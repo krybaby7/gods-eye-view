@@ -124,6 +124,45 @@ test('gates routes and runs research then map, with snapshots, usage and revisio
   );
 });
 
+test('reports an invalid map field and retains the mapping step usage', async (t) => {
+  const { request } = await setup(t, {
+    mapFindings: () => ({
+      json: {
+        label: 'Reports',
+        summary: [],
+        groups: [],
+        findings: [
+          {
+            kind: 'event',
+            title: 'A finding',
+            summary: 'A report',
+            sourceIds: ['s1'],
+            lat: 10,
+          },
+        ],
+      },
+      usage: { inputTokens: 4, outputTokens: 3 },
+      agentModel: 'test-map-model',
+    }),
+  });
+  assert.equal(
+    (await request('', 'POST', { question: 'A question?' }))[0],
+    202,
+  );
+  const {
+    searches: [search],
+  } = await until(request, ({ searches }) => searches[0]?.status === 'failed');
+  assert.equal(search.run.error.reason, 'invalid_map');
+  assert.match(
+    search.run.error.message,
+    /map\.findings\[0\].*both latitude and longitude/,
+  );
+  assert.equal(search.run.usage.inputTokens, 7);
+  assert.equal(search.run.usage.outputTokens, 3);
+  assert.equal(search.run.agentModel, 'test-map-model');
+  assert.deepEqual(search.findings, []);
+});
+
 test('reserves one slot per agent, cancels through the signal and retries with a new run', async (t) => {
   let calls = 0;
   const { request } = await setup(t, {
