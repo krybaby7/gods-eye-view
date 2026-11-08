@@ -199,6 +199,16 @@ export const DATA_CREDITS = [
     key: 'searches-geocoding',
     html: 'Searches geocoding: <a href="https://nominatim.org/" target="_blank" rel="noopener">OpenStreetMap Nominatim</a>',
   },
+  {
+    key: 'world-board-sources',
+    html:
+      'World Board data: ' +
+      '<a href="https://data.worldbank.org/" target="_blank" rel="noopener">World Bank</a> · ' +
+      '<a href="https://www.imf.org/external/datamapper/" target="_blank" rel="noopener">IMF DataMapper</a> · ' +
+      '<a href="https://ucdp.uu.se/downloads/" target="_blank" rel="noopener">UCDP</a> · ' +
+      '<a href="https://www.v-dem.net/data/the-v-dem-dataset/" target="_blank" rel="noopener">V-Dem</a> · ' +
+      '<a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a>',
+  },
   // War monitor: headline, snippet, link and publisher only. One group per
   // transport; every fetched source in public/news/sources.json is named here.
   {

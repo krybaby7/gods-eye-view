@@ -26,6 +26,7 @@ import { createApplicationFirms } from './layers/firms.js';
 import { createApplicationEarthquakes } from './layers/earthquakes.js';
 import { createApplicationNews } from './layers/news.js';
 import { createApplicationSearches } from './layers/searches.js';
+import { createApplicationWorld } from './layers/world.js';
 import { createApplicationFirePerimeters } from './layers/perimeters.js';
 import { createApplicationCables } from './layers/submarineCables.js';
 import { createApplicationStreetLevel } from './layers/streetLevel.js';
@@ -123,6 +124,7 @@ export function createApplicationCatalog({
         createApplicationEarthquakes({ source: sources.earthquakes }),
         createApplicationNews({ source: sources.news }),
         createApplicationSearches({ source: sources.searches }),
+        createApplicationWorld({ source: sources.world }),
         createApplicationFirePerimeters({
           source: sources['fire-perimeters'],
         }),

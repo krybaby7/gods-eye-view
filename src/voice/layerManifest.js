@@ -188,6 +188,11 @@ const layers = [
     },
   },
   {
+    id: 'world',
+    aliases: ['world board'],
+    noQuery: 'Select a country on the globe to read its character sheet.',
+  },
+  {
     id: 'local-firms',
     aliases: ['fires', 'wildfires', 'active fires', 'firms'],
     context: true,

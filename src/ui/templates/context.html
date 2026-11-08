@@ -1,5 +1,24 @@
   <!-- Global Context is deliberately independent from the left layer accordion. -->
   <aside id="right-context-rail">
+    <section id="world-character-sheet" class="panel-collapsible collapsed" data-panel-id="world-character-sheet" aria-label="World Board character sheet" hidden>
+      <div data-panel-surface>
+        <header data-panel-header>
+          <span id="world-sheet-code" class="world-kicker world-badge"></span>
+          <h2 id="world-sheet-name" class="panel-title panel-surface-title">Country</h2>
+          <button id="world-sheet-close" class="panel-surface-control world-control" type="button" aria-label="Clear country selection" title="Clear country selection">×</button>
+          <button class="panel-collapse-btn panel-surface-control" data-collapse-target="world-character-sheet" type="button" aria-expanded="false" aria-label="Expand character sheet" title="Expand character sheet">◀</button>
+        </header>
+        <div id="world-sheet-body" data-panel-body data-rail-scroller>
+          <div id="world-hp-label" class="world-kicker"></div>
+          <div id="world-hp-track"></div>
+          <p id="world-coverage" class="world-detail"></p>
+          <p id="world-no-data" class="world-detail" hidden></p>
+          <div id="world-sheet-tabs" role="tablist" aria-label="Character sheet sections"></div>
+          <div id="world-sheet-content" role="tabpanel"></div>
+          <section id="world-since-turn" hidden></section>
+        </div>
+      </div>
+    </section>
     <div id="weather-panel" class="panel-collapsible" data-panel-id="weather-panel" hidden>
       <div class="panel-glow"></div>
       <div class="weather-panel-inner" data-rail-scroller>
@@ -261,6 +280,32 @@
         </div>
       </div>
     </div>
+  </aside>
+
+  <section id="world-lens-bar" class="world-board-hud" data-panel-surface aria-label="World Board lenses" hidden>
+    <div class="world-lens-row">
+      <div role="group" aria-label="World Board lens" class="world-lens-options">
+        <button type="button" class="panel-surface-control world-control" data-world-lens="condition" aria-pressed="true">Condition</button>
+        <button type="button" class="panel-surface-control world-control" data-world-lens="strength" aria-pressed="false">Strength</button>
+        <button type="button" class="panel-surface-control world-control" data-world-lens="data-age" aria-pressed="false">Data age</button>
+      </div>
+      <button id="world-refresh" type="button" class="panel-surface-control world-control">Refresh</button>
+      <button id="world-turn" class="panel-surface-control world-control" type="button" aria-controls="world-turn-changes" aria-expanded="false" hidden></button>
+      <div id="world-turn-changes" data-panel-popup role="region" aria-label="Turn changes" tabindex="0" hidden></div>
+    </div>
+    <div id="world-areas" role="group" aria-label="Strength area" hidden></div>
+    <div id="world-progress" class="world-detail" role="status" hidden></div>
+  </section>
+  <aside id="world-legend" class="world-board-hud" data-panel-surface aria-label="World Board legend" hidden>
+    <strong id="world-legend-title" class="world-kicker"></strong>
+    <div class="world-legend-ramp" aria-hidden="true"></div>
+    <div id="world-legend-stops" class="world-kicker"></div>
+    <div class="world-legend-unknown"><span class="world-hatch" aria-hidden="true"></span>Unknown or disputed</div>
+    <span id="world-legend-note" class="world-detail"></span>
+  </aside>
+  <aside id="world-hover" class="world-board-hud" data-panel-surface aria-hidden="true" hidden>
+    <strong id="world-hover-name"></strong>
+    <span id="world-hover-value"></span>
   </aside>
 
   <div id="scene-runtime"></div>

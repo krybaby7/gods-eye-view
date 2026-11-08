@@ -114,6 +114,9 @@
     "./server/providers/search": {
       "node": "./server/providers/search/index.js"
     },
+    "./server/providers/world": {
+      "node": "./server/providers/world/index.js"
+    },
     "./server/providers/news/digest": {
       "node": "./server/providers/news/digest/runner.js"
     },

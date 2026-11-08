@@ -323,6 +323,28 @@
     ],
     "external": []
   },
+  "world-provider": {
+    "runtime": "node",
+    "exports": ["./server/providers/world"],
+    "modules": [
+      "server/providers/world/index.js",
+      "server/providers/world/registry.js",
+      "server/providers/world/scores.js",
+      "server/providers/world/store.js",
+      "server/providers/world/turn.js",
+      "server/providers/world/sources/common.js",
+      "server/providers/world/sources/csv.js",
+      "server/providers/world/sources/imf.js",
+      "server/providers/world/sources/ucdp.js",
+      "server/providers/world/sources/vdem.js",
+      "server/providers/world/sources/worldbank.js",
+      "server/providers/world/sources/zip.js",
+      "server/providers/common/http.js",
+      "src/localRequestGate.mjs",
+      "src/sources/httpBody.js"
+    ],
+    "external": []
+  },
   "search-provider": {
     "runtime": "node",
     "exports": ["./server/providers/search"],
@@ -2348,6 +2370,13 @@
       "src/layers/searches/model.js",
       "src/layers/searches/records.js",
       "src/layers/searches/source.js",
+      "src/app/layers/world.js",
+      "src/layers/world/geometry.js",
+      "src/layers/world/index.js",
+      "src/layers/world/model.js",
+      "src/layers/world/source.js",
+      "src/ui/worldPanel.js",
+      "src/ui/worldPanelModel.js",
       "src/ui/searchesPanel.js",
       "src/ui/searchesPanelModel.js"
     ],
@@ -2890,7 +2919,11 @@
       "src/layers/searches/index.js",
       "src/layers/searches/model.js",
       "src/layers/searches/records.js",
-      "src/layers/searches/source.js"
+      "src/layers/searches/source.js",
+      "src/app/layers/world.js",
+      "src/layers/world/geometry.js",
+      "src/layers/world/index.js",
+      "src/layers/world/model.js"
     ],
     "external": [
       "hls.js",
