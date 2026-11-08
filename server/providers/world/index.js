@@ -1,3 +1,4 @@
+import './actors.js';
 import { admitSameSiteRequest } from '../../../src/localRequestGate.mjs';
 import { loadWorldRegistry } from './registry.js';
 import { worldAdapters, worldRefreshSteps } from './refreshRegistry.js';

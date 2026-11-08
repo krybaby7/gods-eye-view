@@ -209,6 +209,18 @@ export const DATA_CREDITS = [
       '<a href="https://www.v-dem.net/data/the-v-dem-dataset/" target="_blank" rel="noopener">V-Dem</a> · ' +
       '<a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a>',
   },
+  {
+    key: 'world-board-people',
+    html:
+      'World Board People: ' +
+      '<a href="https://www.wikidata.org/" target="_blank" rel="noopener">Wikidata</a> · ' +
+      '<a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a> (per-photo attribution) · ' +
+      '<a href="https://bsky.app/" target="_blank" rel="noopener">Bluesky</a> · ' +
+      '<a href="https://www.youtube.com/" target="_blank" rel="noopener">YouTube</a> · ' +
+      '<a href="https://www.federalreserve.gov/feeds/feeds.htm" target="_blank" rel="noopener">Federal Reserve RSS</a> · ' +
+      '<a href="https://help.x.com/en/using-x/embed-x-feed" target="_blank" rel="noopener">X timeline widget</a> · ' +
+      'Draft organization directory from Wikidata and official organization links',
+  },
   // War monitor: headline, snippet, link and publisher only. One group per
   // transport; every fetched source in public/news/sources.json is named here.
   {

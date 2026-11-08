@@ -16,6 +16,12 @@ For C2, official keyless [UCDP Candidate Events CSV releases](https://ucdp.uu.se
 
 For C6, the exact `v2cacamps` variable in the V-Dem v16 codebook §3.15.1.1 has interval endpoints −3.81 to 3.94. Refresh streams the CSV inside the official Full+Others archive and retains the latest usable reading per mapped country. The v16 compressed download is 26.9 MB. [V-Dem](https://www.v-dem.net/data/the-v-dem-dataset/) data is CC BY-SA 4.0.
 
+## People
+
+The sheet header identifies the head of state and head of government when the Wikidata directory has a current claim. The People tab adds foreign and defence ministers, draft organization entries, public account links, and recent posts where available. The leader portrait beside a country code on the globe opens the actor card. A head of government with an attributed portrait takes precedence, followed by the head of state. Commons portraits show the creator, licence and file link in the sheet and actor card.
+
+Wikidata officeholder claims are checked weekly on Refresh. Ambiguous or unavailable officeholders remain blank. Minister coverage depends on Wikidata offices with a matching jurisdiction and a current officeholder. The draft organization directory uses geographic association for armed groups. Bluesky, YouTube and the Federal Reserve’s official RSS feed provide inline posts or linked headlines on Refresh. **Show X timeline** loads the official widget for the open actor. The widget may require sign-in.
+
 ## Adding a phase
 
 - Add `src/layers/world/phase-N.js` with a default descriptor. Its optional arrays are `lenses` (id, label, order, color and legend), `overlays` (factories), `tabs` (id, render and optional label/order), `cards` (type, label and render), `header`, `rowFlags` and `hoverFlags`. Vite loads it and `src/ui/styles/world-phase-N.css` automatically.
