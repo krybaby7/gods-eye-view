@@ -40,7 +40,8 @@ test('the complete Realtime tool payload pins the manifest-generated layer relea
     // The war monitor adds the news layer to the generated enums and hint,
     // the Situation panel to set_panel_open and the refresh_news tool.
     // Search Layers adds its manifest entry, panel and ask_globe action.
-    'cf8cc886c442252135b462514d0390e16c60429fb52511f3ca54ee06b29fdf0f',
+    // World Board adds its layer enum values and alias.
+    '75a20310792fbdde289995a1b9c20ddb654ce06c02b87f5df766a642bf831b15',
   );
 });
 
