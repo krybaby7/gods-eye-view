@@ -188,7 +188,8 @@ export const energyLens = {
   label: 'Energy',
   order: 30,
   color: energyColor,
-  describe(country, snapshot) {
+  hover(country, snapshot) {
+    if (!country || country.kind === 'disputed') return undefined;
     const share = exposureShare(country, snapshot);
     if (!Number.isFinite(share)) return 'Energy exposure · Unknown';
     const pct = new Intl.NumberFormat(undefined, {

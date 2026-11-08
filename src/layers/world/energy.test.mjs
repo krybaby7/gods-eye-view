@@ -10,8 +10,6 @@ import {
   energyLens,
 } from './energy.js';
 
-import { describeWorldHover } from '../../ui/worldPanelModel.js';
-
 const rows = [
   {
     dependent: 'JPN',
@@ -126,11 +124,11 @@ test('hover explains exposure and labels unknown instead of describing condition
     lenses: [energyLens],
   };
   assert.equal(
-    describeWorldHover(state, 'JPN').value,
+    energyLens.hover(countries.JPN, state),
     '30% of all imports · synthetic fixture',
   );
   assert.equal(
-    describeWorldHover(state, 'CAN').value,
+    energyLens.hover(countries.CAN, state),
     'Energy exposure · Unknown',
   );
 });

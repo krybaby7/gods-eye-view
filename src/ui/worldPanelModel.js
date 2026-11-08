@@ -112,10 +112,6 @@ export function describeWorldHover(snapshot, iso3) {
   const name = country.name ?? iso3;
   if (country.kind === 'disputed')
     return { name, value: 'Unknown · disputed territory' };
-  const describe = snapshot.lenses?.find(
-    ({ id }) => id === snapshot.lens,
-  )?.describe;
-  if (describe) return { name, value: describe(country, snapshot) };
   if (snapshot.lens === 'data-age') {
     if (!Number.isFinite(country.dataAge))
       return { name, value: 'Unknown · no annual observations' };
