@@ -191,7 +191,7 @@ test('UCDP reports missing coverage before publishing zeroes', async () => {
 
 const vdemRoot = 'https://www.v-dem.net/';
 const vdemPage = `${vdemRoot}data/the-v-dem-dataset/`;
-const vdemFile = `${vdemRoot}media/datasets/V-Dem-CY-Core-v16_csv.zip`;
+const vdemFile = `${vdemRoot}media/datasets/V-Dem-CY-FullOthers-v16_csv.zip`;
 
 function csvZip(name, csv) {
   const filename = Buffer.from(name);
@@ -222,12 +222,12 @@ function csvZip(name, csv) {
   return Buffer.concat([local, filename, compressed, central, filename, end]);
 }
 
-test('V-Dem reads the exact Core variable and keeps the latest nonempty year', async () => {
+test('V-Dem reads the exact Full+Others variable and keeps the latest nonempty year', async () => {
   const { fetchObservations } = await import('./vdem.js');
   const fetchImpl = fixtureFetch({
     [vdemPage]: fixture('vdem-release.html'),
     [vdemFile]: csvZip(
-      'V-Dem-CY-Core-v16.csv',
+      'V-Dem-CY-Full+Others-v16.csv',
       'country_name,country_text_id,year,v2cacamps,v2cacamps_ord\r\nFinland,FIN,2024,-1.2,2\r\nFinland,FIN,2025,,4\r\nKosovo,XKX,2025,0,4\r\n',
     ),
   });
@@ -249,18 +249,18 @@ test('V-Dem reads the exact Core variable and keeps the latest nonempty year', a
   );
 });
 
-test('V-Dem reports that the exact variable is absent from Core', async () => {
+test('V-Dem reports that the exact variable is absent from Full+Others', async () => {
   const { fetchObservations } = await import('./vdem.js');
   const fetchImpl = fixtureFetch({
     [vdemPage]: fixture('vdem-release.html'),
     [vdemFile]: csvZip(
-      'V-Dem-CY-Core-v16.csv',
+      'V-Dem-CY-Full+Others-v16.csv',
       await fixture('vdem-core-header.csv'),
     ),
   });
   const result = await fetchObservations({ fetchImpl, registry, now });
   assert.deepEqual(result.observations, []);
-  assert.match(result.detail, /C6 unavailable.*Core.*v2cacamps/);
+  assert.match(result.detail, /C6 unavailable.*Full\+Others.*v2cacamps/);
 });
 
 test('V-Dem reports a declared download over 200 MB before reading it', async () => {
@@ -298,6 +298,16 @@ test('release checks honor the source month, WEO seasons and the current-year ro
   );
   assert.equal(vdem({ now, lastCheckedAt: '2026-03-31T00:00:00Z' }), false);
   assert.equal(vdem({ now, lastCheckedAt: '2026-02-28T00:00:00Z' }), true);
+  const priorCoreCheck = {
+    now,
+    lastCheckedAt: '2026-03-31T00:00:00Z',
+    observations: [],
+  };
+  assert.equal(vdem(priorCoreCheck), true);
+  assert.equal(
+    vdem({ ...priorCoreCheck, data: { sourceVersion: 'v16' } }),
+    false,
+  );
 });
 test('UCDP reports unmapped event locations before inferring country totals', async () => {
   const { fetchObservations } = await import('./ucdp.js');

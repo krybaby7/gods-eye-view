@@ -2,7 +2,6 @@ import { setTimeout as wait } from 'node:timers/promises';
 import { readResponseJsonCapped } from '../../common/http.js';
 import {
   countryCode,
-  fetchResponse,
   monthIndex,
   observation,
   releaseDue,
@@ -11,35 +10,50 @@ import {
 
 const COUNTRY_URL = 'https://api.worldbank.org/v2/country/all';
 const POPULATION = { id: 'population.total', sourceCode: 'SP.POP.TOTL' };
-const REQUESTS_AT_ONCE = 4;
+const USER_AGENT =
+  'GodsEyeView-WorldBoard/0.2 (https://github.com/krybaby7/gods-eye-view)';
 
 export function shouldCheck(context) {
   return releaseDue(context, monthIndex);
 }
 
-async function fetchRows(fetchImpl, path, signal) {
-  try {
-    return await fetchResponse(fetchImpl, COUNTRY_URL + path, signal);
-  } catch (failure) {
-    if (
-      !(failure instanceof TypeError) &&
-      !/^HTTP (429|5\d\d) /.test(failure.message)
-    ) {
-      throw failure;
-    }
-    await wait(500, undefined, { signal });
-    return fetchResponse(fetchImpl, COUNTRY_URL + path, signal);
-  }
+function retryDelay(value) {
+  if (value === null) return 1_000;
+  const milliseconds = /^\d+$/.test(value)
+    ? Number(value) * 1_000
+    : Date.parse(value) - Date.now();
+  return Number.isFinite(milliseconds) ? Math.max(0, milliseconds) : 1_000;
 }
 
-async function readRows(fetchImpl, path) {
+async function readRows(fetchImpl, path, retry = true) {
   const signal = AbortSignal.timeout(30_000);
-  const response = await fetchRows(fetchImpl, path, signal);
-  const [metadata, rows] = await readResponseJsonCapped(
-    response,
-    2_000_000,
-    signal,
-  );
+  const url = COUNTRY_URL + path;
+  let data;
+  try {
+    const response = await fetchImpl(url, {
+      signal,
+      headers: { 'User-Agent': USER_AGENT },
+    });
+    if (!response.ok) {
+      await response.body?.cancel();
+      throw Object.assign(new Error(`HTTP ${response.status} from ${url}`), {
+        status: response.status,
+        retryAfter: response.headers.get('Retry-After'),
+      });
+    }
+    data = await readResponseJsonCapped(response, 2_000_000, signal);
+  } catch (failure) {
+    const transient =
+      failure instanceof TypeError ||
+      signal.aborted ||
+      failure.status === 429 ||
+      failure.status >= 500;
+    const delay = retryDelay(failure.retryAfter ?? null);
+    if (!retry || !transient || delay > 30_000) throw failure;
+    await wait(delay);
+    return readRows(fetchImpl, path, false);
+  }
+  const [metadata, rows] = data;
   if (!Array.isArray(rows) || Number(metadata?.pages) !== 1) {
     throw new Error(`Unexpected World Bank response for ${path}`);
   }
@@ -63,8 +77,8 @@ export async function fetchObservations({ fetchImpl, registry, now }) {
     ]),
   );
   const series = [
-    ...registry.indicators.filter(({ source }) => source === 'worldbank'),
     POPULATION,
+    ...registry.indicators.filter(({ source }) => source === 'worldbank'),
   ];
 
   async function loadSeries({ id, sourceCode }) {
@@ -93,22 +107,22 @@ export async function fetchObservations({ fetchImpl, registry, now }) {
   }
 
   const observations = [];
+  let population = [];
   const failures = [];
-  for (let offset = 0; offset < series.length; offset += REQUESTS_AT_ONCE) {
-    const batch = series.slice(offset, offset + REQUESTS_AT_ONCE);
-    const results = await Promise.allSettled(batch.map(loadSeries));
-    for (const [index, result] of results.entries()) {
-      if (result.status === 'fulfilled') observations.push(...result.value);
-      else {
-        const reason = result.reason;
-        const status = reason.message?.match(/^HTTP \d{3}/)?.[0];
-        const detail = status ?? reason.cause?.code ?? reason.message;
-        failures.push(`${batch[index].sourceCode}: ${detail}`);
-      }
+  for (const definition of series) {
+    try {
+      const rows = await loadSeries(definition);
+      if (definition === POPULATION) population = rows;
+      else observations.push(...rows);
+    } catch (reason) {
+      const status = reason.message?.match(/^HTTP \d{3}/)?.[0];
+      const detail = status ?? reason.cause?.code ?? reason.message;
+      failures.push(`${definition.sourceCode}: ${detail}`);
+      if (reason.status === 429) break;
     }
   }
   return {
-    observations,
+    observations: [...observations, ...population],
     ...(failures.length && { error: failures.join(', ') }),
   };
 }

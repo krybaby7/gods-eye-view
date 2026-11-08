@@ -18,8 +18,10 @@ import { zipEntryChunks } from './zip.js';
 const ORIGIN = 'https://www.v-dem.net';
 const RELEASE_PAGE = `${ORIGIN}/data/the-v-dem-dataset/`;
 const SIZE_LIMIT = 200_000_000;
+const EXPANDED_SIZE_LIMIT = 500_000_000;
 
 export function shouldCheck(context) {
+  if (context.observations && !context.data) return true;
   return releaseDue(context, (date) => {
     const month = date.getUTCMonth();
     return monthIndex(date) - month + (month >= 2 ? 2 : -10);
@@ -36,10 +38,10 @@ export async function fetchObservations({ fetchImpl, registry, now }) {
     metadataSignal,
   );
   const release = html.match(
-    /href=["'][^"']*\/country-year-v-dem-core-v(\d+)\/?["']/i,
+    /href=["'][^"']*\/country-year-v-dem-fullothers-v(\d+)\/?["']/i,
   );
   if (!release)
-    throw new Error('V-Dem Country-Year Core release was not listed');
+    throw new Error('V-Dem Country-Year Full+Others release was not listed');
 
   const sourceVersion = `v${release[1]}`;
   const block = html.slice(
@@ -50,9 +52,10 @@ export async function fetchObservations({ fetchImpl, registry, now }) {
   const publishedAt = publishedYear ? `${publishedYear}-03` : null;
   const unavailable = (reason) => ({
     observations: [],
-    detail: `C6 unavailable: V-Dem Core ${sourceVersion}${publishedAt ? ` (${publishedAt})` : ''} ${reason}.`,
+    data: { sourceVersion },
+    detail: `C6 unavailable: V-Dem Full+Others ${sourceVersion}${publishedAt ? ` (${publishedAt})` : ''} ${reason}.`,
   });
-  const filename = `V-Dem-CY-Core-${sourceVersion}`;
+  const filename = `V-Dem-CY-FullOthers-${sourceVersion}`;
   const url = `${ORIGIN}/media/datasets/${filename}_csv.zip`;
   const signal = AbortSignal.timeout(120_000);
   const response = await fetchResponse(fetchImpl, url, signal);
@@ -73,8 +76,9 @@ export async function fetchObservations({ fetchImpl, registry, now }) {
   const latest = new Map();
   const chunks = zipEntryChunks(
     bytes,
-    (name) => name.split('/').at(-1) === `${filename}.csv`,
-    SIZE_LIMIT,
+    (name) =>
+      name.split('/').at(-1) === `V-Dem-CY-Full+Others-${sourceVersion}.csv`,
+    EXPANDED_SIZE_LIMIT,
   );
   const input = Readable.from(chunks);
   const lines = createInterface({ input, crlfDelay: Infinity });
@@ -119,5 +123,5 @@ export async function fetchObservations({ fetchImpl, registry, now }) {
   }
   if (latest.size === 0)
     return unavailable(`has no usable ${indicator.sourceCode} values`);
-  return { observations: [...latest.values()] };
+  return { observations: [...latest.values()], data: { sourceVersion } };
 }

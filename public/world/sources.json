@@ -46,7 +46,7 @@
   {
     "id": "vdem",
     "name": "V-Dem",
-    "access": "Keyless Country-Year Core download",
+    "access": "Keyless Country-Year Full+Others download",
     "attribution": "Varieties of Democracy Project, V-Dem Country-Year Dataset",
     "url": "https://www.v-dem.net/data/the-v-dem-dataset/",
     "licence": "CC BY-SA 4.0",
