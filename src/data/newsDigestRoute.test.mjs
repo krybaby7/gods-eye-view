@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { createClaudeNewsModel } from '../../server/providers/news/digest/claude.js';
+import { createSearchAgents } from '../../server/providers/search/agents/index.js';
+import { createSearchService } from '../../server/providers/search/index.js';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -228,6 +232,7 @@ async function setup(
     brief = briefModel(),
     digestRunner,
     theaterId,
+    claudeOptions,
   } = {},
 ) {
   const cacheDir = await mkdtemp(path.join(tmpdir(), 'gev-news-digest-route-'));
@@ -239,7 +244,13 @@ async function setup(
     root: await newsRootWithGdelt(t),
     cacheDir,
     now: () => NOW,
-    env: { PERPLEXITY_API_KEY: KEY, NEWS_GDELT_FILES: 'on', ...env },
+    env: {
+      NEWS_DIGEST_AGENT: 'perplexity',
+      PERPLEXITY_API_KEY: KEY,
+      NEWS_GDELT_FILES: 'on',
+      ...env,
+    },
+    claudeOptions,
     fetchImpl: upstream({ perplexity, brief, calls }),
     gdeltQueue: createGdeltQueue({ sleep: async () => {} }),
     gdeltFiles: createGdeltFileFeed({ log: () => {} }),
@@ -485,7 +496,7 @@ test('the digest route is POST-only, same-site gated and rate limited', async (t
   const request = install(
     newsProxy({
       cacheDir,
-      env: {},
+      env: { NEWS_DIGEST_AGENT: 'perplexity' },
       fetchImpl: async () => new Response('', { status: 503 }),
       timers: { setInterval: () => ({}), clearInterval() {} },
     }),
@@ -711,7 +722,7 @@ test('the Retry brief route is POST-only, same-site gated and rate limited', asy
   const request = install(
     newsProxy({
       cacheDir,
-      env: {},
+      env: { NEWS_DIGEST_AGENT: 'perplexity' },
       fetchImpl: async () => new Response('', { status: 503 }),
       timers: { setInterval: () => ({}), clearInterval() {} },
     }),
@@ -878,4 +889,170 @@ test('briefs move roles only on corroborated stories about that actor and add ac
   assert.equal(reloaded.get('saudi-arabia').role, 'party');
   assert.ok(reloaded.has('bandar-abbas-port-authority'));
   await restarted.stop();
+});
+
+const fakeClaudePath = fileURLToPath(
+  new URL(
+    '../../server/providers/search/agents/fixtures/fake-cli.mjs',
+    import.meta.url,
+  ),
+);
+const fakeClaude = (options) => ({
+  executable: process.execPath,
+  executableArgs: [fakeClaudePath, JSON.stringify(options)],
+  env: process.env,
+});
+
+test('default Claude uses the plan with no key and ignores historic budget exhaustion', async (t) => {
+  const { options, news, calls } = await setup(t, {
+    env: { NEWS_DIGEST_DAILY_BUDGET_USD: '0.01' },
+  });
+  assert.equal((await news.requestDigest()).status, 200);
+  const [story] = (await news.snapshot()).stories;
+  await news.stop();
+  const reply = path.join(options.cacheDir, 'digest-reply.json');
+  const briefReply = path.join(options.cacheDir, 'brief-reply.json');
+  const response = (structured_output) =>
+    JSON.stringify({
+      type: 'result',
+      subtype: 'success',
+      structured_output,
+      duration_ms: 65_000,
+      usage: { input_tokens: 5, output_tokens: 20 },
+      total_cost_usd: 0.02,
+    });
+  await writeFile(reply, response({ stories: [] }));
+  await writeFile(
+    briefReply,
+    response({
+      headline: { text: 'Reported strike at the port', storyIds: [story.id] },
+    }),
+  );
+  const claude = createNewsService({
+    ...options,
+    env: {
+      ...options.env,
+      NEWS_DIGEST_AGENT: undefined,
+      PERPLEXITY_API_KEY: '',
+    },
+    claudeOptions: fakeClaude({ reply, briefReply }),
+  });
+  t.after(() => claude.stop());
+  arrive(await claude.context(), 'New headline for Claude');
+  const before = await claude.snapshot();
+  assert.equal(before.digest.agent, 'claude');
+  assert.equal(before.digest.disabledReason, null);
+  assert.equal(before.budget.exhausted, true);
+  const previousSpend = before.budget.spentTodayUsd;
+  const count = calls.filter((host) =>
+    host.startsWith('api.perplexity.ai'),
+  ).length;
+  const { status, body } = await claude.requestDigest();
+  assert.equal(status, 200);
+  assert.equal(body.run.planUsage.costUsd, 0.02);
+  assert.equal(body.briefRun.status, 'ok');
+  assert.equal(body.briefRun.planUsage.costUsd, 0.02);
+  assert.equal((await claude.budget()).spentTodayUsd, previousSpend);
+  assert.equal(
+    calls.filter((host) => host.startsWith('api.perplexity.ai')).length,
+    count,
+  );
+  await claude.stop();
+  const restored = createNewsService(options);
+  t.after(() => restored.stop());
+  const after = await restored.snapshot();
+  assert.equal(after.digest.agent, 'perplexity');
+  assert.equal(after.digest.disabledReason, 'over_budget');
+  assert.equal(after.budget.spentTodayUsd, previousSpend);
+  assert.equal(after.budget.lastRunCostUsd, 0.15);
+  assert.equal(after.lastRun.planUsage.costUsd, 0.02);
+  assert.equal(after.briefRun.planUsage.costUsd, 0.02);
+});
+
+test('Claude readiness refuses Refresh and Retry without leaking authentication data', async (t) => {
+  const { news } = await setup(t, {
+    env: { NEWS_DIGEST_AGENT: 'claude' },
+    claudeOptions: fakeClaude({ authMethod: 'api_key' }),
+  });
+  const snapshot = await news.snapshot();
+  assert.match(
+    snapshot.digest.disabledReason,
+    /Sign in with your Claude subscription/,
+  );
+  assert.equal(JSON.stringify(snapshot).includes('private@example.com'), false);
+  for (const request of [news.requestDigest, news.requestBrief]) {
+    const { status, body } = await request();
+    assert.equal(status, 503);
+    assert.equal(body.error, 'agent_unavailable');
+    assert.match(body.reason, /claude auth login/);
+  }
+});
+
+test('Claude reports outdated and missing installations separately', async () => {
+  const outdated = createClaudeNewsModel(
+    fakeClaude({ version: '2.1.247 (Claude Code)' }),
+  );
+  assert.match((await outdated.status()).disabledReason, /Update Claude Code/);
+  const missing = createClaudeNewsModel({
+    executable: 'gev-missing-claude-fixture',
+  });
+  assert.match((await missing.status()).disabledReason, /Install Claude Code/);
+});
+
+test('Search owns Claude until it cancels and Refresh can then run', async (t) => {
+  const { news, options } = await setup(t, {
+    env: { NEWS_DIGEST_AGENT: 'claude' },
+    claudeOptions: fakeClaude({}),
+  });
+  const search = createSearchService({
+    cacheDir: options.cacheDir,
+    agents: createSearchAgents({
+      cacheDir: options.cacheDir,
+      ...fakeClaude({ mode: 'hang' }),
+    }),
+  });
+  t.after(() => search.dispose());
+  const { id } = await search.ask({
+    question: 'Which port reported an explosion?',
+  });
+  const refused = await news.requestDigest();
+  assert.equal(refused.status, 409);
+  assert.equal(refused.body.reason, 'Claude is busy with a search');
+  await search.cancel(id);
+  for (let i = 0; i < 500; i++) {
+    if (!(await search.snapshot()).agents.claude.busy) break;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.equal((await news.requestDigest()).status, 502); // Fixture called and validated.
+});
+
+test('canceling a Claude Refresh stops the run and releases Search admission', async (t) => {
+  const { news, options } = await setup(t, {
+    env: { NEWS_DIGEST_AGENT: 'claude' },
+    claudeOptions: fakeClaude({ mode: 'hang' }),
+  });
+  const search = createSearchService({
+    cacheDir: options.cacheDir,
+    agents: createSearchAgents({
+      cacheDir: options.cacheDir,
+      ...fakeClaude({ mode: 'hang' }),
+    }),
+  });
+  t.after(() => search.dispose());
+  const abort = new AbortController();
+  const pending = news.requestDigest(undefined, { signal: abort.signal });
+  try {
+    for (let i = 0; i < 500; i++) {
+      if ((await news.snapshot()).digest.running) break;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    await assert.rejects(search.ask({ question: 'What happened?' }), {
+      status: 409,
+    });
+  } finally {
+    abort.abort();
+  }
+  assert.equal((await pending).body.error, 'cancelled');
+  const { id } = await search.ask({ question: 'What happened?' });
+  await search.cancel(id);
 });

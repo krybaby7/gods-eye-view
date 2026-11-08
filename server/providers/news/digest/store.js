@@ -211,11 +211,23 @@ export function createDigestStore({ theaterId, cacheDir, now = Date.now }) {
       return citations.get(id) || null;
     },
 
+    lastMeteredRun(kind) {
+      return (
+        runs.findLast(
+          (run) => run.agent !== 'claude' && runKind(run) === kind,
+        ) ?? null
+      );
+    },
+
     /** Sum of run costs started on the local day of `ms`. */
     spentOnDay(ms) {
       const day = localDayKey(ms);
       return runs
-        .filter((run) => localDayKey(Date.parse(run.startedAt)) === day)
+        .filter(
+          (run) =>
+            run.agent !== 'claude' &&
+            localDayKey(Date.parse(run.startedAt)) === day,
+        )
         .reduce((sum, run) => sum + (Number(run.costUsd) || 0), 0);
     },
 

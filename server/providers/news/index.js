@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { promises as fsp } from 'node:fs';
 
+import { claudeSlot } from '../common/claude-slot.js';
 import { admitSameSite } from '../common/same-site.js';
 import { clientKey, makeRateLimiter } from '../common/rate-limit.js';
 import { defaultSourceRoot } from '../common/source-root.js';
@@ -10,6 +11,7 @@ import { createNewsCollector } from './collector.js';
 import { loadNewsRegistry } from './registry.js';
 import { createNewsItemStore } from './store.js';
 import { DIGEST_MODEL, runDigest } from './digest/runner.js';
+import { createClaudeNewsModel, newsDigestAgent } from './digest/claude.js';
 import { prepareBrief, runBrief } from './digest/brief.js';
 import { applyActorUpdates, effectiveActors } from './digest/actors.js';
 import { mergeDigest, storyByItem, unassignedItems } from './digest/stories.js';
@@ -32,13 +34,13 @@ import {
  *
  * Digest: only on POST /api/news/digest (the Refresh control or the
  * refresh_news voice action), never on a timer. One run in flight at a
- * time; today's run costs are capped by NEWS_DIGEST_DAILY_BUDGET_USD.
+ * time. Perplexity runs are capped by NEWS_DIGEST_DAILY_BUDGET_USD.
  *
  * Situation Brief: a successful digest is followed, in the same Refresh, by
- * one brief call over the finished stories when the remaining budget covers
- * a worst-case brief. A failed brief keeps the stories and the previous
+ * one brief call over the finished stories. With Perplexity, remaining
+ * budget must cover a worst-case brief. A failed brief keeps the stories and the previous
  * brief; POST /api/news/brief (Retry brief) reruns it only after a failure.
- * Brief runs share the run log, so the daily budget covers both. A theater
+ * Brief runs share the run log and the Perplexity daily budget. A theater
  * with `situationBrief: false` (World) runs no brief and offers no retry.
  *
  * Routes:
@@ -73,6 +75,7 @@ function roundUsd(value) {
  *   timers?: {setInterval: Function, clearInterval: Function},
  *   digestRunner?: typeof runDigest,
  *   briefRunner?: typeof runBrief,
+ *   claudeOptions?: Parameters<typeof createClaudeNewsModel>[0],
  * }} [options]
  */
 export function createNewsService(options = {}) {
@@ -87,6 +90,7 @@ export function createNewsService(options = {}) {
     timers = globalThis,
     digestRunner = runDigest,
     briefRunner = runBrief,
+    claudeOptions,
   } = options;
   /** @type {Map<string, Promise<object>>} */
   const contexts = new Map();
@@ -94,7 +98,50 @@ export function createNewsService(options = {}) {
   let stopped = false;
   let runSerial = 0;
 
+  const agent = newsDigestAgent(env);
+  const claude =
+    agent === 'claude'
+      ? createClaudeNewsModel({ env, ...claudeOptions })
+      : null;
+  const lifecycle = new AbortController();
   const apiKey = () => String(env.PERPLEXITY_API_KEY || '').trim();
+  const agentStatus = (fresh) => claude?.status({ fresh });
+  const modelOptions = (signal) =>
+    claude ? { callModel: claude.callModel, signal } : {};
+  const busyReason = () => {
+    if (!claude) return null;
+    const owner = claudeSlot.owner();
+    if (owner === 'search') return 'Claude is busy with a search';
+    if (owner === 'news') return 'Claude is busy with War Monitor';
+    return null;
+  };
+
+  async function unavailableAgent() {
+    if (!claude)
+      return apiKey()
+        ? null
+        : {
+            status: 503,
+            body: { error: 'no_key', keyRequired: true },
+          };
+    const status = await agentStatus(true);
+    return status.disabledReason
+      ? {
+          status: 503,
+          body: { error: 'agent_unavailable', reason: status.disabledReason },
+        }
+      : null;
+  }
+
+  const busyResponse = (reason) => ({
+    status: 409,
+    body: { error: 'agent_busy', reason },
+  });
+
+  const planFields = (result) =>
+    result.planUsage ? { planUsage: result.planUsage } : {};
+  const runUsage = (run) =>
+    claude ? 'Claude plan' : `$${run.costUsd.toFixed(4)}`;
 
   /** Theater ids and names from public/news/theaters, validated once. */
   async function listTheaters() {
@@ -181,7 +228,7 @@ export function createNewsService(options = {}) {
       const ctx = await pending.catch(() => null);
       if (!ctx) continue;
       spent += ctx.digest.spentOnDay(nowMs);
-      const last = ctx.digest.lastRun();
+      const last = ctx.digest.lastMeteredRun('digest');
       if (
         last &&
         last.status !== 'skipped' &&
@@ -190,7 +237,7 @@ export function createNewsService(options = {}) {
         lastAt = Date.parse(last.startedAt);
         lastRunCostUsd = Number(last.costUsd) || 0;
       }
-      const brief = ctx.digest.lastBriefRun();
+      const brief = ctx.digest.lastMeteredRun('brief');
       if (
         brief &&
         brief.status !== 'skipped' &&
@@ -212,21 +259,32 @@ export function createNewsService(options = {}) {
   }
 
   /** Why Refresh cannot run now, or null. */
-  function disabledReason(ctx, budgetState) {
-    if (!apiKey()) return 'no_key';
+  function unavailableReason(status) {
+    return claude ? status?.disabledReason : !apiKey() ? 'no_key' : null;
+  }
+
+  function disabledReason(ctx, budgetState, status) {
+    const unavailable = unavailableReason(status);
+    if (unavailable) return unavailable;
     if (ctx.inFlight) return 'in_flight';
-    if (budgetState.exhausted) return 'over_budget';
+    const reason = busyReason();
+    if (reason) return reason;
+    if (!claude && budgetState.exhausted) return 'over_budget';
     if (!ctx.store.undigested().length) return 'nothing_new';
     return null;
   }
 
-  function revisionOf(ctx, budgetState) {
+  function revisionOf(ctx, budgetState, status) {
     return [
       ctx.store.revision(),
       ctx.digest.revision(),
       ctx.healthRevision,
       ctx.inFlight?.phase ?? 0,
+      agent,
+      claude?.model ?? DIGEST_MODEL,
       apiKey() ? 1 : 0,
+      status?.disabledReason ?? '',
+      busyReason() ?? '',
       budgetState.day,
     ].join('.');
   }
@@ -260,7 +318,7 @@ export function createNewsService(options = {}) {
    * Retry brief applies (the latest digest's brief failed, or was skipped
    * because the budget could not cover it).
    */
-  function briefStatus(ctx, budgetState) {
+  function briefStatus(ctx, budgetState, status) {
     const latest = ctx.digest.lastCompletedRun();
     const brief = ctx.digest.brief();
     const last = ctx.digest.lastBriefRun();
@@ -274,13 +332,12 @@ export function createNewsService(options = {}) {
     );
     let retryDisabledReason = null;
     if (retryable)
-      retryDisabledReason = !apiKey()
-        ? 'no_key'
-        : ctx.inFlight
+      retryDisabledReason =
+        unavailableReason(status) ||
+        (ctx.inFlight
           ? 'in_flight'
-          : budgetState.exhausted
-            ? 'over_budget'
-            : null;
+          : busyReason() ||
+            (!claude && budgetState.exhausted ? 'over_budget' : null));
     return {
       digestsBehind: brief ? ctx.digest.digestsSince(brief.digestRunId) : null,
       retryable,
@@ -306,6 +363,7 @@ export function createNewsService(options = {}) {
       inputTokens: error?.cost?.inputTokens ?? null,
       outputTokens: error?.cost?.outputTokens ?? null,
       model: error?.model ?? null,
+      ...planFields(error ?? {}),
     };
   }
 
@@ -339,7 +397,7 @@ export function createNewsService(options = {}) {
   }
 
   /** Run one digest for a context already admitted by requestDigest. */
-  async function digestOnce(ctx, base) {
+  async function digestOnce(ctx, base, signal) {
     const { theater, sourcesById } = ctx.registry;
     const nowMs = now();
     const previous = ctx.digest.stories();
@@ -354,6 +412,7 @@ export function createNewsService(options = {}) {
       knownItemIds: new Set(itemsById.keys()),
       nowMs,
       fetchImpl,
+      ...modelOptions(signal),
     });
     const finishedMs = now();
     const finishedIso = new Date(finishedMs).toISOString();
@@ -397,6 +456,7 @@ export function createNewsService(options = {}) {
       reasoningTokens: result.reasoningTokens ?? null,
       model: result.model,
       responseId: result.responseId,
+      ...planFields(result),
     };
     const citedItems = [];
     for (const story of merged.stories)
@@ -420,12 +480,13 @@ export function createNewsService(options = {}) {
    * @param {object} ctx Theater context, already holding the in-flight slot.
    * @param {object} digestRun The successful digest run it explains.
    */
-  async function briefOnce(ctx, digestRun) {
+  async function briefOnce(ctx, digestRun, signal) {
     const theater = withActors(ctx);
     const startedMs = now();
     const base = {
       id: runId(startedMs),
       kind: 'brief',
+      ...(claude && { agent }),
       theater: ctx.theaterId,
       digestRunId: digestRun.id,
       startedAt: new Date(startedMs).toISOString(),
@@ -463,8 +524,8 @@ export function createNewsService(options = {}) {
       });
       if (!prepared.storyIds.length)
         return await skip('no_stories', 'No stories to brief');
-      const budgetState = await budget();
-      if (budgetState.remainingUsd < prepared.worstCase.costUsd)
+      const budgetState = claude ? null : await budget();
+      if (budgetState && budgetState.remainingUsd < prepared.worstCase.costUsd)
         return await skip(
           'over_budget',
           `Brief skipped: $${budgetState.remainingUsd.toFixed(2)} of today's budget left; a brief can cost up to $${prepared.worstCase.costUsd.toFixed(2)}`,
@@ -477,6 +538,7 @@ export function createNewsService(options = {}) {
         runId: base.id,
         nowMs: startedMs,
         fetchImpl,
+        ...modelOptions(signal),
       });
       const finishedMs = now();
       const finishedIso = new Date(finishedMs).toISOString();
@@ -514,6 +576,7 @@ export function createNewsService(options = {}) {
         reasoningTokens: result.reasoningTokens ?? null,
         model: result.model,
         responseId: result.responseId,
+        ...planFields(result),
       };
       ctx.digest.commitBrief({
         brief: result.brief,
@@ -522,14 +585,14 @@ export function createNewsService(options = {}) {
       });
       await ctx.digest.save();
       console.log(
-        `[news] brief ${ctx.theaterId}: ${run.storiesSent} stories, ${run.droppedLines} lines dropped, ${run.droppedStoryIds} ids dropped, ${update.changed.length} roles changed, ${update.held.length} held, ${update.added.length} actors added, $${run.costUsd.toFixed(4)}`,
+        `[news] brief ${ctx.theaterId}: ${run.storiesSent} stories, ${run.droppedLines} lines dropped, ${run.droppedStoryIds} ids dropped, ${update.changed.length} roles changed, ${update.held.length} held, ${update.added.length} actors added, ${runUsage(run)}`,
       );
     } catch (error) {
       run = failedRun(base, error, now());
       ctx.digest.recordRun(run);
       await ctx.digest.save();
       console.warn(
-        `[news] brief ${ctx.theaterId} failed: ${run.error} ($${run.costUsd.toFixed(4)})`,
+        `[news] brief ${ctx.theaterId} failed: ${run.error} (${runUsage(run)})`,
       );
     }
     return run;
@@ -552,7 +615,8 @@ export function createNewsService(options = {}) {
       if (!stopped) ctx.collector.start();
       const budgetState = await budget();
       const stories = ctx.digest.stories();
-      const revision = revisionOf(ctx, budgetState);
+      const status = await agentStatus();
+      const revision = revisionOf(ctx, budgetState, status);
       const retrievedAt = new Date(now()).toISOString();
       if (rev && rev === revision)
         return { unchanged: true, revision, retrievedAt };
@@ -589,17 +653,19 @@ export function createNewsService(options = {}) {
         lastDigest: ctx.digest.lastCompletedRun(),
         brief: ctx.digest.brief(),
         briefRun: ctx.digest.lastBriefRun(),
-        briefStatus: briefStatus(ctx, budgetState),
+        briefStatus: briefStatus(ctx, budgetState, status),
         sources: sourceRows(ctx),
         budget: budgetState,
         digest: {
-          provider: DIGEST_PROVIDER,
-          model: DIGEST_MODEL,
+          agent,
+          provider: claude ? 'Claude plan' : DIGEST_PROVIDER,
+          model: claude?.model ?? DIGEST_MODEL,
+          ...(claude && { agentStatus: status }),
           keyConfigured: Boolean(apiKey()),
           running: Boolean(ctx.inFlight),
           phase: ctx.inFlight?.phase ?? null,
           startedAt: ctx.inFlight?.startedAt ?? null,
-          disabledReason: disabledReason(ctx, budgetState),
+          disabledReason: disabledReason(ctx, budgetState, status),
           undigestedCount: ctx.store.undigested().length,
         },
       };
@@ -609,14 +675,13 @@ export function createNewsService(options = {}) {
      * Run one digest now. Resolves to an HTTP status and body; never throws.
      * @param {string} theaterId
      */
-    async requestDigest(theaterId) {
+    async requestDigest(theaterId, { signal } = {}) {
       const ctx = await context(theaterId);
       if (!ctx) return { status: 404, body: { error: 'unknown_theater' } };
-      if (!apiKey())
-        return {
-          status: 503,
-          body: { error: 'no_key', keyRequired: true },
-        };
+      const busy = busyReason();
+      if (busy && !ctx.inFlight) return busyResponse(busy);
+      const unavailable = await unavailableAgent();
+      if (unavailable) return unavailable;
       // No await between the in-flight check and claiming the run below:
       // two simultaneous requests must not both pass it.
       const budgetState = await budget();
@@ -625,7 +690,9 @@ export function createNewsService(options = {}) {
           status: 409,
           body: { error: 'in_flight', startedAt: ctx.inFlight.startedAt },
         };
-      if (budgetState.exhausted)
+      const reason = busyReason();
+      if (reason) return busyResponse(reason);
+      if (!claude && budgetState.exhausted)
         return {
           status: 429,
           body: {
@@ -638,6 +705,7 @@ export function createNewsService(options = {}) {
       const base = {
         id: runId(startedMs),
         kind: 'digest',
+        ...(claude && { agent }),
         theater: ctx.theaterId,
         startedAt: new Date(startedMs).toISOString(),
       };
@@ -657,18 +725,22 @@ export function createNewsService(options = {}) {
           body: { skipped: true, message: run.message, run },
         };
       }
+      const releaseClaude = claude ? claudeSlot.claim('news') : null;
+      const runSignal = signal
+        ? AbortSignal.any([signal, lifecycle.signal])
+        : lifecycle.signal;
       ctx.inFlight = { startedAt: base.startedAt, phase: 'digest' };
       try {
         let run;
         try {
-          run = await digestOnce(ctx, base);
+          run = await digestOnce(ctx, base, runSignal);
         } catch (error) {
           // A skipped or failed digest runs no brief.
           const failed = failedRun(base, error, now());
           ctx.digest.recordRun(failed);
           await ctx.digest.save();
           console.warn(
-            `[news] digest ${ctx.theaterId} failed: ${failed.error} ($${failed.costUsd.toFixed(4)})`,
+            `[news] digest ${ctx.theaterId} failed: ${failed.error} (${runUsage(failed)})`,
           );
           return {
             status: error?.code === 'no_key' ? 503 : 502,
@@ -676,11 +748,11 @@ export function createNewsService(options = {}) {
           };
         }
         console.log(
-          `[news] digest ${ctx.theaterId}: ${run.storiesCreated} new, ${run.storiesUpdated} updated, ${run.unassignedCount} unassigned, $${run.costUsd.toFixed(4)}`,
+          `[news] digest ${ctx.theaterId}: ${run.storiesCreated} new, ${run.storiesUpdated} updated, ${run.unassignedCount} unassigned, ${runUsage(run)}`,
         );
         // The stories are already saved; a failed brief cannot cost them.
         const briefRun = ctx.registry.theater.situationBrief
-          ? await briefOnce(ctx, run)
+          ? await briefOnce(ctx, run, runSignal)
           : null;
         return {
           status: 200,
@@ -688,6 +760,7 @@ export function createNewsService(options = {}) {
         };
       } finally {
         ctx.inFlight = null;
+        releaseClaude?.();
       }
     },
 
@@ -696,7 +769,7 @@ export function createNewsService(options = {}) {
      * failed (or was skipped for budget). Never runs a digest; never throws.
      * @param {string} theaterId
      */
-    async requestBrief(theaterId) {
+    async requestBrief(theaterId, { signal } = {}) {
       const ctx = await context(theaterId);
       if (!ctx) return { status: 404, body: { error: 'unknown_theater' } };
       if (!ctx.registry.theater.situationBrief)
@@ -707,11 +780,10 @@ export function createNewsService(options = {}) {
             message: 'This theater has no Situation Brief',
           },
         };
-      if (!apiKey())
-        return {
-          status: 503,
-          body: { error: 'no_key', keyRequired: true },
-        };
+      const busy = busyReason();
+      if (busy && !ctx.inFlight) return busyResponse(busy);
+      const unavailable = await unavailableAgent();
+      if (unavailable) return unavailable;
       // As in requestDigest: no await between the checks and the claim.
       const budgetState = await budget();
       if (ctx.inFlight)
@@ -727,7 +799,9 @@ export function createNewsService(options = {}) {
             message: 'Retry brief works only after a failed brief',
           },
         };
-      if (budgetState.exhausted)
+      const reason = busyReason();
+      if (reason) return busyResponse(reason);
+      if (!claude && budgetState.exhausted)
         return {
           status: 429,
           body: {
@@ -737,12 +811,16 @@ export function createNewsService(options = {}) {
           },
         };
       const digestRun = ctx.digest.lastCompletedRun();
+      const releaseClaude = claude ? claudeSlot.claim('news') : null;
+      const runSignal = signal
+        ? AbortSignal.any([signal, lifecycle.signal])
+        : lifecycle.signal;
       ctx.inFlight = {
         startedAt: new Date(now()).toISOString(),
         phase: 'brief',
       };
       try {
-        const briefRun = await briefOnce(ctx, digestRun);
+        const briefRun = await briefOnce(ctx, digestRun, runSignal);
         if (briefRun.status === 'ok')
           return {
             status: 200,
@@ -763,6 +841,7 @@ export function createNewsService(options = {}) {
         };
       } finally {
         ctx.inFlight = null;
+        releaseClaude?.();
       }
     },
 
@@ -795,6 +874,11 @@ export function createNewsService(options = {}) {
       }
       return {
         keyConfigured: Boolean(apiKey()),
+        digest: {
+          agent,
+          provider: claude ? 'Claude plan' : DIGEST_PROVIDER,
+          agentStatus: await agentStatus(),
+        },
         budget: await budget(),
         theaters,
         gdelt: gdeltQueue.state?.() ?? null,
@@ -804,6 +888,7 @@ export function createNewsService(options = {}) {
     /** Stop every collector timer (server close). */
     async stop() {
       stopped = true;
+      lifecycle.abort();
       for (const pending of contexts.values()) {
         const ctx = await pending.catch(() => null);
         ctx?.collector.stop();
@@ -847,24 +932,28 @@ export function newsProxy(options = {}) {
             return sendJson(res, 405, { error: 'method_not_allowed' });
           return sendJson(res, 200, await service.status());
         }
-        if (subPath === '/digest') {
+        if (subPath === '/digest' || subPath === '/brief') {
           if (req.method !== 'POST')
             return sendJson(res, 405, { error: 'method_not_allowed' });
           if (admitSameSite(req, res)) return undefined;
           if (!allowDigest(clientKey(req)))
             return sendJson(res, 429, { error: 'rate_limited' });
-          const { status, body } = await service.requestDigest(theaterId);
-          return sendJson(res, status, body);
-        }
-        if (subPath === '/brief') {
-          if (req.method !== 'POST')
-            return sendJson(res, 405, { error: 'method_not_allowed' });
-          if (admitSameSite(req, res)) return undefined;
-          // Retry brief spends from the same budget and shares the limit.
-          if (!allowDigest(clientKey(req)))
-            return sendJson(res, 429, { error: 'rate_limited' });
-          const { status, body } = await service.requestBrief(theaterId);
-          return sendJson(res, status, body);
+          const controller = new AbortController();
+          const onClose = () => controller.abort();
+          res.once?.('close', onClose);
+          try {
+            const run =
+              subPath === '/digest'
+                ? service.requestDigest
+                : service.requestBrief;
+            const { status, body } = await run(theaterId, {
+              signal: controller.signal,
+            });
+            if (!controller.signal.aborted) return sendJson(res, status, body);
+          } finally {
+            res.removeListener?.('close', onClose);
+          }
+          return undefined;
         }
         if (subPath === '/') {
           if (req.method !== 'GET')
