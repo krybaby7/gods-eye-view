@@ -1,0 +1,109 @@
+.world-energy-section {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.world-energy-section :is(h3, h4, p) {
+  margin: 0;
+}
+
+.world-energy-section h3 {
+  color: #cbe5f4;
+  font-size: 0.93rem;
+}
+
+.world-energy-section h4 {
+  font-size: 0.84rem;
+}
+
+.world-energy-note {
+  color: #acbcc9;
+}
+
+.world-energy-section a {
+  color: #a3dfff;
+}
+
+.world-energy-details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  margin: 0;
+  gap: 0.27rem 0.65rem;
+}
+
+.world-energy-details dd {
+  margin: 0;
+  text-align: right;
+}
+
+.world-energy-prices,
+.world-energy-list,
+.world-energy-history {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.world-energy-prices li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.world-energy-list li {
+  padding: 0.55rem;
+  border: 1px solid rgb(153 196 225 / 20%);
+  border-radius: 0.3rem;
+}
+
+.world-energy-list h4 {
+  margin-bottom: 0.35rem;
+}
+
+.world-energy-route {
+  margin: 0.45rem 0.35rem 0 0;
+  padding: 0.25rem 0.4rem;
+  color: #a3dfff;
+  background: #182936;
+  border: 1px solid #456475;
+  border-radius: 0.3rem;
+  cursor: pointer;
+}
+
+.world-energy-status {
+  width: fit-content;
+  padding: 0.14rem 0.45rem;
+  border: 1px solid currentcolor;
+  border-radius: 99px;
+  color: #a3bfd0;
+  text-transform: capitalize;
+}
+
+.world-energy-status[data-status='normal'] {
+  color: #6cddff;
+}
+
+.world-energy-status[data-status='reduced'] {
+  color: #ffc47b;
+}
+
+.world-energy-status[data-status='disrupted'] {
+  color: #ff9aa0;
+}
+
+.world-energy-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: rgb(90 126 155 / 12%);
+  border-radius: 0.3rem;
+}
+
+.world-energy-chart path {
+  fill: none;
+  stroke: #6cddff;
+  stroke-width: 1.5;
+}

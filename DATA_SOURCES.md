@@ -15,6 +15,8 @@ How to read this:
 
 ---
 
+[IMF PortWatch](https://portwatch.imf.org/) supplies keyless ArcGIS vessel transit counts. Automated bulk or systematic extraction and commercial use require written IMF permission. The local permission gate is `GEV_WORLD_PORTWATCH_BULK_OK=1`. The app labels its derived ratios and status transformations. [EIA World Oil Transit Chokepoints](https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/) supplies published U.S. government aggregates through H1 2025, with Panama by fiscal year. The curated rows remain draft. [FRED](https://fred.stlouisfed.org/) supplies monthly prices via its undocumented keyless CSV. EIA originates the oil series and IMF terms apply to the European gas series. [CEPII BACI](https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37), annual version 202601 under Etalab Open Licence 2.0, is a candidate input for 2024 trade; the production route model is unavailable.
+
 ## Live sources (fetched at runtime — not stored in this repo)
 
 | Source                                                                | Used for                                                                                                                            | License / terms                                                                                                                                                                                                                                                                                                                                       | Attribution                                                                                                                                 |
