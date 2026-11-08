@@ -1,3 +1,5 @@
+import { protectGoogleTilesetDiagnostics } from './providerErrors.js';
+
 const clean = (value) => String(value || '').trim();
 
 /**
@@ -63,14 +65,15 @@ export async function loadPhotorealisticTileset(
 }
 
 /** Pass credentials to the source instead of changing SDK-wide defaults. */
-export function createGoogleDirectTileset(Cesium, key) {
+export async function createGoogleDirectTileset(Cesium, key) {
   key = clean(key);
   if (!key) throw new Error('Google 3D requires an explicit browser key');
   // Tiles keep drawing their own texture while draped weather loads.
-  return Cesium.createGooglePhotorealistic3DTileset(
+  const tileset = await Cesium.createGooglePhotorealistic3DTileset(
     { key, onlyUsingWithGoogleGeocoder: true },
-    { asynchronouslyLoadImagery: true },
+    { asynchronouslyLoadImagery: true, showCreditsOnScreen: true },
   );
+  return protectGoogleTilesetDiagnostics(tileset);
 }
 
 /**
@@ -97,13 +100,15 @@ export async function createGoogleTokenTileset(Cesium, tokens) {
     },
   });
   // The settings Cesium's Google helper applies to the key route.
-  return Cesium.Cesium3DTileset.fromUrl(resource, {
+  const tileset = await Cesium.Cesium3DTileset.fromUrl(resource, {
     cacheBytes: 1536 * 1024 * 1024,
     maximumCacheOverflowBytes: 1024 * 1024 * 1024,
     enableCollision: true,
     // Tiles keep drawing their own texture while draped weather loads.
     asynchronouslyLoadImagery: true,
+    showCreditsOnScreen: true,
   });
+  return protectGoogleTilesetDiagnostics(tileset);
 }
 
 export async function createGoogleIonTileset(
@@ -120,11 +125,13 @@ export async function createGoogleIonTileset(
   });
   signal?.throwIfAborted();
   // Match the installed SDK's Google helper rendering/cache defaults.
-  return Cesium.Cesium3DTileset.fromUrl(resource, {
+  const tileset = await Cesium.Cesium3DTileset.fromUrl(resource, {
     cacheBytes: 1536 * 1024 * 1024,
     maximumCacheOverflowBytes: 1024 * 1024 * 1024,
     enableCollision: true,
     // Tiles keep drawing their own texture while draped weather loads.
     asynchronouslyLoadImagery: true,
+    showCreditsOnScreen: true,
   });
+  return protectGoogleTilesetDiagnostics(tileset);
 }

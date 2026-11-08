@@ -70,6 +70,83 @@ const settle = async () => {
   for (let i = 0; i < 20; i++) await Promise.resolve();
 };
 const descriptor = (id) => ({ id, label: id, kind: 'imagery' });
+
+test('Google satellite switches preserve tracking, selection, camera and unrelated overlays', async () => {
+  const google3d = { show: true };
+  const terrain = { id: 'same-ground', create: async () => ({ provider: {} }) };
+  let release;
+  const delayed = new Promise((resolve) => {
+    release = resolve;
+  });
+  const registry = {
+    defaultId: 'photoreal',
+    sources: [
+      { descriptor: descriptor('photoreal'), tileset: google3d },
+      {
+        descriptor: descriptor('google-satellite'),
+        imagery: async () => ({}),
+        terrain,
+      },
+      {
+        descriptor: descriptor('esri-imagery'),
+        imagery: async () => ({}),
+        terrain,
+      },
+      { descriptor: descriptor('slow'), imagery: () => delayed, terrain },
+    ],
+  };
+  const env = fixture(registry);
+  const subject = { id: 'moving-flight' };
+  const camera = {
+    heading: 0.3,
+    pitch: -1.1,
+    roll: 0.2,
+    position: { x: 10, y: 20, z: 30 },
+  };
+  Object.assign(env.viewer, {
+    camera,
+    selectedEntity: subject,
+    trackedEntity: subject,
+    entities: [subject],
+    dataSources: [{ id: 'live' }],
+  });
+  const overlay = { id: 'weather' };
+  const primitive = { id: 'annotation' };
+  env.imagery.push(overlay);
+  env.primitives.push(primitive);
+  for (const id of [
+    'photoreal',
+    'google-satellite',
+    'esri-imagery',
+    'photoreal',
+  ]) {
+    await env.controller.setStack(id);
+    assert.equal(env.controller.getActiveId(), id);
+    assert.equal(env.viewer.selectedEntity, subject);
+    assert.equal(env.viewer.trackedEntity, subject);
+    assert.equal(env.viewer.camera, camera);
+    assert.deepEqual(camera, {
+      heading: 0.3,
+      pitch: -1.1,
+      roll: 0.2,
+      position: { x: 10, y: 20, z: 30 },
+    });
+    assert.deepEqual(env.viewer.entities, [subject]);
+    assert.deepEqual(env.viewer.dataSources, [{ id: 'live' }]);
+    assert.ok(env.imagery.includes(overlay));
+    assert.ok(env.primitives.includes(primitive));
+  }
+  const pending = env.controller.setStack('slow');
+  await env.controller.setStack('google-satellite');
+  release({});
+  await pending;
+  assert.equal(env.controller.getActiveId(), 'google-satellite');
+  assert.equal(env.viewer.trackedEntity, subject);
+  assert.ok(env.imagery.includes(overlay));
+  env.controller.destroy();
+  assert.deepEqual(env.imagery, [overlay]);
+  assert.deepEqual(env.primitives, [primitive]);
+});
 function publicFixture() {
   const tileset = { show: true };
   const registry = createDefaultMapSources({ googleTileset: tileset });

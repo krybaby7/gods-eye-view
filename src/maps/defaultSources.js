@@ -5,6 +5,7 @@ import {
   createOsmImagery,
   createEsriImagery,
   createIonImagery,
+  createGoogleSatelliteImagery,
   ESRI_ATTRIBUTION_HTML,
 } from './imagery.js';
 import { createWorldTerrain, createKeylessTerrain } from './terrain.js';
@@ -43,6 +44,32 @@ export function createDefaultMapSources({
           available: Boolean(googleTileset),
           unavailableReason: photorealUnavailableReason(hasIon || hasGoogle),
           tileset: googleTileset,
+        };
+      if (descriptor.kind === 'google-satellite')
+        return {
+          ...common,
+          available: hasGoogle || hasIon,
+          unavailableReason:
+            hasGoogle || hasIon
+              ? null
+              : `${keySetupRequirement('google-maps')} — or a Cesium ion token`,
+          imagery: (request) =>
+            createGoogleSatelliteImagery({
+              googleApiKey,
+              cesiumToken: ionToken,
+              ...request,
+            }),
+          terrain,
+          constructionFallback: {
+            id: 'esri-imagery',
+            message: 'Google Satellite is unavailable; using Esri Satellite',
+          },
+          tileFailureFallback: {
+            id: 'esri-imagery',
+            threshold: 2,
+            message:
+              'Google Satellite tile requests failed; using Esri Satellite',
+          },
         };
       const imagery =
         descriptor.kind === 'ion'

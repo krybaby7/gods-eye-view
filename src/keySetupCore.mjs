@@ -36,7 +36,8 @@ export const KEY_SETUP_KEYS = Object.freeze([
   Object.freeze({
     id: 'google-maps',
     title: 'GOOGLE MAPS',
-    unlocks: 'The photorealistic 3D planet, place search + Street View',
+    unlocks:
+      'Google Satellite (including Egypt) + Google 3D where covered. Requires a Google Cloud billing account and Map Tiles API; usage beyond the allowance is metered. Paste your restricted browser key here. Image detail varies by location; place search and Street View need their own API access.',
     getUrl: 'https://developers.google.com/maps/documentation/tile/get-api-key',
     envVars: Object.freeze(['GOOGLE_MAPS_API_KEY']),
     tier: 'metered',
@@ -95,7 +96,8 @@ export const KEY_SETUP_KEYS = Object.freeze([
   Object.freeze({
     id: 'cesium-ion',
     title: 'CESIUM ION',
-    unlocks: 'Bing imagery map stacks + world terrain',
+    unlocks:
+      'Google Satellite + Google 3D, Bing imagery and world terrain. Add Google Maps 2D Satellite (asset 3830182) in ion and authorize your browser token for it. Community has a limited allowance for qualifying personal/evaluation use; check your plan before using imagery.',
     getUrl: 'https://ion.cesium.com/tokens',
     envVars: Object.freeze(['CESIUM_ION_TOKEN']),
     tier: 'free',

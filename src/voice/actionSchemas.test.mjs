@@ -38,8 +38,9 @@ test('the complete Realtime tool payload pins the manifest-generated layer relea
     // requested radius and center authority in descriptions only.
     // Street Level adds its toggle enum values and generated alias hint.
     // The war monitor adds the news layer to the generated enums and hint,
-    // the Situation panel to set_panel_open and the refresh_news tool.
-    'b54ecda2b671d2da26039c06f6f53785bc82859f5a4a350ae33f86137943f505',
+    // the Situation panel to set_panel_open and the refresh_news tool; Google
+    // Satellite adds a source and an explicit voice disambiguation.
+    '6226110a28654e9cb8e330e5400cf2c5b883b51713e278ddcd780c68b960e320',
   );
 });
 
@@ -110,6 +111,9 @@ test('all legacy action arguments are byte-identical after removing the delibera
   delete property('show_data_layers_menu').layerId.enum;
   delete property('get_entity_context').layerId.enum;
   delete property('analyst_query').layers.items.enum;
+  // Google Satellite adds one basemap without changing legacy arguments.
+  const basemaps = property('set_map_stack').stack;
+  basemaps.enum = basemaps.enum.filter((id) => id !== 'google-satellite');
   const panels = property('set_panel_open').panelId;
   panels.enum = panels.enum.filter(
     (id) =>

@@ -231,6 +231,8 @@ const STACK_ALIASES = new Map([
   ['google', 'photoreal'],
   ['3d', 'photoreal'],
   ['photorealistic', 'photoreal'],
+  ['google-satellite', 'google-satellite'],
+  ['google satellite', 'google-satellite'],
   ['bing-aerial', 'bing-aerial'],
   ['bing aerial', 'bing-aerial'],
   ['bing-labels', 'bing-labels'],

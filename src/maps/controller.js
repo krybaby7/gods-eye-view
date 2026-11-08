@@ -2,6 +2,7 @@ import { indexMapSources } from './registry.js';
 import * as Cesium from 'cesium';
 import { createMapCredits } from './credits.js';
 import { acquireImageryComparison } from './imageryComparison.js';
+import { describeMapError } from './providerErrors.js';
 
 /**
  * Private `setStack` option marking a switch the controller issues itself
@@ -188,7 +189,7 @@ export class MapSourceController {
       if (!silent) this._emitChange('ready');
     } catch (error) {
       if (gen !== this._switchGen) return this.getState();
-      const message = error?.message || String(error);
+      const message = describeMapError(error);
       this._lastError = message;
       this._onError?.(message, stack);
       const recovery = this.getStack(this._registry.recoveryId);
@@ -205,7 +206,7 @@ export class MapSourceController {
           this._activeId = activation?.effectiveStackId || recovery.id;
         } catch (recoveryError) {
           if (gen !== this._switchGen) return this.getState();
-          this._lastError = recoveryError?.message || String(recoveryError);
+          this._lastError = describeMapError(recoveryError);
           this._onError?.(this._lastError, recovery);
         }
       }

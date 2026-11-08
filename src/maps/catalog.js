@@ -8,6 +8,13 @@ export const MAP_STACKS = [
     requiresIon: false,
   },
   {
+    id: 'google-satellite',
+    label: 'Google Satellite',
+    shortLabel: 'Google SAT',
+    kind: 'google-satellite',
+    requiresIon: false,
+  },
+  {
     id: 'bing-aerial',
     label: 'Bing Aerial',
     shortLabel: 'Aerial',

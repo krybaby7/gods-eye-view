@@ -13,7 +13,7 @@ import {
   uninstallRenderGovernor,
   governorRequestRender,
 } from '../renderGovernor.js';
-import { describeError } from './errors.js';
+import { describeMapError } from '../maps/providerErrors.js';
 
 /** Construct the application globe using the caller's local configuration. */
 export async function createApplicationScene({
@@ -87,9 +87,9 @@ export async function createApplicationScene({
       const tileError = photoreal.errors.at(-1);
       console.warn(
         '[Init] Google 3D Tiles unavailable, using the keyless globe:',
-        tileError,
+        describeMapError(tileError),
       );
-      const tileErrorDetail = describeError(tileError);
+      const tileErrorDetail = describeMapError(tileError);
       loaderStatus.textContent = `Google 3D Tiles unavailable (${tileErrorDetail}). Loading the keyless globe...`;
     }
     viewer.scene.globe.show = true;

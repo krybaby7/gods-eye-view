@@ -37,6 +37,7 @@ export const VIEW_MAPS = Object.freeze([
   'bing-labels',
   'esri-imagery',
   'osm',
+  'google-satellite',
 ]);
 
 /**
@@ -123,7 +124,8 @@ export const VIEW_PROPERTIES = Object.freeze({
   map: Object.freeze({
     type: 'string',
     enum: [...VIEW_MAPS],
-    description: 'Map imagery; photoreal is Google 3D tiles.',
+    description:
+      'Map imagery; photoreal is Google 3D tiles, google-satellite is satellite imagery without geographic labels.',
   }),
   annotations: Object.freeze({
     type: 'array',
