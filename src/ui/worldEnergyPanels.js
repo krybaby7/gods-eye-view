@@ -320,12 +320,7 @@ export function renderChokepoint(context) {
     );
     if (refs.some(({ reviewed }) => !reviewed))
       area.append(
-        node(
-          document,
-          'p',
-          'Curated draft awaiting owner review.',
-          'world-energy-note',
-        ),
+        node(document, 'p', 'Draft, not yet reviewed.', 'world-energy-note'),
       );
   }
   if (gate.alternative && refs.length) {

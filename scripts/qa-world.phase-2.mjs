@@ -231,7 +231,7 @@ export default async function phase2({
       const content = await text('#world-card-content');
       assert.match(
         content,
-        /reduced.*Data to 2026-11-01.*Status history.*EIA structural flows.*2025-H1.*Curated draft.*Ranked dependents.*Japan.*India/s,
+        /reduced.*Data to 2026-11-01.*Status history.*EIA structural flows.*2025-H1.*Draft, not yet reviewed.*Ranked dependents.*Japan.*India/s,
       );
       assert.ok(
         await page.$eval('.world-energy-chart path', (path) =>
