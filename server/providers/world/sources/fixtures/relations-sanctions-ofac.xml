@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sdnList xmlns="https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/XML">
+  <publshInformation>
+    <Publish_Date>11/09/2026</Publish_Date>
+    <Record_Count>3</Record_Count>
+  </publshInformation>
+  <sdnEntry>
+    <uid>1001</uid>
+    <lastName>Fixture vessel</lastName>
+    <sdnType>Vessel</sdnType>
+    <programList><program>CUBA</program><program>SDGT</program></programList>
+    <addressList><address><uid>201</uid><country>Panama</country></address></addressList>
+  </sdnEntry>
+  <sdnEntry>
+    <uid>1002</uid>
+    <lastName>Fixture second entity</lastName>
+    <sdnType>Entity</sdnType>
+    <programList><program>RUSSIA-EO14024</program><program>RUSSIA-EO14024</program></programList>
+  </sdnEntry>
+  <sdnEntry>
+    <uid>1003</uid>
+    <lastName>Fixture third entity</lastName>
+    <sdnType>Entity</sdnType>
+    <programList><program>SDGT</program></programList>
+    <addressList><address><uid>202</uid><country>Russia</country></address></addressList>
+  </sdnEntry>
+</sdnList>

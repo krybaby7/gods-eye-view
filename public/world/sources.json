@@ -106,9 +106,9 @@
   {
     "id": "relations-sanctions-un",
     "name": "UN Security Council sanctions",
-    "access": "Keyless public programme catalogue",
-    "attribution": "United Nations Security Council sanctions committees",
-    "url": "https://main.un.org/securitycouncil/en/sanctions/information",
+    "access": "Keyless published consolidated XML",
+    "attribution": "United Nations Security Council Consolidated Sanctions List and sanctions committees",
+    "url": "https://main.un.org/securitycouncil/en/content/un-sc-consolidated-list",
     "licence": "Public factual programme metadata; UN site terms apply to text",
     "releaseRhythm": "Checked monthly on Refresh",
     "marks": []
@@ -116,9 +116,9 @@
   {
     "id": "relations-sanctions-uk",
     "name": "UK sanctions regimes",
-    "access": "Keyless public statutory guidance catalogue",
-    "attribution": "Foreign, Commonwealth & Development Office, current UK sanctions regimes",
-    "url": "https://www.gov.uk/government/collections/uk-sanctions-regimes-under-the-sanctions-act",
+    "access": "Keyless published UK Sanctions List CSV",
+    "attribution": "Foreign, Commonwealth & Development Office, UK Sanctions List",
+    "url": "https://www.gov.uk/government/publications/the-uk-sanctions-list",
     "licence": "Open Government Licence v3.0",
     "releaseRhythm": "Checked monthly on Refresh",
     "marks": []
@@ -126,9 +126,9 @@
   {
     "id": "relations-sanctions-ofac",
     "name": "US OFAC sanctions",
-    "access": "Keyless public programme catalogue",
-    "attribution": "U.S. Treasury Office of Foreign Assets Control",
-    "url": "https://ofac.treasury.gov/sanctions-programs-and-country-information",
+    "access": "Keyless published SDN legacy XML",
+    "attribution": "U.S. Treasury Office of Foreign Assets Control, Specially Designated Nationals List",
+    "url": "https://ofac.treasury.gov/sanctions-list-service",
     "licence": "US government public information",
     "releaseRhythm": "Checked monthly on Refresh",
     "marks": []

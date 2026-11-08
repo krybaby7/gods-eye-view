@@ -24,6 +24,8 @@ The Relations tab groups treaty commitments, bloc memberships, rivals, wars, dir
 
 The latest UCDP annual release used here covers 2025 and includes state-based dyads that meet the 25 battle-death threshold. Ended episodes appear in the tab and do not colour the map as ongoing war. Armed groups and coalitions retain their identities. The Voeten agreement file available in Dataverse v39 covers session 79 (2024). Quad and AUKUS are shown as diplomatic and defence cooperation respectively. Curated evidence carries a draft review badge.
 
+The sanctions adapters count designation records by programme from the UN consolidated XML, UK Sanctions List CSV and OFAC SDN XML. A programme appears as a country relation only when an independent source documents the country link. Refresh reports how many programme identifiers were mapped and how many were left out. If the UN list fails on the first turn, the board displays four cited committee programmes with unavailable designation counts.
+
 ## Adding a phase
 
 - Add `src/layers/world/phase-N.js` with a default descriptor. Its optional arrays are `lenses` (id, label, order, color and legend), `overlays` (factories), `tabs` (id, render and optional label/order), `cards` (type, label and render), `header`, `rowFlags` and `hoverFlags`. Vite loads it and `src/ui/styles/world-phase-N.css` automatically.

@@ -1,122 +1,340 @@
 import { readResponseTextCapped } from '../../common/http.js';
 import { makeRelation, relationResult } from '../relations.js';
 import { fetchResponse, monthIndex, releaseDue } from './common.js';
+import { csvRows } from './csv.js';
 
 const CHECKED = '2026-11-09';
-const UN_BASE = 'https://main.un.org';
-const UK_BASE = 'https://www.gov.uk';
-const OFAC_BASE = 'https://ofac.treasury.gov';
-const OFAC_DIRECTORY = '/sanctions-programs-and-country-information';
-const UK_PUBLICATIONS = '/government/publications/';
-const UN_DIRECTORY = '/securitycouncil/en/sanctions/';
-const LISTS = {
+const MAX_BYTES = 75_000_000;
+const UN_COMMITTEES = 'https://main.un.org/securitycouncil/en/sanctions/';
+const UK_PUBLICATIONS = 'https://www.gov.uk/government/publications/';
+const OFAC_PROGRAMMES =
+  'https://ofac.treasury.gov/sanctions-programs-and-country-information/';
+const UN_FALLBACK = new Set(['KP', 'LY', 'YE', 'SS']);
+
+const lists = {
+  un: {
+    actor: 'UN',
+    url: 'https://scsanctions.un.org/resources/xml/en/consolidated.xml',
+    reference:
+      'https://main.un.org/securitycouncil/en/content/un-sc-consolidated-list',
+    path: (id) => UN_COMMITTEES + id,
+    rows: [
+      ['KP', 'PRK', '1718', 'DPRK sanctions under resolution 1718'],
+      ['LY', 'LBY', '1970', 'Libya sanctions under resolution 1970'],
+      ['YE', 'YEM', '2140', 'Yemen sanctions under resolution 2140'],
+      ['SS', 'SSD', '2206', 'South Sudan sanctions under resolution 2206'],
+      ['IQ', 'IRQ', '1518', 'Iraq sanctions under resolution 1518'],
+      ['CD', 'COD', '1533', 'DR Congo sanctions under resolution 1533'],
+      ['SD', 'SDN', '1591', 'Sudan sanctions under resolution 1591'],
+      ['IR', 'IRN', '1737', 'Iran sanctions under resolution 1737'],
+      ['GB', 'GNB', '2048', 'Guinea-Bissau sanctions under resolution 2048'],
+      ['HT', 'HTI', '2653', 'Haiti sanctions under resolution 2653'],
+      [
+        'CF',
+        'CAF',
+        '2745',
+        'Central African Republic sanctions under resolution 2745',
+      ],
+    ],
+    read: unRecords,
+  },
   uk: {
     actor: 'GBR',
-    catalogue:
-      UK_BASE +
-      '/government/collections/uk-sanctions-regimes-under-the-sanctions-act',
+    url: 'https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.csv',
+    reference: UK_PUBLICATIONS + 'the-uk-sanctions-list',
     path: (id) => UK_PUBLICATIONS + id + '-sanctions-guidance',
     rows: [
-      ['BLR', 'republic-of-belarus', 'Belarus sanctions'],
-      ['IRN', 'iran', 'Iran sanctions'],
-      ['IRN', 'iran-nuclear', 'Iran nuclear sanctions'],
-      ['PRK', 'democratic-peoples-republic-of-korea', 'DPRK sanctions'],
-      ['MMR', 'myanmar', 'Myanmar sanctions'],
-      ['RUS', 'russia', 'Russia sanctions'],
-      ['VEN', 'venezuela', 'Venezuela sanctions'],
-      ['LBY', 'libya', 'Libya sanctions'],
-      ['SDN', 'sudan', 'Sudan sanctions'],
-      ['SSD', 'south-sudan', 'South Sudan sanctions'],
+      [
+        'Belarus',
+        'BLR',
+        'republic-of-belarus',
+        'Belarus sanctions',
+        ['Republic of Belarus'],
+      ],
+      ['Iran', 'IRN', 'iran', 'Iran sanctions'],
+      [
+        'Iran (Nuclear)',
+        'IRN',
+        'iran-nuclear',
+        'Iran nuclear sanctions',
+        ['Iran Nuclear'],
+      ],
+      [
+        "Democratic People's Republic of Korea",
+        'PRK',
+        'democratic-peoples-republic-of-korea',
+        'DPRK sanctions',
+        ["Democratic People's Republic of Korea (DPRK)"],
+      ],
+      ['Myanmar', 'MMR', 'myanmar', 'Myanmar sanctions'],
+      ['Russia', 'RUS', 'russia', 'Russia sanctions'],
+      ['Venezuela', 'VEN', 'venezuela', 'Venezuela sanctions'],
+      ['Libya', 'LBY', 'libya', 'Libya sanctions'],
+      ['Sudan', 'SDN', 'sudan', 'Sudan sanctions'],
+      ['South Sudan', 'SSD', 'south-sudan', 'South Sudan sanctions'],
     ],
+    read: ukRecords,
   },
   ofac: {
     actor: 'USA',
-    catalogue: OFAC_BASE + OFAC_DIRECTORY,
-    path: (id) => OFAC_DIRECTORY + '/' + id,
+    url: 'https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN.XML',
+    reference:
+      'https://ofac.treasury.gov/specially-designated-nationals-list-sdn-list/program-tag-definitions-for-ofac-sanctions-lists',
+    path: (id) => OFAC_PROGRAMMES + id,
     rows: [
-      ['BLR', 'belarus-sanctions', 'Belarus sanctions'],
-      ['CUB', 'cuba-sanctions', 'Cuba sanctions'],
-      ['IRN', 'iran-sanctions', 'Iran sanctions'],
-      ['PRK', 'north-korea-sanctions', 'North Korea sanctions'],
-      ['MMR', 'burma', 'Burma sanctions'],
-      ['RUS', 'russia-related-sanctions', 'Russia-related sanctions'],
+      ['BELARUS', 'BLR', 'belarus-sanctions', 'Belarus sanctions'],
+      ['BELARUS-EO14038', 'BLR', 'belarus-sanctions', 'Belarus sanctions'],
+      ['CUBA', 'CUB', 'cuba-sanctions', 'Cuba sanctions'],
+      ['IRAN', 'IRN', 'iran-sanctions', 'Iran sanctions'],
+      ['IRAN-EO13846', 'IRN', 'iran-sanctions', 'Iran sanctions'],
+      ['DPRK', 'PRK', 'north-korea-sanctions', 'North Korea sanctions'],
+      ['DPRK2', 'PRK', 'north-korea-sanctions', 'North Korea sanctions'],
+      ['DPRK3', 'PRK', 'north-korea-sanctions', 'North Korea sanctions'],
+      ['DPRK4', 'PRK', 'north-korea-sanctions', 'North Korea sanctions'],
+      ['BURMA-EO14014', 'MMR', 'burma', 'Burma sanctions'],
       [
+        'RUSSIA-EO14024',
         'RUS',
         'russian-harmful-foreign-activities-sanctions',
         'Russian harmful foreign activities sanctions',
       ],
-      ['VEN', 'venezuela-related-sanctions', 'Venezuela-related sanctions'],
+      [
+        'VENEZUELA',
+        'VEN',
+        'venezuela-related-sanctions',
+        'Venezuela-related sanctions',
+      ],
+      [
+        'VENEZUELA-EO13884',
+        'VEN',
+        'venezuela-related-sanctions',
+        'Venezuela-related sanctions',
+      ],
     ],
-  },
-  un: {
-    actor: 'UN',
-    catalogue: UN_BASE + UN_DIRECTORY + 'information',
-    path: (id) => UN_DIRECTORY + id,
-    rows: [
-      ['PRK', '1718', 'DPRK sanctions under resolution 1718'],
-      ['LBY', '1970', 'Libya sanctions under resolution 1970'],
-      ['YEM', '2140', 'Yemen sanctions under resolution 2140'],
-      ['SSD', '2206', 'South Sudan sanctions under resolution 2206'],
-    ],
+    read: ofacRecords,
   },
 };
 
-export function programmeRelations(kind, html) {
-  const { actor, catalogue, path, rows } = LISTS[kind];
-  const links =
-    html === null
-      ? null
-      : new Set(
-          Array.from(html.matchAll(/\bhref=["']([^"']+)["']/gi), ([, href]) =>
-            URL.parse(href, catalogue)?.pathname.replace(/\/$/, ''),
-          ),
-        );
-  const relations = rows.flatMap(([to, id, programme]) => {
-    const pathname = path(id);
-    if (links && !links.has(pathname)) return [];
-    return makeRelation({
-      id: 'rel_sanctions_' + kind + '_' + id,
-      type: 'sanctions',
-      directed: true,
-      from: actor,
-      ...(actor === 'UN' && { fromLabel: 'UN Security Council' }),
-      to,
-      programme,
-      detail:
-        'Country-linked sanctions programme. Measures may be selective, such as designations, restrictions or embargoes defined by the instrument.',
-      sources: [new URL(pathname, catalogue).href, catalogue],
-      dateChecked: CHECKED,
-      reviewed: false,
-    });
-  });
-  if (!relations.length)
+function normalize(value) {
+  return value
+    .trim()
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/\s+/g, ' ')
+    .toUpperCase();
+}
+
+function requireXml(text, root, label) {
+  const content = text.trim();
+  const opening = new RegExp(
+    '^(?:<\\?xml[^?]*\\?>\\s*)?<' + root + '(?:\\s|>)',
+  );
+  if (!opening.test(content) || !content.endsWith('</' + root + '>')) {
+    throw new Error('Unexpected or incomplete ' + label);
+  }
+}
+
+function* unRecords(text) {
+  requireXml(text, 'CONSOLIDATED_LIST', 'UN consolidated list');
+  const refs = [
+    ...text.matchAll(
+      /<REFERENCE_NUMBER>\s*([A-Z]{2}[ie]\.\d+)\s*<\/REFERENCE_NUMBER>/g,
+    ),
+  ];
+  const entries = [...text.matchAll(/<(?:INDIVIDUAL|ENTITY)(?:\s|>)/g)].length;
+  if (!entries || refs.length !== entries)
     throw new Error(
-      'No recognized country programmes in the ' + kind + ' catalogue',
+      'UN consolidated list reference count did not match its records',
     );
-  return relations;
+  for (const [, ref] of refs) yield [ref, [ref.slice(0, 2)]];
+}
+
+function* ukRecords(text) {
+  const rows = csvRows(text);
+  let idIndex = -1;
+  let regimeIndex = -1;
+  let columns;
+  for (let i = 0; i < 12; i++) {
+    const next = rows.next();
+    if (next.done) break;
+    const fields = next.value.map(normalize);
+    idIndex = fields.indexOf('UNIQUE ID');
+    regimeIndex = fields.indexOf('REGIME NAME');
+    if (idIndex !== -1 && regimeIndex !== -1) {
+      columns = fields.length;
+      break;
+    }
+  }
+  if (!columns)
+    throw new Error(
+      'UK Sanctions List header is missing Unique ID or Regime Name',
+    );
+  for (const row of rows) {
+    const id = row[idIndex]?.trim();
+    const regime = row[regimeIndex]?.trim();
+    if (row.length !== columns || !id || !regime) {
+      throw new Error('Unexpected UK Sanctions List designation record');
+    }
+    yield [id, regime.split(/;|\r?\n/)];
+  }
+}
+
+function* ofacRecords(text) {
+  requireXml(text, 'sdnList', 'OFAC SDN list');
+  const records = [
+    ...text.matchAll(/<sdnEntry(?:\s[^>]*)?>([\s\S]*?)<\/sdnEntry>/g),
+  ];
+  const declared = text.match(/<Record_Count>\s*(\d+)\s*<\/Record_Count>/)?.[1];
+  if (
+    !records.length ||
+    (declared !== undefined && Number(declared) !== records.length)
+  ) {
+    throw new Error('OFAC SDN list record count did not match the publication');
+  }
+  for (const [, entry] of records) {
+    const id = entry.match(/^\s*<uid>\s*(\d+)\s*<\/uid>/)?.[1];
+    const list =
+      entry.match(/<programList>([\s\S]*?)<\/programList>/)?.[1] ?? '';
+    const programmes = Array.from(
+      list.matchAll(/<program>\s*([^<]+?)\s*<\/program>/g),
+      ([, tag]) => tag,
+    );
+    if (!id || !programmes.length)
+      throw new Error('OFAC SDN designation lacks its UID or programme tags');
+    yield [id, programmes];
+  }
+}
+
+function mappedRelation(kind, row, programmeId, designationCount) {
+  const { actor, url, reference, path } = lists[kind];
+  const [, to, id, programme] = row;
+  const fallback = designationCount === undefined;
+  const stableId = kind === 'ofac' ? programmeId.toLowerCase() : id;
+  return makeRelation({
+    id: 'rel_sanctions_' + kind + '_' + stableId,
+    type: 'sanctions',
+    directed: true,
+    from: actor,
+    ...(actor === 'UN' && { fromLabel: 'UN Security Council' }),
+    to,
+    programme,
+    programmeId,
+    ...(!fallback && { designationCount }),
+    detail:
+      'Country-linked sanctions programme. Measures may be selective. ' +
+      (fallback
+        ? 'Independently cited committee evidence. A list count is unavailable.'
+        : designationCount +
+          ' designation record' +
+          (designationCount === 1 ? '' : 's') +
+          ' in the loaded publication under this programme.'),
+    sources: fallback ? [path(id), reference] : [path(id), reference, url],
+    dateChecked: CHECKED,
+    reviewed: false,
+  });
+}
+
+export function programmeRelations(kind, text) {
+  const { rows, read } = lists[kind];
+  const known = new Map();
+  for (const row of rows) {
+    for (const name of [row[0], ...(row[4] ?? [])])
+      known.set(normalize(name), row);
+  }
+  const ids = new Set();
+  const observed = new Map();
+  const mappedRecords = new Set();
+  for (const [id, names] of read(text)) {
+    ids.add(id);
+    for (const name of names) {
+      const key = normalize(name);
+      if (!key) continue;
+      const row = known.get(key);
+      const canonical = row ? normalize(row[0]) : key;
+      if (!observed.has(canonical)) observed.set(canonical, new Set());
+      observed.get(canonical).add(id);
+      if (row) mappedRecords.add(id);
+    }
+  }
+  if (!ids.size || !observed.size)
+    throw new Error(
+      'Sanctions publication has no designation records with programme identifiers',
+    );
+  const relations = rows.flatMap((row) => {
+    const count = observed.get(normalize(row[0]))?.size;
+    return count ? [mappedRelation(kind, row, row[0], count)] : [];
+  });
+  return {
+    relations,
+    coverage: {
+      records: ids.size,
+      mappedRecords: mappedRecords.size,
+      programmes: observed.size,
+      mappedProgrammes: relations.length,
+      unmappedProgrammes: observed.size - relations.length,
+    },
+  };
 }
 
 function adapter(kind, name) {
   return {
     shouldCheck(context) {
-      return !context.data || releaseDue(context, monthIndex);
+      return (
+        context.data?.format !== 'published-list' ||
+        releaseDue(context, monthIndex)
+      );
     },
     async fetchObservations({ fetchImpl, data }) {
-      const signal = AbortSignal.timeout(20_000);
-      const catalogue = LISTS[kind].catalogue;
+      const signal = AbortSignal.timeout(60_000);
       try {
-        const response = await fetchResponse(fetchImpl, catalogue, signal);
-        const html = await readResponseTextCapped(response, 3_000_000, signal);
-        return relationResult(programmeRelations(kind, html), data, name);
-      } catch (error) {
-        if (kind !== 'un' || data) throw error;
+        const response = await fetchResponse(
+          fetchImpl,
+          lists[kind].url,
+          signal,
+        );
+        const text = await readResponseTextCapped(response, MAX_BYTES, signal);
+        const { relations, coverage } = programmeRelations(kind, text);
+        const result = relationResult(
+          relations,
+          data,
+          name,
+          coverage.mappedProgrammes +
+            ' mapped and ' +
+            coverage.unmappedProgrammes +
+            ' unmapped programmes across ' +
+            coverage.records +
+            ' published designation records.',
+        );
         return {
-          ...relationResult(
-            programmeRelations(kind, null),
-            data,
-            name,
-            'Last independently cited committee programmes.',
-          ),
+          ...result,
+          data: { ...result.data, coverage, format: 'published-list' },
+        };
+      } catch (error) {
+        if (
+          data?.format === 'published-list' ||
+          data?.format === 'committee-fallback'
+        )
+          throw error;
+        if (kind !== 'un' && !data) throw error;
+        const relations =
+          kind === 'un'
+            ? lists.un.rows
+                .filter(([prefix]) => UN_FALLBACK.has(prefix))
+                .map((row) => mappedRelation(kind, row, row[0]))
+            : [];
+        const result = relationResult(
+          relations,
+          data,
+          name,
+          kind === 'un'
+            ? 'Initial committee fallback. Published-list coverage is unavailable.'
+            : 'Published-list coverage is unavailable.',
+        );
+        return {
+          ...result,
+          data: {
+            ...result.data,
+            format: kind === 'un' ? 'committee-fallback' : 'unavailable',
+          },
           error: error.message,
         };
       }
