@@ -1,5 +1,10 @@
 # Changelog
 
+- War Monitor Refresh and Situation Brief use the owner’s Claude plan by
+  default and share one Claude run slot with Search Layers. Perplexity remains
+  available through `NEWS_DIGEST_AGENT=perplexity` with its existing daily
+  budget.
+
 - War monitor: GDELT outlets come from GDELT 2.0's 15-minute data files
   instead of its search API, which answered with rate limits and no results
   on 2026-10-28; `NEWS_GDELT_FILES=off` switches back. On the search API path,
