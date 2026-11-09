@@ -73,7 +73,7 @@ test('first launch saves base scores and publishes finished background sources w
   const entered = Promise.withResolvers();
   const checkpoint = Promise.withResolvers();
   const medium = Promise.withResolvers();
-  let baseLoaded = false;
+  const conflictArchive = Promise.withResolvers();
   let heavyCalls = 0;
   const adapter = (fetchObservations, estimatedBytes) => ({
     shouldCheck: () => true,
@@ -90,10 +90,10 @@ test('first launch saves base scores and publishes finished background sources w
       worldbank: adapter(({ now }) => ({
         observations: [observation(100, now)],
       })),
-      ucdp: adapter(() => {
-        baseLoaded = true;
+      ucdp: adapter(async () => {
+        await conflictArchive.promise;
         return { data: { deaths: 26 } };
-      }),
+      }, 34_000_000),
       medium: adapter(async () => {
         await medium.promise;
         return { data: { records: [1] } };
@@ -110,15 +110,15 @@ test('first launch saves base scores and publishes finished background sources w
   t.after(() => {
     heavy.resolve();
     medium.resolve();
+    conflictArchive.resolve();
     return service.whenIdle();
   });
   const initial = await service.snapshot();
   await entered.promise;
-  assert.equal(baseLoaded, true);
   const early = await service.snapshot();
   assert.equal(early.turn, null);
   assert.notEqual(early.countries, initial.countries);
-  assert.equal(early.features.ucdp.deaths, 26);
+  assert.equal(early.features.ucdp, undefined);
   assert.equal(early.progress.download.bytes, 12_000_000);
   assert.equal((await service.store.read()).observations[0].value, 100);
   assert.equal((await service.refresh()).turn, null);
@@ -144,9 +144,11 @@ test('first launch saves base scores and publishes finished background sources w
   } finally {
     clearInterval(waitForMedium);
   }
+  conflictArchive.resolve();
   heavy.resolve();
   const done = await settled(service);
   assert.equal(done.turn.number, 1);
+  assert.equal(done.features.ucdp.deaths, 26);
   assert.deepEqual(done.features.vdem.records, [2]);
 });
 

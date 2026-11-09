@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -83,12 +83,12 @@ test('bulk download keeps a stalled prefix and resumes with an exact Range', asy
       assert.equal(headers.get('If-Range'), etag);
       return bodyResponse('def', { 'Content-Range': 'bytes 3-5/6' }, 206);
     },
-    { stallTimeoutMs: 60 },
+    { stallTimeoutMs: 200 },
   );
 
   await assert.rejects(download(), {
     code: 'DOWNLOAD_STALLED',
-    message: /stalled.*60 ms/i,
+    message: /stalled.*200 ms/i,
   });
   assert.equal(canceled, true);
   const result = await download();
@@ -122,42 +122,57 @@ test('bulk download enforces the overall cap while bytes keep arriving', async (
   assert.equal(canceled, true);
 });
 
-test('bulk download retries one interrupted connection and resumes its prefix', async (t) => {
-  let requests = 0;
-  let sent = false;
-  const { download } = await downloadFixture(
-    t,
-    (_, { headers, retryConnection }) => {
-      assert.equal(retryConnection, false);
-      if (++requests === 1) {
-        return bodyResponse(
-          new ReadableStream({
-            async pull(controller) {
-              if (!sent) {
-                sent = true;
-                controller.enqueue(Buffer.from('abc'));
-                return;
-              }
-              await delay(25);
-              controller.error(
-                Object.assign(new Error('connection reset'), {
-                  code: 'ECONNRESET',
-                }),
-              );
-            },
-          }),
-          { 'Content-Length': '6' },
-        );
-      }
-      assert.equal(headers.get('Range'), 'bytes=3-');
-      return bodyResponse('def', { 'Content-Range': 'bytes 3-5/6' }, 206);
-    },
-  );
+test(
+  'bulk download retries one interrupted connection and resumes its prefix',
+  { timeout: 5_000 },
+  async (t) => {
+    let requests = 0;
+    let sent = false;
+    const { cacheDirectory, download } = await downloadFixture(
+      t,
+      (_, { headers, retryConnection }) => {
+        assert.equal(retryConnection, false);
+        if (++requests === 1) {
+          return bodyResponse(
+            new ReadableStream({
+              async pull(controller) {
+                if (!sent) {
+                  sent = true;
+                  controller.enqueue(Buffer.from('abc'));
+                  return;
+                }
+                // Interrupt only after the fake prefix has reached disk.
+                for (;;) {
+                  const part = (await readdir(cacheDirectory)).find((name) =>
+                    name.endsWith('.part'),
+                  );
+                  if (
+                    part &&
+                    (await stat(path.join(cacheDirectory, part))).size === 3
+                  )
+                    break;
+                  await delay(10);
+                }
+                controller.error(
+                  Object.assign(new Error('connection reset'), {
+                    code: 'ECONNRESET',
+                  }),
+                );
+              },
+            }),
+            { 'Content-Length': '6' },
+          );
+        }
+        assert.equal(headers.get('Range'), 'bytes=3-');
+        return bodyResponse('def', { 'Content-Range': 'bytes 3-5/6' }, 206);
+      },
+    );
 
-  const result = await download();
-  assert.equal(await readFile(result.path, 'utf8'), 'abcdef');
-  assert.equal(requests, 2);
-});
+    const result = await download();
+    assert.equal(await readFile(result.path, 'utf8'), 'abcdef');
+    assert.equal(requests, 2);
+  },
+);
 
 test('bulk download shares its connection retry across headers and body', async (t) => {
   let requests = 0;
