@@ -179,61 +179,123 @@ export default async function live({ board }) {
   ]);
   const recorded = process.env.GEV_WORLD_GDELT_EVIDENCE_DIR;
   const current = board?.features?.['live-gdelt'];
-  const observed = recorded ? await replayGdelt(recorded) : current;
-  const quietCountries = ['CAN', 'NZL', 'IRL'];
-  const flags =
-    observed?.flags?.filter(
-      ({ status }) => !status || status === 'active' || status === 'stale',
-    ) ?? [];
-  const found = flags.map(
-    ({ iso3, slot, eventCount, sourceDomains, sourceUrls, evidence }) => ({
-      iso3,
-      slot,
-      eventCount,
-      distinctDomains: sourceDomains?.length,
-      sourceUrls,
-      evidence,
-    }),
-  );
-  const valid = found.every(
-    ({ eventCount, distinctDomains, sourceUrls, evidence }) =>
-      eventCount >= 5 &&
-      distinctDomains >= 3 &&
-      sourceUrls?.length === 3 &&
-      evidence === 'news-derived, low confidence',
-  );
+  const replay = recorded ? await replayGdelt(recorded) : null;
+  const evaluate = (observed, clock, basis) => {
+    const allFlags = [
+      ...(observed?.flags ?? []),
+      ...(observed?.inactiveFlags ?? []),
+    ];
+    const flags = allFlags.map(
+      ({
+        iso3,
+        slot,
+        status,
+        date,
+        periodStart,
+        eventCount,
+        sourceDomains,
+        sourceUrls,
+        evidence,
+      }) => ({
+        iso3,
+        slot,
+        status: status ?? 'active',
+        date,
+        periodStart,
+        eventCount,
+        sourceDomains,
+        distinctDomains: new Set(sourceDomains ?? []).size,
+        sourceUrls,
+        evidence,
+      }),
+    );
+    const active = flags.filter(
+      ({ status }) => status === 'active' || status === 'stale',
+    );
+    const end = +new Date(clock);
+    const inWindow = (value) =>
+      Number.isFinite(Date.parse(value)) &&
+      Date.parse(value) <= end &&
+      end - Date.parse(value) <= 72 * 3600_000;
+    const valid = active.every(
+      ({
+        date,
+        periodStart,
+        eventCount,
+        distinctDomains,
+        sourceUrls,
+        evidence,
+      }) =>
+        eventCount >= 5 &&
+        distinctDomains >= 3 &&
+        sourceUrls?.length === 3 &&
+        new Set(sourceUrls).size === 3 &&
+        evidence === 'news-derived, low confidence' &&
+        inWindow(date) &&
+        inWindow(periodStart),
+    );
+    const batches = observed?.batches;
+    const quiet = ['CAN', 'NZL', 'IRL'];
+    const counts = Array.isArray(batches)
+      ? Object.fromEntries(
+          quiet.map((iso3) => [
+            iso3,
+            batches
+              .filter(({ date }) => inWindow(date))
+              .flatMap(({ events = [] }) => events)
+              .filter((event) => event[1] === iso3).length,
+          ]),
+        )
+      : null;
+    const quietValid =
+      !counts ||
+      quiet.every(
+        (iso3) =>
+          counts[iso3] !== 1 || !active.some((flag) => flag.iso3 === iso3),
+      );
+    const fresh = inWindow(observed?.lastGoodAt) && observed?.sampledFiles > 0;
+    return {
+      found: {
+        basis,
+        checkedAt: new Date(end).toISOString(),
+        lastGoodAt: observed?.lastGoodAt ?? null,
+        sampledFiles: observed?.sampledFiles ?? 0,
+        flags,
+        namedCountrySampleCounts: counts,
+        sampleCountsUnavailable: !counts,
+      },
+      pass: Boolean(fresh && valid && quietValid),
+    };
+  };
+  const apiProof = evaluate(current, new Date(), 'World Board API');
+  const replayProof =
+    replay &&
+    evaluate(
+      { ...replay, lastGoodAt: replay.clock },
+      replay.clock,
+      'Offline recorded publisher replay',
+    );
   const boardUnhcr = board?.features?.['live-unhcr'];
   const date = new Date().toISOString().slice(0, 10);
   return [
     {
-      id: 'live-gdelt-evidence',
+      id: 'live-gdelt-api',
       expected:
-        'Every flag has five distinct events, three domains, and three news URLs in the 72-hour window.',
-      found: {
-        basis: recorded
-          ? 'Offline replay of one recorded publisher export'
-          : 'World Board API',
-        flags: found,
-        ...(recorded && {
-          archiveTime: observed.clock,
-          namedCountrySampleCounts: Object.fromEntries(
-            quietCountries.map((iso3) => [
-              iso3,
-              observed.batches
-                .flatMap(({ events }) => events)
-                .filter((event) => event[1] === iso3).length,
-            ]),
-          ),
-        }),
-      },
+        'A fresh API sample and qualifying active flags within 72 hours; one-report countries are unflagged when sample counts are available.',
+      ...apiProof,
       source: gdeltSource,
-      pass: Boolean(
-        (recorded || (current?.lastGoodAt && current.sampledFiles > 0)) &&
-        valid &&
-        (!recorded ||
-          found.every(({ iso3 }) => !quietCountries.includes(iso3))),
-      ),
     },
+    ...(replayProof
+      ? [
+          {
+            id: 'live-gdelt-recorded-replay',
+            expected:
+              'Recorded sample and qualifying flags within 72 hours of its archive timestamp.',
+            ...replayProof,
+            source: gdeltSource,
+          },
+        ]
+      : []),
     {
       id: 'live-ticks-no-turn',
       expected:
