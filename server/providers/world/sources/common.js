@@ -1,3 +1,5 @@
+import { fetchOnDispatch } from './transport.js';
+
 export function monthIndex(date) {
   return date.getUTCFullYear() * 12 + date.getUTCMonth();
 }
@@ -24,6 +26,25 @@ export async function fetchResponse(fetchImpl, url, signal) {
     throw new Error(`HTTP ${response.status} from ${url}`);
   }
   return response;
+}
+
+export async function fetchResponseWithDeadline(
+  fetchImpl,
+  url,
+  { signal, read, timeoutMs = 30_000 },
+) {
+  let requestSignal;
+  const response = await fetchResponse(
+    (url, options) =>
+      fetchOnDispatch(fetchImpl, url, options, () => {
+        const timeout = AbortSignal.timeout(timeoutMs);
+        requestSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
+        return requestSignal;
+      }),
+    url,
+    signal,
+  );
+  return read(response, 2_000_000, requestSignal);
 }
 
 export function observation(
