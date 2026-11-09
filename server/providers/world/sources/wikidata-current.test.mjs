@@ -33,8 +33,12 @@ test('requires a dated, open person office statement and keeps the latest start 
       const role = roleOf(body);
       if (role !== 'foreign-minister') return reply([]);
       const query = body.get('query');
-      assert.match(query, /SELECT DISTINCT \?iso \?seat \?person WHERE/);
-      assert.match(query, /\?seat p:P1308\/ps:P1308 \?person/);
+      if (!query.includes('VALUES (?iso ?seat'))
+        return reply([row('IND', role, 'Q14')]);
+      if (query.includes('SELECT DISTINCT ?iso ?role ?seat ?person')) {
+        assert.match(query, /\?seat p:P1308 \?nomination/);
+        return reply([row('IND', role, 'Q14'), row('IND', role, 'Q15')]);
+      }
       assert.doesNotMatch(query, /\?statement ps:P39 \?seat\s*\./);
       assert.match(query, /\?person p:P39 \?statement/);
       assert.match(query, /ps:P39 \?office/);
@@ -77,6 +81,8 @@ test('keeps government forms without actors and sorts specific forms first', asy
       if (roleOf(body) !== 'government') return reply([]);
       assert.match(body.get('query'), /p:P122 \?form/);
       assert.match(body.get('query'), /\?form ps:P122 \?government/);
+      assert.match(body.get('query'), /\?form pq:P580 \?start/);
+      assert.match(body.get('query'), /\?form pq:P582 \?end/);
       return reply([
         binding({
           iso: 'CHE',
@@ -111,7 +117,6 @@ test('preserves independent co-princes, staggered council members, and shared ex
         ['GHA', 'Q2672728'],
       ]) {
         assert.ok(query.includes(`"${country}" wd:${office}`));
-        assert.ok(query.includes(`ps:P39 wd:${office} .`));
       }
       assert.doesNotMatch(query, /\bp:P6\b/);
       const rows = [
@@ -280,4 +285,88 @@ test('a long Retry-After skips only its batch and a short one is retried', async
   ]);
   assert.equal(data.actors[0].id, 'Q10');
   assert.match(error, /HTTP 503/);
+});
+
+test('resolves office candidates separately and verifies only literal person/seat pairs', async () => {
+  const queries = [];
+  const role = 'head-of-state';
+  const candidate = row('USA', role, 'Q22686', { seat: item('Q11696') });
+  const result = await fetchObservations({
+    registry: registry('USA'),
+    now,
+    fetchImpl: async (_url, { body }) => {
+      const query = body.get('query');
+      if (roleOf(body) !== role) return reply([]);
+      queries.push(query);
+      return reply([candidate]);
+    },
+  });
+  assert.equal(result.data.actors[0].id, 'Q22686');
+  assert.equal(queries.length, 3);
+  assert.match(queries[0], /SELECT DISTINCT \?iso \?role \?seat WHERE/);
+  assert.match(
+    queries[1],
+    /VALUES \(\?iso \?seat\)\s*\{\s*\("USA" wd:Q11696\)/,
+  );
+  assert.doesNotMatch(queries[1], /P298/);
+  assert.doesNotMatch(
+    queries[0],
+    /\?person p:P39 \?statement|\?person wdt:P18/,
+  );
+  assert.match(
+    queries[2],
+    /VALUES \(\?iso \?seat \?person\)\s*\{\s*\("USA" wd:Q11696 wd:Q22686\)/,
+  );
+  assert.doesNotMatch(queries[2], /P1308|P298/);
+  assert.match(queries[2], /\?person p:P39 \?statement/);
+});
+
+test('uses the verified item�s English sitelink when Wikidata has no English label', async () => {
+  const result = await fetchObservations({
+    registry: registry('USA'),
+    now,
+    fetchImpl: async (url, { body }) => {
+      if (!body) {
+        const request = new URL(url);
+        assert.equal(request.hostname, 'www.wikidata.org');
+        assert.equal(request.searchParams.get('ids'), 'Q22686');
+        assert.equal(request.searchParams.get('sitefilter'), 'enwiki');
+        return Response.json({
+          entities: {
+            Q22686: { sitelinks: { enwiki: { title: 'Donald Trump' } } },
+          },
+        });
+      }
+      const role = roleOf(body);
+      return reply(
+        role === 'head-of-state'
+          ? [
+              row('USA', role, 'Q22686', {
+                seat: item('Q11696'),
+                personLabel: 'Q22686',
+              }),
+            ]
+          : [],
+      );
+    },
+  });
+  assert.equal(result.data.actors[0].name, 'Donald Trump');
+});
+
+test('ministry seat discovery gives explicit jurisdiction precedence over country membership', async () => {
+  let discovery;
+  await fetchObservations({
+    registry: registry('USA'),
+    now,
+    fetchImpl: async (_url, { body }) => {
+      const query = body.get('query');
+      if (roleOf(body) === 'foreign-minister') discovery = query;
+      return reply([]);
+    },
+  });
+  assert.match(discovery, /\?seat wdt:P1001 \?country/);
+  assert.match(
+    discovery,
+    /\?seat wdt:P17 \?country\s*\.\s*FILTER NOT EXISTS \{ \?seat wdt:P1001 \[\] \}/,
+  );
 });

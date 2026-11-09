@@ -14,6 +14,7 @@ const row = (iso, role, id, extra = {}) =>
     role,
     person: item(id),
     personLabel: id + ' fixture',
+    seat: item('Q1'),
     since: '2024-01-01T00:00:00Z',
     ...extra,
   });
@@ -140,20 +141,25 @@ test('posts one role and up to 40 countries per request, in sequence', async () 
       assert.equal(reading, false);
       if (lastFinished) assert.ok(performance.now() - lastFinished >= 250);
       const query = new URLSearchParams(options.body).get('query');
-      const codes = query
-        .match(/VALUES \?iso \{([^}]+)\}/)[1]
-        .match(/"[A-Z]{3}"/g);
+      const bound = query.includes('VALUES (?iso ?seat');
+      const codes = bound
+        ? query
+            .match(/VALUES \(\?iso \?seat(?: \?person)?\) \{([^}]+)\}/)[1]
+            .match(/"[A-Z]{3}"/g)
+        : query.match(/VALUES \?iso \{([^}]+)\}/)[1].match(/"[A-Z]{3}"/g);
       const roles = query.match(
         /"(?:government|head-of-state|head-of-government|foreign-minister|defence-minister)"/g,
       );
       assert.equal(roles.length, 1);
-      seen.push([roles[0].slice(1, -1), codes.length]);
-      queryShapes.push({
-        role: roles[0].slice(1, -1),
-        kosovo: query.includes('BIND(wd:Q1246 AS ?country)'),
-        nested: query.includes('SELECT ?iso ?country WHERE'),
-        boundOrder: query.includes('hint:Query hint:optimizer "None"'),
-      });
+      if (!bound) {
+        seen.push([roles[0].slice(1, -1), codes.length]);
+        queryShapes.push({
+          role: roles[0].slice(1, -1),
+          kosovo: query.includes('BIND(wd:Q1246 AS ?country)'),
+          nested: query.includes('SELECT ?iso ?country WHERE'),
+          boundOrder: query.includes('hint:Query hint:optimizer "None"'),
+        });
+      }
       reading = true;
       return new Response(
         new ReadableStream({
@@ -181,16 +187,10 @@ test('posts one role and up to 40 countries per request, in sequence', async () 
   assert.equal(count, 8);
   assert.equal(queryShapes.filter(({ kosovo }) => kosovo).length, 5);
   assert.ok(queryShapes.every(({ kosovo, nested }) => kosovo === nested));
-  assert.deepEqual(
-    queryShapes.filter(({ boundOrder }) => boundOrder),
-    [
-      {
-        role: 'head-of-government',
-        kosovo: true,
-        nested: true,
-        boundOrder: true,
-      },
-    ],
+  assert.ok(
+    queryShapes.every(
+      ({ role, boundOrder }) => boundOrder === (role !== 'government'),
+    ),
   );
   assert.deepEqual(seen, [
     ['government', 40],
@@ -241,7 +241,7 @@ test('merges completed batches and keeps the cached role for a long Retry-After'
       });
     },
   });
-  assert.equal(calls, 5);
+  assert.equal(calls, 7);
   assert.match(result.error, /HTTP 503/);
   assert.deepEqual(
     result.data.actors.map(({ id }) => id),
@@ -293,6 +293,10 @@ test('subdivides a gateway failure and retains cached actors only in an unrecove
     fetchImpl: async (_url, { body }) => {
       const query = body.get('query');
       const role = query.match(/BIND\("([^"]+)" AS \?role/)[1];
+      if (query.includes('VALUES (?iso ?seat'))
+        return Response.json({
+          results: { bindings: [row('AAA', role, 'Q10')] },
+        });
       const countries = [
         ...query.match(/VALUES \?iso \{([^}]+)\}/)[1].matchAll(/"([^"]+)"/g),
       ].map((match) => match[1]);
