@@ -12,6 +12,7 @@ const URLS = [
 ];
 const LIMIT = 10_000_000;
 export const estimatedBytes = 100_000;
+export const requestHost = 'ucdp.uu.se';
 const NAME_ALIASES = {
   'Central African Republic': 'CAF',
   'DR Congo': 'COD',
