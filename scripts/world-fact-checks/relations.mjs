@@ -31,11 +31,14 @@ const sanctions = {
 };
 
 export default async function checkRelations({ board, getDetail }) {
+  const now = Date.now();
+  const dayMs = 86_400_000;
+  const today = Math.floor(now / dayMs) * dayMs;
   const snapshot = board ?? {};
   const features = snapshot.features ?? {};
-  const rows = currentRelations(snapshot);
+  const rows = currentRelations(snapshot, now);
   const detail = await getDetail('USA', 'diplomacy').catch(() => null);
-  const usaDetails = currentRelations(detail ?? {});
+  const usaDetails = currentRelations(detail ?? {}, now);
   const checks = [];
   const add = (id, expected, found, source, pass) =>
     checks.push({
@@ -116,13 +119,17 @@ export default async function checkRelations({ board, getDetail }) {
       wars.every(
         ({ from, to, events }) =>
           events.length > 0 &&
-          classifyDiplomacy(from, to, rows) === 'at-war' &&
-          events.every(
-            ({ a, b, sourceUrl }) =>
-              [a, b].includes(from) &&
-              [a, b].includes(to) &&
-              new URL(sourceUrl).origin === 'https://ucdp.uu.se',
-          ),
+          classifyDiplomacy(from, to, rows, now) === 'at-war' &&
+          events.every(({ a, b, date, sourceUrl }) => {
+            const eventDay = Date.parse(date);
+            return (
+              ((a === from && b === to) || (a === to && b === from)) &&
+              today - eventDay >= 0 &&
+              today - eventDay <= 90 * dayMs &&
+              new Date(eventDay).toISOString().slice(0, 10) === date &&
+              URL.parse(sourceUrl)?.origin === 'https://ucdp.uu.se'
+            );
+          }),
       ),
   );
   const annual = features['relations-ucdp'];
