@@ -10,6 +10,7 @@ const ROLES = [
 ];
 
 export const shouldCheck = (context) => actorSourceDue(context, 7 * 24);
+export const requestHost = 'query.wikidata.org';
 
 function countryCodes(registry) {
   return new Set(
