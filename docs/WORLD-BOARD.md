@@ -53,6 +53,14 @@ After securing written IMF permission for automated extraction, set `GEV_WORLD_P
 
 Exposure shows monthly Brent, WTI, and European natural gas from FRED, each in its source units and month. The route model remains unavailable pending a suitable licensed shipping network, independently validated routes and calibration. Offline acceptance uses clearly labelled synthetic route shares to exercise both import denominators and route lines.
 
+## Assets and ownership
+
+The Assets tab lists facilities by host country, verified foreign holdings and separately documented military presence. Map markers use source coordinates and cluster by host and type at globe zoom. Rows without coordinates remain available in the sheet. Asset cards keep owners, operators and legal jurisdiction separate and link to the evidence. The Ownership lens highlights a selected country's verified foreign holdings. Unresolved ownership remains hatched. Draft records cannot establish Ownership highlights.
+
+Power-plant markers use the historical WRI v1.3.0 inventory for non-nuclear plants of at least 100 MW. The age of the inventory and unknown current status appear in the cards. Wikidata supplies nuclear and launch facilities and candidate operator claims. An NGA port gets an operator only when a single candidate agrees by normalized name, country and position. Ports and scheduled large airports carry no inferred ownership. No asset source changes a score.
+
+The 80 military sites, 50 fabs and nine FAS possession badges remain draft. A military sending country describes presence. Company group affiliation does not establish the title to a fab. The FAS badge displays separately from scores. GEM sources wait for the owner-supplied download and verified per-file licence.
+
 ## Fixture acceptance
 
 Run the fixture harness against the World Board development server on port 5183.

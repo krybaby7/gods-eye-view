@@ -1,0 +1,94 @@
+.world-assets,
+.world-asset-section {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.world-assets :is(h3, p) {
+  margin: 0;
+}
+
+.world-assets h3 {
+  font-size: 0.94rem;
+  color: #cbe5f4;
+}
+
+.world-assets a,
+.world-asset-badge a {
+  color: #a6def5;
+}
+
+.world-asset-badge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.45rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid rgb(197 218 137 / 48%);
+  border-radius: 0.3rem;
+  color: #dce6af;
+}
+
+.world-asset-draft {
+  color: #ffd7a1;
+}
+
+.world-asset-meta {
+  color: #aebfcd;
+}
+
+.world-asset-details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.3rem 0.6rem;
+  margin: 0;
+}
+
+.world-asset-details dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.world-asset-list,
+.world-asset-sources {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.world-asset-list li {
+  display: grid;
+  gap: 0.22rem;
+  padding: 0.38rem;
+  border: 1px solid rgb(148 192 211 / 23%);
+  border-radius: 0.3rem;
+}
+
+.world-asset-select {
+  padding: 0;
+  color: #a6def5;
+  background: none;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.world-asset-select:is(:hover, :focus-visible) {
+  text-decoration: underline;
+}
+
+.world-asset-disclosure summary {
+  padding: 0.25rem 0;
+  color: #b9d9ea;
+  cursor: pointer;
+}
+
+body:has(#world-lens-bar [data-world-lens='ownership'][aria-pressed='true'])
+  #world-legend
+  .world-legend-ramp {
+  background: #519bd4;
+}
