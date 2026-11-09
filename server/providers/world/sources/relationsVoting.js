@@ -1,8 +1,8 @@
-import { TextDecoder } from 'node:util';
-import { readResponseTextCapped } from '../../common/http.js';
+import { createReadStream } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { makeRelation, relationResult } from '../relations.js';
-import { fetchResponse } from './common.js';
-import { columnIndices, csvRows } from './csv.js';
+import { columnIndices, csvRecords, csvRows } from './csv.js';
+import { downloadWorldFile } from './download.js';
 
 const RELEASE = '39';
 const YEAR = '2024';
@@ -12,6 +12,8 @@ const AGREEMENT = 'https://dataverse.harvard.edu/api/access/datafile/11837234';
 const IDEAL_POINTS =
   'https://dataverse.harvard.edu/api/access/datafile/14098429';
 const LIMIT = 170_000_000;
+
+export const estimatedBytes = 147_000_000;
 
 export async function votingRelations(idealPoints, lines, countryIds) {
   const countries = new Set(countryIds);
@@ -86,44 +88,28 @@ export function shouldCheck({ data }) {
   return data?.sourceVersion !== RELEASE;
 }
 
-export async function fetchObservations({ fetchImpl, registry, data }) {
-  const signal = AbortSignal.timeout(180_000);
-  const codes = await readResponseTextCapped(
-    await fetchResponse(fetchImpl, IDEAL_POINTS, signal),
-    3_000_000,
-    signal,
-  );
-  const response = await fetchResponse(fetchImpl, AGREEMENT, signal);
-  if (
-    Number(response.headers.get('content-length')) > LIMIT ||
-    !response.body
-  ) {
-    await response.body?.cancel();
-    throw new Error('Unexpected Voeten agreement download size');
-  }
-  async function* boundedLines() {
-    const decoder = new TextDecoder();
-    let bytes = 0;
-    let pending = '';
-    for await (const chunk of response.body) {
-      signal.throwIfAborted();
-      bytes += chunk.byteLength;
-      if (bytes > LIMIT)
-        throw new Error('Voeten agreement download exceeds size limit');
-      const lines = (pending + decoder.decode(chunk, { stream: true })).split(
-        '\n',
-      );
-      pending = lines.pop();
-      if (pending.length > 64_000)
-        throw new Error('Voeten agreement CSV line exceeds size limit');
-      yield* lines;
-    }
-    pending += decoder.decode();
-    if (pending) yield pending;
-  }
+export async function fetchObservations({
+  fetchImpl,
+  registry,
+  data,
+  cacheDirectory,
+  onProgress,
+  signal,
+}) {
+  const options = { fetchImpl, cacheDirectory, signal, immutable: true };
+  const mapping = await downloadWorldFile(IDEAL_POINTS, {
+    ...options,
+    maxBytes: 3_000_000,
+  });
+  const codes = await readFile(mapping.path, { encoding: 'utf8', signal });
+  const agreement = await downloadWorldFile(AGREEMENT, {
+    ...options,
+    maxBytes: LIMIT,
+    onProgress,
+  });
   const relations = await votingRelations(
     codes,
-    boundedLines(),
+    csvRecords(createReadStream(agreement.path, { signal })),
     registry.countries.map(({ iso3 }) => iso3),
   );
   const result = relationResult(

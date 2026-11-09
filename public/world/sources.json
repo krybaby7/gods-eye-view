@@ -116,7 +116,7 @@
   {
     "id": "relations-sanctions-uk",
     "name": "UK sanctions regimes",
-    "access": "Keyless published UK Sanctions List CSV",
+    "access": "Keyless published UK Sanctions List ODT",
     "attribution": "Foreign, Commonwealth & Development Office, UK Sanctions List",
     "url": "https://www.gov.uk/government/publications/the-uk-sanctions-list",
     "licence": "Open Government Licence v3.0",
@@ -126,7 +126,7 @@
   {
     "id": "relations-sanctions-ofac",
     "name": "US OFAC sanctions",
-    "access": "Keyless published SDN legacy XML",
+    "access": "Keyless published SDN primary CSV",
     "attribution": "U.S. Treasury Office of Foreign Assets Control, Specially Designated Nationals List",
     "url": "https://ofac.treasury.gov/sanctions-list-service",
     "licence": "US government public information",
