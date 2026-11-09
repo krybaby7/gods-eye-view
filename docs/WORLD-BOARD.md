@@ -16,6 +16,16 @@ For C2, official keyless [UCDP Candidate Events CSV releases](https://ucdp.uu.se
 
 For C6, the exact `v2cacamps` variable in the V-Dem v16 codebook §3.15.1.1 has interval endpoints −3.81 to 3.94. Refresh streams the CSV inside the official Full+Others archive and retains the latest usable reading per mapped country. The v16 compressed download is 26.9 MB. [V-Dem](https://www.v-dem.net/data/the-v-dem-dataset/) data is CC BY-SA 4.0.
 
+## Diplomacy
+
+Select a country and choose **Diplomacy** to see its documented relations. The order is at war, sanctions, ally, rival, partner, neutral. The draft UN voting agreement anchors are below 40% for rival and at least 80% for partner. Midrange agreement or a diplomatic link can support neutral. Unknown and disputed areas hatch.
+
+The Relations tab groups treaty commitments, bloc memberships, rivals, wars, directed sanctions, partnerships and territorial disputes. Click a row or a globe line to open its evidence card. War lines are dotted red and alliances are dashed. If several lines share endpoints, the globe shows the highest-priority line and the tab retains every record.
+
+The latest UCDP annual release used here covers 2025 and includes state-based dyads that meet the 25 battle-death threshold. Ended episodes appear in the tab and do not colour the map as ongoing war. Armed groups and coalitions retain their identities. The Voeten agreement file available in Dataverse v39 covers session 79 (2024). Quad and AUKUS are shown as diplomatic and defence cooperation respectively. Curated evidence carries a draft review badge.
+
+The sanctions adapters count designation records by programme from the UN consolidated XML, UK Sanctions List CSV and OFAC SDN XML. A programme appears as a country relation only when an independent source documents the country link. Refresh reports how many programme identifiers were mapped and how many were left out. If the UN list fails on the first turn, the board displays four cited committee programmes with unavailable designation counts.
+
 ## Adding a phase
 
 - Add `src/layers/world/phase-N.js` with a default descriptor. Its optional arrays are `lenses` (id, label, order, color and legend, plus optional hover), `overlays` (factories), `tabs` (id, render and optional label/order), `cards` (type, label and render), `header`, `rowFlags` and `hoverFlags`. Vite loads it and `src/ui/styles/world-phase-N.css` automatically.

@@ -1,0 +1,52 @@
+[
+  {
+    "id": "rel_rupture_ukraine_russia",
+    "type": "diplomatic_rupture",
+    "from": "UKR",
+    "to": "RUS",
+    "directed": true,
+    "start": "2022-02-24",
+    "end": null,
+    "detail": "Ukraine severed diplomatic relations with the Russian Federation.",
+    "conditions": null,
+    "sources": [
+      "https://mfa.gov.ua/en/news/statement-ministry-foreign-affairs-ukraine-regarding-severance-diplomatic-relations-russian-federation"
+    ],
+    "evidence": "documented",
+    "dateChecked": "2026-11-09",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rupture_usa_iran",
+    "type": "diplomatic_rupture",
+    "from": "USA",
+    "to": "IRN",
+    "directed": true,
+    "start": "1980",
+    "end": null,
+    "detail": "The United States cut diplomatic ties with Iran in 1980.",
+    "conditions": null,
+    "sources": [
+      "https://history.state.gov/countries/iran",
+      "https://2021-2025.state.gov/u-s-relations-with-iran/"
+    ],
+    "evidence": "documented",
+    "dateChecked": "2026-11-09",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rupture_georgia_russia",
+    "type": "diplomatic_rupture",
+    "from": "GEO",
+    "to": "RUS",
+    "directed": true,
+    "start": "2008",
+    "end": null,
+    "detail": "Georgia cut diplomatic relations with Russia following the August 2008 war.",
+    "conditions": null,
+    "sources": ["https://mfa.gov.ge/bilateral-relations/ru"],
+    "evidence": "documented",
+    "dateChecked": "2026-11-09",
+    "reviewed": false
+  }
+]

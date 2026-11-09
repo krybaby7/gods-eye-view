@@ -92,5 +92,85 @@
     "licence": "BACI is Etalab Open Licence 2.0; route network and model publication pending validation",
     "releaseRhythm": "BACI annual; candidate data year 2024",
     "marks": ["Unavailable"]
+  },
+  {
+    "id": "relations-curated",
+    "name": "Curated relation evidence",
+    "access": "Bundled editorial tables",
+    "attribution": "World Board treaty, diplomatic and territorial research",
+    "url": "https://www.wikidata.org/wiki/Property:P1336",
+    "licence": "Original summaries and cited factual claims; Wikidata seeds CC0",
+    "releaseRhythm": "Manual, with checked date",
+    "marks": []
+  },
+  {
+    "id": "relations-ucdp",
+    "name": "UCDP armed conflict dyads",
+    "access": "Keyless public annual CSV ZIP files",
+    "attribution": "UCDP/PRIO Armed Conflict Dataset and UCDP Dyadic Dataset v26.1",
+    "url": "https://ucdp.uu.se/downloads/",
+    "licence": "CC BY 4.0",
+    "releaseRhythm": "Annual, pinned to v26.1",
+    "marks": []
+  },
+  {
+    "id": "relations-voting",
+    "name": "Voeten UN voting agreement",
+    "access": "Keyless Harvard Dataverse public bulk files",
+    "attribution": "Erik Voeten, United Nations General Assembly Ideal Points, Harvard Dataverse v39",
+    "url": "https://doi.org/10.7910/DVN/LEJUQZ",
+    "licence": "CC0 1.0",
+    "releaseRhythm": "Release-pinned to v39, agreement through session 79",
+    "marks": []
+  },
+  {
+    "id": "relations-blocs",
+    "name": "Wikidata bloc memberships",
+    "access": "Keyless Wikidata SPARQL and official participant lists",
+    "attribution": "Wikidata contributors, P463; official bloc participant lists",
+    "url": "https://www.wikidata.org/wiki/Property:P463",
+    "licence": "CC0 1.0 for Wikidata; factual citations for official lists",
+    "releaseRhythm": "Continuous; checked on Refresh after seven days",
+    "marks": []
+  },
+  {
+    "id": "relations-diplomatic",
+    "name": "Wikidata diplomatic links",
+    "access": "Keyless Wikidata SPARQL",
+    "attribution": "Wikidata contributors, P530",
+    "url": "https://www.wikidata.org/wiki/Property:P530",
+    "licence": "CC0 1.0",
+    "releaseRhythm": "Continuous; checked on Refresh after seven days",
+    "marks": []
+  },
+  {
+    "id": "relations-sanctions-un",
+    "name": "UN Security Council sanctions",
+    "access": "Keyless published consolidated XML",
+    "attribution": "United Nations Security Council Consolidated Sanctions List and sanctions committees",
+    "url": "https://main.un.org/securitycouncil/en/content/un-sc-consolidated-list",
+    "licence": "Public factual programme metadata; UN site terms apply to text",
+    "releaseRhythm": "Checked monthly on Refresh",
+    "marks": []
+  },
+  {
+    "id": "relations-sanctions-uk",
+    "name": "UK sanctions regimes",
+    "access": "Keyless published UK Sanctions List CSV",
+    "attribution": "Foreign, Commonwealth & Development Office, UK Sanctions List",
+    "url": "https://www.gov.uk/government/publications/the-uk-sanctions-list",
+    "licence": "Open Government Licence v3.0",
+    "releaseRhythm": "Checked monthly on Refresh",
+    "marks": []
+  },
+  {
+    "id": "relations-sanctions-ofac",
+    "name": "US OFAC sanctions",
+    "access": "Keyless published SDN legacy XML",
+    "attribution": "U.S. Treasury Office of Foreign Assets Control, Specially Designated Nationals List",
+    "url": "https://ofac.treasury.gov/sanctions-list-service",
+    "licence": "US government public information",
+    "releaseRhythm": "Checked monthly on Refresh",
+    "marks": []
   }
 ]

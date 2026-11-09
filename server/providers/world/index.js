@@ -5,6 +5,7 @@ import { scoreCountries } from './scores.js';
 import { createWorldStore } from './store.js';
 import { createTurn } from './turn.js';
 import './dependencies.js';
+import './phase-3.js';
 
 const USER_AGENT =
   'GodsEyeView-WorldBoard/0.2 (https://github.com/krybaby7/gods-eye-view)';

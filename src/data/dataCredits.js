@@ -213,6 +213,20 @@ export const DATA_CREDITS = [
       '<a href="https://fred.stlouisfed.org/" target="_blank" rel="noopener">FRED (EIA and IMF)</a> · ' +
       '<a href="https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37" target="_blank" rel="noopener">CEPII BACI (candidate)</a>',
   },
+  {
+    key: 'world-board-relations',
+    html:
+      'World Board relations: ' +
+      '<a href="https://ucdp.uu.se/downloads/" target="_blank" rel="noopener">UCDP/PRIO and UCDP Dyadic v26.1</a> · ' +
+      '<a href="https://doi.org/10.7910/DVN/LEJUQZ" target="_blank" rel="noopener">Erik Voeten, Harvard Dataverse v39</a> · ' +
+      '<a href="https://www.wikidata.org/wiki/Property:P463" target="_blank" rel="noopener">Wikidata bloc memberships</a> · ' +
+      '<a href="https://www.wikidata.org/wiki/Property:P530" target="_blank" rel="noopener">Wikidata diplomatic links</a> · ' +
+      '<a href="https://www.wikidata.org/wiki/Property:P1336" target="_blank" rel="noopener">Wikidata territorial seeds</a> · ' +
+      '<a href="https://main.un.org/securitycouncil/en/content/un-sc-consolidated-list" target="_blank" rel="noopener">UN Security Council</a> · ' +
+      '<a href="https://www.gov.uk/government/publications/the-uk-sanctions-list" target="_blank" rel="noopener">UK FCDO</a> · ' +
+      '<a href="https://ofac.treasury.gov/sanctions-list-service" target="_blank" rel="noopener">US Treasury OFAC</a>. ' +
+      'Treaty and official membership sources are linked in relation cards.',
+  },
   // War monitor: headline, snippet, link and publisher only. One group per
   // transport; every fetched source in public/news/sources.json is named here.
   {
