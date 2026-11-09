@@ -17,6 +17,8 @@ const HISTORY = `${CATALOG}olddw.html`;
 const DOWNLOADS = `${CATALOG}candidateged/`;
 const BULK_LIMIT = 50_000_000;
 
+export const estimatedBytes = 34_000_000;
+
 // Candidate's country column uses Gleditsch and Ward labels.
 const COUNTRY_ALIASES = {
   'Cambodia (Kampuchea)': 'KHM',
