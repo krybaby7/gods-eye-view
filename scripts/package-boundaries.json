@@ -352,6 +352,8 @@
       "server/providers/world/phase-3.js",
       "server/providers/world/relations.js",
       "server/providers/world/sources/relationsCurated.js",
+      "public/world/curated/bloc-memberships.json",
+      "public/world/curated/sanctions-programmes.json",
       "server/providers/world/sources/relationsUcdp.js",
       "server/providers/world/sources/relationsVoting.js",
       "server/providers/world/sources/relationsWikidata.js",
