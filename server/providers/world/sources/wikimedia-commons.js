@@ -36,7 +36,9 @@ function portraitAt(info) {
   const image = new URL(thumbnail);
   const page = new URL(file);
   if (
-    image.hostname !== 'upload.wikimedia.org' ||
+    !['https://upload.wikimedia.org', 'https://thumb.wikimedia.org'].includes(
+      image.origin,
+    ) ||
     !image.pathname.startsWith('/wikipedia/commons/thumb/') ||
     page.hostname !== 'commons.wikimedia.org' ||
     !page.pathname.startsWith('/wiki/File:')

@@ -24,6 +24,7 @@ export function fetchObservations(context) {
       /^\/channel\/(UC[\w-]{22})$/,
     ),
     urlFor: youtubeFeedUrl,
+    deadlineRetries: 2,
     readPosts: (response) =>
       readActorRss(response, (host) => host === 'www.youtube.com'),
   });

@@ -363,6 +363,7 @@
       "server/providers/world/sources/actor-organizations.js",
       "server/providers/world/sources/bluesky.js",
       "server/providers/world/sources/government-rss.js",
+      "server/providers/world/sources/wdqs.js",
       "server/providers/world/sources/wikidata.js",
       "server/providers/world/sources/wikimedia-commons.js",
       "server/providers/world/sources/youtube-rss.js",

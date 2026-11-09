@@ -29,6 +29,8 @@ test('Commons uses attributed, free thumbnails and skips unusable metadata', asy
       wikidata: {
         actors: [
           { imageFile: 'Free.jpg' },
+          { imageFile: 'Current CDN.jpg' },
+          { imageFile: 'Spoof.jpg' },
           { imageFile: 'No licence.jpg' },
           { imageFile: 'Original.jpg' },
           { imageFile: 'No author.jpg' },
@@ -45,6 +47,22 @@ test('Commons uses attributed, free thumbnails and skips unusable metadata', asy
               'CC BY 4.0',
               thumb,
               '<a href="/wiki/User:Example">Example &amp; Co</a>',
+            ),
+            portrait(
+              'Current CDN.jpg',
+              'CC BY 4.0',
+              thumb.replace('upload.wikimedia.org', 'thumb.wikimedia.org') +
+                '?utm_source=commons.wikimedia.org',
+              'Example',
+            ),
+            portrait(
+              'Spoof.jpg',
+              'CC BY 4.0',
+              thumb.replace(
+                'upload.wikimedia.org',
+                'thumb.wikimedia.org.example',
+              ),
+              'Example',
             ),
             portrait(
               'No licence.jpg',
@@ -64,7 +82,12 @@ test('Commons uses attributed, free thumbnails and skips unusable metadata', asy
       });
     },
   });
-  assert.equal(count, 1);
+  assert.equal(count, 2);
+  assert.equal(
+    new URL(data.portraits['Current CDN.jpg'].thumbnail).hostname,
+    'thumb.wikimedia.org',
+  );
+  assert.equal(data.portraits['Spoof.jpg'], undefined);
   assert.deepEqual(data.portraits['Free.jpg'], {
     thumbnail: thumb,
     file: 'https://commons.wikimedia.org/wiki/File:Free.jpg',
@@ -152,5 +175,70 @@ test('YouTube Atom and official RSS return linked headlines only', async () => {
     gov.data.feeds['https://www.federalreserve.gov/feeds/press_all.xml']
       .posts[0].text,
     'Public bulletin',
+  );
+});
+test('Bluesky treats only the documented missing profile response as unavailable', async () => {
+  const { fetchObservations } = await import('./bluesky.js');
+  const unavailable = 'https://bsky.app/profile/removed.example.org';
+  const other = 'https://bsky.app/profile/other.example.org';
+  const { data, detail, error } = await fetchObservations({
+    now,
+    features: {
+      wikidata: { actors: [{ accounts: { bluesky: [unavailable, other] } }] },
+    },
+    data: { feeds: { [unavailable]: { posts: [{ text: 'Old post' }] } } },
+    fetchImpl: async (url) => {
+      const removed = new URL(url).searchParams
+        .get('actor')
+        .startsWith('removed');
+      return json(
+        {
+          error: 'InvalidRequest',
+          message: removed ? 'Profile not found' : 'Unexpected parameter',
+        },
+        { status: 400 },
+      );
+    },
+  });
+  assert.deepEqual(data.feeds[unavailable].posts, []);
+  assert.equal(data.feeds[other], undefined);
+  assert.match(error, /^1 feed request/);
+  assert.match(detail, /1 account unavailable/);
+});
+
+test('YouTube retries a timed-out request once with a fresh short deadline and preserves posts on failure', async () => {
+  const { fetchObservations } = await import('./youtube-rss.js');
+  const channel = 'https://www.youtube.com/channel/UCabcdefghijklmnopqrstuv';
+  const signals = [];
+  const context = {
+    now,
+    features: { wikidata: { actors: [{ accounts: { youtube: channel } }] } },
+    data: { feeds: { [channel]: { posts: [{ text: 'Last good post' }] } } },
+  };
+  const recovered = await fetchObservations({
+    ...context,
+    fetchImpl: async (_url, { signal }) => {
+      signals.push(signal);
+      if (signals.length === 1)
+        throw new DOMException('Deadline', 'TimeoutError');
+      return new Response('<feed></feed>');
+    },
+  });
+  assert.equal(recovered.error, undefined);
+  assert.equal(signals.length, 2);
+  assert.notEqual(signals[0], signals[1]);
+  let calls = 0;
+  const failed = await fetchObservations({
+    ...context,
+    fetchImpl: async () => {
+      calls += 1;
+      throw new DOMException('Deadline', 'TimeoutError');
+    },
+  });
+  assert.equal(calls, 2);
+  assert.match(failed.error, /Deadline/);
+  assert.deepEqual(
+    failed.data.feeds[channel].posts,
+    context.data.feeds[channel].posts,
   );
 });
