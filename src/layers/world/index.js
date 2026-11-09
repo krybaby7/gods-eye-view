@@ -202,7 +202,7 @@ export function createWorldLayer({
     removeFrame = viewer.scene.preRender.addEventListener(frame);
   }
 
-  async function load(method, parent) {
+  async function load(method, parent, sourceId) {
     if (!lifecycle || !source || pending) return;
     const controller = new AbortController();
     pending = controller;
@@ -213,7 +213,7 @@ export function createWorldLayer({
     error = null;
     notify();
     try {
-      const next = await source[method]({ signal });
+      const next = await source[method]({ signal, sourceId });
       signal.throwIfAborted();
       snapshot = next;
       if (!geometry && snapshot.countryIndex.length) {
@@ -268,7 +268,7 @@ export function createWorldLayer({
           fixtures: new URLSearchParams(globalThis.location?.search).has(
             'world-fixtures',
           ),
-          refresh: () => load('refresh'),
+          refresh: (sourceId) => load('refresh', undefined, sourceId),
         }),
       );
       needsPaint = overlaysDirty = true;

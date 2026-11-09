@@ -121,14 +121,17 @@ export function createTurn({
     }
   }
   changes.push(...featureChanges);
+  const flagChanges = featureChanges.filter(
+    ({ kind }) => kind === 'condition-flag',
+  );
   return {
     number,
     startedAt,
     endedAt,
     sources,
     newObservations,
-    newEvents: 0,
-    statusChanges: 0,
+    newEvents: flagChanges.filter(({ action }) => action === 'set').length,
+    statusChanges: flagChanges.length,
     newEstimates: 0,
     changes,
   };

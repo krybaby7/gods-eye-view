@@ -18,9 +18,11 @@ test('board reads and Refresh use their own same-origin routes', async () => {
   });
   assert.deepEqual(await source.getSnapshot(), state);
   assert.deepEqual(await source.refresh(), state);
+  assert.deepEqual(await source.refresh({ sourceId: 'gdacs' }), state);
   assert.deepEqual(calls, [
     ['/api/world', 'GET', 'no-store'],
     ['/api/world/refresh', 'POST', 'no-store'],
+    ['/api/world/refresh?source=gdacs', 'POST', 'no-store'],
   ]);
 });
 
