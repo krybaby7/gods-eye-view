@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { gunzipSync } from 'node:zlib';
 
 async function setup(t) {
   const cacheDir = await mkdtemp(join(tmpdir(), 'gev-world-'));
@@ -154,9 +155,14 @@ test('first launch saves base scores and publishes finished background sources w
 
 test('the source queue starts at most four ready sources in estimated size order', async (t) => {
   const { createWorldService } = await import('./index.js');
-  const release = Promise.withResolvers();
   const sizes = { large: 90, tiny: 1, small: 2, middle: 5, bigger: 20 };
+  const releases = new Map(
+    Object.keys(sizes).map((id) => [id, Promise.withResolvers()]),
+  );
+  const lastStarted = Promise.withResolvers();
   const starts = [];
+  const active = new Set();
+  let maximum = 0;
   const service = createWorldService({
     ...(await setup(t)),
     loadRegistry: async () => ({
@@ -171,7 +177,11 @@ test('the source queue starts at most four ready sources in estimated size order
           shouldCheck: () => true,
           async fetchObservations() {
             starts.push(id);
-            await release.promise;
+            active.add(id);
+            maximum = Math.max(maximum, active.size);
+            if (id === 'large') lastStarted.resolve();
+            await releases.get(id).promise;
+            active.delete(id);
             return {};
           },
         },
@@ -179,15 +189,126 @@ test('the source queue starts at most four ready sources in estimated size order
     ),
   });
   t.after(() => {
-    release.resolve();
+    for (const release of releases.values()) release.resolve();
     return service.whenIdle();
   });
   await service.snapshot();
   await new Promise((resolve) => setImmediate(resolve));
   assert.deepEqual(starts, ['tiny', 'small', 'middle', 'bigger']);
-  release.resolve();
+  releases.get('small').resolve();
+  await lastStarted.promise;
+  assert.deepEqual([...active], ['tiny', 'middle', 'bigger', 'large']);
+  for (const release of releases.values()) release.resolve();
   assert.equal((await settled(service)).turn.sources.length, 5);
   assert.equal(starts.at(-1), 'large');
+  assert.equal(maximum, 4);
+});
+
+test('resuming the first launch preserves completed source results and counts', async () => {
+  const { createWorldService } = await import('./index.js');
+  const checkpoint = Promise.withResolvers();
+  const blocked = Promise.withResolvers();
+  let state = { board: null, observations: [], turns: [], lastCheckedAt: {} };
+  let baseCalls = 0;
+  let slowCalls = 0;
+  const options = {
+    loadRegistry: async () => registry,
+    store: {
+      read: async () => structuredClone(state),
+      async write(next) {
+        state = structuredClone(next);
+        checkpoint.resolve();
+      },
+    },
+    adapters: {
+      worldbank: {
+        shouldCheck: () => true,
+        fetchObservations({ now }) {
+          baseCalls++;
+          return { observations: [observation(100, now)] };
+        },
+      },
+      ucdp: {
+        shouldCheck: () => true,
+        async fetchObservations() {
+          if (++slowCalls === 1) await blocked.promise;
+          return {};
+        },
+      },
+    },
+  };
+  const interrupted = createWorldService(options);
+  await interrupted.snapshot();
+  await checkpoint.promise;
+  const restarted = createWorldService(options);
+  try {
+    await restarted.snapshot();
+    const { turn } = await settled(restarted);
+    assert.equal(turn.number, 1);
+    assert.equal(turn.newObservations, 1);
+    assert.equal(turn.sources.find(({ id }) => id === 'worldbank').count, 1);
+    assert.equal(baseCalls, 1);
+  } finally {
+    blocked.resolve();
+    await interrupted.whenIdle();
+  }
+});
+
+test('adapter version changes rederive even when the release is not due', async () => {
+  const { createWorldService } = await import('./index.js');
+  let state = { board: null, observations: [], turns: [], lastCheckedAt: {} };
+  const seen = [];
+  const registryWithIndicator = {
+    ...registry,
+    indicators: [
+      {
+        id: 'SP.POP.TOTL',
+        source: 'worldbank',
+        slot: 'S1',
+        anchors: { a: 0, b: 100 },
+        staleAfterMonths: 18,
+      },
+    ],
+  };
+  const options = (version) => ({
+    loadRegistry: async () => registryWithIndicator,
+    store: {
+      read: async () => state,
+      write: async (next) => {
+        state = next;
+      },
+    },
+    adapters: {
+      worldbank: {
+        version,
+        shouldCheck: ({ lastCheckedAt }) => !lastCheckedAt,
+        fetchObservations({ data, now, rederive }) {
+          seen.push({ data, rederive });
+          return {
+            data: { revision: version },
+            observations: version === 1 ? [observation(100, now)] : [],
+          };
+        },
+      },
+    },
+  });
+  const original = createWorldService(options(1));
+  await original.snapshot();
+  await settled(original);
+  const changed = createWorldService(options(2));
+  await changed.refresh();
+  const refreshed = await settled(changed);
+  assert.deepEqual(seen, [
+    { data: undefined, rederive: false },
+    { data: { revision: 1 }, rederive: true },
+  ]);
+  assert.deepEqual(refreshed.features.worldbank, { revision: 2 });
+  assert.equal(refreshed.turn.sources[0].rederived, true);
+  assert.equal(state.sourceVersions.worldbank, 2);
+  assert.deepEqual(state.observations, []);
+  await changed.refresh();
+  await settled(changed);
+  assert.equal(seen.length, 2);
 });
 
 test('refresh retains revised vintages, persists turn history and isolates a failed source', async (t) => {
@@ -267,7 +388,24 @@ test('world routes admit local same-origin requests with exact methods', async (
   const service = createWorldService({
     ...(await setup(t)),
     loadRegistry: async () => registry,
-    adapters: {},
+    adapters: {
+      worldbank: {
+        shouldCheck: () => true,
+        fetchObservations: () => ({ data: { summary: 1, detail: [1, 2, 3] } }),
+      },
+    },
+    featureViews: new Map([
+      [
+        'proof',
+        {
+          summary: { worldbank: ({ summary }) => ({ summary }) },
+          detail: ({ features, country }) => ({
+            country,
+            records: features.worldbank.detail,
+          }),
+        },
+      ],
+    ]),
   });
   async function request(url, method, headers = {}, remoteAddress = '::1') {
     const req = {
@@ -282,7 +420,12 @@ test('world routes admit local same-origin requests with exact methods', async (
         this.headers[key] = value;
       },
       end(value) {
-        this.payload = JSON.parse(value);
+        this.raw = value;
+        this.payload = JSON.parse(
+          this.headers['Content-Encoding'] === 'gzip'
+            ? gunzipSync(value)
+            : value,
+        );
       },
     };
     await service.handle(req, res, () => {
@@ -318,11 +461,40 @@ test('world routes admit local same-origin requests with exact methods', async (
   });
   assert.equal(accepted.statusCode, 202);
   assert.equal(accepted.headers['Cache-Control'], 'no-store');
-  assert.ok(accepted.payload.progress);
+  assert.ok(accepted.payload.refresh);
+  assert.equal(accepted.payload.countries, undefined);
   await settled(service);
-  const saved = await request('/api/world?unused=1', 'GET');
+  const saved = await request('/api/world?unused=1', 'GET', {
+    'accept-encoding': 'gzip',
+  });
   assert.equal(saved.statusCode, 200);
   assert.equal(saved.payload.turn.number, 1);
+  assert.equal(saved.headers['Content-Encoding'], 'gzip');
+  assert.deepEqual(saved.payload.features.worldbank, { summary: 1 });
+  const progress = await request('/api/world/progress', 'GET');
+  assert.deepEqual(progress.payload, {
+    refresh: null,
+    revision: saved.payload.revision,
+  });
+  const details = await request(
+    '/api/world/detail?country=USA&lens=proof',
+    'GET',
+  );
+  assert.deepEqual(details.payload, {
+    country: 'USA',
+    lens: 'proof',
+    data: { country: 'USA', records: [1, 2, 3] },
+  });
+  assert.equal(
+    (await request('/api/world/detail?country=FAKE&lens=proof', 'GET'))
+      .statusCode,
+    400,
+  );
+  assert.equal(
+    (await request('/api/world/detail?country=USA&lens=unknown', 'GET'))
+      .statusCode,
+    404,
+  );
 });
 
 test('a persistence failure leaves the saved board intact and can be retried', async (t) => {
