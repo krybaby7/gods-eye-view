@@ -56,7 +56,10 @@ test('GDELT requires five unique events from three domains in 72 hours', () => {
     Object.assign(fields, {
       0: id,
       1: '20261109',
-      7: 'NER',
+      5: 'ACTOR' + id,
+      12: 'MIL',
+      15: 'TARGET',
+      26: root + '0',
       28: root,
       52: 'India',
       53: fips,
@@ -84,6 +87,7 @@ test('GDELT requires five unique events from three domains in 72 hours', () => {
     { iso3: 'IRL' },
   ]);
   const flags = gdeltFlags([batch, batch], now);
+  assert.equal(batch.events.filter(([, iso]) => iso !== 'IND').length, 3);
   assert.deepEqual(
     flags.map(({ iso3, slot, stage }) => [iso3, slot, stage]),
     [['IND', 'C6', 'reported']],
@@ -163,5 +167,61 @@ test('GDELT leaves the publisher’s upcoming batch unused and tolerates a missi
   assert.deepEqual(
     result.data.batches.map(({ date }) => date),
     [date],
+  );
+});
+
+test('GDELT does not count five articles about one coded event as five events', () => {
+  const rows = Array.from({ length: 5 }, (_, i) => {
+    const f = Array(61).fill('');
+    Object.assign(f, {
+      0: String(100 + i),
+      1: '20261109',
+      5: 'GOV',
+      6: 'GOVERNMENT',
+      12: 'MIL',
+      15: 'OPP',
+      16: 'OPPOSITION',
+      26: '190',
+      28: '19',
+      52: 'London',
+      53: 'UK',
+      56: '51.5',
+      57: '-0.1',
+      60: `https://news${i}.example/story`,
+    });
+    return f.join('\t');
+  });
+  const batch = gdeltBatch(rows.join('\n'), '2026-11-09T00:00:00.000Z', now, [
+    { iso3: 'GBR' },
+  ]);
+  assert.equal(batch.events.length, 5);
+  assert.deepEqual(gdeltFlags([batch], now), []);
+});
+
+test('GDELT fight codes require a coded armed actor for the conflict slot', () => {
+  const rows = Array.from({ length: 10 }, (_, i) => {
+    const fields = Array(61).fill('');
+    Object.assign(fields, {
+      0: String(200 + i),
+      1: '20261109',
+      5: `ACTOR${i}`,
+      15: 'TARGET',
+      22: i < 5 ? 'CVL' : 'INS',
+      26: '193',
+      28: '19',
+      52: 'London',
+      53: i < 5 ? 'UK' : 'CA',
+      60: `https://source${i % 3}.example/story-${i}`,
+    });
+    return fields.join('\t');
+  });
+  const batch = gdeltBatch(rows.join('\n'), '2026-11-09T00:00:00.000Z', now, [
+    { iso3: 'GBR' },
+    { iso3: 'CAN' },
+  ]);
+  const flags = gdeltFlags([batch], now);
+  assert.deepEqual(
+    flags.map(({ iso3, eventCount }) => [iso3, eventCount]),
+    [['CAN', 5]],
   );
 });
