@@ -29,13 +29,13 @@ For C6, the exact `v2cacamps` variable in the V-Dem v16 codebook §3.15.1.1 has 
 
 ## Energy and shipping
 
-The Energy lens shows the largest modelled share of all imports through a chokepoint where a route model is available. Hatching means unknown. The current build shows the unavailability reason in Exposure and Leverage. The World Bank net energy import share, with its observation year, remains available where reported. Stock cover stays unknown.
+The Energy lens shows the largest modelled share of all imports through a chokepoint. Hatching marks unknown model data or disputed territory. Exposure and Leverage show the 2024 BACI model, its assumptions and the seaborne and all-imports denominators. The World Bank net energy import share includes its observation year where available. Stock cover stays unknown.
 
 Chokepoint cards show draft EIA oil and LNG transit estimates with their reporting periods and EIA descriptions of alternate routes where available. Panama uses a fiscal year. The static reference markers remain available without traffic permission. Marine geometry uses the bundled Natural Earth features where they exist. The other static markers are approximate reference locations. PortWatch observes Øresund as a proxy for the Danish Straits and has no separate Dardanelles gauge.
 
 After securing written IMF permission for automated extraction, set `GEV_WORLD_PORTWATCH_BULK_OK=1` for the local server. The adapter fetches gate metadata once, loads 400 transit days, and revisits the most recent 14 stored days plus new dates on Refresh. The card shows the latest available date and transit calls by vessel type. The gauge compares the latest day’s count with the matched prior 7-day mean. The rolling means use matched windows 52 weeks earlier. Seven consecutive complete 7-day ratios below 0.5 produce reduced status. An overlapping open disruption record corroborates disrupted status. Missing data are shown as unknown.
 
-Exposure shows monthly Brent, WTI, and European natural gas from FRED, each in its source units and month. The route model remains unavailable pending a suitable licensed shipping network, independently validated routes and calibration. Offline acceptance uses clearly labelled synthetic route shares to exercise both import denominators and route lines.
+Exposure shows monthly Brent, WTI and European natural gas from FRED in their source units. The structural route model uses representative ports and shortest maritime paths. Chokepoint cards show modelled volumes alongside the same-year EIA benchmarks and signed gaps. The source guide documents the route data’s ShareAlike licence and build inputs. [Data sources](../DATA_SOURCES.md)
 
 ## Fixture acceptance
 
