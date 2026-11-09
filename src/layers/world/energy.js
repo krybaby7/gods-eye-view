@@ -43,11 +43,11 @@ const referenceGates = [
   },
   {
     id: 'chokepoint10',
-    name: 'Øresund',
+    name: 'Danish Straits',
     reference: 'danish-straits',
     marineName: 'Øresund',
     proxy:
-      'Øresund traffic is a proxy for the Danish Straits. Great Belt and Little Belt are outside this gauge.',
+      'The model groups routes through the Danish Straits. A PortWatch Øresund gauge covers Øresund traffic only.',
   },
   {
     id: 'eia-dardanelles',
@@ -118,7 +118,8 @@ export function energyGates(snapshot) {
     gates.set(gate.id, {
       ...fallback,
       ...gate,
-      name: fallback?.name ?? gate.name,
+      name:
+        gate.id === 'chokepoint10' ? 'Øresund' : (fallback?.name ?? gate.name),
       coordinates:
         marineCoordinates ??
         (natural ? fallback.coordinates : gate.coordinates),
@@ -143,22 +144,32 @@ export function dependencyRows(snapshot, { dependent, provider, gate } = {}) {
 }
 
 export function countryExposure(snapshot, iso3) {
-  return snapshot.features?.['energy-dependencies']?.exposure?.[iso3];
+  const model = snapshot.features?.['energy-dependencies'];
+  return (model?.energyExposure ?? model?.exposure)?.[iso3];
+}
+
+export function isMinorImporter(snapshot, iso3) {
+  const model = snapshot.features?.['energy-dependencies'];
+  const imports = model?.energyImports?.[iso3];
+  return Number.isFinite(imports) && imports < model.minorImporterFloor;
 }
 
 export function chokepointExposure(snapshot, gateId) {
-  const exposure = snapshot.features?.['energy-dependencies']?.exposure ?? {};
+  const model = snapshot.features?.['energy-dependencies'];
+  const exposure = model?.energyExposure ?? model?.exposure ?? {};
   return Object.entries(exposure)
+    .filter(([dependent]) => !isMinorImporter(snapshot, dependent))
     .flatMap(([dependent, rows]) =>
       rows
         .filter(({ gate }) => gate === gateId)
         .map((row) => ({ ...row, dependent })),
     )
-    .sort((a, b) => b.shares.all - a.shares.all);
+    .sort((a, b) => (b.volume?.value ?? 0) - (a.volume?.value ?? 0));
 }
 
 function exposureShare(country, snapshot) {
   if (snapshot.features?.['energy-dependencies']?.mode === 'modelled') {
+    if (isMinorImporter(snapshot, country.iso3)) return undefined;
     const rows = countryExposure(snapshot, country.iso3);
     return rows && (rows[0]?.shares.all ?? 0);
   }
@@ -209,6 +220,8 @@ export const energyLens = {
   color: energyColor,
   hover(country, snapshot) {
     if (!country || country.kind === 'disputed') return undefined;
+    if (isMinorImporter(snapshot, country.iso3))
+      return 'Minor importer · draft floor';
     const share = exposureShare(country, snapshot);
     if (!Number.isFinite(share)) return 'Energy exposure · Unknown';
     const pct = new Intl.NumberFormat(undefined, {
@@ -219,6 +232,14 @@ export const energyLens = {
       snapshot.features?.['energy-dependencies']?.mode === 'fixture'
         ? ' · synthetic fixture'
         : ' · modelled';
+    const crossing = countryExposure(snapshot, country.iso3)?.[0];
+    const gate = referenceGates.find(({ id }) => id === crossing?.gate);
+    if (gate && crossing.volume) {
+      const volume = new Intl.NumberFormat(undefined, {
+        maximumFractionDigits: 2,
+      });
+      return `${gate.name} · ${pct.format(share)} of all imports · ${volume.format(crossing.volume.value)} ${crossing.volume.unit} · main product ${crossing.item}${label}`;
+    }
     return pct.format(share) + ' of all imports' + label;
   },
   legend: (snapshot) => ({
@@ -229,7 +250,7 @@ export const energyLens = {
         ? 'Synthetic fixture · maximum share of all imports'
         : [
             snapshot.features?.['energy-dependencies']?.mode === 'modelled'
-              ? '2024 BACI · maximum modelled chokepoint share of all imports'
+              ? '2024 BACI · energy-weighted chokepoint share of all imports · minor importer floor is draft'
               : 'Route shares require calibrated trade flows',
             snapshot.features?.portwatch?.dataTo &&
               'Traffic data to ' + snapshot.features.portwatch.dataTo,

@@ -8,6 +8,7 @@ import {
   netEnergyImports,
   gaugeRatio,
   energyLens,
+  chokepointExposure,
 } from './energy.js';
 
 const rows = [
@@ -133,23 +134,40 @@ test('hover explains exposure and labels unknown instead of describing condition
   );
 });
 
-test('modelled lens uses the total crossing share and distinguishes a routed zero from unknown', () => {
+test('modelled lens names the gate, main product and energy volume and skips minor importers', () => {
+  const gate = 'chokepoint6';
+  const crossing = (volume, share) => ({
+    gate,
+    item: 'crude oil',
+    volume: { value: volume, unit: 'PJ/year' },
+    shares: { all: share },
+  });
   const model = {
     features: {
       'energy-dependencies': {
         mode: 'modelled',
         rows,
-        exposure: { JPN: [{ shares: { all: 0.7 } }], USA: [] },
+        energyExposure: {
+          JPN: [crossing(80, 0.4)],
+          KOR: [crossing(50, 0.9)],
+          GMB: [crossing(4, 0.8)],
+          USA: [],
+        },
+        energyImports: { JPN: 200, KOR: 56, GMB: 5, USA: 90 },
+        minorImporterFloor: 10,
       },
     },
   };
-  assert.equal(
+  assert.match(
     energyLens.hover({ iso3: 'JPN' }, model),
-    '70% of all imports · modelled',
+    /Strait of Hormuz.*40%.*80 PJ\/year.*crude oil/,
   );
-  assert.equal(
-    energyLens.hover({ iso3: 'USA' }, model),
-    '0% of all imports · modelled',
+  assert.match(energyLens.hover({ iso3: 'USA' }, model), /0% of all imports/);
+  assert.match(energyLens.hover({ iso3: 'GMB' }, model), /Minor importer/i);
+  assert.equal(energyColor({ iso3: 'GMB' }, model), null);
+  assert.equal(energyColor({ iso3: 'CAN' }, model), null);
+  assert.deepEqual(
+    chokepointExposure(model, gate).map(({ dependent }) => dependent),
+    ['JPN', 'KOR'],
   );
-  assert.equal(energyColor({ iso3: 'KOR' }, model), null);
 });
