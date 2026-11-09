@@ -44,18 +44,13 @@ function section(document, label, rows, openCard, name, peers) {
   return node;
 }
 
-export function renderRelationsTab({
-  document,
-  snapshot,
-  sheetModel,
-  openCard,
-}) {
+function relationsTab({ document, snapshot, sheetModel, openCard }) {
   const panel = document.createElement('div');
   panel.className = 'world-relations';
   const selected = sheetModel.iso3;
   const rows = currentRelations(snapshot).filter(
     (row) =>
-      (!row.end || row.type === 'armed_conflict') &&
+      (!row.end || ['armed_conflict', 'support_to_party'].includes(row.type)) &&
       (relationPeers(row, selected).length ||
         row.participants?.includes(selected)),
   );
@@ -65,14 +60,44 @@ export function renderRelationsTab({
   const counterpart = (row) =>
     relationPeers(row, selected)[0] ??
     (row.from === selected ? row.to : row.from);
-  const name = (row) =>
-    row.territory ??
-    row.instrument ??
-    row.programme ??
-    row.title ??
-    (row.from === selected ? row.toLabel : row.fromLabel) ??
-    names.get(counterpart(row)) ??
-    counterpart(row);
+  const name = (row) => {
+    const other = names.get(counterpart(row)) ?? counterpart(row);
+    const opposingSide =
+      row.from === selected || row.fromActors?.includes(selected)
+        ? row.toLabel
+        : row.fromLabel;
+    if (row.type === 'un_alignment') {
+      return (
+        'UN voting closeness: ' +
+        (row.agreement * 100).toFixed(1) +
+        '% · ' +
+        other +
+        ' · ' +
+        row.period +
+        ' (session ' +
+        row.session +
+        ')'
+      );
+    }
+    if (row.membershipStatus === 'suspended')
+      return other + ' · participation suspended';
+    if (row.type === 'sanctions' && row.scope === 'persons') {
+      return (
+        'Sanctions on persons in ' +
+        (names.get(row.to) ?? row.to) +
+        ' · ' +
+        row.programme
+      );
+    }
+    return (
+      row.territory ??
+      row.instrument ??
+      row.programme ??
+      row.title ??
+      opposingSide ??
+      other
+    );
+  };
   const rivals = new Set();
   for (const row of rows) {
     const other = counterpart(row);
@@ -98,19 +123,23 @@ export function renderRelationsTab({
         const candidates = rows.filter(
           (row) =>
             counterpart(row) === id &&
-            ['un_alignment', 'diplomatic_rupture'].includes(row.type),
+            ['rivalry', 'diplomatic_rupture'].includes(row.type),
         );
-        return candidates
-          .sort(
-            (a, b) =>
-              Number(b.type === 'diplomatic_rupture') -
-                Number(a.type === 'diplomatic_rupture') ||
-              (b.session ?? 0) - (a.session ?? 0),
-          )
-          .slice(0, 1);
+        return candidates.slice(0, 1);
       }),
     ],
-    ['Wars', rows.filter(({ type }) => type === 'armed_conflict')],
+    [
+      'Current armed conflict',
+      rows.filter(({ type }) => type === 'current_armed_conflict'),
+    ],
+    [
+      'Armed conflict in 2025 (UCDP)',
+      rows.filter(({ type }) => type === 'armed_conflict'),
+    ],
+    [
+      'Support to a party in 2025 (UCDP)',
+      rows.filter(({ type }) => type === 'support_to_party'),
+    ],
     [
       'Sanctions imposed',
       rows.filter(
@@ -131,6 +160,20 @@ export function renderRelationsTab({
       'Territorial disputes',
       rows.filter(({ type }) => type === 'territorial_dispute'),
     ],
+    [
+      'UN voting closeness',
+      rows
+        .filter(({ type }) => type === 'un_alignment')
+        .sort((a, b) =>
+          (names.get(counterpart(a)) ?? counterpart(a)).localeCompare(
+            names.get(counterpart(b)) ?? counterpart(b),
+          ),
+        ),
+    ],
+    [
+      'Diplomatic relations',
+      rows.filter(({ type, id }) => type === 'diplomatic_relation' && id),
+    ],
   ];
   panel.append(
     ...groups.map(([label, items]) =>
@@ -139,5 +182,29 @@ export function renderRelationsTab({
       ),
     ),
   );
+  return panel;
+}
+
+export function renderRelationsTab(context) {
+  const { document, getDetail, snapshot, sheetModel } = context;
+  const panel = relationsTab(context);
+  if (!getDetail) return panel;
+  getDetail(sheetModel.iso3, 'diplomacy')
+    .then(({ features }) => {
+      const content = relationsTab({
+        ...context,
+        snapshot: {
+          ...snapshot,
+          features: { ...snapshot.features, ...features },
+        },
+      });
+      panel.replaceChildren(...content.childNodes);
+    })
+    .catch(() => {
+      const message = document.createElement('p');
+      message.className = 'world-detail';
+      message.textContent = 'Additional relations data is unavailable.';
+      panel.append(message);
+    });
   return panel;
 }

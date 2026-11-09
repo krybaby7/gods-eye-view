@@ -10,7 +10,7 @@ function text(document, tag, value, className) {
   return node;
 }
 
-export function renderRelationCard({ document, snapshot, id }) {
+function relationCard({ document, snapshot, id }) {
   const card = document.createElement('article');
   card.className = 'world-relation-card';
   const row = currentRelations(snapshot).find((entry) => entry.id === id);
@@ -30,7 +30,10 @@ export function renderRelationCard({ document, snapshot, id }) {
     text(
       document,
       'h3',
-      row.territory ??
+      (row.type === 'armed_conflict'
+        ? 'Armed conflict in ' + row.period + ' (UCDP)'
+        : null) ??
+        row.territory ??
         row.instrument ??
         row.programme ??
         row.title ??
@@ -45,10 +48,16 @@ export function renderRelationCard({ document, snapshot, id }) {
     row.reference,
     row.start ? 'Start ' + row.start : null,
     row.end ? 'End ' + row.end : null,
-    row.session ? 'UN voting session ' + row.session : null,
-    Number.isFinite(row.agreement)
-      ? 'Agreement ' + (row.agreement * 100).toFixed(1) + '%'
+    row.session
+      ? 'UN voting session ' + row.session + ' · ' + row.period
       : null,
+    Number.isFinite(row.agreement)
+      ? 'UN voting closeness: ' + (row.agreement * 100).toFixed(1) + '%'
+      : null,
+    row.scope === 'persons' ? 'Sanctions on persons in ' + side('to') : null,
+    ...(row.events ?? []).map(
+      ({ id, date }) => 'UCDP event ' + id + ' · ' + date,
+    ),
     row.dateChecked ? 'Checked ' + row.dateChecked : null,
     row.reviewed === false ? 'Draft, not yet reviewed' : null,
   ]) {
@@ -71,5 +80,25 @@ export function renderRelationCard({ document, snapshot, id }) {
     list,
     text(document, 'p', DIPLOMACY_RULES, 'world-detail'),
   );
+  return card;
+}
+
+export function renderRelationCard(context) {
+  const { getDetail, snapshot, id } = context;
+  const card = relationCard(context);
+  if (!getDetail || !snapshot.selected || id.startsWith('rel_ucdp_live_'))
+    return card;
+  getDetail(snapshot.selected, 'diplomacy')
+    .then(({ features }) => {
+      const content = relationCard({
+        ...context,
+        snapshot: {
+          ...snapshot,
+          features: { ...snapshot.features, ...features },
+        },
+      });
+      card.replaceChildren(...content.childNodes);
+    })
+    .catch(() => {});
   return card;
 }

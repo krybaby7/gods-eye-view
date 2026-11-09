@@ -37,7 +37,7 @@ test('keeps qualifier precision and rejects non-member observer assertions', () 
   assert(!rows.some(({ from, to }) => from === 'AUS' && to === 'ASEAN'));
 });
 
-test('folds diplomatic seeds symmetrically, preserving qualified history', () => {
+test('folds diplomatic assertions symmetrically, preserving qualified history and retrieval date', () => {
   const entries = [
     binding('IND', 'Q0', 'i', {
       other: 'CHN',
@@ -51,7 +51,12 @@ test('folds diplomatic seeds symmetrically, preserving qualified history', () =>
       endPrecision: '9',
     }),
   ];
-  const rows = wikidataRelations('diplomacy', entries, ['IND', 'CHN']);
+  const rows = wikidataRelations(
+    'diplomacy',
+    entries,
+    ['IND', 'CHN'],
+    new Date('2026-11-09'),
+  );
   assert.deepEqual(
     rows.map(({ from, to, start, end }) => [from, to, start, end]),
     [
@@ -60,4 +65,10 @@ test('folds diplomatic seeds symmetrically, preserving qualified history', () =>
     ],
   );
   assert(rows.every(({ type }) => type === 'diplomatic_relation'));
+  assert(
+    rows.every(
+      ({ evidence, dateChecked }) =>
+        evidence === 'wikidata-assertion' && dateChecked === '2026-11-09',
+    ),
+  );
 });

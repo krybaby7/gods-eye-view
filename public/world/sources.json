@@ -149,9 +149,9 @@
     "access": "Keyless published consolidated XML",
     "attribution": "United Nations Security Council Consolidated Sanctions List and sanctions committees",
     "url": "https://main.un.org/securitycouncil/en/content/un-sc-consolidated-list",
-    "licence": "Public factual programme metadata; UN site terms apply to text",
+    "licence": "United Nations site terms. The published list is used locally; only factual programme aggregates are retained.",
     "releaseRhythm": "Checked monthly on Refresh",
-    "marks": []
+    "marks": ["NonCommercial"]
   },
   {
     "id": "relations-sanctions-uk",

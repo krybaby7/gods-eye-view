@@ -80,6 +80,8 @@ test('UN counts committee prefixes from permanent references in both sections', 
     mappedRecords: 2,
     programmes: 2,
     mappedProgrammes: 1,
+    thematicProgrammes: 0,
+    unmapped: ['QD'],
     unmappedProgrammes: 1,
   });
   assert.deepEqual(
@@ -112,6 +114,8 @@ test('UK counts unique designation IDs within each listed regime', async () => {
     mappedRecords: 3,
     programmes: 4,
     mappedProgrammes: 3,
+    thematicProgrammes: 0,
+    unmapped: ['THE GLOBAL HUMAN RIGHTS & OTHER SANCTIONS REGULATIONS 2020'],
     unmappedProgrammes: 1,
   });
   assert.deepEqual(
@@ -134,7 +138,9 @@ test('OFAC uses only list programme tags and de-duplicates repeated tags', async
     mappedRecords: 2,
     programmes: 3,
     mappedProgrammes: 2,
-    unmappedProgrammes: 1,
+    thematicProgrammes: 1,
+    unmapped: [],
+    unmappedProgrammes: 0,
   });
   assert.deepEqual(
     result.relations.map(({ to, programmeId, designationCount }) => [
@@ -160,7 +166,8 @@ test('an intact list with no covered programmes yields explicit zero coverage', 
     ),
   ]);
   assert.equal(result.relations.length, 0);
-  assert.equal(result.coverage.unmappedProgrammes, 1);
+  assert.equal(result.coverage.unmappedProgrammes, 0);
+  assert.equal(result.coverage.thematicProgrammes, 1);
 });
 
 test('an unexpected or truncated publication rejects without accepting partial data', async () => {
@@ -215,12 +222,21 @@ test('adapters request official compact list files and expose coverage summaries
       onProgress: (event) => progress.push(event),
       fetchImpl: async (requested) => {
         assert.equal(requested, url);
-        return new Response(body);
+        return new Response(body, {
+          headers: { 'Last-Modified': 'Fri, 06 Nov 2026 19:33:18 GMT' },
+        });
       },
     });
     assert.equal(result.data.format, 'published-list');
     assert.match(result.detail, /mapped.*unmapped/i);
-    assert(result.data.relations.every(({ sources }) => sources.includes(url)));
+    assert(
+      result.data.relations.every(({ sources }) => !sources.includes(url)),
+    );
+    assert(
+      result.data.relations.every(
+        ({ dateChecked }) => dateChecked === '2026-11-06',
+      ),
+    );
     assert.equal(progress.at(-1)?.bytes, Buffer.byteLength(body));
   }
 });
