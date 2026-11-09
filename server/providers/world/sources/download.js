@@ -53,7 +53,6 @@ async function readEntry(file) {
 }
 
 async function assertSignature(file, format, csvColumns) {
-  if (!format) return;
   const handle = await open(file, 'r');
   const buffer = Buffer.alloc(4096);
   let bytesRead;
@@ -63,6 +62,14 @@ async function assertSignature(file, format, csvColumns) {
     await handle.close();
   }
   const prefix = buffer.subarray(0, bytesRead);
+  if (
+    /^\s*(?:<!doctype\s+html\b|<(?:html|head|body|title)(?:\s|>))/i.test(
+      prefix.toString('utf8'),
+    )
+  ) {
+    throw downloadError('DOWNLOAD_SIGNATURE', 'Download is an HTML page.');
+  }
+  if (!format) return;
   let valid = false;
   if (format === 'zip') {
     valid = prefix.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 3, 4]));
