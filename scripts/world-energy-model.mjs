@@ -354,6 +354,7 @@ export function buildEnergyModel(flows, { routeFor, references }) {
         item,
         route: route.gates,
         path: route.coordinates,
+        ports: route.ports,
         ...shareRow(amount, totals),
         period: '2024',
       });
@@ -376,8 +377,11 @@ export function buildEnergyModel(flows, { routeFor, references }) {
     .slice(0, 12))
     included.add(row);
   const paths = {};
-  const rows = [...included].map(({ path, ...row }) => {
-    paths[row.provider + '/' + row.dependent] ??= thinRoute(path);
+  const routePorts = {};
+  const rows = [...included].map(({ path, ports, ...row }) => {
+    const pair = row.provider + '/' + row.dependent;
+    paths[pair] ??= thinRoute(path);
+    if (ports) routePorts[pair] ??= ports;
     return row;
   });
   coverage.importers = new Set(flows.map(({ dependent }) => dependent)).size;
@@ -396,6 +400,7 @@ export function buildEnergyModel(flows, { routeFor, references }) {
     exposure,
     pipelineGas,
     paths,
+    routePorts,
     rows,
   };
 }

@@ -78,9 +78,14 @@ function dependencyNotice({ document, snapshot }) {
 
 function dependencyItem({ document, snapshot, openCard }, row, title) {
   const item = node(document, 'li');
+  const ports =
+    snapshot.features?.['energy-dependencies']?.routePorts?.[
+      `${row.provider}/${row.dependent}`
+    ];
   item.append(node(document, 'h4', title));
   item.append(
     details(document, [
+      ...(ports ? [['Representative ports', ports.join(' → ')]] : []),
       ['Share of seaborne imports', pct(row.shares.seaborne)],
       ['Share of all imports', pct(row.shares.all)],
       [

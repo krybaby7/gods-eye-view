@@ -50,7 +50,7 @@ function sizeFrom(response) {
   return size;
 }
 
-async function acquire(url, maxBytes) {
+async function acquire(url, maxBytes, expectedBytes) {
   let checkpoint = 0;
   const started = performance.now();
   const result = await downloadWorldFile(url, {
@@ -65,6 +65,11 @@ async function acquire(url, maxBytes) {
       console.log(url.split('/').at(-1), bytes, '/', totalBytes ?? '?');
     },
   });
+  if (expectedBytes !== undefined && result.bytes !== expectedBytes) {
+    throw new Error(
+      `BACI archive has ${result.bytes} bytes; CEPII reports ${expectedBytes}.`,
+    );
+  }
   console.log(
     url,
     result.bytes,
@@ -247,6 +252,7 @@ export function routesFor(network, ports) {
   const router = maritimeRouter(network);
   const { port, adjacent } = neighboursAndPorts(ports);
   const cache = new Map();
+  const [, pacificPort, pacificCoordinates] = regional[1];
   const pacific = new Set(['CHN', 'JPN', 'KOR', 'TWN', 'PHL']);
   return (from, to, item) => {
     if (
@@ -259,11 +265,19 @@ export function routesFor(network, ports) {
     if (!cache.has(key)) {
       const origin =
         from === 'RUS' && pacific.has(to)
-          ? regional[1][2]
-          : port(from)?.coordinates;
-      const destination = port(to)?.coordinates;
-      const route = origin && destination ? router(origin, destination) : null;
-      cache.set(key, route ?? { mode: 'unknown' });
+          ? { name: pacificPort, coordinates: pacificCoordinates }
+          : port(from);
+      const destination = port(to);
+      const route =
+        origin && destination
+          ? router(origin.coordinates, destination.coordinates)
+          : null;
+      cache.set(
+        key,
+        route
+          ? { ...route, ports: [origin.name, destination.name] }
+          : { mode: 'unknown' },
+      );
     }
     return cache.get(key);
   };
@@ -277,7 +291,7 @@ if (import.meta.main) {
     }),
   );
   console.log('Official BACI archive bytes', size);
-  const archive = await acquire(baci, maximumArchiveBytes);
+  const archive = await acquire(baci, maximumArchiveBytes, size);
   const network = networkData(
     await readFile(await acquire(networkUrl, 3_000_000), 'utf8'),
   );
