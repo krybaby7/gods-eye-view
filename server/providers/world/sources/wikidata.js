@@ -1,7 +1,7 @@
-import { readResponseJsonCapped } from '../../../../src/sources/httpBody.js';
-import { actorSourceDue, fetchActorSource, safeHttps } from './actor-fetch.js';
+import { actorSourceDue, safeHttps } from './actor-fetch.js';
+import { createWdqsClient } from './wdqs.js';
 
-const ENDPOINT = 'https://query.wikidata.org/sparql';
+const BATCH_SIZE = 40;
 const ROLES = [
   'head-of-state',
   'head-of-government',
@@ -22,46 +22,53 @@ function countryCodes(registry) {
   );
 }
 
-export function actorDirectoryUrl(registry) {
-  const codes = [...countryCodes(registry)]
-    .map((code) => '"' + code + '"')
-    .join(' ');
+const ROLE_PATTERNS = {
+  'head-of-state': `
+    ?country p:P35 ?statement .
+    ?statement ps:P35 ?person .
+    OPTIONAL { ?country wdt:P1906 ?office . }`,
+  'head-of-government': `
+    ?country p:P6 ?statement .
+    ?statement ps:P6 ?person .
+    OPTIONAL { ?country wdt:P1313 ?office . }`,
+  'foreign-minister': `
+    ?office wdt:P279 wd:Q7330070; wdt:P1001 ?country; p:P1308 ?statement .
+    ?statement ps:P1308 ?person .`,
+  'defence-minister': `
+    ?office wdt:P279 wd:Q2518691; wdt:P1001 ?country; p:P1308 ?statement .
+    ?statement ps:P1308 ?person .`,
+};
+
+function directoryQuery(role, codes) {
   // Kosovo has no assigned ISO 3166-1 alpha-3 code. Match its entity explicitly.
-  const kosovo = countryCodes(registry).has('KOS')
+  const kosovo = codes.includes('KOS')
     ? 'UNION { BIND(wd:Q1246 AS ?country) BIND("KOS" AS ?iso) }'
     : '';
-  const query = `
+  return `
     SELECT DISTINCT ?iso ?role ?person ?personLabel ?officeLabel ?governmentLabel
         ?since ?end ?rank ?image ?x ?bluesky ?mastodon ?youtube ?facebook
         ?instagram ?vk ?weibo ?website WHERE {
-      { { VALUES ?iso { ${codes} } ?country wdt:P298 ?iso . } ${kosovo} }
-      FILTER NOT EXISTS { ?country wdt:P576 [] }
+      BIND("${role}" AS ?role)
       {
-        VALUES (?role ?claim ?value ?officeProperty) {
-          ("head-of-state" p:P35 ps:P35 wdt:P1906)
-          ("head-of-government" p:P6 ps:P6 wdt:P1313)
+        SELECT DISTINCT ?iso ?country ?person ?office ?since ?end ?rank WHERE {
+          {
+            SELECT ?iso ?country WHERE {
+              { VALUES ?iso { ${codes.map((code) => '"' + code + '"').join(' ')} }
+                ?country wdt:P298 ?iso . } ${kosovo}
+            }
+          }
+          ${ROLE_PATTERNS[role]}
+          FILTER NOT EXISTS { ?country wdt:P576 [] }
+          ?person wdt:P31 wd:Q5 .
+          ?statement wikibase:rank ?rank .
+          FILTER(?rank != wikibase:DeprecatedRank)
+          OPTIONAL { ?statement pq:P580 ?since . }
+          OPTIONAL { ?statement pq:P582 ?end . }
+          FILTER(!BOUND(?since) || ?since <= NOW())
+          FILTER(!BOUND(?end) || ?end > NOW())
+          FILTER NOT EXISTS { ?person wdt:P570 ?death . FILTER(?death <= NOW()) }
         }
-        ?country ?claim ?statement .
-        ?statement ?value ?person .
-        OPTIONAL { ?country ?officeProperty ?office . }
       }
-      UNION
-      {
-        VALUES (?role ?class) {
-          ("foreign-minister" wd:Q7330070)
-          ("defence-minister" wd:Q2518691)
-        }
-        ?office wdt:P279 ?class; wdt:P1001 ?country; p:P1308 ?statement .
-        ?statement ps:P1308 ?person .
-      }
-      ?person wdt:P31 wd:Q5 .
-      ?statement wikibase:rank ?rank .
-      FILTER(?rank != wikibase:DeprecatedRank)
-      OPTIONAL { ?statement pq:P580 ?since . }
-      OPTIONAL { ?statement pq:P582 ?end . }
-      FILTER(!BOUND(?since) || ?since <= NOW())
-      FILTER(!BOUND(?end) || ?end > NOW())
-      FILTER NOT EXISTS { ?person wdt:P570 ?death . FILTER(?death <= NOW()) }
       OPTIONAL { ?country wdt:P122 ?government . }
       OPTIONAL { ?person wdt:P18 ?image . }
       OPTIONAL { ?person wdt:P2002 ?x . }
@@ -75,9 +82,6 @@ export function actorDirectoryUrl(registry) {
       OPTIONAL { ?person wdt:P856 ?website . }
       SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
     }`;
-  const url = new URL(ENDPOINT);
-  url.searchParams.set('query', query);
-  return url.href;
 }
 
 function accountUrl(platform, raw) {
@@ -205,33 +209,63 @@ function normalizeDirectory(bindings, registry, now) {
 }
 
 export async function fetchObservations({ fetchImpl, registry, now, data }) {
-  try {
-    const response = await fetchActorSource(
-      fetchImpl,
-      actorDirectoryUrl(registry),
-      now,
-      {
-        timeout: 65_000,
-        headers: { Accept: 'application/sparql-results+json' },
-      },
-    );
-    const body = await readResponseJsonCapped(response, 12_000_000);
-    const directory = normalizeDirectory(body.results.bindings, registry, now);
-    if (!directory.actors.length)
-      return {
-        error: 'Wikidata returned no unambiguous current officeholders',
-      };
-    return {
-      data: { ...directory, retrievedAt: now.toISOString() },
-      count: directory.actors.length,
-      unit: 'role',
-    };
-  } catch (failure) {
-    if (failure.retryAt)
-      return {
-        data: { ...data, retryAt: failure.retryAt },
-        error: failure.message,
-      };
-    throw failure;
+  const codes = [...countryCodes(registry)].sort();
+  const total = Math.ceil(codes.length / BATCH_SIZE) * ROLES.length;
+  const query = createWdqsClient(fetchImpl, now);
+  const bindings = [];
+  const completed = new Set();
+  const errors = [];
+  let succeeded = 0;
+  let retryAt;
+  batches: for (const role of ROLES) {
+    for (let offset = 0; offset < codes.length; offset += BATCH_SIZE) {
+      const batch = codes.slice(offset, offset + BATCH_SIZE);
+      try {
+        const rows = await query(directoryQuery(role, batch));
+        for (const code of batch) completed.add(code + ':' + role);
+        for (const row of rows) {
+          if (row?.role?.value === role && batch.includes(row.iso?.value))
+            bindings.push(row);
+        }
+        succeeded += 1;
+      } catch (failure) {
+        errors.push(failure.cause?.code ?? failure.message);
+        retryAt = failure.retryAt;
+        if (retryAt) break batches;
+      }
+    }
   }
+  const directory = normalizeDirectory(bindings, registry, now);
+  const detail = `${succeeded} of ${total} Wikidata batches completed.`;
+  const error = errors.length
+    ? detail + ' ' + [...new Set(errors)].join('; ')
+    : undefined;
+
+  if (!directory.actors.length) {
+    return {
+      ...(retryAt && { data: { ...data, retryAt } }),
+      error: error ?? 'Wikidata returned no unambiguous current officeholders',
+      detail,
+    };
+  }
+  if (errors.length) {
+    directory.actors.push(
+      ...(data?.actors ?? []).filter(
+        ({ country, role }) => !completed.has(country + ':' + role),
+      ),
+    );
+    directory.actors.sort(
+      (a, b) =>
+        a.country.localeCompare(b.country) ||
+        ROLES.indexOf(a.role) - ROLES.indexOf(b.role),
+    );
+    directory.governments = { ...data?.governments, ...directory.governments };
+  }
+  return {
+    data: { ...directory, retrievedAt: now.toISOString(), retryAt },
+    count: directory.actors.length,
+    unit: 'role',
+    detail,
+    error,
+  };
 }

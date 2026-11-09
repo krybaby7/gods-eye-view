@@ -29,6 +29,8 @@ test('Commons uses attributed, free thumbnails and skips unusable metadata', asy
       wikidata: {
         actors: [
           { imageFile: 'Free.jpg' },
+          { imageFile: 'Current CDN.jpg' },
+          { imageFile: 'Spoof.jpg' },
           { imageFile: 'No licence.jpg' },
           { imageFile: 'Original.jpg' },
           { imageFile: 'No author.jpg' },
@@ -45,6 +47,22 @@ test('Commons uses attributed, free thumbnails and skips unusable metadata', asy
               'CC BY 4.0',
               thumb,
               '<a href="/wiki/User:Example">Example &amp; Co</a>',
+            ),
+            portrait(
+              'Current CDN.jpg',
+              'CC BY 4.0',
+              thumb.replace('upload.wikimedia.org', 'thumb.wikimedia.org') +
+                '?utm_source=commons.wikimedia.org',
+              'Example',
+            ),
+            portrait(
+              'Spoof.jpg',
+              'CC BY 4.0',
+              thumb.replace(
+                'upload.wikimedia.org',
+                'thumb.wikimedia.org.example',
+              ),
+              'Example',
             ),
             portrait(
               'No licence.jpg',
@@ -64,7 +82,12 @@ test('Commons uses attributed, free thumbnails and skips unusable metadata', asy
       });
     },
   });
-  assert.equal(count, 1);
+  assert.equal(count, 2);
+  assert.equal(
+    new URL(data.portraits['Current CDN.jpg'].thumbnail).hostname,
+    'thumb.wikimedia.org',
+  );
+  assert.equal(data.portraits['Spoof.jpg'], undefined);
   assert.deepEqual(data.portraits['Free.jpg'], {
     thumbnail: thumb,
     file: 'https://commons.wikimedia.org/wiki/File:Free.jpg',
