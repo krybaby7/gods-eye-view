@@ -8,7 +8,10 @@ export const actorRoles = {
   'armed-group': 'Armed group',
 };
 
-const directory = (snapshot) => snapshot.features?.wikidata?.actors ?? [];
+const directory = (snapshot) =>
+  (snapshot.features?.wikidata?.actors ?? []).filter(
+    ({ until }) => !until || Date.parse(until) > Date.now(),
+  );
 const organizations = (snapshot) =>
   Object.values(
     snapshot.features?.['actor-organizations']?.organizations ?? {},
@@ -86,12 +89,16 @@ export function worldActor(snapshot, id) {
     countries: [
       ...new Set(records.map(({ country }) => country).filter(Boolean)),
     ],
-    offices: records.map(({ office, role, since, country }) => ({
-      office,
-      role,
-      since,
-      country,
-    })),
+    offices: records.map(
+      ({ office, role, since, country, acting, collective }) => ({
+        office,
+        role,
+        since,
+        country,
+        acting,
+        collective,
+      }),
+    ),
     accountLinks: [
       ...accounts,
       ...feedEntries.filter(({ platform }) => platform === 'government-rss'),

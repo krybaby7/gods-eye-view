@@ -1,29 +1,37 @@
 import { setTimeout as wait } from 'node:timers/promises';
 import { readResponseJsonCapped } from '../../../../src/sources/httpBody.js';
+import { fetchOnDispatch } from './transport.js';
 
 const ENDPOINT = 'https://query.wikidata.org/sparql';
 const PAUSE_MS = 300;
 const DEADLINE_MS = 20_000;
 
-export function createWdqsClient(fetchImpl, now = new Date()) {
+export function createWdqsClient(fetchImpl, now = new Date(), budget) {
   const started = performance.now();
   let attempted = false;
 
-  // Await each call before starting the next one. Stop the run when a request
-  // reports retryAt and keep that timestamp in the source cache.
+  // The adapter decides whether a Retry-After fits the current batch.
   return async function queryWdqs(query) {
-    if (attempted) await wait(PAUSE_MS);
+    if (attempted) await wait(PAUSE_MS, null, { signal: budget });
     attempted = true;
-    const response = await fetchImpl(ENDPOINT, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/sparql-results+json',
-        'Content-Type': 'application/x-www-form-urlencoded',
+    const response = await fetchOnDispatch(
+      fetchImpl,
+      ENDPOINT,
+      {
+        method: 'POST',
+        headers: {
+          Accept: 'application/sparql-results+json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ query }),
+        signal: budget,
+        redirect: 'error',
       },
-      body: new URLSearchParams({ query }),
-      signal: AbortSignal.timeout(DEADLINE_MS),
-      redirect: 'error',
-    });
+      () => {
+        const deadline = AbortSignal.timeout(DEADLINE_MS);
+        return budget ? AbortSignal.any([budget, deadline]) : deadline;
+      },
+    );
     if (!response.ok) {
       const error = new Error(
         'HTTP ' + response.status + ' from query.wikidata.org',

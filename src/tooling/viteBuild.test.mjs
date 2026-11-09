@@ -270,6 +270,8 @@ test('the CSP admits the event media embeds and the Maps JavaScript API, and no 
       .slice(1) ?? [];
   const scripts = directive('script-src');
   const frames = directive('frame-src');
+  assert.ok(frames.includes('https://platform.twitter.com'));
+  assert.ok(frames.includes('https://syndication.twitter.com'));
   // The player API, the Facebook SDK and X's widget script.
   for (const origin of [
     'https://www.youtube.com',

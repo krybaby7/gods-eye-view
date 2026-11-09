@@ -5,9 +5,11 @@ import { actorSourceDue, fetchActorSource, safeHttps } from './actor-fetch.js';
 const ENDPOINT = 'https://commons.wikimedia.org/w/api.php';
 const BATCH_SIZE = 35;
 const FREE_LICENCE =
-  /^(?:CC (?:BY(?:-SA)?|0)(?: \d+(?:\.\d+)?(?: [a-z]+)?)?|public domain|PDM(?: 1\.0)?)$/i;
+  /^(?:CC(?: ?0| BY(?:-SA)?)(?: \d+(?:\.\d+)?(?: [a-z]+)?)?|public domain|PDM(?: 1\.0)?)$/i;
 
-export const shouldCheck = (context) => actorSourceDue(context, 7 * 24);
+export const version = 2;
+export const shouldCheck = (context) =>
+  context.rederive || actorSourceDue(context, 7 * 24);
 
 export function commonsMetadataUrl(files) {
   const url = new URL(ENDPOINT);

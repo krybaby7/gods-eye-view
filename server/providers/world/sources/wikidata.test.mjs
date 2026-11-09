@@ -14,10 +14,11 @@ const row = (iso, role, id, extra = {}) =>
     role,
     person: item(id),
     personLabel: id + ' fixture',
+    since: '2024-01-01T00:00:00Z',
     ...extra,
   });
 
-test('maps India, China, Japan, the UK and Kosovo while rejecting disputed or ambiguous officeholders', async () => {
+test('maps India, China, Japan, the UK and Kosovo while rejecting disputed countries and keeping ties', async () => {
   const adapter = await import('./wikidata.js');
   const fullRegistry = await loadWorldRegistry();
   const registry = {
@@ -36,7 +37,6 @@ test('maps India, China, Japan, the UK and Kosovo while rejecting disputed or am
       x: 'public_office',
       bluesky: 'office.example.org',
       youtube: 'UCabcdefghijklmnopqrstuv',
-      governmentLabel: 'Republic',
     }),
     row('IND', 'head-of-government', 'Q12', {
       since: '2022-01-01T00:00:00Z',
@@ -48,11 +48,17 @@ test('maps India, China, Japan, the UK and Kosovo while rejecting disputed or am
     row('CHN', 'defence-minister', 'Q23', {
       rank: 'http://wikiba.se/ontology#PreferredRank',
     }),
-    row('CHN', 'defence-minister', 'Q24'),
+    row('CHN', 'defence-minister', 'Q24', { since: '2025-01-01' }),
     row('JPN', 'head-of-government', 'Q31'),
     row('GBR', 'head-of-state', 'Q41'),
     row('KOS', 'head-of-state', 'Q51'),
     row('SAH', 'head-of-state', 'Q61'),
+    binding({
+      iso: 'IND',
+      role: 'government',
+      government: item('Q99'),
+      governmentLabel: 'Republic',
+    }),
   ];
   const { data, count } = await adapter.fetchObservations({
     registry,
@@ -60,11 +66,13 @@ test('maps India, China, Japan, the UK and Kosovo while rejecting disputed or am
     fetchImpl: async () =>
       new Response(JSON.stringify({ results: { bindings: rows } })),
   });
-  assert.equal(count, 6);
+  assert.equal(count, 8);
   assert.deepEqual(
     data.actors.map(({ country, role, id }) => [country, role, id]),
     [
-      ['CHN', 'defence-minister', 'Q23'],
+      ['CHN', 'foreign-minister', 'Q21'],
+      ['CHN', 'foreign-minister', 'Q22'],
+      ['CHN', 'defence-minister', 'Q24'],
       ['GBR', 'head-of-state', 'Q41'],
       ['IND', 'head-of-state', 'Q10'],
       ['IND', 'head-of-government', 'Q11'],
@@ -72,19 +80,19 @@ test('maps India, China, Japan, the UK and Kosovo while rejecting disputed or am
       ['KOS', 'head-of-state', 'Q51'],
     ],
   );
-  assert.equal(data.actors[2].imageFile, 'India portrait.jpg');
-  assert.equal(data.actors[2].office, 'President');
-  assert.equal(data.actors[2].since, '2022-07-25');
-  assert.deepEqual(data.actors[3].accounts, {
+  assert.equal(data.actors[4].imageFile, 'India portrait.jpg');
+  assert.equal(data.actors[4].office, 'President');
+  assert.equal(data.actors[4].since, '2022-07-25');
+  assert.deepEqual(data.actors[5].accounts, {
     x: 'https://x.com/public_office',
     bluesky: 'https://bsky.app/profile/office.example.org',
     youtube: 'https://www.youtube.com/channel/UCabcdefghijklmnopqrstuv',
   });
-  assert.equal(data.governments.IND, 'Republic');
+  assert.deepEqual(data.governments.IND, ['Republic']);
   assert.equal(data.governments.JPN, undefined);
 });
 
-test('an empty directory keeps the last result and rate limits block early retries', async () => {
+test('an empty directory keeps the last result and fresh results are not rechecked early', async () => {
   const adapter = await import('./wikidata.js');
   const registry = { countries: [{ iso3: 'IND' }] };
   const old = { actors: [{ id: 'Q1' }], governments: {} };
@@ -97,21 +105,6 @@ test('an empty directory keeps the last result and rate limits block early retri
   });
   assert.ok(empty.error);
   assert.equal(empty.data, undefined);
-  const limited = await adapter.fetchObservations({
-    registry,
-    now,
-    data: old,
-    fetchImpl: response('', { status: 429, headers: { 'Retry-After': '180' } }),
-  });
-  assert.deepEqual(limited.data.actors, old.actors);
-  assert.equal(
-    adapter.shouldCheck({ data: limited.data, now: new Date(+now + 120_000) }),
-    false,
-  );
-  assert.equal(
-    adapter.shouldCheck({ data: limited.data, now: new Date(+now + 200_000) }),
-    true,
-  );
   assert.equal(
     adapter.shouldCheck({
       lastCheckedAt: now.toISOString(),
@@ -151,7 +144,7 @@ test('posts one role and up to 40 countries per request, in sequence', async () 
         .match(/VALUES \?iso \{([^}]+)\}/)[1]
         .match(/"[A-Z]{3}"/g);
       const roles = query.match(
-        /"(?:head-of-state|head-of-government|foreign-minister|defence-minister)"/g,
+        /"(?:government|head-of-state|head-of-government|foreign-minister|defence-minister)"/g,
       );
       assert.equal(roles.length, 1);
       seen.push([roles[0].slice(1, -1), codes.length]);
@@ -186,7 +179,7 @@ test('posts one role and up to 40 countries per request, in sequence', async () 
     },
   });
   assert.equal(count, 8);
-  assert.equal(queryShapes.filter(({ kosovo }) => kosovo).length, 4);
+  assert.equal(queryShapes.filter(({ kosovo }) => kosovo).length, 5);
   assert.ok(queryShapes.every(({ kosovo, nested }) => kosovo === nested));
   assert.deepEqual(
     queryShapes.filter(({ boundOrder }) => boundOrder),
@@ -200,6 +193,8 @@ test('posts one role and up to 40 countries per request, in sequence', async () 
     ],
   );
   assert.deepEqual(seen, [
+    ['government', 40],
+    ['government', 1],
     ['head-of-state', 40],
     ['head-of-state', 1],
     ['head-of-government', 40],
@@ -211,7 +206,7 @@ test('posts one role and up to 40 countries per request, in sequence', async () 
   ]);
 });
 
-test('merges completed batches and defers the remaining requests after a server Retry-After', async () => {
+test('merges completed batches and keeps the cached role for a long Retry-After', async () => {
   const adapter = await import('./wikidata.js');
   const registry = { countries: [{ iso3: 'IND' }] };
   const oldState = { id: 'Q1', country: 'IND', role: 'head-of-state' };
@@ -229,28 +224,30 @@ test('merges completed batches and defers the remaining requests after a server 
     registry,
     now,
     data,
-    fetchImpl: async () => {
+    fetchImpl: async (_url, { body }) => {
       calls += 1;
-      if (calls === 1)
+      const query = body.get('query');
+      if (query.includes('"head-of-state"'))
         return new Response(
           JSON.stringify({
             results: { bindings: [row('IND', 'head-of-state', 'Q10')] },
           }),
         );
+      if (!query.includes('"head-of-government"'))
+        return Response.json({ results: { bindings: [] } });
       return new Response('', {
         status: 503,
         headers: { 'Retry-After': 'Mon, 09 Nov 2026 12:05:00 GMT' },
       });
     },
   });
-  assert.equal(calls, 2);
+  assert.equal(calls, 5);
   assert.match(result.error, /HTTP 503/);
-  assert.equal(result.data.retryAt, '2026-11-09T12:05:00.000Z');
   assert.deepEqual(
     result.data.actors.map(({ id }) => id),
     ['Q10', 'Q2'],
   );
-  assert.deepEqual(result.data.governments, data.governments);
+  assert.deepEqual(result.data.governments, {});
 });
 test('refreshes later roles after a batch fails and keeps only the failed role from cache', async () => {
   const adapter = await import('./wikidata.js');
@@ -275,7 +272,7 @@ test('refreshes later roles after a batch fails and keeps only the failed role f
       return new Response(JSON.stringify({ results: { bindings: rows } }));
     },
   });
-  assert.match(result.error, /3 of 4 Wikidata batches completed.*HTTP 504/);
+  assert.match(result.error, /4 of 5 Wikidata batches completed.*HTTP 504/);
   assert.deepEqual(
     result.data.actors.map(({ id }) => id),
     ['Q1', 'Q20'],
@@ -310,7 +307,7 @@ test('subdivides a gateway failure and retains cached actors only in an unrecove
       );
     },
   });
-  assert.equal(calls.length, 6);
+  assert.equal(calls.length, 7);
   assert.deepEqual(calls.slice(-2), [
     ['head-of-state', ['AAA', 'AAB']],
     ['head-of-state', ['AAC', 'AAD']],
@@ -339,7 +336,7 @@ test('limits recovery calls during a sustained Wikidata gateway outage', async (
       return new Response('', { status: 502 });
     },
   });
-  assert.equal(calls, 20);
+  assert.equal(calls, 23);
   assert.match(result.error, /HTTP 502/);
   assert.match(result.detail, /0 of 8 recovery slices/);
 });

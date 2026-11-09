@@ -41,16 +41,37 @@ export function renderPeopleHeader({
       document,
       'p',
       'world-people-government',
-      government || 'Government type unavailable',
+      (Array.isArray(government) ? government.join(' · ') : government) ||
+        'Government type unavailable',
     ),
   );
   const grid = node(document, 'div', 'world-people-leaders');
-  for (const role of leadership) {
-    const actor = actors.find((person) => person.role === role);
+  const state = actors.filter(({ role }) => role === 'head-of-state');
+  const executive = actors.filter(({ role }) => role === 'head-of-government');
+  const shared =
+    state.length &&
+    state.length === executive.length &&
+    state.every((person) =>
+      executive.some(
+        ({ id, office }) => id === person.id && office === person.office,
+      ),
+    );
+  const groups = shared
+    ? [[leadership[0], 'Head of state · Head of government', state]]
+    : [
+        [leadership[0], officeText(leadership[0]), state],
+        [leadership[1], officeText(leadership[1]), executive],
+      ];
+  for (const [role, title, holders] of groups) {
     const group = node(document, 'div', 'world-person-leader');
     group.dataset.worldLeader = role;
-    group.append(node(document, 'span', 'world-person-role', officeText(role)));
-    if (!actor) {
+    group.append(node(document, 'span', 'world-person-role', title));
+    if (holders[0]?.collective) {
+      group.append(
+        node(document, 'span', 'world-person-role', holders[0].collective),
+      );
+    }
+    if (!holders.length) {
       group.append(
         node(
           document,
@@ -59,11 +80,14 @@ export function renderPeopleHeader({
           'Officeholder unavailable',
         ),
       );
-    } else {
+    }
+    for (const actor of holders) {
       const identity = node(document, 'div', 'world-person-identity');
       const portrait = portraitImage(document, actor);
       if (portrait) identity.append(portrait);
       identity.append(actorButton(document, actor, openCard));
+      if (actor.acting)
+        identity.append(node(document, 'span', 'world-person-role', 'Acting'));
       group.append(identity);
       if (portrait) group.append(portraitCredit(document, actor.image));
     }
@@ -120,7 +144,7 @@ function actorList(context, ids, country = context.sheetModel.iso3) {
   return list;
 }
 
-export function renderPeopleTab(context) {
+function peopleTab(context) {
   const { document, snapshot, sheetModel } = context;
   const content = node(document, 'section', 'world-people-tab');
   if (!sheetModel || sheetModel.disputed) {
@@ -210,5 +234,30 @@ export function renderPeopleTab(context) {
       content.append(disclosure);
     }
   }
+  return content;
+}
+
+export function renderPeopleTab(context) {
+  const { document, sheetModel, getDetail, snapshot } = context;
+  const content = peopleTab(context);
+  if (!sheetModel || sheetModel.disputed || !getDetail) return content;
+  getDetail(sheetModel.iso3, 'people')
+    .then(({ features }) => {
+      const next = peopleTab({
+        ...context,
+        snapshot: { features: { ...snapshot.features, ...features } },
+      });
+      content.replaceChildren(...next.childNodes);
+    })
+    .catch(() => {
+      content.append(
+        node(
+          document,
+          'p',
+          'world-detail',
+          'People account details are unavailable.',
+        ),
+      );
+    });
   return content;
 }
