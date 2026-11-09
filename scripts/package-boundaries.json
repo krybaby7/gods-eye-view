@@ -328,6 +328,12 @@
     "exports": ["./server/providers/world"],
     "modules": [
       "server/providers/world/index.js",
+      "server/providers/world/assets.js",
+      "server/providers/world/sources/asset-common.js",
+      "server/providers/world/sources/nga-ports.js",
+      "server/providers/world/sources/ourairports.js",
+      "server/providers/world/sources/wikidata-assets.js",
+      "server/providers/world/sources/wri-power.js",
       "server/providers/world/refreshRegistry.js",
       "server/providers/world/registry.js",
       "server/providers/world/scores.js",

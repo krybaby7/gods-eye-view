@@ -1,0 +1,1259 @@
+{
+  "notes": [
+    "Selected wafer fabrication sites and identifiable projects from public company filings. Packaging-only sites are excluded. Campus-level rows are used where the filing does not distinguish the relevant plants.",
+    "The owner country is the reported operating group's home jurisdiction. An owner share is provided only where the filing supports it. The owner array may be partial, especially for joint ventures.",
+    "Status is as of the source period. Planned includes sites in construction or retrofit with future output. No independently verified coordinates were entered."
+  ],
+  "rows": [
+    {
+      "id": "asset_tsmc-fab-2",
+      "type": "fab",
+      "name": "Fab 2",
+      "geometry": null,
+      "locality": "Hsinchu Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "TSMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-3",
+      "type": "fab",
+      "name": "Fab 3",
+      "geometry": null,
+      "locality": "Hsinchu Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "TSMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-5",
+      "type": "fab",
+      "name": "Fab 5",
+      "geometry": null,
+      "locality": "Hsinchu Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "TSMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-8",
+      "type": "fab",
+      "name": "Fab 8",
+      "geometry": null,
+      "locality": "Hsinchu Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "TSMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-12",
+      "type": "fab",
+      "name": "Fab 12",
+      "geometry": null,
+      "locality": "Hsinchu Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "TSMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-20",
+      "type": "fab",
+      "name": "Fab 20",
+      "geometry": null,
+      "locality": "Hsinchu Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "TSMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-6",
+      "type": "fab",
+      "name": "Fab 6",
+      "geometry": null,
+      "locality": "Southern Taiwan Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "TSMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-14",
+      "type": "fab",
+      "name": "Fab 14",
+      "geometry": null,
+      "locality": "Southern Taiwan Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "TSMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-18",
+      "type": "fab",
+      "name": "Fab 18",
+      "geometry": null,
+      "locality": "Southern Taiwan Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "TSMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-15",
+      "type": "fab",
+      "name": "Fab 15",
+      "geometry": null,
+      "locality": "Central Taiwan Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "TSMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-22",
+      "type": "fab",
+      "name": "Fab 22",
+      "geometry": null,
+      "locality": "Kaohsiung Nanzih Technology Industrial Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "TSMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-10",
+      "type": "fab",
+      "name": "Fab 10",
+      "geometry": null,
+      "locality": "Shanghai",
+      "locatedIn": "CHN",
+      "jurisdiction": "CHN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "TSMC China",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-16",
+      "type": "fab",
+      "name": "Fab 16",
+      "geometry": null,
+      "locality": "Nanjing",
+      "locatedIn": "CHN",
+      "jurisdiction": "CHN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "TSMC Nanjing",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-11",
+      "type": "fab",
+      "name": "Fab 11",
+      "geometry": null,
+      "locality": "Washington state",
+      "locatedIn": "USA",
+      "jurisdiction": "USA",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": 1.0
+        }
+      ],
+      "operator": "TSMC Washington",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-21",
+      "type": "fab",
+      "name": "Fab 21",
+      "geometry": null,
+      "locality": "Phoenix, Arizona",
+      "locatedIn": "USA",
+      "jurisdiction": "USA",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": 1.0
+        }
+      ],
+      "operator": "TSMC Arizona",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing. This entry covers the operating Arizona fab.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-23",
+      "type": "fab",
+      "name": "Fab 23",
+      "geometry": null,
+      "locality": "Kumamoto",
+      "locatedIn": "JPN",
+      "jurisdiction": "JPN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "Japan Advanced Semiconductor Manufacturing",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing. This entry covers the operating Kumamoto fab.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Semiconductor Manufacturing Capacity and Technology, printed pp. 15–16",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_tsmc-fab-24",
+      "type": "fab",
+      "name": "Fab 24",
+      "geometry": null,
+      "locality": "Dresden",
+      "locatedIn": "DEU",
+      "jurisdiction": "DEU",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "TSMC",
+          "country": "TWN",
+          "share": 0.7
+        }
+      ],
+      "operator": "European Semiconductor Manufacturing Company",
+      "status": "planned",
+      "statusDetail": "Filing identifies the Dresden fab project. Commercial production was not reported.",
+      "statusAsOf": "2026-02-28",
+      "sourceUrl": "https://investor.tsmc.com/sites/ir/sec-filings/2025_20F%20Report.pdf",
+      "sourceLocator": "Property, Plants and Equipment and Note 4, Subsidiaries",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_umc-fab-8a",
+      "type": "fab",
+      "name": "Fab 8A",
+      "geometry": null,
+      "locality": "Hsinchu Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "UMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "UMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1033767/000119312526193757/d91630d20f.htm",
+      "sourceLocator": "Manufacturing, fab process technology and output",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_umc-fab-8c",
+      "type": "fab",
+      "name": "Fab 8C",
+      "geometry": null,
+      "locality": "Hsinchu Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "UMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "UMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1033767/000119312526193757/d91630d20f.htm",
+      "sourceLocator": "Manufacturing, fab process technology and output",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_umc-fab-8d",
+      "type": "fab",
+      "name": "Fab 8D",
+      "geometry": null,
+      "locality": "Hsinchu Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "UMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "UMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1033767/000119312526193757/d91630d20f.htm",
+      "sourceLocator": "Manufacturing, fab process technology and output",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_umc-fab-8e",
+      "type": "fab",
+      "name": "Fab 8E",
+      "geometry": null,
+      "locality": "Hsinchu Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "UMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "UMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1033767/000119312526193757/d91630d20f.htm",
+      "sourceLocator": "Manufacturing, fab process technology and output",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_umc-fab-8f",
+      "type": "fab",
+      "name": "Fab 8F",
+      "geometry": null,
+      "locality": "Hsinchu Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "UMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "UMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1033767/000119312526193757/d91630d20f.htm",
+      "sourceLocator": "Manufacturing, fab process technology and output",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_umc-fab-8s",
+      "type": "fab",
+      "name": "Fab 8S",
+      "geometry": null,
+      "locality": "Hsinchu Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "UMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "UMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1033767/000119312526193757/d91630d20f.htm",
+      "sourceLocator": "Manufacturing, fab process technology and output",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_umc-wavetek-fab",
+      "type": "fab",
+      "name": "Wavetek fab",
+      "geometry": null,
+      "locality": "Hsinchu Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "UMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "UMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1033767/000119312526193757/d91630d20f.htm",
+      "sourceLocator": "Manufacturing, fab process technology and output",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_umc-fab-12a",
+      "type": "fab",
+      "name": "Fab 12A",
+      "geometry": null,
+      "locality": "Southern Taiwan Science Park",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "UMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "UMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1033767/000119312526193757/d91630d20f.htm",
+      "sourceLocator": "Manufacturing, fab process technology and output",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_umc-fab-12i",
+      "type": "fab",
+      "name": "Fab 12i",
+      "geometry": null,
+      "locality": "Singapore",
+      "locatedIn": "SGP",
+      "jurisdiction": "SGP",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "UMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "UMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1033767/000119312526193757/d91630d20f.htm",
+      "sourceLocator": "Manufacturing, fab process technology and output",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_umc-fab-8n",
+      "type": "fab",
+      "name": "Fab 8N",
+      "geometry": null,
+      "locality": "Suzhou",
+      "locatedIn": "CHN",
+      "jurisdiction": "CHN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "UMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "UMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1033767/000119312526193757/d91630d20f.htm",
+      "sourceLocator": "Manufacturing, fab process technology and output",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_umc-fab-12x",
+      "type": "fab",
+      "name": "Fab 12X",
+      "geometry": null,
+      "locality": "Xiamen",
+      "locatedIn": "CHN",
+      "jurisdiction": "CHN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "UMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "UMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1033767/000119312526193757/d91630d20f.htm",
+      "sourceLocator": "Manufacturing, fab process technology and output",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_umc-fab-12m",
+      "type": "fab",
+      "name": "Fab 12M",
+      "geometry": null,
+      "locality": "Mie",
+      "locatedIn": "JPN",
+      "jurisdiction": "JPN",
+      "ownerCountry": "TWN",
+      "owners": [
+        {
+          "actor": "UMC",
+          "country": "TWN",
+          "share": null
+        }
+      ],
+      "operator": "UMC",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1033767/000119312526193757/d91630d20f.htm",
+      "sourceLocator": "Manufacturing, fab process technology and output",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_globalfoundries-fab-8",
+      "type": "fab",
+      "name": "Fab 8",
+      "geometry": null,
+      "locality": "Malta, New York",
+      "locatedIn": "USA",
+      "jurisdiction": "USA",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "GlobalFoundries",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "GlobalFoundries",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025-12-31",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1709048/000170904826000022/gfs-20251231.htm",
+      "sourceLocator": "Property, Plant and Equipment, manufacturing sites",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_globalfoundries-fab-9",
+      "type": "fab",
+      "name": "Fab 9",
+      "geometry": null,
+      "locality": "Burlington area, Vermont",
+      "locatedIn": "USA",
+      "jurisdiction": "USA",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "GlobalFoundries",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "GlobalFoundries",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025-12-31",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1709048/000170904826000022/gfs-20251231.htm",
+      "sourceLocator": "Property, Plant and Equipment, manufacturing sites",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_globalfoundries-dresden-wafer-fabrication-site",
+      "type": "fab",
+      "name": "Dresden wafer fabrication site",
+      "geometry": null,
+      "locality": "Dresden",
+      "locatedIn": "DEU",
+      "jurisdiction": "DEU",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "GlobalFoundries",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "GlobalFoundries",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025-12-31",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1709048/000170904826000022/gfs-20251231.htm",
+      "sourceLocator": "Property, Plant and Equipment, manufacturing sites",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_globalfoundries-singapore-wafer-fabrication-site",
+      "type": "fab",
+      "name": "Singapore wafer fabrication site",
+      "geometry": null,
+      "locality": "Singapore",
+      "locatedIn": "SGP",
+      "jurisdiction": "SGP",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "GlobalFoundries",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "GlobalFoundries",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025-12-31",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1709048/000170904826000022/gfs-20251231.htm",
+      "sourceLocator": "Property, Plant and Equipment, manufacturing sites",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_globalfoundries-new-fab-on-fab-8-campus",
+      "type": "fab",
+      "name": "New fab on Fab 8 campus",
+      "geometry": null,
+      "locality": "Malta, New York",
+      "locatedIn": "USA",
+      "jurisdiction": "USA",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "GlobalFoundries",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "GlobalFoundries",
+      "status": "planned",
+      "statusDetail": "A direct funding agreement supports construction of a separate fab on the operating Fab 8 campus.",
+      "statusAsOf": "2025-12-31",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1709048/000170904826000022/gfs-20251231.htm",
+      "sourceLocator": "Business Overview, Government Regulations, direct funding agreement",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_intel-oregon-wafer-fab-site",
+      "type": "fab",
+      "name": "Oregon wafer fab site",
+      "geometry": null,
+      "locality": "Oregon",
+      "locatedIn": "USA",
+      "jurisdiction": "USA",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Intel",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "Intel",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm",
+      "sourceLocator": "Intel Foundry, Manufacturing, and Ireland SCIP note",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_intel-arizona-wafer-fab-site",
+      "type": "fab",
+      "name": "Arizona wafer fab site",
+      "geometry": null,
+      "locality": "Arizona",
+      "locatedIn": "USA",
+      "jurisdiction": "USA",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Intel",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "Intel",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm",
+      "sourceLocator": "Intel Foundry, Manufacturing, and Ireland SCIP note",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_intel-fab-34",
+      "type": "fab",
+      "name": "Fab 34",
+      "geometry": null,
+      "locality": "Ireland",
+      "locatedIn": "IRL",
+      "jurisdiction": "IRL",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Intel",
+          "country": "USA",
+          "share": 1.0
+        }
+      ],
+      "operator": "Intel",
+      "status": "operating",
+      "statusDetail": "Intel retains sole fab ownership despite the Ireland SCIP output agreement.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm",
+      "sourceLocator": "Intel Foundry, Manufacturing, and Ireland SCIP note",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_intel-israel-wafer-fab-site",
+      "type": "fab",
+      "name": "Israel wafer fab site",
+      "geometry": null,
+      "locality": "Israel",
+      "locatedIn": "ISR",
+      "jurisdiction": "ISR",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Intel",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "Intel",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm",
+      "sourceLocator": "Intel Foundry, Manufacturing, and Ireland SCIP note",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_intel-ohio-wafer-fab-project",
+      "type": "fab",
+      "name": "Ohio wafer fab project",
+      "geometry": null,
+      "locality": "Ohio",
+      "locatedIn": "USA",
+      "jurisdiction": "USA",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Intel",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "Intel",
+      "status": "planned",
+      "statusDetail": "Construction pace slowed in 2025. Production was not reported.",
+      "statusAsOf": "2025-12-27",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/intc-20251227.htm",
+      "sourceLocator": "Manufacturing and capital deployment discussion",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_texas-instruments-richardson-300-mm-wafer-fab",
+      "type": "fab",
+      "name": "Richardson 300 mm wafer fab",
+      "geometry": null,
+      "locality": "Richardson, Texas",
+      "locatedIn": "USA",
+      "jurisdiction": "USA",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Texas Instruments",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "Texas Instruments",
+      "status": "operating",
+      "statusDetail": "The filing reports qualification and production ramp in 2025.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/97476/000009747626000059/txn-20251231.htm",
+      "sourceLocator": "Item 1, Manufacturing",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_texas-instruments-sherman-300-mm-wafer-fab",
+      "type": "fab",
+      "name": "Sherman 300 mm wafer fab",
+      "geometry": null,
+      "locality": "Sherman, Texas",
+      "locatedIn": "USA",
+      "jurisdiction": "USA",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Texas Instruments",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "Texas Instruments",
+      "status": "operating",
+      "statusDetail": "The filing reports qualification and production ramp in 2025.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/97476/000009747626000059/txn-20251231.htm",
+      "sourceLocator": "Item 1, Manufacturing",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_texas-instruments-lehi-300-mm-wafer-fab",
+      "type": "fab",
+      "name": "Lehi 300 mm wafer fab",
+      "geometry": null,
+      "locality": "Lehi, Utah",
+      "locatedIn": "USA",
+      "jurisdiction": "USA",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Texas Instruments",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "Texas Instruments",
+      "status": "operating",
+      "statusDetail": "The filing reports qualification and production ramp in 2025.",
+      "statusAsOf": "2025",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/97476/000009747626000059/txn-20251231.htm",
+      "sourceLocator": "Item 1, Manufacturing",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_micron-manassas-wafer-fab",
+      "type": "fab",
+      "name": "Manassas wafer fab",
+      "geometry": null,
+      "locality": "Manassas, Virginia",
+      "locatedIn": "USA",
+      "jurisdiction": "USA",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Micron",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "Micron",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-09-03",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/723125/000072312526000023/mu-20260903.htm",
+      "sourceLocator": "Item 2, Properties, wafer fabrication facilities and expansion",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_micron-boise-first-new-dram-wafer-fab",
+      "type": "fab",
+      "name": "Boise first new DRAM wafer fab",
+      "geometry": null,
+      "locality": "Boise, Idaho",
+      "locatedIn": "USA",
+      "jurisdiction": "USA",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Micron",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "Micron",
+      "status": "planned",
+      "statusDetail": "Under construction. Initial wafer output was projected for mid-2027.",
+      "statusAsOf": "2026-09-03",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/723125/000072312526000023/mu-20260903.htm",
+      "sourceLocator": "Item 2, Properties, wafer fabrication facilities and expansion",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_micron-idaho-second-new-dram-wafer-fab",
+      "type": "fab",
+      "name": "Idaho second new DRAM wafer fab",
+      "geometry": null,
+      "locality": "Idaho",
+      "locatedIn": "USA",
+      "jurisdiction": "USA",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Micron",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "Micron",
+      "status": "planned",
+      "statusDetail": "Construction activities began in 2026.",
+      "statusAsOf": "2026-09-03",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/723125/000072312526000023/mu-20260903.htm",
+      "sourceLocator": "Item 2, Properties, wafer fabrication facilities and expansion",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_micron-clay-first-dram-wafer-fab",
+      "type": "fab",
+      "name": "Clay first DRAM wafer fab",
+      "geometry": null,
+      "locality": "Clay, New York",
+      "locatedIn": "USA",
+      "jurisdiction": "USA",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Micron",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "Micron",
+      "status": "planned",
+      "statusDetail": "Vertical construction began in 2026.",
+      "statusAsOf": "2026-09-03",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/723125/000072312526000023/mu-20260903.htm",
+      "sourceLocator": "Item 2, Properties, wafer fabrication facilities and expansion",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_micron-hiroshima-dram-wafer-fabrication-site",
+      "type": "fab",
+      "name": "Hiroshima DRAM wafer fabrication site",
+      "geometry": null,
+      "locality": "Hiroshima",
+      "locatedIn": "JPN",
+      "jurisdiction": "JPN",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Micron",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "Micron",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-09-03",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/723125/000072312526000023/mu-20260903.htm",
+      "sourceLocator": "Item 2, Properties, wafer fabrication facilities and expansion",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_micron-existing-singapore-nand-fab-site",
+      "type": "fab",
+      "name": "Existing Singapore NAND fab site",
+      "geometry": null,
+      "locality": "Singapore",
+      "locatedIn": "SGP",
+      "jurisdiction": "SGP",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Micron",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "Micron",
+      "status": "operating",
+      "statusDetail": "Reported in production in the cited filing.",
+      "statusAsOf": "2026-09-03",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/723125/000072312526000023/mu-20260903.htm",
+      "sourceLocator": "Item 2, Properties, wafer fabrication facilities and expansion",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_micron-additional-singapore-nand-wafer-fab",
+      "type": "fab",
+      "name": "Additional Singapore NAND wafer fab",
+      "geometry": null,
+      "locality": "Singapore",
+      "locatedIn": "SGP",
+      "jurisdiction": "SGP",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Micron",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "Micron",
+      "status": "planned",
+      "statusDetail": "Groundbreaking took place in January 2026.",
+      "statusAsOf": "2026-09-03",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/723125/000072312526000023/mu-20260903.htm",
+      "sourceLocator": "Item 2, Properties, wafer fabrication facilities and expansion",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "id": "asset_micron-tongluo-wafer-fab",
+      "type": "fab",
+      "name": "Tongluo wafer fab",
+      "geometry": null,
+      "locality": "Tongluo, Miaoli County",
+      "locatedIn": "TWN",
+      "jurisdiction": "TWN",
+      "ownerCountry": "USA",
+      "owners": [
+        {
+          "actor": "Micron",
+          "country": "USA",
+          "share": null
+        }
+      ],
+      "operator": "Micron",
+      "status": "planned",
+      "statusDetail": "Acquisition completed in March 2026. The filing projects shipments from this site beginning in 2027.",
+      "statusAsOf": "2026-09-03",
+      "sourceUrl": "https://www.sec.gov/Archives/edgar/data/723125/000072312526000023/mu-20260903.htm",
+      "sourceLocator": "Item 2, Properties, wafer fabrication facilities and expansion",
+      "lastVerified": "2026-11-09",
+      "reviewed": false
+    }
+  ]
+}

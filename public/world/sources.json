@@ -52,5 +52,55 @@
     "licence": "CC BY-SA 4.0",
     "releaseRhythm": "Annual (March)",
     "marks": ["ShareAlike"]
+  },
+  {
+    "id": "wri-power",
+    "name": "WRI Global Power Plant Database",
+    "access": "Keyless v1.3.0 ZIP, WRI Data Explorer",
+    "attribution": "World Resources Institute, Global Power Plant Database",
+    "url": "https://datasets.wri.org/datasets/global-power-plant-database",
+    "licence": "CC BY 4.0",
+    "releaseRhythm": "Historical 2021 inventory; no routine updates",
+    "marks": ["Historical"]
+  },
+  {
+    "id": "wikidata-assets",
+    "name": "Wikidata facilities and port operators",
+    "access": "Keyless Wikidata Query Service SPARQL, class-bounded queries",
+    "attribution": "Wikidata contributors, structured data",
+    "url": "https://www.wikidata.org/",
+    "licence": "CC0",
+    "releaseRhythm": "Continuously edited; local refresh no more often than every 14 days",
+    "marks": ["LiveUnverified"]
+  },
+  {
+    "id": "nga-ports",
+    "name": "NGA World Port Index",
+    "access": "Keyless NGA Maritime Safety Information World Port Index JSON",
+    "attribution": "U.S. National Geospatial-Intelligence Agency, World Port Index (Pub. 150)",
+    "url": "https://msi.nga.mil/Publications/WPI",
+    "licence": "Public domain (U.S. government)",
+    "releaseRhythm": "Index updates as published; local check no more often than every 30 days",
+    "marks": ["LiveUnverified"]
+  },
+  {
+    "id": "ourairports",
+    "name": "OurAirports",
+    "access": "Keyless CSV from the official OurAirports GitHub Pages mirror",
+    "attribution": "OurAirports contributors",
+    "url": "https://ourairports.com/data/",
+    "licence": "Public domain",
+    "releaseRhythm": "Daily publication; local check no more often than every seven days",
+    "marks": ["LiveUnverified"]
+  },
+  {
+    "id": "curated-assets",
+    "name": "Curated asset facts and nuclear badges",
+    "access": "Local hand tables with individual primary citations",
+    "attribution": "Government sources, company filings and Federation of American Scientists",
+    "url": "https://fas.org/initiative/status-world-nuclear-forces/",
+    "licence": "Cited factual summaries; no protected tables are reproduced",
+    "releaseRhythm": "Manual review, with date and provenance per fact",
+    "marks": ["Draft"]
   }
 ]
