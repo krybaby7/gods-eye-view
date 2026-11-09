@@ -1,5 +1,6 @@
 import {
   dependencyShares,
+  readEnergyDependencies,
   readEnergyReference,
 } from '../server/providers/world/dependencies.js';
 import {
@@ -7,6 +8,7 @@ import {
   shiftDay,
 } from '../server/providers/world/sources/portwatch.js';
 
+const useModel = process.argv.includes('--energy-model');
 const hormuz = 'chokepoint6';
 const dataTo = '2026-11-01';
 const gate = {
@@ -87,10 +89,11 @@ export const fixtureAdapters = {
     },
   }),
   'eia-chokepoints': staticFixture(await readEnergyReference()),
-  'energy-dependencies': staticFixture({
-    mode: 'fixture',
-    rows: syntheticRows,
-  }),
+  'energy-dependencies': staticFixture(
+    useModel
+      ? await readEnergyDependencies()
+      : { mode: 'fixture', rows: syntheticRows },
+  ),
 };
 
 export default async function phase2({
@@ -107,6 +110,62 @@ export default async function phase2({
   tab,
   wait,
 }) {
+  if (useModel) {
+    await step(
+      '2024 BACI model colours most importers and gives Japan and India real exposure',
+      async () => {
+        await changeLens(lens('energy'), 'Energy exposure');
+        assert.match(await text('#world-legend'), /2024 BACI.*all imports/s);
+        const { board } = await world.store.read();
+        const model = board.features['energy-dependencies'];
+        const importers = Object.keys(model.exposure);
+        assert.ok(importers.length > model.coverage.importers / 2);
+        await page.waitForFunction(() => {
+          const { solid } = window.worldQa;
+          return ['JPN', 'IND'].every(
+            (iso) =>
+              solid.getGeometryInstanceAttributes(
+                'world:' + iso + ':' + iso + ':0',
+              )?.show[0],
+          );
+        }, wait);
+        for (const [iso, lon, lat] of [
+          ['JPN', 138.3, 36.2],
+          ['IND', 81.7, 21.2],
+        ]) {
+          await camera(lon, lat, 7_500_000);
+          await pickCountry(lon, lat, iso);
+          await page.click(tab('exposure'));
+          await page.click('#world-sheet-content details summary');
+          const content = await text('#world-sheet-content');
+          assert.match(
+            content,
+            /Modelled from 2024 BACI trade.*Not a published statistic/s,
+          );
+          assert.match(
+            content,
+            /Share of seaborne imports.*Share of all imports.*Seaborne imports denominator.*All imports denominator/s,
+          );
+          assert.match(
+            content,
+            /Why this number.*Representative ports.*shortest maritime paths/s,
+          );
+          assert.ok(
+            model.exposure[iso].some(
+              ({ gate, item, shares }) =>
+                gate === hormuz && item === 'crude oil' && shares.all > 0,
+            ),
+          );
+          await shot('phase2-model-' + iso.toLowerCase() + '-exposure');
+          await page.click('#world-sheet-close');
+        }
+        await page.click(lens('condition'));
+        await camera(82, 22, 9_000_000);
+      },
+    );
+    return;
+  }
+
   const gaugeImage = (id, prefix) =>
     page.waitForFunction(
       ({ id, prefix }) => {

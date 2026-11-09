@@ -127,21 +127,18 @@ export function createEnergyOverlay({ viewer, labelPoint, requestRender }) {
       const from = labelPoint(row.provider);
       const to = labelPoint(row.dependent);
       const gatesOnRoute = row.route.map((id) => points.get(id));
-      if (
-        !from ||
-        !to ||
-        !gatesOnRoute.length ||
-        gatesOnRoute.some((point) => !point)
-      )
-        continue;
-      const positions = routePositions([
-        [from.lon, from.lat],
-        ...gatesOnRoute,
-        [to.lon, to.lat],
-      ]);
+      const path = dependencies?.paths?.[`${row.provider}/${row.dependent}`];
+      const coordinates =
+        path ??
+        (from && to && gatesOnRoute.length && gatesOnRoute.every(Boolean)
+          ? [[from.lon, from.lat], ...gatesOnRoute, [to.lon, to.lat]]
+          : []);
+      const positions = routePositions(coordinates);
       if (positions.length < 2) continue;
       routes.add({
-        id: 'world-card:chokepoint:' + row.route[0],
+        id: row.route.length
+          ? 'world-card:chokepoint:' + row.route[0]
+          : undefined,
         positions,
         width: selected ? 2.5 : 1.5,
         material: Cesium.Material.fromType('Color', {

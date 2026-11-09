@@ -1,9 +1,4 @@
-import { createInterface } from 'node:readline';
-import { Readable } from 'node:stream';
-import {
-  readResponseBytesCapped,
-  readResponseTextCapped,
-} from '../../common/http.js';
+import { readResponseTextCapped } from '../../common/http.js';
 import {
   countryCode,
   fetchResponse,
@@ -12,13 +7,16 @@ import {
   releaseDue,
   sourceCountries,
 } from './common.js';
-import { columnIndices, csvRows } from './csv.js';
+import { columnIndices, csvRecords, csvRows } from './csv.js';
+import { downloadWorldFile } from './download.js';
 import { zipEntryChunks } from './zip.js';
 
 const ORIGIN = 'https://www.v-dem.net';
 const RELEASE_PAGE = `${ORIGIN}/data/the-v-dem-dataset/`;
 const SIZE_LIMIT = 200_000_000;
 const EXPANDED_SIZE_LIMIT = 500_000_000;
+
+export const estimatedBytes = 27_000_000;
 
 export function shouldCheck(context) {
   if (context.observations && !context.data) return true;
@@ -28,9 +26,17 @@ export function shouldCheck(context) {
   });
 }
 
-export async function fetchObservations({ fetchImpl, registry, now }) {
+export async function fetchObservations({
+  fetchImpl,
+  registry,
+  now,
+  cacheDirectory,
+  signal,
+  onProgress,
+}) {
   const indicator = registry.indicators.find(({ source }) => source === 'vdem');
-  const metadataSignal = AbortSignal.timeout(30_000);
+  const timeout = AbortSignal.timeout(30_000);
+  const metadataSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
   const metadata = await fetchResponse(fetchImpl, RELEASE_PAGE, metadataSignal);
   const html = await readResponseTextCapped(
     metadata,
@@ -57,11 +63,16 @@ export async function fetchObservations({ fetchImpl, registry, now }) {
   });
   const filename = `V-Dem-CY-FullOthers-${sourceVersion}`;
   const url = `${ORIGIN}/media/datasets/${filename}_csv.zip`;
-  const signal = AbortSignal.timeout(120_000);
-  const response = await fetchResponse(fetchImpl, url, signal);
-  let bytes;
+  let path;
   try {
-    bytes = await readResponseBytesCapped(response, SIZE_LIMIT, signal);
+    ({ path } = await downloadWorldFile(url, {
+      cacheDirectory,
+      fetchImpl,
+      signal,
+      onProgress,
+      maxBytes: SIZE_LIMIT,
+      immutable: true,
+    }));
   } catch (error) {
     if (error.code !== 'RESPONSE_TOO_LARGE') throw error;
     return unavailable('download exceeds 200 MB');
@@ -75,51 +86,45 @@ export async function fetchObservations({ fetchImpl, registry, now }) {
   );
   const latest = new Map();
   const chunks = zipEntryChunks(
-    bytes,
+    path,
     (name) =>
       name.split('/').at(-1) === `V-Dem-CY-Full+Others-${sourceVersion}.csv`,
     EXPANDED_SIZE_LIMIT,
+    signal,
   );
-  const input = Readable.from(chunks);
-  const lines = createInterface({ input, crlfDelay: Infinity });
   let columns;
-  try {
-    for await (const line of lines) {
-      const row = csvRows(line).next().value;
-      if (!row) continue;
-      if (!columns) {
-        if (!row.includes(indicator.sourceCode)) {
-          return unavailable(`does not include ${indicator.sourceCode}`);
-        }
-        columns = columnIndices(row, [
-          'country_text_id',
-          'year',
-          indicator.sourceCode,
-        ]);
-        continue;
+  for await (const record of csvRecords(chunks)) {
+    const row = csvRows(record).next().value;
+    if (!row) continue;
+    if (!columns) {
+      if (!row.includes(indicator.sourceCode)) {
+        return unavailable(`does not include ${indicator.sourceCode}`);
       }
-      const [code, year, raw] = columns.map((index) => row[index]);
-      const iso3 = countries.get(code);
-      const value = raw?.trim() ? Number(raw) : NaN;
-      if (
-        !iso3 ||
-        !/^\d{4}$/.test(year) ||
-        !Number.isFinite(value) ||
-        year <= (latest.get(iso3)?.period ?? '')
-      )
-        continue;
-      latest.set(
-        iso3,
-        observation(now, indicator.id, iso3, value, year, {
-          publishedAt,
-          sourceVersion,
-          method: 'source-estimate',
-        }),
-      );
+      columns = columnIndices(row, [
+        'country_text_id',
+        'year',
+        indicator.sourceCode,
+      ]);
+      continue;
     }
-  } finally {
-    lines.close();
-    input.destroy();
+    const [code, year, raw] = columns.map((index) => row[index]);
+    const iso3 = countries.get(code);
+    const value = raw?.trim() ? Number(raw) : NaN;
+    if (
+      !iso3 ||
+      !/^\d{4}$/.test(year) ||
+      !Number.isFinite(value) ||
+      year <= (latest.get(iso3)?.period ?? '')
+    )
+      continue;
+    latest.set(
+      iso3,
+      observation(now, indicator.id, iso3, value, year, {
+        publishedAt,
+        sourceVersion,
+        method: 'source-estimate',
+      }),
+    );
   }
   if (latest.size === 0)
     return unavailable(`has no usable ${indicator.sourceCode} values`);

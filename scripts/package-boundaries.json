@@ -334,9 +334,12 @@
       "server/providers/world/refreshRegistry.js",
       "server/providers/world/registry.js",
       "server/providers/world/scores.js",
+      "server/providers/world/sourceQueue.js",
       "server/providers/world/store.js",
       "server/providers/world/turn.js",
       "server/providers/world/sources/common.js",
+      "server/providers/world/sources/download.js",
+      "server/providers/world/sources/transport.js",
       "server/providers/world/sources/csv.js",
       "server/providers/world/sources/imf.js",
       "server/providers/world/sources/ucdp.js",
@@ -380,7 +383,7 @@
       "server/providers/world/sources/liveOptional.js",
       "server/providers/world/sources/livePrices.js"
     ],
-    "external": []
+    "external": ["undici"]
   },
   "search-provider": {
     "runtime": "node",

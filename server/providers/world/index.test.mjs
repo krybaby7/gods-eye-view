@@ -67,6 +67,129 @@ test('first launch starts a single turn and keeps the previous board while refre
   assert.equal((await settled(service)).turn.number, 2);
 });
 
+test('first launch saves base scores and publishes finished background sources within one turn', async (t) => {
+  const { createWorldService } = await import('./index.js');
+  const heavy = Promise.withResolvers();
+  const entered = Promise.withResolvers();
+  const checkpoint = Promise.withResolvers();
+  const medium = Promise.withResolvers();
+  const conflictArchive = Promise.withResolvers();
+  let heavyCalls = 0;
+  const adapter = (fetchObservations, estimatedBytes) => ({
+    shouldCheck: () => true,
+    fetchObservations,
+    estimatedBytes,
+  });
+  const service = createWorldService({
+    ...(await setup(t)),
+    loadRegistry: async () => ({
+      ...registry,
+      sources: [{ id: 'vdem' }, ...registry.sources, { id: 'medium' }],
+    }),
+    adapters: {
+      worldbank: adapter(({ now }) => ({
+        observations: [observation(100, now)],
+      })),
+      ucdp: adapter(async () => {
+        await conflictArchive.promise;
+        return { data: { deaths: 26 } };
+      }, 34_000_000),
+      medium: adapter(async () => {
+        await medium.promise;
+        return { data: { records: [1] } };
+      }, 100),
+      vdem: adapter(async ({ onProgress }) => {
+        heavyCalls++;
+        onProgress({ bytes: 12_000_000, totalBytes: 27_000_000 });
+        entered.resolve();
+        await heavy.promise;
+        return { data: { records: [2] } };
+      }, 27_000_000),
+    },
+  });
+  t.after(() => {
+    heavy.resolve();
+    medium.resolve();
+    conflictArchive.resolve();
+    return service.whenIdle();
+  });
+  const initial = await service.snapshot();
+  await entered.promise;
+  const early = await service.snapshot();
+  assert.equal(early.turn, null);
+  assert.notEqual(early.countries, initial.countries);
+  assert.equal(early.features.ucdp, undefined);
+  assert.equal(early.progress.download.bytes, 12_000_000);
+  assert.equal((await service.store.read()).observations[0].value, 100);
+  assert.equal((await service.refresh()).turn, null);
+  assert.equal(heavyCalls, 1);
+
+  medium.resolve();
+  const waitForMedium = setInterval(async () => {
+    const snapshot = await service.snapshot();
+    if (snapshot.features.medium) checkpoint.resolve(snapshot);
+  }, 5);
+  try {
+    const background = await Promise.race([
+      checkpoint.promise,
+      new Promise((_, reject) => {
+        setTimeout(
+          () => reject(new Error('Background result was never published')),
+          2_000,
+        ).unref();
+      }),
+    ]);
+    assert.equal(background.turn, null);
+    assert.equal(background.features.vdem, undefined);
+  } finally {
+    clearInterval(waitForMedium);
+  }
+  conflictArchive.resolve();
+  heavy.resolve();
+  const done = await settled(service);
+  assert.equal(done.turn.number, 1);
+  assert.equal(done.features.ucdp.deaths, 26);
+  assert.deepEqual(done.features.vdem.records, [2]);
+});
+
+test('the source queue starts at most four ready sources in estimated size order', async (t) => {
+  const { createWorldService } = await import('./index.js');
+  const release = Promise.withResolvers();
+  const sizes = { large: 90, tiny: 1, small: 2, middle: 5, bigger: 20 };
+  const starts = [];
+  const service = createWorldService({
+    ...(await setup(t)),
+    loadRegistry: async () => ({
+      ...registry,
+      sources: Object.keys(sizes).map((id) => ({ id })),
+    }),
+    adapters: Object.fromEntries(
+      Object.entries(sizes).map(([id, size]) => [
+        id,
+        {
+          estimatedBytes: size,
+          shouldCheck: () => true,
+          async fetchObservations() {
+            starts.push(id);
+            await release.promise;
+            return {};
+          },
+        },
+      ]),
+    ),
+  });
+  t.after(() => {
+    release.resolve();
+    return service.whenIdle();
+  });
+  await service.snapshot();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(starts, ['tiny', 'small', 'middle', 'bigger']);
+  release.resolve();
+  assert.equal((await settled(service)).turn.sources.length, 5);
+  assert.equal(starts.at(-1), 'large');
+});
+
 test('refresh retains revised vintages, persists turn history and isolates a failed source', async (t) => {
   const { createWorldService } = await import('./index.js');
   const { cacheDir } = await setup(t);

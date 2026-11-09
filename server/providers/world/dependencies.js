@@ -8,6 +8,15 @@ const referencePath = new URL(
   import.meta.url,
 );
 
+const dependencyPath = new URL(
+  '../../../public/world/curated/energy-dependencies.json',
+  import.meta.url,
+);
+
+export async function readEnergyDependencies() {
+  return JSON.parse(await readFile(dependencyPath, 'utf8'));
+}
+
 export async function readEnergyReference() {
   return JSON.parse(await readFile(referencePath, 'utf8'));
 }
@@ -37,15 +46,15 @@ const eia = {
 };
 
 const dependencies = {
-  shouldCheck: ({ data }) => !data,
+  shouldCheck: ({ data }) =>
+    data?.mode !== 'modelled' || data?.version !== 'BACI HS22 V202601',
   async fetchObservations() {
-    const reason =
-      'Route exposure is unavailable until bilateral trade can be routed and calibrated against published EIA volumes.';
+    const data = await readEnergyDependencies();
     return {
-      data: { mode: 'unavailable', rows: [], reason },
-      count: 0,
-      unit: 'dependency',
-      detail: reason,
+      data,
+      count: data.rows.length,
+      unit: 'modelled dependency',
+      detail: `${data.coverage.modelledImporters} importers with a modelled sea route.`,
     };
   },
 };
