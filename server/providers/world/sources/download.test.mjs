@@ -42,22 +42,31 @@ function bodyResponse(body, headers = {}, status = 200) {
 }
 
 test('bulk download stays alive while chunks arrive within the stall window', async (t) => {
-  let sent = 0;
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  let stream;
   const progress = [];
   const { download } = await downloadFixture(
     t,
     () =>
       bodyResponse(
         new ReadableStream({
-          async pull(controller) {
-            await delay(40);
-            controller.enqueue(Buffer.from(String(++sent)));
-            if (sent === 4) controller.close();
+          start(controller) {
+            stream = controller;
+            stream.enqueue(Buffer.from('1'));
           },
         }),
         { 'Content-Length': '4' },
       ),
-    { stallTimeoutMs: 130, onProgress: (event) => progress.push(event) },
+    {
+      stallTimeoutMs: 130,
+      onProgress(event) {
+        progress.push(event);
+        if (event.bytes === 4) return;
+        t.mock.timers.tick(100);
+        stream.enqueue(Buffer.from(String(event.bytes + 1)));
+        if (event.bytes === 3) stream.close();
+      },
+    },
   );
 
   const result = await download();
