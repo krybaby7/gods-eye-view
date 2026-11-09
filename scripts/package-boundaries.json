@@ -332,6 +332,7 @@
       "server/providers/world/sources/asset-common.js",
       "server/providers/world/sources/nga-ports.js",
       "server/providers/world/sources/ourairports.js",
+      "server/providers/world/sources/wdqs.js",
       "server/providers/world/sources/wikidata-assets.js",
       "server/providers/world/sources/wri-power.js",
       "server/providers/world/refreshRegistry.js",

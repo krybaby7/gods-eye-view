@@ -1,5 +1,4 @@
 import { readFile } from 'node:fs/promises';
-import { readResponseTextCapped } from '../../common/http.js';
 
 const DAY_MS = 86_400_000;
 let shapes;
@@ -99,38 +98,21 @@ export function assetRow({
   };
 }
 
-export function createAssetAdapter(load, intervalDays) {
-  let retryAt = 0;
+export function createAssetAdapter(
+  fetchObservations,
+  intervalDays,
+  { estimatedBytes = 0, requestHost } = {},
+) {
   return {
+    estimatedBytes,
+    requestHost,
     shouldCheck({ now, lastCheckedAt, data }) {
-      if (+now < retryAt) return false;
+      if (Date.parse(data?.retryAt) > +now) return false;
       if (!data) return true;
       if (intervalDays === Infinity) return false;
       const last = Date.parse(lastCheckedAt);
       return !Number.isFinite(last) || +now - last >= intervalDays * DAY_MS;
     },
-    async fetchObservations({ fetchImpl, now, ...context }) {
-      async function request(url, cap, read = readResponseTextCapped, headers) {
-        const signal = AbortSignal.timeout(35_000);
-        const response = await fetchImpl(url, { signal, headers });
-        if (!response.ok) {
-          if (response.status === 429) {
-            const header = response.headers.get('Retry-After');
-            const until = /^\d+$/.test(header ?? '')
-              ? +now + Number(header) * 1000
-              : Date.parse(header);
-            retryAt = Number.isFinite(until)
-              ? Math.max(+now, until)
-              : +now + 3600_000;
-          }
-          await response.body?.cancel();
-          throw new Error(
-            `HTTP ${response.status} from ${new URL(url).hostname}`,
-          );
-        }
-        return read(response, cap, signal);
-      }
-      return load({ ...context, now, request });
-    },
+    fetchObservations,
   };
 }

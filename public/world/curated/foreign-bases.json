@@ -2,14 +2,17 @@
   "notes": [
     "Named foreign military installations, host facilities with a documented foreign military presence, and named military support sites. Operating describes the listing or presence described by the cited source. Where the source is a historical map the status is unknown.",
     "Sending country records the military presence. It is distinct from legal ownership. Site title and ownership shares are unknown in this table, so ownerCountry is null and owners is empty. For the UK Sovereign Base Areas, CYP refers to island geography and GBR records the source-reported jurisdiction.",
-    "Coordinates are null. No representative point, city centroid, or facility geometry was assigned. The list is geographically uneven and covers the documented rows only."
+    "Coordinates are entered only for a sourced facility location. A null geometry means the exact site has not been established. Geographic placement and military presence do not establish title."
   ],
   "rows": [
     {
       "id": "asset_usa-aus-naval-support-activity-stirling",
       "type": "military_base",
       "name": "Naval Support Activity Stirling",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [115.683333333, -32.241666666]
+      },
       "locatedIn": "AUS",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -20,13 +23,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Australia"
+      "sourceLocator": "OCONUS / Overseas Report — Australia",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q62073571#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-bhr-naval-support-activity-bahrain",
       "type": "military_base",
       "name": "Naval Support Activity Bahrain",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [50.609722222, 26.209722222]
+      },
       "locatedIn": "BHR",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -37,7 +45,9 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Bahrain"
+      "sourceLocator": "OCONUS / Overseas Report — Bahrain",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q6981953#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-bel-kleine-brogel-air-base",
@@ -60,7 +70,10 @@
       "id": "asset_usa-bel-chievres-air-base",
       "type": "military_base",
       "name": "Chièvres Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [3.83111, 50.57583]
+      },
       "locatedIn": "BEL",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -71,13 +84,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Belgium"
+      "sourceLocator": "OCONUS / Overseas Report — Belgium",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q43363#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-iot-navy-support-facility-diego-garcia",
       "type": "military_base",
       "name": "Navy Support Facility Diego Garcia",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [72.411083, -7.313278]
+      },
       "locatedIn": "IOT",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -88,13 +106,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — British Indian Ocean Territory"
+      "sourceLocator": "OCONUS / Overseas Report — British Indian Ocean Territory",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q11694190#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-cub-naval-station-guantanamo-bay",
       "type": "military_base",
       "name": "Naval Station Guantanamo Bay",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-75.16, 19.9175]
+      },
       "locatedIn": "CUB",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -105,13 +128,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Cuba"
+      "sourceLocator": "OCONUS / Overseas Report — Cuba",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q762570#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-deu-buchel-air-base",
       "type": "military_base",
       "name": "Büchel Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [7.06333, 50.1738]
+      },
       "locatedIn": "DEU",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -122,13 +150,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Germany"
+      "sourceLocator": "OCONUS / Overseas Report — Germany",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q320257#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-deu-geilenkirchen-nato-air-base",
       "type": "military_base",
       "name": "Geilenkirchen NATO Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [6.0425, 50.960833333]
+      },
       "locatedIn": "DEU",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -139,13 +172,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Germany"
+      "sourceLocator": "OCONUS / Overseas Report — Germany",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q329095#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-deu-ramstein-air-base",
       "type": "military_base",
       "name": "Ramstein Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [7.6, 49.436944444]
+      },
       "locatedIn": "DEU",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -156,13 +194,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Germany"
+      "sourceLocator": "OCONUS / Overseas Report — Germany",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q161348#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-deu-spangdahlem-air-base",
       "type": "military_base",
       "name": "Spangdahlem Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [6.6925, 49.9727]
+      },
       "locatedIn": "DEU",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -173,7 +216,9 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Germany"
+      "sourceLocator": "OCONUS / Overseas Report — Germany",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q656939#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-grc-naval-support-activity-souda-bay",
@@ -196,7 +241,10 @@
       "id": "asset_usa-hun-papa-air-base",
       "type": "military_base",
       "name": "Pápa Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [17.497222222, 47.363888888]
+      },
       "locatedIn": "HUN",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -207,13 +255,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Hungary"
+      "sourceLocator": "OCONUS / Overseas Report — Hungary",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q681570#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-ita-aviano-air-base",
       "type": "military_base",
       "name": "Aviano Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [12.596472222, 46.031888888]
+      },
       "locatedIn": "ITA",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -224,13 +277,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Italy"
+      "sourceLocator": "OCONUS / Overseas Report — Italy",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q790794#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-ita-ghedi-air-base",
       "type": "military_base",
       "name": "Ghedi Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [10.26766667, 45.43216667]
+      },
       "locatedIn": "ITA",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -241,13 +299,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Italy"
+      "sourceLocator": "OCONUS / Overseas Report — Italy",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q1934972#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-ita-naval-air-station-sigonella",
       "type": "military_base",
       "name": "Naval Air Station Sigonella",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [14.922222222, 37.401666666]
+      },
       "locatedIn": "ITA",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -258,13 +321,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Italy"
+      "sourceLocator": "OCONUS / Overseas Report — Italy",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q938394#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-ita-naval-support-activity-naples",
       "type": "military_base",
       "name": "Naval Support Activity Naples",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [14.2923, 40.8821]
+      },
       "locatedIn": "ITA",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -275,7 +343,9 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Italy"
+      "sourceLocator": "OCONUS / Overseas Report — Italy",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q6540839#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-ita-naval-support-activity-naples-detachment-gaeta",
@@ -298,7 +368,10 @@
       "id": "asset_usa-jpn-camp-foster",
       "type": "military_base",
       "name": "Camp Foster",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [127.77972222, 26.30138889]
+      },
       "locatedIn": "JPN",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -309,13 +382,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Japan"
+      "sourceLocator": "OCONUS / Overseas Report — Japan",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q4419750#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-jpn-camp-kinser",
       "type": "military_base",
       "name": "Camp Kinser",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [127.697396, 26.252528]
+      },
       "locatedIn": "JPN",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -326,13 +404,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Japan"
+      "sourceLocator": "OCONUS / Overseas Report — Japan",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q5027315#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-jpn-camp-courtney",
       "type": "military_base",
       "name": "Camp Courtney",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [127.85944444, 26.39194444]
+      },
       "locatedIn": "JPN",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -343,13 +426,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Japan"
+      "sourceLocator": "OCONUS / Overseas Report — Japan",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q4381152#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-jpn-camp-hansen",
       "type": "military_base",
       "name": "Camp Hansen",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [127.92, 26.46]
+      },
       "locatedIn": "JPN",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -360,13 +448,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Japan"
+      "sourceLocator": "OCONUS / Overseas Report — Japan",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q4419980#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-jpn-camp-schwab",
       "type": "military_base",
       "name": "Camp Schwab",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [128.044324, 26.524612]
+      },
       "locatedIn": "JPN",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -377,13 +470,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Japan"
+      "sourceLocator": "OCONUS / Overseas Report — Japan",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q4419959#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-jpn-marine-corps-air-station-futenma",
       "type": "military_base",
       "name": "Marine Corps Air Station Futenma",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [127.748055555, 26.270833333]
+      },
       "locatedIn": "JPN",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -394,13 +492,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Japan"
+      "sourceLocator": "OCONUS / Overseas Report — Japan",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q1031547#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-jpn-commander-fleet-activities-sasebo",
       "type": "military_base",
       "name": "Commander Fleet Activities Sasebo",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [129.711, 33.1628]
+      },
       "locatedIn": "JPN",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -411,13 +514,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Japan"
+      "sourceLocator": "OCONUS / Overseas Report — Japan",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q4420953#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-jpn-commander-fleet-activities-yokosuka",
       "type": "military_base",
       "name": "Commander Fleet Activities Yokosuka",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.671, 35.2932]
+      },
       "locatedIn": "JPN",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -428,13 +536,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Japan"
+      "sourceLocator": "OCONUS / Overseas Report — Japan",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q2886663#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-jpn-kadena-air-base",
       "type": "military_base",
       "name": "Kadena Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [127.769444444, 26.351666666]
+      },
       "locatedIn": "JPN",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -445,13 +558,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Japan"
+      "sourceLocator": "OCONUS / Overseas Report — Japan",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q608289#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-jpn-marine-corps-air-station-iwakuni",
       "type": "military_base",
       "name": "Marine Corps Air Station Iwakuni",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [132.244166666, 34.145]
+      },
       "locatedIn": "JPN",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -462,13 +580,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Japan"
+      "sourceLocator": "OCONUS / Overseas Report — Japan",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q1030389#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-jpn-misawa-air-base",
       "type": "military_base",
       "name": "Misawa Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [141.371944444, 40.705277777]
+      },
       "locatedIn": "JPN",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -479,7 +602,9 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Japan"
+      "sourceLocator": "OCONUS / Overseas Report — Japan",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q1350451#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-jpn-naval-air-facility-atsugi",
@@ -519,7 +644,10 @@
       "id": "asset_usa-jpn-torii-station",
       "type": "military_base",
       "name": "Torii Station",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [127.736694, 26.379192]
+      },
       "locatedIn": "JPN",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -530,13 +658,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Japan"
+      "sourceLocator": "OCONUS / Overseas Report — Japan",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q4391599#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-jpn-yokota-air-base",
       "type": "military_base",
       "name": "Yokota Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.348611111, 35.748611111]
+      },
       "locatedIn": "JPN",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -547,13 +680,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Japan"
+      "sourceLocator": "OCONUS / Overseas Report — Japan",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q1806489#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-nld-volkel-air-base",
       "type": "military_base",
       "name": "Volkel Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [5.707833, 51.657195]
+      },
       "locatedIn": "NLD",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -564,13 +702,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Netherlands"
+      "sourceLocator": "OCONUS / Overseas Report — Netherlands",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q2271372#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-prt-lajes-field",
       "type": "military_base",
       "name": "Lajes Field",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-27.090833333, 38.761944444]
+      },
       "locatedIn": "PRT",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -581,7 +724,9 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Portugal"
+      "sourceLocator": "OCONUS / Overseas Report — Portugal",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q1800787#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-sgp-naval-support-activity-singapore",
@@ -604,7 +749,10 @@
       "id": "asset_usa-kor-commander-fleet-activities-chinhae",
       "type": "military_base",
       "name": "Commander Fleet Activities Chinhae",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [128.633766, 35.148091]
+      },
       "locatedIn": "KOR",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -615,13 +763,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — South Korea"
+      "sourceLocator": "OCONUS / Overseas Report — South Korea",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q21288596#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-kor-kunsan-air-base",
       "type": "military_base",
       "name": "Kunsan Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [126.615833333, 35.903611111]
+      },
       "locatedIn": "KOR",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -632,13 +785,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — South Korea"
+      "sourceLocator": "OCONUS / Overseas Report — South Korea",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q7966282#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-kor-osan-air-base",
       "type": "military_base",
       "name": "Osan Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [127.029722222, 37.090555555]
+      },
       "locatedIn": "KOR",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -649,13 +807,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — South Korea"
+      "sourceLocator": "OCONUS / Overseas Report — South Korea",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q492965#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-kor-camp-humphreys",
       "type": "military_base",
       "name": "Camp Humphreys",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [127.033333, 36.966667]
+      },
       "locatedIn": "KOR",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -666,7 +829,9 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — South Korea"
+      "sourceLocator": "OCONUS / Overseas Report — South Korea",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q626752#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-kor-camp-casey",
@@ -689,7 +854,10 @@
       "id": "asset_usa-esp-moron-air-base",
       "type": "military_base",
       "name": "Morón Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-5.61583333, 37.17472222]
+      },
       "locatedIn": "ESP",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -700,7 +868,9 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Spain"
+      "sourceLocator": "OCONUS / Overseas Report — Spain",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q924498#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-esp-naval-station-rota",
@@ -723,7 +893,10 @@
       "id": "asset_usa-tur-incirlik-air-base",
       "type": "military_base",
       "name": "Incirlik Air Base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [35.425833333, 37.001944444]
+      },
       "locatedIn": "TUR",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -734,13 +907,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Turkey"
+      "sourceLocator": "OCONUS / Overseas Report — Turkey",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q1083424#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-tur-izmir-air-station",
       "type": "military_base",
       "name": "Izmir Air Station",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [27.1705, 38.4575]
+      },
       "locatedIn": "TUR",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -751,13 +929,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — Turkey"
+      "sourceLocator": "OCONUS / Overseas Report — Turkey",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q3156482#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-gbr-raf-alconbury",
       "type": "military_base",
       "name": "RAF Alconbury",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-0.229166666, 52.373055555]
+      },
       "locatedIn": "GBR",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -768,13 +951,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — United Kingdom"
+      "sourceLocator": "OCONUS / Overseas Report — United Kingdom",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q564876#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-gbr-raf-molesworth",
       "type": "military_base",
       "name": "RAF Molesworth",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-0.405, 52.3794]
+      },
       "locatedIn": "GBR",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -785,13 +973,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — United Kingdom"
+      "sourceLocator": "OCONUS / Overseas Report — United Kingdom",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q7275484#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-gbr-raf-croughton",
       "type": "military_base",
       "name": "RAF Croughton",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-1.18, 51.988]
+      },
       "locatedIn": "GBR",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -802,13 +995,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — United Kingdom"
+      "sourceLocator": "OCONUS / Overseas Report — United Kingdom",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q7275260#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-gbr-raf-fairford",
       "type": "military_base",
       "name": "RAF Fairford",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-1.79, 51.6822]
+      },
       "locatedIn": "GBR",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -819,13 +1017,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — United Kingdom"
+      "sourceLocator": "OCONUS / Overseas Report — United Kingdom",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q1427413#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-gbr-raf-lakenheath",
       "type": "military_base",
       "name": "RAF Lakenheath",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [0.556666666, 52.408333333]
+      },
       "locatedIn": "GBR",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -836,13 +1039,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — United Kingdom"
+      "sourceLocator": "OCONUS / Overseas Report — United Kingdom",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q285198#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-gbr-raf-mildenhall",
       "type": "military_base",
       "name": "RAF Mildenhall",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [0.480833333, 52.365]
+      },
       "locatedIn": "GBR",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -853,13 +1061,18 @@
       "sourceUrl": "https://installations.militaryonesource.mil/view-all",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "OCONUS / Overseas Report — United Kingdom"
+      "sourceLocator": "OCONUS / Overseas Report — United Kingdom",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q772162#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-deu-panzer-kaserne-boblingen",
       "type": "military_base",
       "name": "Panzer Kaserne (Böblingen)",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [9.04542, 48.6845]
+      },
       "locatedIn": "DEU",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -870,13 +1083,18 @@
       "sourceUrl": "https://home.army.mil/stuttgart/about",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "Joint Service Military Community"
+      "sourceLocator": "Joint Service Military Community",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q7132028#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-deu-patch-barracks",
       "type": "military_base",
       "name": "Patch Barracks",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [9.08111, 48.7364]
+      },
       "locatedIn": "DEU",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -887,13 +1105,18 @@
       "sourceUrl": "https://home.army.mil/stuttgart/about",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "Joint Service Military Community"
+      "sourceLocator": "Joint Service Military Community",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q2056645#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-deu-kelley-barracks",
       "type": "military_base",
       "name": "Kelley Barracks",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [9.17917, 48.7239]
+      },
       "locatedIn": "DEU",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -904,13 +1127,18 @@
       "sourceUrl": "https://home.army.mil/stuttgart/about",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "Joint Service Military Community"
+      "sourceLocator": "Joint Service Military Community",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q835307#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-deu-robinson-barracks",
       "type": "military_base",
       "name": "Robinson Barracks",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [9.18778, 48.8214]
+      },
       "locatedIn": "DEU",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -921,13 +1149,18 @@
       "sourceUrl": "https://home.army.mil/stuttgart/about",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "Joint Service Military Community"
+      "sourceLocator": "Joint Service Military Community",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q1471920#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-deu-stuttgart-army-airfield",
       "type": "military_base",
       "name": "Stuttgart Army Airfield",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [9.198727, 48.681908]
+      },
       "locatedIn": "DEU",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -938,7 +1171,9 @@
       "sourceUrl": "https://home.army.mil/stuttgart/about",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "Joint Service Military Community"
+      "sourceLocator": "Joint Service Military Community",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q140045325#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-deu-barton-barracks",
@@ -1097,7 +1332,10 @@
       "id": "asset_usa-deu-rhine-ordnance-barracks",
       "type": "military_base",
       "name": "Rhine Ordnance Barracks",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [7.697222222, 49.444166666]
+      },
       "locatedIn": "DEU",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -1108,7 +1346,9 @@
       "sourceUrl": "https://home.army.mil/rheinland-pfalz/2317/3200/2817/Welcome_to_USAG_Rheinland-Pfalz_18NOV24.pdf",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "Area of responsibility map"
+      "sourceLocator": "Area of responsibility map",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q135067984#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-deu-kleber-kaserne",
@@ -1131,7 +1371,10 @@
       "id": "asset_usa-deu-pulaski-barracks",
       "type": "military_base",
       "name": "Pulaski Barracks",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [7.688888888, 49.430833333]
+      },
       "locatedIn": "DEU",
       "sendingCountry": "USA",
       "ownerCountry": null,
@@ -1142,7 +1385,9 @@
       "sourceUrl": "https://home.army.mil/rheinland-pfalz/2317/3200/2817/Welcome_to_USAG_Rheinland-Pfalz_18NOV24.pdf",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "Area of responsibility map"
+      "sourceLocator": "Area of responsibility map",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q135068592#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_usa-pol-camp-kosciuszko",
@@ -1198,7 +1443,10 @@
       "id": "asset_gbr-cyp-episkopi-base",
       "type": "military_base",
       "name": "Episkopi base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [32.845587, 34.68047]
+      },
       "locatedIn": "CYP",
       "sendingCountry": "GBR",
       "ownerCountry": null,
@@ -1209,13 +1457,18 @@
       "sourceUrl": "https://www.gov.uk/government/publications/permanent-joint-operating-bases-pjobs/fd",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "British Forces Cyprus"
+      "sourceLocator": "British Forces Cyprus",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q60527#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_gbr-cyp-dhekelia-base",
       "type": "military_base",
       "name": "Dhekelia base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [33.7734, 35.0174]
+      },
       "locatedIn": "CYP",
       "sendingCountry": "GBR",
       "ownerCountry": null,
@@ -1226,13 +1479,18 @@
       "sourceUrl": "https://www.gov.uk/government/publications/permanent-joint-operating-bases-pjobs/fd",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "British Forces Cyprus"
+      "sourceLocator": "British Forces Cyprus",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q9206745#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_gbr-cyp-ayios-nikolaos-base",
       "type": "military_base",
       "name": "Ayios Nikolaos base",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [33.8867, 35.0931]
+      },
       "locatedIn": "CYP",
       "sendingCountry": "GBR",
       "ownerCountry": null,
@@ -1243,7 +1501,9 @@
       "sourceUrl": "https://www.gov.uk/government/publications/permanent-joint-operating-bases-pjobs/fd",
       "lastVerified": "2026-11-09",
       "reviewed": false,
-      "sourceLocator": "British Forces Cyprus"
+      "sourceLocator": "British Forces Cyprus",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q81522#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_gbr-flk-mount-pleasant-complex",
@@ -1316,7 +1576,10 @@
       "id": "asset_jpn-dji-japan-self-defense-forces-facility-in-djibouti",
       "type": "military_base",
       "name": "Japan Self-Defense Forces facility in Djibouti",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [43.15948056, 11.54733056]
+      },
       "locatedIn": "DJI",
       "sendingCountry": "JPN",
       "ownerCountry": null,
@@ -1326,7 +1589,9 @@
       "status": "operating",
       "sourceUrl": "https://www.mod.go.jp/en/article/2025/08/aaf02684863b98c49cb18ec662efadeafbcc6126.html",
       "lastVerified": "2026-11-09",
-      "reviewed": false
+      "reviewed": false,
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q28154454#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
     },
     {
       "id": "asset_fra-are-french-naval-base-in-abu-dhabi",
@@ -1348,7 +1613,10 @@
       "id": "asset_fra-are-french-air-base-104",
       "type": "military_base",
       "name": "French Air Base 104",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [54.5475, 24.24805556]
+      },
       "locatedIn": "ARE",
       "sendingCountry": "FRA",
       "ownerCountry": null,
@@ -1358,7 +1626,386 @@
       "status": "operating",
       "sourceUrl": "https://www.defense.gouv.fr/operations/actualites/ffeau-ba-104-action-pilier-defense-aerienne-regionale",
       "lastVerified": "2026-11-09",
-      "reviewed": false
+      "reviewed": false,
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q2886453#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
+    },
+    {
+      "id": "asset_gbr-gib-raf-gibraltar",
+      "type": "military_base",
+      "name": "RAF Gibraltar",
+      "geometry": null,
+      "locatedIn": "GIB",
+      "sendingCountry": "GBR",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "GBR",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://www.raf.mod.uk/our-organisation/stations/raf-gibraltar/documents/raf-gibraltar-dam-issue-2-3/",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "RAF Gibraltar Defence Aerodrome Manual"
+    },
+    {
+      "id": "asset_gbr-gib-hm-naval-base-gibraltar",
+      "type": "military_base",
+      "name": "HM Naval Base Gibraltar",
+      "geometry": null,
+      "locatedIn": "GIB",
+      "sendingCountry": "GBR",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "GBR",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://www.gov.uk/government/groups/qhm-gibraltar",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "King’s Harbour Master, Gibraltar Dockyard Port"
+    },
+    {
+      "id": "asset_gbr-shn-ascension-island-base",
+      "type": "military_base",
+      "name": "Ascension Island Base",
+      "geometry": null,
+      "locatedIn": "SHN",
+      "sendingCountry": "GBR",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "GBR",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://www.raf.mod.uk/our-organisation/stations/ascension-island-base/",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "Royal Air Force station overview"
+    },
+    {
+      "id": "asset_gbr-can-suffield-training-unit",
+      "type": "military_base",
+      "name": "British Army Training Unit Suffield",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-111.175, 50.2733]
+      },
+      "locatedIn": "CAN",
+      "sendingCountry": "GBR",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "CAN",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://www.gov.uk/government/publications/the-strategic-defence-review-2025-making-britain-safer-secure-at-home-strong-abroad/the-strategic-defence-review-2025-making-britain-safer-secure-at-home-strong-abroad",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "Figure 7, Defence’s overseas footprint: BATUS (Suffield, Canada)",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q4969481#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
+    },
+    {
+      "id": "asset_gbr-blz-price-barracks",
+      "type": "military_base",
+      "name": "Price Barracks (British Army Training Support Unit Belize)",
+      "geometry": null,
+      "locatedIn": "BLZ",
+      "sendingCountry": "GBR",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "BLZ",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://assets.publishing.service.gov.uk/media/69cd03175cf899414a0bc60c/JSP_464_Volume_5_-_Overseas_Accommodation_Policy__1_.pdf",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "UK MOD overseas accommodation policy, §9"
+    },
+    {
+      "id": "asset_gbr-brn-tuker-lines",
+      "type": "military_base",
+      "name": "Tuker Lines",
+      "geometry": null,
+      "locatedIn": "BRN",
+      "sendingCountry": "GBR",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "BRN",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://www.army.mod.uk/learn-and-explore/global-operations/brunei/",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "British Army, Brunei Garrison headquarters and resident battalion"
+    },
+    {
+      "id": "asset_gbr-ken-nyati-barracks",
+      "type": "military_base",
+      "name": "Nyati Barracks (British Army Training Unit Kenya)",
+      "geometry": null,
+      "locatedIn": "KEN",
+      "sendingCountry": "GBR",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "KEN",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://assets.publishing.service.gov.uk/media/68f8bccfec6267c615ed8f82/BATUK_Inquiry_Written_Statement.pdf",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "UK MOD written statement, BATUK headquarters at Nyati Barracks"
+    },
+    {
+      "id": "asset_gbr-deu-sennelager",
+      "type": "military_base",
+      "name": "NATO Forward Holding Base Sennelager",
+      "geometry": null,
+      "locatedIn": "DEU",
+      "sendingCountry": "GBR",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "DEU",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://www.gov.uk/government/news/dio-proudly-enables-natos-largest-exercise-in-decades",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "Defence Infrastructure Organisation, NATO Holding Base Sennelager"
+    },
+    {
+      "id": "asset_gbr-omn-joint-logistics-support-base-duqm",
+      "type": "military_base",
+      "name": "Joint Logistics Support Base Duqm",
+      "geometry": null,
+      "locatedIn": "OMN",
+      "sendingCountry": "GBR",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "OMN",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://www.gov.uk/government/news/defence-minister-reaffirms-uk-commitment-to-the-gulf--2",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "UK Ministry of Defence, Duqm opening and regional support role"
+    },
+    {
+      "id": "asset_gbr-bhr-uk-naval-support-facility",
+      "type": "military_base",
+      "name": "United Kingdom Naval Support Facility",
+      "geometry": null,
+      "locatedIn": "BHR",
+      "sendingCountry": "GBR",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "BHR",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://www.gov.uk/government/news/new-royal-navy-operations-hub-opens-in-gulf",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "UK Ministry of Defence, Mina Salman facility"
+    },
+    {
+      "id": "asset_gbr-est-tapa-army-base",
+      "type": "military_base",
+      "name": "Tapa Army Base (Operation Cabrit presence)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [25.9545, 59.2453]
+      },
+      "locatedIn": "EST",
+      "sendingCountry": "GBR",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "EST",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://www.gov.uk/government/news/hms-mersey-in-estonia-as-all-three-uk-armed-services-operating-in-support-of-estonian-security",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "UK Ministry of Defence, continuing British rotations at Tapa",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q7684396#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
+    },
+    {
+      "id": "asset_fra-dji-base-navale-du-heron",
+      "type": "military_base",
+      "name": "Base navale du Héron",
+      "geometry": null,
+      "locatedIn": "DJI",
+      "sendingCountry": "FRA",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "DJI",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://www.defense.gouv.fr/operations/actualites/exercice-mamba-5e-riaom-base-navale-du-heron-sentrainent-levacuation-ressortissants",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "French Ministry of Armed Forces, Exercise MAMBA, September 2026"
+    },
+    {
+      "id": "asset_fra-dji-base-aerienne-188",
+      "type": "military_base",
+      "name": "Base aérienne 188 Colonel Émile Massart",
+      "geometry": null,
+      "locatedIn": "DJI",
+      "sendingCountry": "FRA",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "DJI",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://www.colsbleus.defense.gouv.fr/fr/djibouti-les-commandos-veillent-sur-locean-indien",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "French Navy, Forces françaises stationnées à Djibouti, BA 188"
+    },
+    {
+      "id": "asset_rus-arm-102nd-military-base",
+      "type": "military_base",
+      "name": "Russian 102nd Military Base",
+      "geometry": null,
+      "locatedIn": "ARM",
+      "sendingCountry": "RUS",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "ARM",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://www.mfa.am/en/bilateral-relations/ru",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "Armenian Ministry of Foreign Affairs, Russian base deployment"
+    },
+    {
+      "id": "asset_rus-kgz-kant-air-base",
+      "type": "military_base",
+      "name": "Kant Air Base",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [74.846388888, 42.853055555]
+      },
+      "locatedIn": "KGZ",
+      "sendingCountry": "RUS",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "KGZ",
+      "basis": null,
+      "status": "unknown",
+      "sourceUrl": "https://odkb-csto.org/news/smi/n_bordyuzha_gensek_odkb_finansirovanie_chastey_ksor_ikh_osnashchenie_i_snabzhenie_budet_osushchestvl/",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "CSTO, Russian air base at Kant",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q2426665#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
+    },
+    {
+      "id": "asset_rus-tjk-201st-military-base",
+      "type": "military_base",
+      "name": "Russian 201st Military Base",
+      "geometry": null,
+      "locatedIn": "TJK",
+      "sendingCountry": "RUS",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "TJK",
+      "basis": null,
+      "status": "unknown",
+      "sourceUrl": "https://odkb-csto.org/training/rubezh/rossiyskie-voennye-otrabotayut-osvobozhdenie-zalozhnikov-na-uchenii-odkb-rubezh-2022-v-tadzhikistane/",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "CSTO Rubezh-2022, Russian 201st Military Base participation"
+    },
+    {
+      "id": "asset_tur-som-turksom",
+      "type": "military_base",
+      "name": "TURKSOM Military Training Centre",
+      "geometry": null,
+      "locatedIn": "SOM",
+      "sendingCountry": "TUR",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "SOM",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://tbmm.gov.tr/milletvekili/UyeKomisyonKonusmaTutanakDetay?tutanakId=80805",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "Turkish Grand National Assembly, deputy foreign minister’s account of the Mogadishu centre"
+    },
+    {
+      "id": "asset_tur-qat-khalid-bin-walid-barracks",
+      "type": "military_base",
+      "name": "Khalid bin Walid Barracks",
+      "geometry": null,
+      "locatedIn": "QAT",
+      "sendingCountry": "TUR",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "QAT",
+      "basis": null,
+      "status": "unknown",
+      "sourceUrl": "https://www.msb.gov.tr/SlaytHaber/25112019-38516",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "Turkish Ministry of National Defence, joint command’s barracks and reported renaming"
+    },
+    {
+      "id": "asset_aus-are-al-minhad-air-base",
+      "type": "military_base",
+      "name": "Al Minhad Air Base (Australian Headquarters Middle East)",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [55.366243, 25.026818]
+      },
+      "locatedIn": "ARE",
+      "sendingCountry": "AUS",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "ARE",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://www.defence.gov.au/news-events/news/2025-05-09/home-from-home-adf-middle-east",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "Australian Defence, Operation Accordion headquarters at Al Minhad Air Base",
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q1934988#P625",
+      "coordinateSourceLocator": "Wikidata coordinate location (P625)"
+    },
+    {
+      "id": "asset_ita-dji-base-militare-italiana-di-supporto",
+      "type": "military_base",
+      "name": "Base Militare Italiana di Supporto",
+      "geometry": null,
+      "locatedIn": "DJI",
+      "sendingCountry": "ITA",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "DJI",
+      "basis": null,
+      "status": "operating",
+      "sourceUrl": "https://www.difesa.it/operazionimilitari/op-intern-corso/bmis/default/28222.html",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "Italian Ministry of Defence, logistics support base in Djibouti"
+    },
+    {
+      "id": "asset_chn-khm-ream-joint-support-training-center",
+      "type": "military_base",
+      "name": "China–Cambodia Joint Support and Training Center at Port Ream",
+      "geometry": null,
+      "locatedIn": "KHM",
+      "sendingCountry": "CHN",
+      "ownerCountry": null,
+      "owners": [],
+      "jurisdiction": "KHM",
+      "basis": null,
+      "status": "unknown",
+      "sourceUrl": "https://www.mod.gov.cn/gfbw/qwfb/16388765.html",
+      "lastVerified": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "Chinese Ministry of National Defense, documented joint use during Golden Dragon 2025"
     }
   ]
 }

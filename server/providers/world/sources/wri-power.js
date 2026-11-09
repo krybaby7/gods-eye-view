@@ -1,4 +1,4 @@
-import { readResponseBytesCapped } from '../../common/http.js';
+import { readFile } from 'node:fs/promises';
 import {
   assetCountryResolver,
   assetRow,
@@ -6,6 +6,7 @@ import {
   point,
 } from './asset-common.js';
 import { columnIndices, csvRows } from './csv.js';
+import { downloadWorldFile } from './download.js';
 import { zipEntryChunks } from './zip.js';
 
 const source = 'wri-power';
@@ -71,9 +72,16 @@ export function parsePowerPlants(csv, { country, now }) {
 }
 
 export const wriPower = createAssetAdapter(
-  async ({ registry, now, request }) => {
+  async ({ registry, now, fetchImpl, cacheDirectory, onProgress }) => {
     const country = await assetCountryResolver(registry);
-    const bytes = await request(archive, 25_000_000, readResponseBytesCapped);
+    const { path } = await downloadWorldFile(archive, {
+      fetchImpl,
+      cacheDirectory,
+      onProgress,
+      maxBytes: 25_000_000,
+      immutable: true,
+    });
+    const bytes = await readFile(path);
     const decoder = new TextDecoder();
     let text = '';
     for await (const chunk of zipEntryChunks(
@@ -90,4 +98,5 @@ export const wriPower = createAssetAdapter(
     return { data: { rows }, count: rows.length, unit: 'historical plant' };
   },
   Infinity,
+  { estimatedBytes: 4_200_000 },
 );

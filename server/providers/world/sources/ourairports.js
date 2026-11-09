@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import {
   assetCountryResolver,
   assetRow,
@@ -5,6 +6,7 @@ import {
   point,
 } from './asset-common.js';
 import { columnIndices, csvRows } from './csv.js';
+import { downloadWorldFile } from './download.js';
 
 const source = 'ourairports';
 const url = 'https://davidmegginson.github.io/ourairports-data/airports.csv';
@@ -58,9 +60,15 @@ export function parseOurAirports(csv, { country, now }) {
 }
 
 export const ourAirports = createAssetAdapter(
-  async ({ registry, now, request }) => {
+  async ({ registry, now, fetchImpl, cacheDirectory, onProgress }) => {
     const country = await assetCountryResolver(registry);
-    const rows = parseOurAirports(await request(url, 60_000_000), {
+    const { path } = await downloadWorldFile(url, {
+      fetchImpl,
+      cacheDirectory,
+      onProgress,
+      maxBytes: 60_000_000,
+    });
+    const rows = parseOurAirports(await readFile(path, 'utf8'), {
       country,
       now,
     });
@@ -71,4 +79,5 @@ export const ourAirports = createAssetAdapter(
     return { data: { rows }, count: rows.length, unit: 'airport' };
   },
   7,
+  { estimatedBytes: 13_000_000 },
 );

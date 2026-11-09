@@ -1,13 +1,13 @@
-import { readResponseJsonCapped } from '../../common/http.js';
 import {
   assetCountryResolver,
   assetRow,
   createAssetAdapter,
   point,
 } from './asset-common.js';
+import { createWdqsClient } from './wdqs.js';
 
 const source = 'wikidata-assets';
-const endpoint = 'https://query.wikidata.org/sparql';
+const BATCH_SIZE = 40;
 const portCandidates = [
   'Port of Rotterdam',
   'Port of Singapore',
@@ -30,15 +30,22 @@ const selectors = [
   ],
 ];
 
-function assetQuery(kind, selector) {
+function assetQuery(kind, selector, codes) {
+  const hosts = codes
+    ? 'VALUES ?iso { ' + codes.map((code) => '"' + code + '"').join(' ') + ' }'
+    : '';
+  // Start at the bounded facility class or port labels before joining country
+  // and optional statements. Blazegraph's default plan timed out on this join.
   return `
     SELECT ?item ?kind ?itemLabel ?iso ?point ?operator ?operatorLabel ?operatorReference
            ?owner ?ownerLabel ?ownerIso ?ownerReference ?closed WHERE {
+      hint:Query hint:optimizer "None" .
       {
         SELECT ?item ?iso ?point WHERE {
           ${selector}
           ?item wdt:P17 ?host.
           ?host wdt:P298 ?iso.
+          ${hosts}
           OPTIONAL { ?item wdt:P625 ?point. }
         }
       }
@@ -77,7 +84,7 @@ export function parseWikidataAssets(payload, { country, now }) {
   const groups = new Map();
   for (const binding of payload.results.bindings) {
     const values = Object.fromEntries(
-      Object.entries(binding).map(([key, item]) => [key, item.value]),
+      Object.entries(binding ?? {}).map(([key, item]) => [key, item?.value]),
     );
     const id = /^https?:\/\/www\.wikidata\.org\/entity\/(Q[1-9]\d*)$/.exec(
       values.item ?? '',
@@ -164,30 +171,88 @@ export function parseWikidataAssets(payload, { country, now }) {
 }
 
 export const wikidataAssets = createAssetAdapter(
-  async ({ registry, now, request }) => {
+  async ({ registry, now, fetchImpl, data: previous }) => {
     const country = await assetCountryResolver(registry);
+    const codes = [
+      ...new Set(
+        registry.countries
+          .filter(
+            ({ kind, dataIso3, iso3 }) =>
+              kind !== 'disputed' && !dataIso3 && /^[A-Z]{3}$/.test(iso3),
+          )
+          .map(({ iso3 }) => iso3),
+      ),
+    ].sort();
+    const chunks = [];
+    for (let offset = 0; offset < codes.length; offset += BATCH_SIZE)
+      chunks.push(codes.slice(offset, offset + BATCH_SIZE));
+    const batches = selectors.flatMap(([kind, selector]) =>
+      (kind === 'port' ? [null] : chunks).map((hosts) => ({
+        kind,
+        selector,
+        hosts,
+      })),
+    );
+    const query = createWdqsClient(fetchImpl, now);
     const bindings = [];
-    for (const [kind, selector] of selectors) {
-      const url =
-        endpoint + '?query=' + encodeURIComponent(assetQuery(kind, selector));
-      const payload = await request(url, 8_000_000, readResponseJsonCapped, {
-        Accept: 'application/sparql-results+json',
-      });
-      if (!Array.isArray(payload?.results?.bindings))
-        throw new Error('Unexpected Wikidata asset response');
-      if (kind !== 'port' && !payload.results.bindings.length)
-        throw new Error('Empty Wikidata ' + kind + ' results');
-      for (const binding of payload.results.bindings) bindings.push(binding);
+    const completed = new Set();
+    const errors = [];
+    let succeeded = 0;
+    let retryAt;
+    for (const { kind, selector, hosts } of batches) {
+      try {
+        const rows = await query(assetQuery(kind, selector, hosts));
+        for (const row of rows) {
+          if (
+            row?.kind?.value === kind &&
+            (!hosts || hosts.includes(row.iso?.value))
+          )
+            bindings.push(row);
+        }
+        for (const host of hosts ?? ['operators'])
+          completed.add(kind + ':' + host);
+        succeeded += 1;
+      } catch (error) {
+        errors.push(error.cause?.code ?? error.message);
+        retryAt = error.retryAt;
+        if (retryAt) break;
+      }
     }
     const data = parseWikidataAssets(
       { results: { bindings } },
       { country, now },
     );
-    if (!data.rows.length)
-      throw new Error(
-        'Wikidata returned no located nuclear plants or launch sites',
+    const detail = `${succeeded} of ${batches.length} Wikidata asset batches completed.`;
+    const error = errors.length
+      ? detail + ' ' + [...new Set(errors)].join('; ')
+      : undefined;
+    if (!data.rows.length && !data.portOperators.length) {
+      return {
+        ...(retryAt && { data: { ...previous, retryAt } }),
+        error:
+          error ?? 'Wikidata returned no located facilities or port operators',
+        detail,
+      };
+    }
+    if (error) {
+      const newIds = new Set(data.rows.map(({ id }) => id));
+      data.rows.push(
+        ...(previous?.rows ?? []).filter(
+          ({ id, type, locatedIn }) =>
+            !newIds.has(id) && !completed.has(type + ':' + locatedIn),
+        ),
       );
-    return { data, count: data.rows.length, unit: 'facility' };
+      if (!completed.has('port:operators'))
+        data.portOperators = previous?.portOperators ?? [];
+    }
+    return {
+      data: { ...data, retryAt },
+      count: data.rows.length,
+      unit: 'facility',
+      detail,
+      error,
+    };
   },
   14,
+  { requestHost: 'query.wikidata.org' },
 );
