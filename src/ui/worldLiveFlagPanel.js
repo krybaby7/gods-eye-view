@@ -18,6 +18,8 @@ export function renderLiveFlagPanel(document, flags) {
       link.textContent = flag.sourceName;
       item.append(link);
     } else item.append(flag.sourceName);
+    if (flag.dsaMonth) item.append(' · DSA ' + flag.dsaMonth);
+    if (flag.sourceLocator) item.append(' · ' + flag.sourceLocator);
     if (flag.reviewed === false) item.append(' · Draft, not yet reviewed');
     list.append(item);
   }

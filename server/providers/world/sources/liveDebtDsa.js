@@ -6,29 +6,28 @@ const DATA = new URL(
   '../../../../public/world/curated/debt-distress.json',
   import.meta.url,
 );
-const LABELS = {
-  'in-distress': 'In debt distress',
-  'high-risk': 'High risk of debt distress',
-};
-
 export const debtDistress = {
   shouldCheck: () => true,
   async fetchObservations({ registry, now, data }) {
-    const rows = JSON.parse(await readFile(DATA, 'utf8'));
+    const { rows } = JSON.parse(await readFile(DATA, 'utf8'));
     const supported = countryIds(registry);
     const flags = rows
       .filter(
-        (row) => supported.has(row.iso3) && Object.hasOwn(LABELS, row.rating),
+        (row) =>
+          supported.has(row.countryCode) &&
+          row.classification === 'in-debt-distress',
       )
       .map((row) =>
         conditionFlag('live-debt-dsa', {
-          iso3: row.iso3,
+          iso3: row.countryCode,
           slot: 'C5',
-          date: row.assessmentDate,
-          source: row.source,
+          date: row.asOf,
+          dsaMonth: row.dsaMonth,
+          source: row.sourceUrl,
+          sourceLocator: row.sourceLocator,
           sourceName: 'IMF–World Bank LIC DSA',
-          dateChecked: row.dateChecked,
-          label: LABELS[row.rating] + ' (' + row.scope + ')',
+          dateChecked: row.checkedAt,
+          label: 'In external debt distress',
           reviewed: row.reviewed,
         }),
       );

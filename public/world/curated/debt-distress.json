@@ -1,92 +1,133 @@
-[
-  {
-    "iso3": "MOZ",
-    "rating": "in-distress",
-    "scope": "overall",
-    "assessmentDate": "2026-01",
-    "dateChecked": "2026-11-09",
-    "reviewed": false,
-    "source": "https://www.elibrary.imf.org/view/journals/002/2026/045/article-A002-en.xml"
-  },
-  {
-    "iso3": "LAO",
-    "rating": "in-distress",
-    "scope": "overall and external",
-    "assessmentDate": "2026-02",
-    "dateChecked": "2026-11-09",
-    "reviewed": false,
-    "source": "https://www.elibrary.imf.org/view/journals/002/2026/050/article-A003-en.xml"
-  },
-  {
-    "iso3": "DJI",
-    "rating": "in-distress",
-    "scope": "overall and external",
-    "assessmentDate": "2025",
-    "dateChecked": "2026-11-09",
-    "reviewed": false,
-    "source": "https://www.elibrary.imf.org/view/journals/002/2025/276/article-A003-en.xml"
-  },
-  {
-    "iso3": "MWI",
-    "rating": "in-distress",
-    "scope": "overall and external",
-    "assessmentDate": "2025-07",
-    "dateChecked": "2026-11-09",
-    "reviewed": false,
-    "source": "https://www.elibrary.imf.org/abstract/journals/002/2025/226/article-A002-en.xml"
-  },
-  {
-    "iso3": "STP",
-    "rating": "in-distress",
-    "scope": "overall",
-    "assessmentDate": "2025-12",
-    "dateChecked": "2026-11-09",
-    "reviewed": false,
-    "source": "https://www.elibrary.imf.org/view/journals/002/2025/347/article-A002-en.xml"
-  },
-  {
-    "iso3": "ZWE",
-    "rating": "in-distress",
-    "scope": "overall and external",
-    "assessmentDate": "2025",
-    "dateChecked": "2026-11-09",
-    "reviewed": false,
-    "source": "https://www.elibrary.imf.org/view/journals/002/2025/282/article-A002-en.xml"
-  },
-  {
-    "iso3": "ETH",
-    "rating": "in-distress",
-    "scope": "external",
-    "assessmentDate": "2026",
-    "dateChecked": "2026-11-09",
-    "reviewed": false,
-    "source": "https://www.elibrary.imf.org/view/journals/002/2026/020/article-A002-en.xml"
-  },
-  {
-    "iso3": "COG",
-    "rating": "in-distress",
-    "scope": "overall and external",
-    "assessmentDate": "2026-02",
-    "dateChecked": "2026-11-09",
-    "reviewed": false,
-    "source": "https://www.imf.org/-/media/files/publications/cr/2026/english/1cogea2026001-source-pdf.pdf"
-  },
-  {
-    "iso3": "ZMB",
-    "rating": "high-risk",
-    "scope": "overall and external",
-    "assessmentDate": "2026-01",
-    "dateChecked": "2026-11-09",
-    "reviewed": false,
-    "source": "https://www.elibrary.imf.org/view/journals/002/2026/021/article-A002-en.xml"
-  },
-  {
-    "iso3": "GNB",
-    "rating": "high-risk",
-    "scope": "overall and external",
-    "assessmentDate": "2026",
-    "dateChecked": "2026-11-09",
-    "reviewed": false,
-    "source": "https://www.elibrary.imf.org/view/journals/002/2026/140/article-A002-en.xml"
-  }
-]
+{
+  "publisher": "World Bank",
+  "attribution": "Joint World Bank–International Monetary Fund Debt Sustainability Framework for Low-Income Countries",
+  "publication": "Latest Publicly Available Debt Sustainability Analyses Under the Joint Bank-Fund Debt Sustainability Framework for Low Income Countries (LIC-DSF)",
+  "sourceDataUrl": "https://apiv2.worldbank.org/files?resourceName=dsa.json&locator=shared&raw=true",
+  "notes": [
+    "Snapshot of the published classifications as of end-October 2026. The source covers International Development Association countries subject to the LIC-DSF.",
+    "Only the external debt distress classification is selected. The World Bank list uses both 'In debt distress' and 'In distress' for this classification. Both labels are represented as 'in-debt-distress', and the original label is retained.",
+    "The DSA month reproduces the month listed by the World Bank index. It can precede the snapshot substantially. This flag does not move a Condition score, and missing countries are unclassified in this hand table."
+  ],
+  "rows": [
+    {
+      "countryCode": "COG",
+      "country": "Republic of the Congo",
+      "classification": "in-debt-distress",
+      "sourceClassification": "In debt distress",
+      "asOf": "2026-10-31",
+      "dsaMonth": "2026-03",
+      "sourceUrl": "https://www.worldbank.org/en/programs/debt-toolkit/dsa",
+      "sourceLocator": "Congo, Rep. — Risk of external debt distress",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "DJI",
+      "country": "Djibouti",
+      "classification": "in-debt-distress",
+      "sourceClassification": "In debt distress",
+      "asOf": "2026-10-31",
+      "dsaMonth": "2026-03",
+      "sourceUrl": "https://www.worldbank.org/en/programs/debt-toolkit/dsa",
+      "sourceLocator": "Djibouti — Risk of external debt distress",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "ETH",
+      "country": "Ethiopia",
+      "classification": "in-debt-distress",
+      "sourceClassification": "In debt distress",
+      "asOf": "2026-10-31",
+      "dsaMonth": "2026-01",
+      "sourceUrl": "https://www.worldbank.org/en/programs/debt-toolkit/dsa",
+      "sourceLocator": "Ethiopia — Risk of external debt distress",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "GRD",
+      "country": "Grenada",
+      "classification": "in-debt-distress",
+      "sourceClassification": "In debt distress",
+      "asOf": "2026-10-31",
+      "dsaMonth": "2026-01",
+      "sourceUrl": "https://www.worldbank.org/en/programs/debt-toolkit/dsa",
+      "sourceLocator": "Grenada — Risk of external debt distress",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "LAO",
+      "country": "Laos",
+      "classification": "in-debt-distress",
+      "sourceClassification": "In debt distress",
+      "asOf": "2026-10-31",
+      "dsaMonth": "2026-01",
+      "sourceUrl": "https://www.worldbank.org/en/programs/debt-toolkit/dsa",
+      "sourceLocator": "Lao PDR — Risk of external debt distress",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "MWI",
+      "country": "Malawi",
+      "classification": "in-debt-distress",
+      "sourceClassification": "In distress",
+      "asOf": "2026-10-31",
+      "dsaMonth": "2025-10",
+      "sourceUrl": "https://www.worldbank.org/en/programs/debt-toolkit/dsa",
+      "sourceLocator": "Malawi — Risk of external debt distress",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "STP",
+      "country": "São Tomé and Príncipe",
+      "classification": "in-debt-distress",
+      "sourceClassification": "In distress",
+      "asOf": "2026-10-31",
+      "dsaMonth": "2025-12",
+      "sourceUrl": "https://www.worldbank.org/en/programs/debt-toolkit/dsa",
+      "sourceLocator": "São Tomé and Príncipe — Risk of external debt distress",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "SDN",
+      "country": "Sudan",
+      "classification": "in-debt-distress",
+      "sourceClassification": "In distress",
+      "asOf": "2026-10-31",
+      "dsaMonth": "2021-06",
+      "sourceUrl": "https://www.worldbank.org/en/programs/debt-toolkit/dsa",
+      "sourceLocator": "Sudan — Risk of external debt distress",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "YEM",
+      "country": "Yemen",
+      "classification": "in-debt-distress",
+      "sourceClassification": "In distress",
+      "asOf": "2026-10-31",
+      "dsaMonth": "2026-03",
+      "sourceUrl": "https://www.worldbank.org/en/programs/debt-toolkit/dsa",
+      "sourceLocator": "Yemen — Risk of external debt distress",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "ZWE",
+      "country": "Zimbabwe",
+      "classification": "in-debt-distress",
+      "sourceClassification": "In distress",
+      "asOf": "2026-10-31",
+      "dsaMonth": "2025-08",
+      "sourceUrl": "https://www.worldbank.org/en/programs/debt-toolkit/dsa",
+      "sourceLocator": "Zimbabwe — Risk of external debt distress",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    }
+  ]
+}

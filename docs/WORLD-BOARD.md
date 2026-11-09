@@ -23,8 +23,16 @@ A dated flag records what a source reported or what the board detected in that s
 - GDELT counts conflict-coded and protest reports across the 15-minute files sampled in the last seven days. The number of sampled files is shown. GDACS red alerts describe hazards and potential exposure.
 - Frankfurter flags a currency that lost at least 20% of its value against USD over a near-30-day window with two dated readings. The IMF CPI adapter compares the same calendar month one year apart and uses a draft 20% threshold. The public CPI probe returned no observations.
 - UNHCR reports annual internal displacement stocks. Saved UCDP Candidate observations can supply an attributed rolling deaths-per-million flag. The FAO index appears as a world banner.
-- Ten draft LIC DSA assessments distinguish high risk from reported debt distress. Each links to its dated assessment.
-- IFES ElectionGuide, HDX HAPI, IODA and the UCDP Candidate API require explicit configuration and are disabled by default.
+- Ten draft flags record the external debt distress classification in the published LIC DSA list as of 31 October 2026. The evidence shows the assessment month and source locator.
+
+The optional feeds are disabled by default. Set the following in the server process only after obtaining the appropriate access. These feeds use the manual Refresh control and their source cadence.
+
+| Source             | Server variables                                                         |
+| ------------------ | ------------------------------------------------------------------------ |
+| IFES ElectionGuide | `GEV_WORLD_ELECTIONGUIDE_ENDPOINT` and `GEV_WORLD_ELECTIONGUIDE_TOKEN`   |
+| HDX HAPI           | `GEV_WORLD_HDX_APP_IDENTIFIER`                                           |
+| IODA               | `GEV_WORLD_IODA_LICENCE_APPROVED=1`                                      |
+| UCDP Candidate     | `GEV_WORLD_UCDP_CANDIDATE_ENDPOINT` and `GEV_WORLD_UCDP_CANDIDATE_TOKEN` |
 
 ## Adding a phase
 

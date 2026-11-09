@@ -3,8 +3,50 @@ import test from 'node:test';
 import { gdacsFlags, gdacs } from './liveDisasters.js';
 import { faoBanner, cpiRows } from './livePrices.js';
 import { ucdpStockFlags, displacementFlags } from './liveDisplacement.js';
+import { download } from './liveFeedCommon.js';
+import { debtDistress } from './liveDebtDsa.js';
 
 const now = new Date('2026-11-09T10:00:00Z');
+
+test('LIC DSA keeps the index snapshot date, assessment month and source locator separate', async () => {
+  const result = await debtDistress.fetchObservations({
+    now,
+    registry: { countries: [{ iso3: 'COG' }] },
+  });
+  assert.equal(result.count, 1);
+  const [flag] = result.data.flags;
+  assert.equal(flag.date, '2026-10-31');
+  assert.equal(flag.dsaMonth, '2026-03');
+  assert.equal(
+    flag.sourceLocator,
+    'Congo, Rep. — Risk of external debt distress',
+  );
+  assert.equal(
+    flag.source,
+    'https://www.worldbank.org/en/programs/debt-toolkit/dsa',
+  );
+  assert.equal(flag.reviewed, false);
+});
+
+test('an HTTP 429 with Retry-After defers requests across the same publisher origin', async () => {
+  let attempts = 0;
+  const fetchImpl = async () => {
+    attempts += 1;
+    return new Response(null, {
+      status: 429,
+      headers: { 'Retry-After': '60' },
+    });
+  };
+  await assert.rejects(
+    download(fetchImpl, 'https://fixture.invalid/one'),
+    /429/,
+  );
+  await assert.rejects(
+    download(fetchImpl, 'https://fixture.invalid/two'),
+    /deferred/i,
+  );
+  assert.equal(attempts, 1);
+});
 const gdacsFixture =
   '<rss><channel><item><link>https://www.gdacs.org/report.aspx?eventtype=FL&amp;eventid=99</link><gdacs:alertlevel>Red</gdacs:alertlevel><gdacs:eventtype>FL</gdacs:eventtype><gdacs:eventid>99</gdacs:eventid><gdacs:country iso3="IND">India</gdacs:country><gdacs:population value="3456"/><pubDate>Sun, 08 Nov 2026 10:00:00 GMT</pubDate></item><item><gdacs:alertlevel>Orange</gdacs:alertlevel><gdacs:country iso3="PAK">Pakistan</gdacs:country></item></channel></rss><!--End 11/9/2026 12:55:39 AM-->';
 

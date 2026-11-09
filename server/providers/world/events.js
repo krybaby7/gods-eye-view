@@ -3,7 +3,7 @@ import { debtDistress } from './sources/liveDebtDsa.js';
 import { gdacs } from './sources/liveDisasters.js';
 import { savedUcdp, unhcr } from './sources/liveDisplacement.js';
 import { coups, gdelt } from './sources/liveGovernance.js';
-import { optionalLiveSources } from './sources/liveOptional.js';
+import { optionalLiveSourcesFromEnv } from './sources/liveOptional.js';
 import { fao, fx, imfCpi } from './sources/livePrices.js';
 
 registerWorldSources(
@@ -17,7 +17,7 @@ registerWorldSources(
     'live-unhcr': unhcr,
     'live-ucdp-saved': savedUcdp,
     'live-debt-dsa': debtDistress,
-    ...optionalLiveSources(),
+    ...optionalLiveSourcesFromEnv(process.env),
   },
   { 'live-ucdp-saved': 'ucdp' },
 );

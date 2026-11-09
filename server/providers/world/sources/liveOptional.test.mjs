@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { optionalLiveSources } from './liveOptional.js';
+import {
+  optionalLiveSources,
+  optionalLiveSourcesFromEnv,
+} from './liveOptional.js';
 
 const now = new Date('2026-11-09T00:00:00Z');
 const registry = { countries: [{ iso3: 'IND', name: 'India' }] };
@@ -11,6 +14,42 @@ test('all optional feeds are dormant with default configuration', () => {
   assert.equal(Object.keys(adapters).length, 4);
   for (const adapter of Object.values(adapters))
     assert.equal(adapter.shouldCheck(context), false);
+});
+
+test('optional server configuration stays dormant by default and keeps credentials out of errors', async () => {
+  const dormant = optionalLiveSourcesFromEnv({
+    GEV_WORLD_IODA_LICENCE_APPROVED: '0',
+    GEV_WORLD_ELECTIONGUIDE_ENDPOINT: 'https://example.org/elections/',
+    GEV_WORLD_ELECTIONGUIDE_TOKEN: 'fixture-private',
+  });
+  assert(
+    Object.values(dormant).every(
+      (adapter) => !adapter.live && !adapter.shouldCheck(context),
+    ),
+  );
+  const configured = optionalLiveSourcesFromEnv({
+    GEV_WORLD_ELECTIONGUIDE_ENDPOINT:
+      'https://www.electionguide.org/elections/?page=1',
+    GEV_WORLD_ELECTIONGUIDE_TOKEN: 'fixture-private',
+    GEV_WORLD_HDX_APP_IDENTIFIER: 'fixture-private',
+    GEV_WORLD_IODA_LICENCE_APPROVED: '1',
+    GEV_WORLD_UCDP_CANDIDATE_ENDPOINT: 'https://api.ucdp.uu.se/candidate',
+    GEV_WORLD_UCDP_CANDIDATE_TOKEN: 'fixture-private',
+  });
+  assert(
+    Object.values(configured).every(
+      (adapter) => adapter.live && adapter.shouldCheck(context),
+    ),
+  );
+  await assert.rejects(
+    configured['live-electionguide'].fetchObservations({
+      ...context,
+      fetchImpl: async () => {
+        throw new Error('fixture-private');
+      },
+    }),
+    (error) => !error.message.includes('fixture-private'),
+  );
 });
 
 test('optional adapters parse licensed fixtures through their own explicit configuration', async () => {
@@ -56,12 +95,19 @@ test('optional adapters parse licensed fixtures through their own explicit confi
       ...context,
       fetchImpl: async (url, options) => {
         if (id === 'live-hdx') {
+          const { pathname } = new URL(url);
+          assert(
+            [
+              '/api/v2/food-security-nutrition-poverty/food-security',
+              '/api/v2/food-security-nutrition-poverty/food-prices-market-monitor',
+            ].includes(pathname),
+          );
           assert.equal(
             options.headers['X-HDX-HAPI-APP-IDENTIFIER'],
             'fixture-identifier',
           );
           return Response.json({
-            data: new URL(url).pathname.endsWith('/food-security')
+            data: pathname.endsWith('/food-security')
               ? [
                   {
                     location_code: 'IND',

@@ -37,12 +37,17 @@ function allowedEndpoint(value, hosts) {
 }
 
 function withHeader(fetchImpl, key, value) {
-  return (url, options) =>
-    fetchImpl(url, {
-      ...options,
-      redirect: 'error',
-      headers: { ...options?.headers, [key]: value },
-    });
+  return async (url, options) => {
+    try {
+      return await fetchImpl(url, {
+        ...options,
+        redirect: 'error',
+        headers: { ...options?.headers, [key]: value },
+      });
+    } catch {
+      throw new Error('Optional feed request could not be completed');
+    }
+  };
 }
 
 function expectRows(payload, ...fields) {
@@ -63,7 +68,7 @@ function expectRows(payload, ...fields) {
 
 function optional(enabled, interval, read) {
   return {
-    live: true,
+    live: enabled,
     shouldCheck: (context) => enabled && due(context, interval),
     async fetchObservations(context) {
       if (!enabled)
@@ -290,7 +295,8 @@ export function optionalLiveSources(config = {}) {
           'X-HDX-HAPI-APP-IDENTIFIER',
           config.hdx.appIdentifier,
         );
-        const root = 'https://hapi.humdata.org/api/v2/';
+        const root =
+          'https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/';
         const dates =
           '?reference_period_start_min=' +
           new Date(+now - 180 * DAY).toISOString().slice(0, 10) +
@@ -300,7 +306,7 @@ export function optionalLiveSources(config = {}) {
           'data',
         );
         const prices = expectRows(
-          await download(fetch, root + 'food-price' + dates),
+          await download(fetch, root + 'food-prices-market-monitor' + dates),
           'data',
         );
         return hdxFlags(ipc, prices, now, countryIds(registry));
@@ -341,4 +347,19 @@ export function optionalLiveSources(config = {}) {
       },
     ),
   };
+}
+
+export function optionalLiveSourcesFromEnv(env) {
+  return optionalLiveSources({
+    electionguide: {
+      endpoint: env.GEV_WORLD_ELECTIONGUIDE_ENDPOINT,
+      token: env.GEV_WORLD_ELECTIONGUIDE_TOKEN,
+    },
+    hdx: { appIdentifier: env.GEV_WORLD_HDX_APP_IDENTIFIER },
+    ioda: { licenceApproved: env.GEV_WORLD_IODA_LICENCE_APPROVED === '1' },
+    candidate: {
+      endpoint: env.GEV_WORLD_UCDP_CANDIDATE_ENDPOINT,
+      token: env.GEV_WORLD_UCDP_CANDIDATE_TOKEN,
+    },
+  });
 }
