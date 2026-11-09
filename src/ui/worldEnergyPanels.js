@@ -1,4 +1,6 @@
 import {
+  chokepointExposure,
+  countryExposure,
   dependencyRows,
   energyGates,
   gateReferences,
@@ -67,7 +69,9 @@ function dependencyNotice({ document, snapshot }) {
     'p',
     model?.mode === 'fixture'
       ? 'Synthetic fixture data for checking the interface.'
-      : (model?.reason ?? 'Calibrated route shares are unavailable.'),
+      : (model?.label ??
+          model?.reason ??
+          'Calibrated route shares are unavailable.'),
     'world-energy-note',
   );
 }
@@ -83,13 +87,34 @@ function dependencyItem({ document, snapshot, openCard }, row, title) {
         'Stock cover',
         row.bufferDays == null ? 'Unknown' : `${numeric(row.bufferDays)} days`,
       ],
-      ['Trade period', row.period ?? 'Unknown'],
+      [
+        'Trade period',
+        row.period ??
+          snapshot.features?.['energy-dependencies']?.period ??
+          'Unknown',
+      ],
+      ...(row.denominators
+        ? [
+            [
+              'Seaborne imports denominator',
+              `${numeric(row.denominators.seaborne)} ${row.denominators.unit}`,
+            ],
+            [
+              'All imports denominator',
+              `${numeric(row.denominators.all)} ${row.denominators.unit}`,
+            ],
+            [
+              'Imports with unresolved routes',
+              `${numeric(row.denominators.unknown)} ${row.denominators.unit}`,
+            ],
+          ]
+        : []),
     ]),
   );
   const gates = new Map(
     energyGates(snapshot).map((gate) => [gate.id, gate.name]),
   );
-  for (const id of row.route) {
+  for (const id of row.route ?? [row.gate]) {
     if (!gates.has(id)) continue;
     const button = node(
       document,
@@ -117,6 +142,18 @@ function dependencyList(context, rows, actor) {
     );
   }
   return list;
+}
+
+function modelAssumptions({ document, snapshot }) {
+  const assumptions =
+    snapshot.features?.['energy-dependencies']?.assumptions ?? [];
+  if (!assumptions.length) return null;
+  const disclosure = node(document, 'details');
+  const list = node(document, 'ul', undefined, 'world-energy-list');
+  for (const assumption of assumptions)
+    list.append(node(document, 'li', assumption));
+  disclosure.append(node(document, 'summary', 'Why this number'), list);
+  return disclosure;
 }
 
 function priceList(document, snapshot) {
@@ -147,6 +184,29 @@ export function renderExposure(context) {
   const energy = netEnergyImports(snapshot, iso3);
   area.append(node(document, 'h3', 'Exposure'));
   area.append(dependencyNotice(context));
+  const exposures = countryExposure(snapshot, iso3);
+  if (exposures?.length) {
+    const gates = new Map(
+      energyGates(snapshot).map(({ id, name }) => [id, name]),
+    );
+    const list = node(document, 'ol', undefined, 'world-energy-list');
+    for (const row of exposures.slice(0, 6)) {
+      list.append(
+        dependencyItem(context, row, `${gates.get(row.gate)} · ${row.item}`),
+      );
+    }
+    area.append(node(document, 'h3', 'Chokepoint exposure'), list);
+  } else if (exposures) {
+    area.append(
+      node(
+        document,
+        'p',
+        'The model assigns no imports through the monitored chokepoints.',
+      ),
+    );
+  }
+  const assumptions = modelAssumptions(context);
+  if (assumptions) area.append(assumptions);
   const rows = dependencyRows(snapshot, { dependent: iso3 });
   if (rows.length) area.append(dependencyList(context, rows, 'provider'));
   area.append(
@@ -329,8 +389,33 @@ export function renderChokepoint(context) {
       node(document, 'p', gate.alternative),
     );
   }
+  const calibration = (
+    snapshot.features?.['energy-dependencies']?.calibration ?? []
+  ).filter(({ routeId }) => routeId === gate.reference);
+  if (calibration.length) {
+    area.append(node(document, 'h3', '2024 model compared with EIA'));
+    for (const {
+      commodity,
+      period,
+      modelled,
+      published,
+      gap,
+      unit,
+    } of calibration) {
+      area.append(
+        node(
+          document,
+          'p',
+          `${commodity} · ${period} · ${numeric(modelled)} modelled / ${numeric(published)} EIA ${unit} · gap ${numeric(gap)} ${unit}`,
+        ),
+      );
+    }
+  }
   area.append(node(document, 'h3', 'Ranked dependents'));
-  const dependents = dependencyRows(snapshot, { gate: gate.id }).filter(
+  const gateRows = chokepointExposure(snapshot, gate.id);
+  const dependents = (
+    gateRows.length ? gateRows : dependencyRows(snapshot, { gate: gate.id })
+  ).filter(
     (row, index, all) =>
       all.findIndex(({ dependent }) => dependent === row.dependent) === index,
   );

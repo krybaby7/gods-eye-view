@@ -142,7 +142,26 @@ export function dependencyRows(snapshot, { dependent, provider, gate } = {}) {
     .sort((a, b) => (b.shares.all ?? -1) - (a.shares.all ?? -1));
 }
 
+export function countryExposure(snapshot, iso3) {
+  return snapshot.features?.['energy-dependencies']?.exposure?.[iso3];
+}
+
+export function chokepointExposure(snapshot, gateId) {
+  const exposure = snapshot.features?.['energy-dependencies']?.exposure ?? {};
+  return Object.entries(exposure)
+    .flatMap(([dependent, rows]) =>
+      rows
+        .filter(({ gate }) => gate === gateId)
+        .map((row) => ({ ...row, dependent })),
+    )
+    .sort((a, b) => b.shares.all - a.shares.all);
+}
+
 function exposureShare(country, snapshot) {
+  if (snapshot.features?.['energy-dependencies']?.mode === 'modelled') {
+    const rows = countryExposure(snapshot, country.iso3);
+    return rows && (rows[0]?.shares.all ?? 0);
+  }
   return dependencyRows(snapshot, { dependent: country.iso3 })[0]?.shares.all;
 }
 
@@ -209,7 +228,9 @@ export const energyLens = {
       snapshot.features?.['energy-dependencies']?.mode === 'fixture'
         ? 'Synthetic fixture · maximum share of all imports'
         : [
-            'Route shares require calibrated trade flows',
+            snapshot.features?.['energy-dependencies']?.mode === 'modelled'
+              ? '2024 BACI · maximum modelled chokepoint share of all imports'
+              : 'Route shares require calibrated trade flows',
             snapshot.features?.portwatch?.dataTo &&
               'Traffic data to ' + snapshot.features.portwatch.dataTo,
           ]

@@ -132,3 +132,24 @@ test('hover explains exposure and labels unknown instead of describing condition
     'Energy exposure · Unknown',
   );
 });
+
+test('modelled lens uses the total crossing share and distinguishes a routed zero from unknown', () => {
+  const model = {
+    features: {
+      'energy-dependencies': {
+        mode: 'modelled',
+        rows,
+        exposure: { JPN: [{ shares: { all: 0.7 } }], USA: [] },
+      },
+    },
+  };
+  assert.equal(
+    energyLens.hover({ iso3: 'JPN' }, model),
+    '70% of all imports · modelled',
+  );
+  assert.equal(
+    energyLens.hover({ iso3: 'USA' }, model),
+    '0% of all imports · modelled',
+  );
+  assert.equal(energyColor({ iso3: 'KOR' }, model), null);
+});

@@ -211,7 +211,8 @@ export const DATA_CREDITS = [
       '<a href="https://portwatch.imf.org/" target="_blank" rel="noopener">IMF PortWatch</a> · ' +
       '<a href="https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/" target="_blank" rel="noopener">U.S. EIA</a> · ' +
       '<a href="https://fred.stlouisfed.org/" target="_blank" rel="noopener">FRED (EIA and IMF)</a> · ' +
-      '<a href="https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37" target="_blank" rel="noopener">CEPII BACI (candidate)</a>',
+      '<a href="https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37" target="_blank" rel="noopener">CEPII BACI (Etalab 2.0)</a> · ' +
+      '<a href="https://github.com/eurostat/searoute" target="_blank" rel="noopener">Eurostat SeaRoute MARNET (EUPL-1.2, ShareAlike, outside app MIT licence)</a>',
   },
   // War monitor: headline, snippet, link and publisher only. One group per
   // transport; every fetched source in public/news/sources.json is named here.

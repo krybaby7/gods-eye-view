@@ -86,11 +86,11 @@
   {
     "id": "energy-dependencies",
     "name": "Energy trade route model",
-    "access": "Model unavailable; CEPII BACI is a keyless input candidate",
-    "attribution": "CEPII BACI candidate source, version 202601",
+    "access": "Keyless annual BACI archive and Eurostat maritime network. Built offline; compact derived data bundled for local use.",
+    "attribution": "CEPII BACI HS22 V202601; Eurostat SeaRoute MARNET via searoute-ts; Natural Earth; U.S. EIA",
     "url": "https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37",
-    "licence": "BACI is Etalab Open Licence 2.0; route network and model publication pending validation",
-    "releaseRhythm": "BACI annual; candidate data year 2024",
-    "marks": ["Unavailable"]
+    "licence": "BACI: Etalab Open Licence 2.0. Eurostat MARNET network: EUPL-1.2. Derived route data is ShareAlike and outside the app MIT licence; review obligations before public or commercial redistribution.",
+    "releaseRhythm": "BACI annual; model data year 2024",
+    "marks": ["ShareAlike"]
   }
 ]
