@@ -33,6 +33,9 @@ test('requires a dated, open person office statement and keeps the latest start 
       const role = roleOf(body);
       if (role !== 'foreign-minister') return reply([]);
       const query = body.get('query');
+      assert.match(query, /SELECT DISTINCT \?iso \?seat \?person WHERE/);
+      assert.match(query, /\?seat p:P1308\/ps:P1308 \?person/);
+      assert.doesNotMatch(query, /\?statement ps:P39 \?seat\s*\./);
       assert.match(query, /\?person p:P39 \?statement/);
       assert.match(query, /ps:P39 \?office/);
       assert.match(query, /pq:P580 \?since/);
@@ -108,10 +111,31 @@ test('preserves independent co-princes, staggered council members, and shared ex
         ['GHA', 'Q2672728'],
       ]) {
         assert.ok(query.includes(`"${country}" wd:${office}`));
+        assert.ok(query.includes(`ps:P39 wd:${office} .`));
       }
       assert.doesNotMatch(query, /\bp:P6\b/);
       const rows = [
-        row('USA', role, 'Q10', { seat: item('Q11696') }),
+        row('USA', role, 'Q22686', {
+          personLabel: 'Donald Trump',
+          seat: item('Q11696'),
+          office: item('Q11696'),
+          since: '2025-01-20',
+          officeLabel: 'President of the United States',
+        }),
+        row('MEX', role, 'Q5771800', {
+          personLabel: 'Claudia Sheinbaum',
+          seat: item('Q628004'),
+          office: item('Q628004'),
+          since: '2024-10-01',
+          officeLabel: 'President of Mexico',
+        }),
+        row('GHA', role, 'Q358577', {
+          personLabel: 'John Mahama',
+          seat: item('Q2672728'),
+          office: item('Q2672728'),
+          since: '2025-01-07',
+          officeLabel: 'President of Ghana',
+        }),
         row('CHE', role, 'Q11', {
           seat: item('Q11811941'),
           since: '2017-11-01',
@@ -147,6 +171,43 @@ test('preserves independent co-princes, staggered council members, and shared ex
     holders('USA', 'head-of-state'),
     holders('USA', 'head-of-government'),
   );
+  for (const [country, id] of [
+    ['USA', 'Q22686'],
+    ['MEX', 'Q5771800'],
+    ['GHA', 'Q358577'],
+  ]) {
+    for (const role of ['head-of-state', 'head-of-government']) {
+      assert.deepEqual(holders(country, role), [id]);
+    }
+  }
+});
+
+test('preserves a prior partial person-statement directory on rederive timeout', async () => {
+  const prior = {
+    actors: [
+      { id: 'Q10', since: '2026-01-01', acting: false, source: 'wikidata' },
+    ],
+  };
+  const result = await fetchObservations({
+    registry: registry('IND'),
+    now,
+    data: prior,
+    rederive: true,
+    fetchImpl: async (_url, { body }) => {
+      if (roleOf(body) === 'government')
+        return reply([
+          binding({
+            iso: 'IND',
+            role: 'government',
+            government: item('Q2'),
+            governmentLabel: 'Republic',
+          }),
+        ]);
+      throw new DOMException('Deadline', 'TimeoutError');
+    },
+  });
+  assert.match(result.error, /three consecutive timeouts/);
+  assert.equal(result.data, undefined);
 });
 
 test('stops after three consecutive timeouts and preserves the last directory', async () => {

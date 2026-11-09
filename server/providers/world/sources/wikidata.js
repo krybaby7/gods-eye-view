@@ -15,7 +15,7 @@ const ROLES = [
   'defence-minister',
 ];
 
-export const version = 2;
+export const version = 3;
 export const shouldCheck = (context) =>
   context.rederive || actorSourceDue(context, 7 * 24);
 export const requestHost = 'query.wikidata.org';
@@ -31,21 +31,29 @@ function countryCodes(registry) {
   );
 }
 
-function seatPattern(role, codes) {
+function officeOverrides(role, codes) {
+  const key =
+    role === 'head-of-state'
+      ? 'state'
+      : role === 'head-of-government'
+        ? 'government'
+        : null;
+  if (!key) return [];
+  return codes.flatMap((code) => {
+    const seats = officeSeats.countries[code]?.[key];
+    return seats ? [[code, seats]] : [];
+  });
+}
+
+function seatPattern(role, overrides) {
   const state = role === 'head-of-state';
   if (state || role === 'head-of-government') {
-    const officeKey = state ? 'state' : 'government';
-    const overrides = codes.filter(
-      (code) => officeSeats.countries[code]?.[officeKey],
-    );
-    const seats = overrides.flatMap((code) =>
-      officeSeats.countries[code][officeKey].map(
-        (seat) => `("${code}" wd:${seat} true)`,
-      ),
+    const seats = overrides.flatMap(([code, offices]) =>
+      offices.map((seat) => `("${code}" wd:${seat} true)`),
     );
     const normal = `?country wdt:${state ? 'P1906' : 'P1313'} ?seat .`;
     if (!overrides.length) return normal;
-    const exclude = `?iso NOT IN (${overrides.map(JSON.stringify).join(', ')})`;
+    const exclude = `?iso NOT IN (${overrides.map(([code]) => JSON.stringify(code)).join(', ')})`;
     return seats.length
       ? `{ { ${normal} } UNION { VALUES (?iso ?seat ?override) { ${seats.join(' ')} } } }
          FILTER(BOUND(?override) || ${exclude})`
@@ -54,6 +62,21 @@ function seatPattern(role, codes) {
   const kind = role === 'foreign-minister' ? 'Q7330070' : 'Q2518691';
   return `?seat (wdt:P279|wdt:P31) wd:${kind} ;
                (wdt:P1001|wdt:P17) ?country .`;
+}
+
+function candidatePattern(overrides) {
+  const explicit = new Set(overrides.flatMap(([, seats]) => seats));
+  // The P1308 list can be incomplete for shared and collective offices.
+  // Only their known office items get an indexed reverse candidate lookup.
+  return [
+    '{ ?seat p:P1308/ps:P1308 ?person . }',
+    ...[...explicit].map(
+      (id) =>
+        `{ ?knownStatement ps:P39 wd:${id} .
+         ?person p:P39 ?knownStatement .
+         BIND(wd:${id} AS ?seat) }`,
+    ),
+  ].join(' UNION ');
 }
 
 function directoryQuery(role, codes) {
@@ -87,6 +110,7 @@ function directoryQuery(role, codes) {
         SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
       }`;
   }
+  const overrides = officeOverrides(role, codes);
   return `
     SELECT DISTINCT ?iso ?role ?person ?personLabel ?seat ?office ?officeLabel
         ?since ?rank ?nature ?image ?x ?bluesky ?mastodon ?youtube ?facebook
@@ -96,19 +120,16 @@ function directoryQuery(role, codes) {
       {
         SELECT DISTINCT ?iso ?person ?seat ?office ?since ?rank ?nature WHERE {
           {
-            SELECT DISTINCT ?iso ?seat WHERE {
+            SELECT DISTINCT ?iso ?seat ?person WHERE {
               ${countries}
-              ${seatPattern(role, codes)}
+              ${seatPattern(role, overrides)}
               FILTER NOT EXISTS { ?country wdt:P576 [] }
+              { ${candidatePattern(overrides)} }
             }
-          }
-          {
-            { ?statement ps:P39 ?seat . BIND(?seat AS ?office) }
-            UNION
-            { ?office wdt:P279 ?seat . ?statement ps:P39 ?office . }
           }
           ?person p:P39 ?statement .
           ?statement ps:P39 ?office; pq:P580 ?since; wikibase:rank ?rank .
+          FILTER(?office = ?seat || EXISTS { ?office wdt:P279 ?seat . })
           ?person wdt:P31 wd:Q5 .
           FILTER(?rank != wikibase:DeprecatedRank)
           FILTER(?since <= NOW())
@@ -337,8 +358,14 @@ export async function fetchObservations({
   rederive,
 }) {
   const codes = [...countryCodes(registry)].sort();
-  const tracks = ['government', ...ROLES];
-  const total = Math.ceil(codes.length / BATCH_SIZE) * tracks.length;
+  const slices = [];
+  for (let offset = 0; offset < codes.length; offset += BATCH_SIZE)
+    slices.push(codes.slice(offset, offset + BATCH_SIZE));
+  const batches = [
+    ...slices.map((batch) => ['government', batch]),
+    ...slices.flatMap((batch) => ROLES.map((role) => [role, batch])),
+  ];
+  const total = batches.length;
   const budget = AbortSignal.timeout(RUN_BUDGET_MS);
   const query = createWdqsClient(fetchImpl, now, budget);
   const started = performance.now();
@@ -393,23 +420,20 @@ export async function fetchObservations({
     failure.name === 'TimeoutError' ||
     failure.message === 'HTTP 504 from query.wikidata.org';
 
-  batches: for (const role of tracks) {
-    for (let offset = 0; offset < codes.length; offset += BATCH_SIZE) {
-      const batch = codes.slice(offset, offset + BATCH_SIZE);
-      const failure = await loadBatch(role, batch);
-      if (!failure) succeeded += 1;
-      else if (
-        !failure.retryAt &&
-        batch.length > 1 &&
-        (timedOut(failure) ||
-          failure.message === 'HTTP 502 from query.wikidata.org')
-      ) {
-        recovery.push({ role, batch, failure });
-      } else {
-        errors.push(describe(failure));
-      }
-      if (stopped()) break batches;
+  for (const [role, batch] of batches) {
+    const failure = await loadBatch(role, batch);
+    if (!failure) succeeded += 1;
+    else if (
+      !failure.retryAt &&
+      batch.length > 1 &&
+      (timedOut(failure) ||
+        failure.message === 'HTTP 502 from query.wikidata.org')
+    ) {
+      recovery.push({ role, batch, failure });
+    } else {
+      errors.push(describe(failure));
     }
+    if (stopped()) break;
   }
 
   // Give the original batches a chance before spending extra WDQS quota.
@@ -453,8 +477,16 @@ export async function fetchObservations({
     ? detail + ' ' + [...new Set(errors)].join('; ')
     : undefined;
 
+  // Version 2 partial results predate the marker. Only that implementation
+  // wrote the acting boolean on dated Wikidata person-statement records.
+  const verifiedCache =
+    data?.method === 'person-p39' ||
+    data?.actors?.some(
+      ({ acting, since, source }) =>
+        typeof acting === 'boolean' && Boolean(since) && source === 'wikidata',
+    );
   if (
-    (stopped() && data && !rederive) ||
+    (stopped() && data && (!rederive || verifiedCache)) ||
     (!directory.actors.length && !Object.keys(directory.governments).length)
   ) {
     return {
@@ -464,7 +496,7 @@ export async function fetchObservations({
       detail,
     };
   }
-  if (errors.length && !rederive) {
+  if (errors.length && (!rederive || verifiedCache)) {
     directory.actors.push(
       ...(data?.actors ?? []).filter(
         ({ country, role }) => !completed.has(country + ':' + role),
@@ -485,7 +517,11 @@ export async function fetchObservations({
     };
   }
   return {
-    data: { ...directory, retrievedAt: now.toISOString() },
+    data: {
+      ...directory,
+      method: 'person-p39',
+      retrievedAt: now.toISOString(),
+    },
     count: directory.actors.length,
     unit: 'role',
     detail,
