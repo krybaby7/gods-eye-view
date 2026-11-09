@@ -1,0 +1,19 @@
+[
+  {
+    "id": "rel_rivalry_usa_china",
+    "type": "rivalry",
+    "from": "USA",
+    "to": "CHN",
+    "directed": false,
+    "start": "2025-04",
+    "end": null,
+    "detail": "The White House Office of Science and Technology Policy describes China as a geopolitical rival and technological competitor. The 2026 National Defense Strategy describes an Indo-Pacific posture to deter China alongside continued strategic dialogue.",
+    "sources": [
+      "https://www.whitehouse.gov/releases/2025/04/remarks-by-director-kratsios-at-the-endless-frontiers-retreat/",
+      "https://media.defense.gov/2026/Jan/23/2003864773/-1/-1/0/2026-NATIONAL-DEFENSESTRATEGY.PDF"
+    ],
+    "evidence": "documented",
+    "dateChecked": "2026-11-09",
+    "reviewed": false
+  }
+]

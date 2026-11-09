@@ -18,7 +18,18 @@ export const fixtureAdapters = {
     fetchObservations: async () => ({
       data: {
         relations: [
-          row('fixture-war', 'armed_conflict', 'PAK'),
+          row('fixture-war', 'current_armed_conflict', 'PAK', {
+            events: [
+              {
+                id: 'fixture',
+                a: 'IND',
+                b: 'PAK',
+                date: new Date().toISOString().slice(0, 10),
+                sourceUrl: 'https://ucdp.uu.se/',
+              },
+            ],
+          }),
+          row('fixture-history', 'armed_conflict', 'PAK', { period: '2025' }),
           row('fixture-alliance', 'alliance', 'GBR', {
             conditions: 'Fixture defence condition',
           }),
@@ -27,15 +38,31 @@ export const fixtureAdapters = {
             participants: ['IND', 'GBR', 'AUS'],
             instrument: 'Fixture collective treaty',
           }),
-          row('fixture-rival', 'un_alignment', 'CHN', {
-            agreement: 0.3,
-            session: 80,
-          }),
+          row('fixture-rival', 'rivalry', 'CHN'),
           row('fixture-bloc', 'bloc_membership', 'SCO'),
-          row('fixture-sanctions-out', 'sanctions', 'PRK', { directed: true }),
+          row('fixture-sanctions-out', 'sanctions', 'PRK', {
+            directed: true,
+            scope: 'state',
+          }),
           row('fixture-sanctions-in', 'sanctions', 'IND', {
             from: 'USA',
             directed: true,
+            scope: 'persons',
+            programme: 'Fixture targeted sanctions',
+          }),
+        ],
+      },
+    }),
+  },
+  'relations-voting': {
+    shouldCheck: ({ lastCheckedAt }) => !lastCheckedAt,
+    fetchObservations: async () => ({
+      data: {
+        relations: [
+          row('fixture-vote', 'un_alignment', 'CHN', {
+            agreement: 0.3,
+            session: 79,
+            period: '2024',
           }),
         ],
       },
@@ -106,16 +133,26 @@ export default async function phase3({
         );
       }, wait);
       await page.click('#world-tab-relations');
+      await page.waitForSelector('[data-world-relation="fixture-vote"]', wait);
       for (const label of [
         'Allies',
         'Blocs',
         'Rivals',
-        'Wars',
+        'Current armed conflict',
+        'Armed conflict in 2025',
         'Sanctions imposed',
         'Sanctions received',
       ]) {
         assert.match(await text('#world-sheet-content'), new RegExp(label));
       }
+      assert.match(
+        await text('[data-world-relation="fixture-vote"]'),
+        /UN voting closeness: 30.0%.*2024/,
+      );
+      assert.match(
+        await text('[data-world-relation="fixture-sanctions-in"]'),
+        /Sanctions on persons in India/,
+      );
       assert.match(
         await text('[data-world-relation="fixture-collective"]'),
         /Fixture collective treaty.*United Kingdom.*Australia/s,
@@ -164,7 +201,7 @@ export default async function phase3({
       );
       assert.match(
         await text('#world-card-content'),
-        /at war through sanctions, ally, rival, partner and neutral.*below 40%.*80%/s,
+        /at war through sanctions, ally, rival, partner and neutral.*past 90 days/s,
       );
       assert.equal(
         await page.$eval('#world-card-content a', (node) => node.href),

@@ -1,4 +1,5 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
+import programmes from '../../../../public/world/curated/sanctions-programmes.json' with { type: 'json' };
 import { makeRelation, relationResult } from '../relations.js';
 import { monthIndex, releaseDue } from './common.js';
 import { csvRows } from './csv.js';
@@ -6,7 +7,6 @@ import { downloadWorldFile } from './download.js';
 import { ukSanctionsRecords } from './ukSanctionsOdt.js';
 import { zipEntryChunks } from './zip.js';
 
-const CHECKED = '2026-11-09';
 const MAX_BYTES = 75_000_000;
 const UK_XML_LIMIT = 50_000_000;
 const UN_COMMITTEES = 'https://main.un.org/securitycouncil/en/sanctions/';
@@ -49,80 +49,6 @@ const lists = {
     url: 'https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.odt',
     reference: UK_PUBLICATIONS + 'the-uk-sanctions-list',
     path: (id) => UK_PUBLICATIONS + id + '-sanctions-guidance',
-    rows: [
-      [
-        'Belarus',
-        'BLR',
-        'republic-of-belarus',
-        'Belarus sanctions',
-        ['The Republic of Belarus (Sanctions) (EU Exit) Regulations 2019'],
-      ],
-      [
-        'Iran',
-        'IRN',
-        'iran',
-        'Iran sanctions',
-        ['The Iran (Sanctions) Regulations 2023'],
-      ],
-      [
-        'Iran (Nuclear)',
-        'IRN',
-        'iran-nuclear',
-        'Iran nuclear sanctions',
-        ['The Iran (Sanctions) (Nuclear) (EU Exit) Regulations 2019'],
-      ],
-      [
-        "Democratic People's Republic of Korea",
-        'PRK',
-        'democratic-peoples-republic-of-korea',
-        'DPRK sanctions',
-        [
-          "The Democratic People's Republic of Korea (Sanctions) (EU Exit) Regulations 2019",
-        ],
-      ],
-      [
-        'Myanmar',
-        'MMR',
-        'myanmar',
-        'Myanmar sanctions',
-        ['The Myanmar (Sanctions) Regulations 2021'],
-      ],
-      [
-        'Russia',
-        'RUS',
-        'russia',
-        'Russia sanctions',
-        ['The Russia (Sanctions) (EU Exit) Regulations 2019'],
-      ],
-      [
-        'Venezuela',
-        'VEN',
-        'venezuela',
-        'Venezuela sanctions',
-        ['The Venezuela (Sanctions) (EU Exit) Regulations 2019'],
-      ],
-      [
-        'Libya',
-        'LBY',
-        'libya',
-        'Libya sanctions',
-        ['The Libya (Sanctions) (EU Exit) Regulations 2020'],
-      ],
-      [
-        'Sudan',
-        'SDN',
-        'sudan',
-        'Sudan sanctions',
-        ['The Sudan (Sanctions) (EU Exit) Regulations 2020'],
-      ],
-      [
-        'South Sudan',
-        'SSD',
-        'south-sudan',
-        'South Sudan sanctions',
-        ['The South Sudan (Sanctions) (EU Exit) Regulations 2019'],
-      ],
-    ],
     read: ukSanctionsRecords,
   },
   ofac: {
@@ -132,36 +58,6 @@ const lists = {
     reference:
       'https://ofac.treasury.gov/specially-designated-nationals-list-sdn-list/program-tag-definitions-for-ofac-sanctions-lists',
     path: (id) => OFAC_PROGRAMMES + id,
-    rows: [
-      ['BELARUS', 'BLR', 'belarus-sanctions', 'Belarus sanctions'],
-      ['BELARUS-EO14038', 'BLR', 'belarus-sanctions', 'Belarus sanctions'],
-      ['CUBA', 'CUB', 'cuba-sanctions', 'Cuba sanctions'],
-      ['IRAN', 'IRN', 'iran-sanctions', 'Iran sanctions'],
-      ['IRAN-EO13846', 'IRN', 'iran-sanctions', 'Iran sanctions'],
-      ['DPRK', 'PRK', 'north-korea-sanctions', 'North Korea sanctions'],
-      ['DPRK2', 'PRK', 'north-korea-sanctions', 'North Korea sanctions'],
-      ['DPRK3', 'PRK', 'north-korea-sanctions', 'North Korea sanctions'],
-      ['DPRK4', 'PRK', 'north-korea-sanctions', 'North Korea sanctions'],
-      ['BURMA-EO14014', 'MMR', 'burma', 'Burma sanctions'],
-      [
-        'RUSSIA-EO14024',
-        'RUS',
-        'russian-harmful-foreign-activities-sanctions',
-        'Russian harmful foreign activities sanctions',
-      ],
-      [
-        'VENEZUELA',
-        'VEN',
-        'venezuela-related-sanctions',
-        'Venezuela-related sanctions',
-      ],
-      [
-        'VENEZUELA-EO13884',
-        'VEN',
-        'venezuela-related-sanctions',
-        'Venezuela-related sanctions',
-      ],
-    ],
     read: ofacRecords,
   },
 };
@@ -210,11 +106,15 @@ function* ofacRecords(text) {
   }
 }
 
-function mappedRelation(kind, row, programmeId, designationCount) {
-  const { actor, url, reference, path } = lists[kind];
-  const [, to, id, programme] = row;
+function mappedRelation(kind, row, to, designationCount, dateChecked) {
+  const { actor, reference, path } = lists[kind];
+  const { id, programme, programmeId, scope } = row;
   const fallback = designationCount === undefined;
-  const stableId = kind === 'ofac' ? programmeId.toLowerCase() : id;
+  const stableId =
+    kind === 'ofac'
+      ? programmeId.toLowerCase().replaceAll(/[^a-z\d-]/g, '-') +
+        (row.targets.length > 1 ? '_' + to.toLowerCase() : '')
+      : id;
   return makeRelation({
     id: 'rel_sanctions_' + kind + '_' + stableId,
     type: 'sanctions',
@@ -224,28 +124,79 @@ function mappedRelation(kind, row, programmeId, designationCount) {
     to,
     programme,
     programmeId,
+    scope,
     ...(!fallback && { designationCount }),
     detail:
-      'Country-linked sanctions programme. Measures may be selective. ' +
+      (scope === 'state'
+        ? 'Measures apply to a government or economic sector. '
+        : 'This geographic programme targets designated persons, groups or specified regions. ') +
       (fallback
         ? 'Independently cited committee evidence. A list count is unavailable.'
         : designationCount +
           ' designation record' +
           (designationCount === 1 ? '' : 's') +
           ' in the loaded publication under this programme.'),
-    sources: fallback ? [path(id), reference] : [path(id), reference, url],
-    dateChecked: CHECKED,
+    sources: [
+      path(id),
+      programmes[kind]?.source ?? reference,
+      reference,
+    ].filter((url, index, all) => all.indexOf(url) === index),
+    dateChecked,
     reviewed: false,
   });
 }
 
-export async function programmeRelations(kind, content) {
-  const { rows, read } = lists[kind];
-  const known = new Map();
-  for (const row of rows) {
-    for (const name of [row[0], ...(row[4] ?? [])])
-      known.set(normalize(name), row);
-  }
+function mappedProgrammes(kind) {
+  if (kind === 'ofac')
+    return programmes.ofac.mapped.flatMap(
+      ([tags, targets, scope, programme, id]) =>
+        tags.map((programmeId) => ({
+          programmeId,
+          targets,
+          scope,
+          programme,
+          id,
+        })),
+    );
+  if (kind === 'uk')
+    return programmes.uk.mapped.map(([name, target, id, scope, tail]) => {
+      const heading = `The ${name} (Sanctions) ${tail}`;
+      const programmeId =
+        name === 'Republic of Belarus'
+          ? 'Belarus'
+          : id === 'iran-nuclear'
+            ? 'Iran (Nuclear)'
+            : name;
+      return {
+        programmeId,
+        aliases: [heading],
+        targets: [target],
+        scope,
+        programme: programmeId + ' sanctions',
+        id,
+      };
+    });
+  return lists.un.rows.map(([programmeId, target, id, programme]) => ({
+    programmeId,
+    targets: [target],
+    id,
+    programme,
+    scope: ['PRK', 'IRN'].includes(target) ? 'state' : 'persons',
+  }));
+}
+
+export async function programmeRelations(kind, content, dateChecked = null) {
+  const rows = mappedProgrammes(kind);
+  const { read } = lists[kind];
+  const known = new Map(
+    rows.flatMap((row) =>
+      [row.programmeId, ...(row.aliases ?? [])].map((name) => [
+        normalize(name),
+        row,
+      ]),
+    ),
+  );
+  const thematic = new Set((programmes[kind]?.thematic ?? []).map(normalize));
   const ids = new Set();
   const observed = new Map();
   const mappedRecords = new Set();
@@ -255,7 +206,7 @@ export async function programmeRelations(kind, content) {
       const key = normalize(name);
       if (!key) continue;
       const row = known.get(key);
-      const canonical = row ? normalize(row[0]) : key;
+      const canonical = row ? normalize(row.programmeId) : key;
       if (!observed.has(canonical)) observed.set(canonical, new Set());
       observed.get(canonical).add(id);
       if (row) mappedRecords.add(id);
@@ -265,18 +216,36 @@ export async function programmeRelations(kind, content) {
     throw new Error(
       'Sanctions publication has no designation records with programme identifiers',
     );
-  const relations = rows.flatMap((row) => {
-    const count = observed.get(normalize(row[0]))?.size;
-    return count ? [mappedRelation(kind, row, row[0], count)] : [];
-  });
+  const mapped = rows.filter(({ programmeId }) =>
+    observed.has(normalize(programmeId)),
+  );
+  const relations = mapped.flatMap((row) =>
+    row.targets.map((target) =>
+      mappedRelation(
+        kind,
+        row,
+        target,
+        observed.get(normalize(row.programmeId)).size,
+        dateChecked,
+      ),
+    ),
+  );
+  const unmapped = [...observed.keys()]
+    .filter((tag) => !known.has(tag) && !thematic.has(tag))
+    .sort();
+  const thematicProgrammes = [...observed.keys()].filter((tag) =>
+    thematic.has(tag),
+  ).length;
   return {
     relations,
     coverage: {
       records: ids.size,
       mappedRecords: mappedRecords.size,
       programmes: observed.size,
-      mappedProgrammes: relations.length,
-      unmappedProgrammes: observed.size - relations.length,
+      mappedProgrammes: mapped.length,
+      thematicProgrammes,
+      unmappedProgrammes: unmapped.length,
+      unmapped,
     },
   };
 }
@@ -284,9 +253,11 @@ export async function programmeRelations(kind, content) {
 function adapter(kind, name) {
   const { estimatedBytes, url } = lists[kind];
   return {
+    version: 2,
     estimatedBytes,
     shouldCheck(context) {
       return (
+        context.rederive ||
         context.data?.format !== 'published-list' ||
         releaseDue(context, monthIndex)
       );
@@ -297,14 +268,17 @@ function adapter(kind, name) {
       cacheDirectory,
       onProgress,
       signal,
+      rederive,
     }) {
       try {
-        const { path } = await downloadWorldFile(url, {
+        const { path, lastModified } = await downloadWorldFile(url, {
           fetchImpl,
           cacheDirectory,
           onProgress,
           signal,
           maxBytes: MAX_BYTES,
+          immutable: Boolean(rederive || !data),
+          ...(kind === 'uk' && { format: 'zip' }),
         });
         const content =
           kind === 'uk'
@@ -315,13 +289,25 @@ function adapter(kind, name) {
                 signal,
               )
             : await readFile(path, { encoding: 'utf8', signal });
-        const { relations, coverage } = await programmeRelations(kind, content);
+        const modified = Date.parse(lastModified);
+        const dateChecked = new Date(
+          Number.isFinite(modified) ? modified : (await stat(path)).mtimeMs,
+        )
+          .toISOString()
+          .slice(0, 10);
+        const { relations, coverage } = await programmeRelations(
+          kind,
+          content,
+          dateChecked,
+        );
         const result = relationResult(
           relations,
           data,
           name,
           coverage.mappedProgrammes +
-            ' mapped and ' +
+            ' mapped, ' +
+            coverage.thematicProgrammes +
+            ' thematic and ' +
             coverage.unmappedProgrammes +
             ' unmapped programmes across ' +
             coverage.records +
@@ -329,7 +315,12 @@ function adapter(kind, name) {
         );
         return {
           ...result,
-          data: { ...result.data, coverage, format: 'published-list' },
+          data: {
+            ...result.data,
+            coverage,
+            dateChecked,
+            format: 'published-list',
+          },
         };
       } catch (error) {
         if (
@@ -340,9 +331,9 @@ function adapter(kind, name) {
         if (kind !== 'un' && !data) throw error;
         const relations =
           kind === 'un'
-            ? lists.un.rows
-                .filter(([prefix]) => UN_FALLBACK.has(prefix))
-                .map((row) => mappedRelation(kind, row, row[0]))
+            ? mappedProgrammes(kind)
+                .filter(({ programmeId }) => UN_FALLBACK.has(programmeId))
+                .map((row) => mappedRelation(kind, row, row.targets[0]))
             : [];
         const result = relationResult(
           relations,

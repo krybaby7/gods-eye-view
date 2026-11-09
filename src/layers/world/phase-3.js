@@ -10,14 +10,14 @@ import { renderRelationsTab } from '../../ui/worldRelationsTab.js';
 import { renderRelationCard } from '../../ui/worldRelationCard.js';
 
 const priority = {
-  armed_conflict: 4,
+  current_armed_conflict: 4,
   alliance: 3,
   defence_pact: 3,
   sanctions: 2,
   territorial_dispute: 1,
 };
 const lineStyles = {
-  armed_conflict: ['#f4525d', 12, 3855, 4],
+  current_armed_conflict: ['#f4525d', 12, 3855, 4],
   sanctions: ['#e8933f', 22, 255, 2],
   territorial_dispute: ['#b25ec5', 16, 3855, 2],
   alliance: ['#3da1ea', 22, 255, 3],
@@ -93,12 +93,19 @@ function relationOverlay({ viewer, labelPoint, requestRender }) {
       const pairs = new Map();
       for (const row of currentRelations(snapshot)) {
         const style = lineStyles[row.type];
-        if (!style || row.end) continue;
+        if (
+          !style ||
+          row.end ||
+          (row.type === 'sanctions' && row.scope !== 'state')
+        )
+          continue;
         const other = relationPeers(row, snapshot.selected);
         for (const id of other) {
           if (
             id === snapshot.selected ||
-            priority[pairs.get(id)?.row.type] >= priority[row.type]
+            priority[pairs.get(id)?.row.type] >= priority[row.type] ||
+            (row.type === 'current_armed_conflict' &&
+              classifyDiplomacy(snapshot.selected, id, [row]) !== 'at-war')
           )
             continue;
           const destination = labelPoint(id);

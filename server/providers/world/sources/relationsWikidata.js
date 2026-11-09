@@ -17,7 +17,6 @@ const blocs = {
     'https://european-union.europa.eu/principles-countries-history/eu-countries_en',
     'AUT BEL BGR HRV CYP CZE DNK EST FIN FRA DEU GRC HUN IRL ITA LVA LTU LUX MLT NLD POL PRT ROU SVK SVN ESP SWE',
   ],
-  Q7159: ['AU', 'https://au.int/en/member_states/countryprofiles2'],
   Q217172: [
     'GCC',
     'https://www.gcc-sg.org/en/AboutUs/MemberStates/Pages/default.aspx',
@@ -52,10 +51,6 @@ const blocs = {
     'OPEC',
     'https://www.opec.org/member-countries.html',
     'DZA COG GNQ GAB IRN IRQ KWT LBY NGA SAU ARE VEN',
-  ],
-  Q7172: [
-    'Arab League',
-    'https://www.lasportal.org/en/aboutlas/Pages/CountryData.aspx',
   ],
   Q41550: [
     'OECD',
@@ -109,7 +104,12 @@ function qualifier(binding, key) {
     : null;
 }
 
-export function wikidataRelations(kind, bindings, countryIds) {
+export function wikidataRelations(
+  kind,
+  bindings,
+  countryIds,
+  now = new Date(),
+) {
   const supported = new Set(countryIds);
   const aliases = { XKX: 'KOS' };
   const result = new Map();
@@ -162,9 +162,10 @@ export function wikidataRelations(kind, bindings, countryIds) {
           start,
           end,
           detail:
-            'Wikidata diplomatic relation seed. Diplomatic contact alone does not indicate alignment.',
+            'Diplomatic relation asserted by Wikidata. The source may omit the date that relations began or ended.',
           sources: [source, Q530],
-          evidence: 'seed',
+          evidence: 'wikidata-assertion',
+          dateChecked: now.toISOString().slice(0, 10),
         }),
       );
     }
@@ -201,16 +202,18 @@ export function wikidataRelations(kind, bindings, countryIds) {
 
 function adapter(kind) {
   return {
+    version: 2,
     requestHost: new URL(SPARQL).hostname,
     shouldCheck(context) {
       const checked = Date.parse(context.lastCheckedAt);
       return (
+        context.rederive ||
         !context.data ||
         !Number.isFinite(checked) ||
         +context.now - checked >= 604_800_000
       );
     },
-    async fetchObservations({ fetchImpl, registry, data }) {
+    async fetchObservations({ fetchImpl, registry, data, now }) {
       const signal = AbortSignal.timeout(50_000);
       const url = new URL(SPARQL);
       url.searchParams.set('query', queries[kind]);
@@ -228,6 +231,7 @@ function adapter(kind) {
         kind,
         bindings,
         registry.countries.map(({ iso3 }) => iso3),
+        now,
       );
       return relationResult(
         rows,

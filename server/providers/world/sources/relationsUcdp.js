@@ -13,6 +13,9 @@ const URLS = [
 const LIMIT = 10_000_000;
 export const estimatedBytes = 100_000;
 export const requestHost = 'ucdp.uu.se';
+export const version = 2;
+const DATASET = 'https://ucdp.uu.se/downloads/#armedconflict';
+const HOUTHI = 'Government of Yemen (North Yemen)';
 const NAME_ALIASES = {
   'Central African Republic': 'CAF',
   'DR Congo': 'COD',
@@ -41,6 +44,10 @@ const FIELDS = [
   'start_prec2',
   'gwno_a',
   'gwno_b',
+  'side_a_2nd',
+  'side_b_2nd',
+  'gwno_a_2nd',
+  'gwno_b_2nd',
 ];
 
 function* records(csv, fields) {
@@ -58,6 +65,7 @@ function side(label, id, gwno, names, dyadId, direction) {
   const states = new Set();
   if (gwno?.trim()) {
     for (const government of label.split(/,\s+(?=Government of )/)) {
+      if (government === HOUTHI) continue;
       const name = government
         .replace(/^Government of /, '')
         .replace(/\s+\([^)]*\)$/, '');
@@ -111,6 +119,10 @@ export function ucdpRelations(conflictCsv, dyadCsv, countries) {
     precision,
     gwA,
     gwB,
+    supportA,
+    supportB,
+    gwSupportA,
+    gwSupportB,
   ] of records(dyadCsv, FIELDS)) {
     if (
       year !== YEAR ||
@@ -128,8 +140,8 @@ export function ucdpRelations(conflictCsv, dyadCsv, countries) {
         to: to.actor,
         fromActors: from.actors,
         toActors: to.actors,
-        fromLabel: a,
-        toLabel: b,
+        fromLabel: a === HOUTHI ? 'Houthi movement (' + HOUTHI + ')' : a,
+        toLabel: b === HOUTHI ? 'Houthi movement (' + HOUTHI + ')' : b,
         start: dateAtPrecision(start, precision),
         end: episodes.get(conflict),
         period: year,
@@ -151,10 +163,43 @@ export function ucdpRelations(conflictCsv, dyadCsv, countries) {
           year +
           '. The episode end is the conflict-level end where reported.',
         conflictKind: kind,
-        sources: ['https://ucdp.uu.se/downloads/#armedconflict', ...URLS],
+        sources: [DATASET],
         sourceVersion: RELEASE,
       }),
     );
+    for (const [label, codes, party, partyLabel, direction] of [
+      [supportA, gwSupportA, from, a, 'a'],
+      [supportB, gwSupportB, to, b, 'b'],
+    ]) {
+      if (!label) continue;
+      for (const supporter of side(label, id, codes, names, id, direction)
+        .actors) {
+        result.push(
+          makeRelation({
+            id: 'rel_ucdp_support_' + id + '_' + direction + '_' + supporter,
+            type: 'support_to_party',
+            directed: true,
+            from: supporter,
+            to: party.actor,
+            toActors: party.actors,
+            toLabel:
+              partyLabel === HOUTHI
+                ? 'Houthi movement (' + HOUTHI + ')'
+                : partyLabel,
+            period: year,
+            end: episodes.get(conflict),
+            detail:
+              'UCDP ' +
+              year +
+              ' records the state as a secondary warring party supporting this side of dyad ' +
+              id +
+              '.',
+            sources: [DATASET],
+            sourceVersion: RELEASE,
+          }),
+        );
+      }
+    }
   }
   if (!result.length)
     throw new Error('No UCDP dyads found in the expected annual release');
@@ -162,7 +207,7 @@ export function ucdpRelations(conflictCsv, dyadCsv, countries) {
 }
 
 export function shouldCheck(context) {
-  return context.data?.sourceVersion !== RELEASE;
+  return context.rederive || context.data?.sourceVersion !== RELEASE;
 }
 
 async function readCsv(path, signal) {
@@ -192,6 +237,7 @@ export async function fetchObservations({
     cacheDirectory,
     signal,
     immutable: true,
+    format: 'zip',
     maxBytes: LIMIT,
   };
   const first = await downloadWorldFile(URLS[0], { ...options, onProgress });

@@ -9,7 +9,7 @@ export function makeRelation(fields) {
   };
 }
 
-function comparable({ retrievedAt, ...row }) {
+function comparable({ retrievedAt, dateChecked, ...row }) {
   return JSON.stringify(row);
 }
 

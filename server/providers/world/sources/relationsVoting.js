@@ -14,6 +14,7 @@ const IDEAL_POINTS =
 const LIMIT = 170_000_000;
 
 export const estimatedBytes = 147_000_000;
+export const version = 2;
 
 export async function votingRelations(idealPoints, lines, countryIds) {
   const countries = new Set(countryIds);
@@ -74,7 +75,7 @@ export async function votingRelations(idealPoints, lines, countryIds) {
         period,
         detail:
           'United Nations General Assembly agreement on final passage votes.',
-        sources: [DOI, AGREEMENT],
+        sources: [DOI],
         sourceVersion: RELEASE,
       }),
     );
@@ -84,8 +85,8 @@ export async function votingRelations(idealPoints, lines, countryIds) {
   return [...pairs.values()];
 }
 
-export function shouldCheck({ data }) {
-  return data?.sourceVersion !== RELEASE;
+export function shouldCheck({ data, rederive }) {
+  return rederive || data?.sourceVersion !== RELEASE;
 }
 
 export async function fetchObservations({

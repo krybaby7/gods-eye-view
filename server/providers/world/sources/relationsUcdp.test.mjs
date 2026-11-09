@@ -7,7 +7,7 @@ import { zipFixture } from './fixtures/zipFixture.mjs';
 import { fetchObservations, ucdpRelations } from './relationsUcdp.js';
 
 const header =
-  'conflict_id,location,side_a,side_a_id,side_b,side_b_id,year,intensity_level,type_of_conflict,start_date2,start_prec2,gwno_a,gwno_b';
+  'conflict_id,location,side_a,side_a_id,side_b,side_b_id,year,intensity_level,type_of_conflict,start_date2,start_prec2,gwno_a,gwno_b,side_a_2nd,side_b_2nd,gwno_a_2nd,gwno_b_2nd';
 const conflict =
   'conflict_id,year,ep_end,ep_end_date,ep_end_prec,version\n10,2025,0,,,26.1\n11,2025,1,2025-05-10,1,26.1';
 const country = (iso3, name) => ({ iso3, name, kind: 'state' });
@@ -16,6 +16,7 @@ const countries = [
   country('PAK', 'Pakistan'),
   country('USA', 'United States'),
   country('GBR', 'United Kingdom'),
+  country('YEM', 'Yemen'),
 ];
 const dyads = [
   'dyad_id,' + header,
@@ -39,6 +40,21 @@ test('preserves country coalitions and reported episode end', () => {
   assert.deepEqual(rows[2].fromActors, ['GBR', 'USA']);
   assert.deepEqual(rows[2].toActors, ['PAK']);
   assert.equal(rows[1].end, '2025-05-10');
+});
+
+test('keeps the Houthi actor separate from Yemen and records secondary support on the supported side', () => {
+  const rows = ucdpRelations(
+    conflict,
+    [
+      'dyad_id,' + header,
+      '500,10,Yemen,Government of Yemen (North Yemen),123,Government of Pakistan,1,2025,1,4,2025-01-01,1,678,770,,Government of United States of America,,2',
+    ].join('\n'),
+    countries,
+  );
+  assert.equal(rows[0].from, 'ucdp:actor:123');
+  assert.deepEqual(rows[0].fromActors, []);
+  assert.equal(rows[1].type, 'support_to_party');
+  assert.deepEqual([rows[1].from, rows[1].to], ['USA', 'PAK']);
 });
 
 test('UCDP relations reuses both versioned ZIPs and reports aggregate bytes', async (t) => {
