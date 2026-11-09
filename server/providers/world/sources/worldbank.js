@@ -32,6 +32,8 @@ async function readRows(fetchImpl, path, retry = true) {
   try {
     const response = await fetchImpl(url, {
       signal,
+      // This adapter already retries both the request and the body read.
+      retryConnection: false,
       headers: { 'User-Agent': USER_AGENT },
     });
     if (!response.ok) {

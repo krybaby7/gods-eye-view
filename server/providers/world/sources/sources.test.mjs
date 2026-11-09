@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import { crc32, deflateRawSync } from 'node:zlib';
 
@@ -101,6 +103,11 @@ test('IMF keeps current-year forecasts, respects aliases and omits unavailable v
 const candidateRoot = 'https://ucdp.uu.se/downloads/';
 const candidateCsv =
   'id,country,country_id,date_start,date_end,best,source_article';
+async function candidateCache(t) {
+  const directory = await mkdtemp(join(tmpdir(), 'gev-ucdp-download-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  return directory;
+}
 const population = [
   {
     iso3: 'PAK',
@@ -140,7 +147,7 @@ const population = [
   },
 ];
 
-test('UCDP requires twelve complete released months and deduplicates revised events', async () => {
+test('UCDP requires twelve complete released months and deduplicates revised events', async (t) => {
   const { fetchObservations } = await import('./ucdp.js');
   const fetchImpl = fixtureFetch({
     [candidateRoot]: fixture('ucdp-latest.html'),
@@ -159,6 +166,7 @@ test('UCDP requires twelve complete released months and deduplicates revised eve
     registry,
     now,
     observations: population,
+    cacheDirectory: await candidateCache(t),
   });
   assert.deepEqual(
     result.observations.map(({ iso3, value, period }) => [iso3, value, period]),
@@ -175,6 +183,13 @@ test('UCDP requires twelve complete released months and deduplicates revised eve
     /25\.01\.25\.12.*26\.01\.26\.09/,
   );
   assert.match(result.detail, /2025-10.*2026-09/);
+  assert.equal(result.data.period, '2026-09');
+  assert.equal(result.data.deathsByIso3.PAK, 40);
+  assert.equal(result.data.deathsByIso3.AFG, 18);
+  assert.equal(result.data.deathsByIso3.KHM, 2);
+  assert.equal(result.data.deathsByIso3.CAN, 0);
+  assert.equal(result.data.deathsByIso3.FIN, 0);
+  assert.equal(Object.hasOwn(result.data.deathsByIso3, 'USA'), false);
 });
 
 test('UCDP reports missing coverage before publishing zeroes', async () => {
@@ -187,6 +202,39 @@ test('UCDP reports missing coverage before publishing zeroes', async () => {
     fetchObservations({ fetchImpl, registry, now, observations: population }),
     /12.*months/i,
   );
+});
+
+test('UCDP reuses a versioned ZIP release across turns', async (t) => {
+  const { fetchObservations } = await import('./ucdp.js');
+  const archive = `${candidateRoot}candidateged/GEDEvent_v25_11_26_10.zip`;
+  const csv = `${candidateCsv}\n900001,Pakistan,770,2026-09-01,2026-09-01,25,\n`;
+  const bytes = csvZip('events.csv', csv);
+  const fixtureRequest = fixtureFetch({
+    [candidateRoot]: `<a href="${archive}">Candidate CSV archive</a>`,
+    [`${candidateRoot}olddw.html`]: '',
+    [archive]: bytes,
+  });
+  let requests = 0;
+  const progress = [];
+  const context = {
+    fetchImpl(url) {
+      if (url === archive) requests++;
+      return fixtureRequest(url);
+    },
+    registry,
+    now,
+    observations: population,
+    cacheDirectory: await candidateCache(t),
+    onProgress(download) {
+      progress.push(download.bytes);
+    },
+  };
+  const first = await fetchObservations(context);
+  const second = await fetchObservations(context);
+  assert.equal(requests, 1);
+  assert.equal(first.data.deathsByIso3.PAK, 25);
+  assert.deepEqual(first, second);
+  assert.deepEqual(progress, [bytes.length, bytes.length]);
 });
 
 const vdemRoot = 'https://www.v-dem.net/';
@@ -222,16 +270,28 @@ function csvZip(name, csv) {
   return Buffer.concat([local, filename, compressed, central, filename, end]);
 }
 
-test('V-Dem reads the exact Full+Others variable and keeps the latest nonempty year', async () => {
+async function vdemTestDirectory(t) {
+  const directory = await mkdtemp(join(tmpdir(), 'world-vdem-test-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  return directory;
+}
+
+test('V-Dem reads the exact Full+Others variable and keeps the latest nonempty year', async (t) => {
   const { fetchObservations } = await import('./vdem.js');
+  const cacheDirectory = await vdemTestDirectory(t);
   const fetchImpl = fixtureFetch({
     [vdemPage]: fixture('vdem-release.html'),
     [vdemFile]: csvZip(
       'V-Dem-CY-Full+Others-v16.csv',
-      'country_name,country_text_id,year,v2cacamps,v2cacamps_ord\r\nFinland,FIN,2024,-1.2,2\r\nFinland,FIN,2025,,4\r\nKosovo,XKX,2025,0,4\r\n',
+      'country_name,country_text_id,year,v2cacamps,v2cacamps_ord\r\n"Finland, ""land of\r\nthousand lakes""",FIN,2024,-1.2,2\r\nFinland,FIN,2025,,4\r\nKosovo,XKX,2025,0,4\r\n',
     ),
   });
-  const result = await fetchObservations({ fetchImpl, registry, now });
+  const result = await fetchObservations({
+    fetchImpl,
+    registry,
+    now,
+    cacheDirectory,
+  });
   assert.deepEqual(
     result.observations.map(
       ({ iso3, value, period, publishedAt, sourceVersion }) => [
@@ -249,8 +309,9 @@ test('V-Dem reads the exact Full+Others variable and keeps the latest nonempty y
   );
 });
 
-test('V-Dem reports that the exact variable is absent from Full+Others', async () => {
+test('V-Dem reports that the exact variable is absent from Full+Others', async (t) => {
   const { fetchObservations } = await import('./vdem.js');
+  const cacheDirectory = await vdemTestDirectory(t);
   const fetchImpl = fixtureFetch({
     [vdemPage]: fixture('vdem-release.html'),
     [vdemFile]: csvZip(
@@ -258,22 +319,79 @@ test('V-Dem reports that the exact variable is absent from Full+Others', async (
       await fixture('vdem-core-header.csv'),
     ),
   });
-  const result = await fetchObservations({ fetchImpl, registry, now });
+  const result = await fetchObservations({
+    fetchImpl,
+    registry,
+    now,
+    cacheDirectory,
+  });
   assert.deepEqual(result.observations, []);
   assert.match(result.detail, /C6 unavailable.*Full\+Others.*v2cacamps/);
 });
 
-test('V-Dem reports a declared download over 200 MB before reading it', async () => {
+test('V-Dem reports a declared download over 200 MB before reading it', async (t) => {
   const { fetchObservations } = await import('./vdem.js');
+  const cacheDirectory = await vdemTestDirectory(t);
   const fetchImpl = async (url) => {
     if (String(url) === vdemPage)
       return new Response(await fixture('vdem-release.html'));
     assert.equal(String(url), vdemFile);
     return new Response('', { headers: { 'Content-Length': '200000001' } });
   };
-  const result = await fetchObservations({ fetchImpl, registry, now });
+  const result = await fetchObservations({
+    fetchImpl,
+    registry,
+    now,
+    cacheDirectory,
+  });
   assert.deepEqual(result.observations, []);
   assert.match(result.detail, /C6 unavailable.*200 MB/);
+});
+
+test('V-Dem reuses the cached versioned archive and reports bytes', async (t) => {
+  const { fetchObservations } = await import('./vdem.js');
+  const cacheDirectory = await vdemTestDirectory(t);
+  const archive = csvZip(
+    'V-Dem-CY-Full+Others-v16.csv',
+    'country_text_id,year,v2cacamps\r\nFIN,2025,1',
+  );
+  let downloads = 0;
+  const fetchImpl = async (url) => {
+    if (String(url) === vdemPage)
+      return new Response(await fixture('vdem-release.html'));
+    assert.equal(String(url), vdemFile);
+    downloads += 1;
+    return new Response(archive, {
+      headers: { 'Content-Length': String(archive.length) },
+    });
+  };
+  const progress = [];
+  const context = {
+    fetchImpl,
+    registry,
+    now,
+    cacheDirectory,
+    onProgress: (event) => progress.push(event),
+  };
+  const first = await fetchObservations(context);
+  const second = await fetchObservations(context);
+  assert.deepEqual(first.observations, second.observations);
+  assert.equal(downloads, 1);
+  assert.equal(progress.at(-1)?.bytes, archive.length);
+});
+
+test('streaming a ZIP entry from disk checks its CRC', async (t) => {
+  const { zipEntryChunks } = await import('./zip.js');
+  const cacheDirectory = await vdemTestDirectory(t);
+  const archive = csvZip('data.csv', 'row,column\r\n1,2');
+  const central = archive.readUInt32LE(archive.length - 6);
+  archive.writeUInt32LE(0, central + 16);
+  const archivePath = join(cacheDirectory, 'data.zip');
+  await writeFile(archivePath, archive);
+  await assert.rejects(async () => {
+    for await (const chunk of zipEntryChunks(archivePath, () => true, 1024))
+      assert.ok(chunk.length > 0);
+  }, /ZIP CSV failed integrity check/);
 });
 
 test('release checks honor the source month, WEO seasons and the current-year rollover', async () => {
@@ -309,7 +427,7 @@ test('release checks honor the source month, WEO seasons and the current-year ro
     false,
   );
 });
-test('UCDP reports unmapped event locations before inferring country totals', async () => {
+test('UCDP reports unmapped event locations before inferring country totals', async (t) => {
   const { fetchObservations } = await import('./ucdp.js');
   const fetchImpl = fixtureFetch({
     [candidateRoot]: fixture('ucdp-latest.html'),
@@ -318,7 +436,13 @@ test('UCDP reports unmapped event locations before inferring country totals', as
     [`${candidateRoot}candidateged/GEDEvent_v25_01_25_12.csv`]: candidateCsv,
   });
   await assert.rejects(
-    fetchObservations({ fetchImpl, registry, now, observations: population }),
+    fetchObservations({
+      fetchImpl,
+      registry,
+      now,
+      observations: population,
+      cacheDirectory: await candidateCache(t),
+    }),
     /Unmapped UCDP Candidate event countries: Unmapped location/,
   );
 });
