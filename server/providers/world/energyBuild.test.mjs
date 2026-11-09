@@ -381,3 +381,69 @@ test('a sourced land volume is retained while routing remaining bilateral crude 
   assert.equal(model.importTonnes.CHN['crude oil'], 100);
   assert.equal(model.coverage.landFlows, 1);
 });
+
+test('a landlocked trade partner alone is insufficient evidence for land routing', async () => {
+  const { routesFor } =
+    await import('../../../scripts/build-world-energy-model.mjs');
+  const routes = routesFor({ features: [] }, { features: [] });
+  assert.equal(routes('MNG', 'CHN', 'coal').mode, 'land');
+  assert.equal(routes('MNG', 'JPN', 'coal').mode, 'unknown');
+  assert.equal(routes('USA', 'CHE', 'refined products').mode, 'unknown');
+  assert.equal(routes('KAZ', 'RUS', 'crude oil').mode, 'land');
+});
+
+test('coastal imports can use the nearest ocean network node without a gazetteer port', async () => {
+  const { routesFor } =
+    await import('../../../scripts/build-world-energy-model.mjs');
+  const origin = [-17.8, 14.5];
+  const nearBanjul = [-17.3, 13.4];
+  const routes = routesFor(
+    {
+      features: [
+        {
+          geometry: { type: 'LineString', coordinates: [origin, nearBanjul] },
+          properties: {},
+        },
+      ],
+    },
+    { features: [] },
+    [
+      {
+        iso: 'SEN',
+        direction: 'export',
+        product: 'refined products',
+        port: 'Dakar',
+        coordinates: origin,
+        share: null,
+      },
+    ],
+  );
+  const route = routes('SEN', 'GMB', 'refined products');
+  assert.equal(route.mode, 'land');
+  const oceanRoutes = routesFor(
+    {
+      features: [
+        {
+          geometry: { type: 'LineString', coordinates: [origin, nearBanjul] },
+          properties: {},
+        },
+      ],
+    },
+    { features: [] },
+    [
+      {
+        iso: 'CPV',
+        direction: 'export',
+        product: 'refined products',
+        port: 'Source terminal',
+        coordinates: origin,
+        share: null,
+      },
+    ],
+  );
+  const [ocean] = oceanRoutes('CPV', 'GMB', 'refined products');
+  assert.equal(ocean.mode, 'sea');
+  assert.equal(ocean.approximate, true);
+  assert.match(ocean.ports[1], /approximate network port/i);
+  assert.deepEqual(ocean.coordinates.at(-1), nearBanjul);
+});

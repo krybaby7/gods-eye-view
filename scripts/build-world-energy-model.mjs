@@ -219,6 +219,10 @@ function neighboursAndPorts(ports, router) {
       ),
     }));
   const owners = new Map();
+  const sharedVertices = new Set();
+  const polygonsByCountry = new Map(
+    countries.map(({ iso, polygons }) => [iso, polygons]),
+  );
   const pair = (a, b) => [a, b].sort().join('/');
   const commonVertices = new Map();
   for (const { iso, polygons } of countries) {
@@ -230,6 +234,7 @@ function neighboursAndPorts(ports, router) {
       const key = point.join(',');
       const other = owners.get(key);
       if (other && other !== iso) {
+        sharedVertices.add(key);
         const id = pair(iso, other);
         commonVertices.set(id, (commonVertices.get(id) ?? 0) + 1);
       } else owners.set(key, iso);
@@ -276,8 +281,33 @@ function neighboursAndPorts(ports, router) {
       share: 1,
     });
   }
+  const networkFallbacks = new Map();
   return {
-    port: (iso) => fallback.get(iso),
+    port(iso, direction) {
+      if (landlocked.has(iso)) return undefined;
+      const named = fallback.get(iso);
+      if (named || direction !== 'import') return named;
+      if (!networkFallbacks.has(iso)) {
+        const coast = polygonsByCountry
+          .get(iso)
+          ?.flatMap(([outer]) =>
+            outer.filter((point) => !sharedVertices.has(point.join(','))),
+          );
+        const coordinates = coast && router.nearestNetworkPort(coast);
+        networkFallbacks.set(
+          iso,
+          coordinates
+            ? {
+                name: `Approximate network port (${iso})`,
+                coordinates,
+                approximate: true,
+                share: 1,
+              }
+            : undefined,
+        );
+      }
+      return networkFallbacks.get(iso);
+    },
     adjacent: (a, b, item) => {
       const id = pair(a, b);
       return (
@@ -307,7 +337,10 @@ export function routesFor(network, ports, rows = []) {
   }
   function terminalOptions(iso, direction, item) {
     const group = endpoints.get([iso, direction, item].join('/'));
-    if (!group) return port(iso) ? [port(iso)] : [];
+    if (!group) {
+      const fallback = port(iso, direction);
+      return fallback ? [fallback] : [];
+    }
     if (group.some(({ share }) => share !== null)) {
       const options = group.filter(({ share }) => share > 0);
       const total = options.reduce((sum, { share }) => sum + share, 0);
@@ -328,15 +361,22 @@ export function routesFor(network, ports, rows = []) {
       ((from === 'KAZ' && to !== 'RUS' && to !== 'CHN') ||
         (from === 'AZE' && to !== 'RUS' && to !== 'IRN'));
     const maritimeDestination = item === 'crude oil' && to === 'AUT';
+    const kazakhPipeline =
+      from === 'KAZ' && (to === 'RUS' || to === 'CHN') && item === 'crude oil';
     if (
-      (!maritimeDestination && landlocked.has(to)) ||
-      (!maritimeOrigin && landlocked.has(from)) ||
+      kazakhPipeline ||
       (item !== 'lng' &&
-        !maritimeOrigin &&
-        !maritimeDestination &&
-        adjacent(from, to, item))
+        adjacent(from, to, item) &&
+        (!maritimeOrigin || landlocked.has(to)) &&
+        !maritimeDestination)
     ) {
       return { mode: 'land' };
+    }
+    if (
+      (!maritimeDestination && landlocked.has(to)) ||
+      (!maritimeOrigin && landlocked.has(from))
+    ) {
+      return { mode: 'unknown' };
     }
     const key = [from, to, item].join('/');
     if (!cache.has(key)) {

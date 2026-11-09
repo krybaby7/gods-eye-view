@@ -218,7 +218,7 @@ export function maritimeRouter(network, { maxSnapKm = 225 } = {}) {
     return predecessors;
   }
 
-  return (start, end) => {
+  const route = (start, end) => {
     const source = closest(start);
     const destination = closest(end);
     if (source === null || destination === null) return null;
@@ -240,6 +240,23 @@ export function maritimeRouter(network, { maxSnapKm = 225 } = {}) {
       coordinates: coordinates.reverse(),
     };
   };
+  route.nearestNetworkPort = (coast) => {
+    let best = null;
+    let nearest = Infinity;
+    for (const point of coast) {
+      for (const id of ocean) {
+        const candidate = points[id];
+        // A latitude difference alone supplies a cheap lower bound.
+        if (Math.abs(candidate[1] - point[1]) * 111 > nearest) continue;
+        const distance = distanceKm(point, candidate);
+        if (distance >= nearest) continue;
+        best = candidate;
+        nearest = distance;
+      }
+    }
+    return best;
+  };
+  return route;
 }
 
 const round = (value, digits = 3) => Number(value.toFixed(digits));
