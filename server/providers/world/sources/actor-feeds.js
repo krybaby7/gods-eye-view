@@ -1,9 +1,11 @@
+import { setTimeout as wait } from 'node:timers/promises';
 import { parseFeedEntries } from '../../common/rss.js';
 import { readResponseTextCapped } from '../../../../src/sources/httpBody.js';
 import { fetchActorSource, safeHttps } from './actor-fetch.js';
 
 const FETCH_BUDGET = 18;
 const TIMEOUT = 6000;
+const RETRY_PAUSE = 350;
 export const POST_LIMIT = 4;
 
 export function publicAccounts(features, platform, origin, pattern) {
@@ -29,6 +31,8 @@ export async function fetchActorFeeds({
   data,
   urlFor,
   readPosts,
+  acceptBadRequest = false,
+  deadlineRetries = 0,
 }) {
   const feeds = {};
   const attemptedAt = {};
@@ -40,22 +44,36 @@ export async function fetchActorFeeds({
   }
   let count = 0;
   let failed = 0;
+  let unavailable = 0;
   let retryAt;
   let lastError;
   for (const entry of ordered.slice(0, FETCH_BUDGET)) {
     const { account } = entry;
-    try {
+    async function loadPosts() {
       const response = await fetchActorSource(fetchImpl, urlFor(entry), now, {
         timeout: TIMEOUT,
+        acceptBadRequest,
       });
-      const posts = await readPosts(response, entry);
+      return readPosts(response, entry);
+    }
+    try {
+      let posts;
+      try {
+        posts = await loadPosts();
+      } catch (error) {
+        if (!deadlineRetries || error.name !== 'TimeoutError') throw error;
+        deadlineRetries -= 1;
+        await wait(RETRY_PAUSE);
+        posts = await loadPosts();
+      }
+      if (posts === null) unavailable += 1;
       feeds[account] = {
-        posts,
+        posts: posts ?? [],
         fetchedAt: now.toISOString(),
         actorId: entry.actorId,
       };
       attemptedAt[account] = now.toISOString();
-      count += posts.length;
+      count += posts?.length ?? 0;
     } catch (error) {
       failed += 1;
       lastError = error.cause?.code ?? error.message;
@@ -72,12 +90,16 @@ export async function fetchActorFeeds({
       ? failed + ' feed request(s) failed (' + lastError + ')'
       : undefined,
     detail:
-      ordered.length > FETCH_BUDGET
-        ? FETCH_BUDGET +
-          ' of ' +
-          ordered.length +
-          ' accounts checked per refresh, oldest first.'
-        : undefined,
+      [
+        ordered.length > FETCH_BUDGET
+          ? `${FETCH_BUDGET} of ${ordered.length} accounts checked per refresh, oldest first.`
+          : null,
+        unavailable
+          ? `${unavailable} ${unavailable === 1 ? 'account' : 'accounts'} unavailable.`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' ') || undefined,
   };
 }
 

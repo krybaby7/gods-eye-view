@@ -12,7 +12,8 @@ export async function fetchActorSource(fetchImpl, url, now, options = {}) {
     signal: AbortSignal.timeout(options.timeout ?? 12_000),
     headers: options.headers,
   });
-  if (response.ok) return response;
+  if (response.ok || (options.acceptBadRequest && response.status === 400))
+    return response;
   await response.body?.cancel();
   const error = new Error(
     'HTTP ' + response.status + ' from ' + new URL(url).hostname,

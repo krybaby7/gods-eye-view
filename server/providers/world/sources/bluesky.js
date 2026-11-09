@@ -19,6 +19,14 @@ export function blueskyFeedUrl({ key }) {
 
 export async function readBlueskyPosts(response, { key }) {
   const body = await readResponseJsonCapped(response, 1_000_000);
+  if (response.status === 400) {
+    if (
+      body?.error === 'InvalidRequest' &&
+      body?.message === 'Profile not found'
+    )
+      return null;
+    throw new Error('HTTP 400 from public.api.bsky.app');
+  }
   const seen = new Set();
   return body.feed
     .flatMap(({ post, reason }) => {
@@ -60,5 +68,6 @@ export function fetchObservations(context) {
     ),
     urlFor: blueskyFeedUrl,
     readPosts: readBlueskyPosts,
+    acceptBadRequest: true,
   });
 }

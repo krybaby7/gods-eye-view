@@ -177,3 +177,68 @@ test('YouTube Atom and official RSS return linked headlines only', async () => {
     'Public bulletin',
   );
 });
+test('Bluesky treats only the documented missing profile response as unavailable', async () => {
+  const { fetchObservations } = await import('./bluesky.js');
+  const unavailable = 'https://bsky.app/profile/removed.example.org';
+  const other = 'https://bsky.app/profile/other.example.org';
+  const { data, detail, error } = await fetchObservations({
+    now,
+    features: {
+      wikidata: { actors: [{ accounts: { bluesky: [unavailable, other] } }] },
+    },
+    data: { feeds: { [unavailable]: { posts: [{ text: 'Old post' }] } } },
+    fetchImpl: async (url) => {
+      const removed = new URL(url).searchParams
+        .get('actor')
+        .startsWith('removed');
+      return json(
+        {
+          error: 'InvalidRequest',
+          message: removed ? 'Profile not found' : 'Unexpected parameter',
+        },
+        { status: 400 },
+      );
+    },
+  });
+  assert.deepEqual(data.feeds[unavailable].posts, []);
+  assert.equal(data.feeds[other], undefined);
+  assert.match(error, /^1 feed request/);
+  assert.match(detail, /1 account unavailable/);
+});
+
+test('YouTube retries a timed-out request once with a fresh short deadline and preserves posts on failure', async () => {
+  const { fetchObservations } = await import('./youtube-rss.js');
+  const channel = 'https://www.youtube.com/channel/UCabcdefghijklmnopqrstuv';
+  const signals = [];
+  const context = {
+    now,
+    features: { wikidata: { actors: [{ accounts: { youtube: channel } }] } },
+    data: { feeds: { [channel]: { posts: [{ text: 'Last good post' }] } } },
+  };
+  const recovered = await fetchObservations({
+    ...context,
+    fetchImpl: async (_url, { signal }) => {
+      signals.push(signal);
+      if (signals.length === 1)
+        throw new DOMException('Deadline', 'TimeoutError');
+      return new Response('<feed></feed>');
+    },
+  });
+  assert.equal(recovered.error, undefined);
+  assert.equal(signals.length, 2);
+  assert.notEqual(signals[0], signals[1]);
+  let calls = 0;
+  const failed = await fetchObservations({
+    ...context,
+    fetchImpl: async () => {
+      calls += 1;
+      throw new DOMException('Deadline', 'TimeoutError');
+    },
+  });
+  assert.equal(calls, 2);
+  assert.match(failed.error, /Deadline/);
+  assert.deepEqual(
+    failed.data.feeds[channel].posts,
+    context.data.feeds[channel].posts,
+  );
+});

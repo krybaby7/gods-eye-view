@@ -258,3 +258,65 @@ test('refreshes later roles after a batch fails and keeps only the failed role f
     ['Q1', 'Q20'],
   );
 });
+test('subdivides a gateway failure and retains cached actors only in an unrecovered slice', async () => {
+  const adapter = await import('./wikidata.js');
+  const registry = {
+    countries: ['AAA', 'AAB', 'AAC', 'AAD'].map((iso3) => ({ iso3 })),
+  };
+  const cached = { id: 'Q2', country: 'AAC', role: 'head-of-state' };
+  const stale = { id: 'Q1', country: 'AAA', role: 'head-of-state' };
+  const calls = [];
+  const result = await adapter.fetchObservations({
+    registry,
+    now,
+    data: { actors: [stale, cached] },
+    fetchImpl: async (_url, { body }) => {
+      const query = body.get('query');
+      const role = query.match(/BIND\("([^"]+)" AS \?role/)[1];
+      const countries = [
+        ...query.match(/VALUES \?iso \{([^}]+)\}/)[1].matchAll(/"([^"]+)"/g),
+      ].map((match) => match[1]);
+      calls.push([role, countries]);
+      if (role !== 'head-of-state')
+        return new Response('{"results":{"bindings":[]}}');
+      if (countries.length === 4) return new Response('', { status: 502 });
+      if (countries.includes('AAC'))
+        throw new DOMException('Deadline', 'TimeoutError');
+      return new Response(
+        JSON.stringify({ results: { bindings: [row('AAA', role, 'Q10')] } }),
+      );
+    },
+  });
+  assert.equal(calls.length, 6);
+  assert.deepEqual(calls.slice(-2), [
+    ['head-of-state', ['AAA', 'AAB']],
+    ['head-of-state', ['AAC', 'AAD']],
+  ]);
+  assert.deepEqual(
+    result.data.actors.map(({ id }) => id),
+    ['Q10', 'Q2'],
+  );
+  assert.match(result.error, /Deadline/);
+  assert.match(result.detail, /1 of 2 recovery slices/);
+});
+
+test('limits recovery calls during a sustained Wikidata gateway outage', async () => {
+  const adapter = await import('./wikidata.js');
+  const registry = {
+    countries: Array.from({ length: 81 }, (_, i) => ({
+      iso3: 'A' + String.fromCharCode(65 + Math.floor(i / 26), 65 + (i % 26)),
+    })),
+  };
+  let calls = 0;
+  const result = await adapter.fetchObservations({
+    registry,
+    now,
+    fetchImpl: async () => {
+      calls += 1;
+      return new Response('', { status: 502 });
+    },
+  });
+  assert.equal(calls, 20);
+  assert.match(result.error, /HTTP 502/);
+  assert.match(result.detail, /0 of 8 recovery slices/);
+});

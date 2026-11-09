@@ -2,6 +2,8 @@ import { actorSourceDue, safeHttps } from './actor-fetch.js';
 import { createWdqsClient } from './wdqs.js';
 
 const BATCH_SIZE = 40;
+const MAX_RECOVERY_CALLS = 8;
+const RECOVERY_WINDOW_MS = 45_000;
 const ROLES = [
   'head-of-state',
   'head-of-government',
@@ -218,26 +220,74 @@ export async function fetchObservations({ fetchImpl, registry, now, data }) {
   const errors = [];
   let succeeded = 0;
   let retryAt;
+  const recovery = [];
+  let recoveryCalls = 0;
+  let recoveredSlices = 0;
+
+  async function loadBatch(role, batch) {
+    try {
+      const rows = await query(directoryQuery(role, batch));
+      for (const code of batch) completed.add(code + ':' + role);
+      for (const row of rows) {
+        if (row?.role?.value === role && batch.includes(row.iso?.value))
+          bindings.push(row);
+      }
+    } catch (failure) {
+      retryAt = failure.retryAt;
+      return failure;
+    }
+  }
+  const describe = (failure) => failure.cause?.code ?? failure.message;
+
   batches: for (const role of ROLES) {
     for (let offset = 0; offset < codes.length; offset += BATCH_SIZE) {
       const batch = codes.slice(offset, offset + BATCH_SIZE);
-      try {
-        const rows = await query(directoryQuery(role, batch));
-        for (const code of batch) completed.add(code + ':' + role);
-        for (const row of rows) {
-          if (row?.role?.value === role && batch.includes(row.iso?.value))
-            bindings.push(row);
-        }
-        succeeded += 1;
-      } catch (failure) {
-        errors.push(failure.cause?.code ?? failure.message);
-        retryAt = failure.retryAt;
+      const failure = await loadBatch(role, batch);
+      if (!failure) succeeded += 1;
+      else if (
+        !retryAt &&
+        batch.length > 1 &&
+        (failure.name === 'TimeoutError' ||
+          failure.message === 'HTTP 502 from query.wikidata.org')
+      ) {
+        recovery.push({ role, batch, failure });
+      } else {
+        errors.push(describe(failure));
         if (retryAt) break batches;
       }
     }
   }
+
+  // Give the original batches a chance before spending extra WDQS quota.
+  const recoveryDeadline = performance.now() + RECOVERY_WINDOW_MS;
+  for (const { role, batch, failure } of recovery) {
+    const midpoint = Math.ceil(batch.length / 2);
+    let recovered = 0;
+    const failures = [];
+    for (const slice of [batch.slice(0, midpoint), batch.slice(midpoint)]) {
+      if (
+        retryAt ||
+        recoveryCalls >= MAX_RECOVERY_CALLS ||
+        performance.now() >= recoveryDeadline
+      )
+        break;
+      recoveryCalls += 1;
+      const sliceFailure = await loadBatch(role, slice);
+      if (sliceFailure) failures.push(describe(sliceFailure));
+      else {
+        recovered += 1;
+        recoveredSlices += 1;
+      }
+    }
+    if (recovered === 2) succeeded += 1;
+    else errors.push(...(failures.length ? failures : [describe(failure)]));
+  }
   const directory = normalizeDirectory(bindings, registry, now);
-  const detail = `${succeeded} of ${total} Wikidata batches completed.`;
+  const detail =
+    `${succeeded} of ${total} Wikidata batches completed.` +
+    (recoveryCalls
+      ? ` Loaded ${recoveredSlices} of ${recoveryCalls} recovery slices.`
+      : '');
   const error = errors.length
     ? detail + ' ' + [...new Set(errors)].join('; ')
     : undefined;
