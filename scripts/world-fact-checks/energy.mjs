@@ -19,7 +19,7 @@ const beforeGapPct = {
   panama: { oil: 21.8 },
   'cape-of-good-hope': { oil: -64.6, lng: -79.4 },
 };
-const exporterExamples = new Set(['SAU', 'IRN', 'QAT', 'KWT', 'ARE', 'RUS']);
+const expectedDraftFloor = 10;
 const makeCheck = (id, expected, found, source, pass) => ({
   id: 'energy-' + id,
   expected,
@@ -43,26 +43,30 @@ export default async function checkEnergy({ board, getDetail }) {
     .map(({ dependent }) => dependent)
     .sort();
   const expectedTop = ['CHN', 'IND', 'JPN', 'KOR'];
-  const trivial = [];
   const gates = new Set(
     Object.values(model?.energyExposure ?? {})
       .flat()
       .map(({ gate }) => gate),
   );
-  for (const gate of gates) {
-    for (const row of chokepointExposure(board, gate).slice(0, 10)) {
-      if (
-        exporterExamples.has(row.dependent) &&
-        row.volume.value < model.minorImporterFloor
-      ) {
-        trivial.push({
-          gate,
-          country: row.dependent,
-          volume: row.volume.value,
-        });
-      }
-    }
-  }
+  // This is a model consistency check. Checking every displayed dependent
+  // also covers exporters outside a hand-picked list.
+  const rankedVolumes = [...gates].flatMap((gate) =>
+    chokepointExposure(board, gate)
+      .slice(0, 10)
+      .map((row, index) => ({
+        gate,
+        rank: index + 1,
+        country: row.dependent,
+        mainProduct: row.item,
+        volume: row.volume,
+      })),
+  );
+  const trivial = rankedVolumes.filter(
+    ({ volume }) =>
+      volume?.unit !== 'PJ/year' ||
+      !Number.isFinite(volume?.value) ||
+      volume.value < expectedDraftFloor,
+  );
   const thaiMt = thailand?.importTonnes?.['crude oil'] / 1e6;
   const thaiExpectedMt = (971_025 * 366) / 7.33 / 1e6;
   const taiwanProducts = ['crude oil', 'lng', 'coal'].filter(
@@ -91,10 +95,17 @@ export default async function checkEnergy({ board, getDetail }) {
     ),
     makeCheck(
       'trivial-exporter-imports',
-      'No top-ten gate dependent among the named exporters with transit below the draft 10 PJ/year floor',
-      trivial,
-      eiaChokepoints,
-      gates.size > 0 && trivial.length === 0,
+      `Every displayed top-ten gate dependent has at least ${expectedDraftFloor} PJ/year of modelled transit under the existing draft floor`,
+      {
+        draftFloor: model?.minorImporterFloor,
+        checked: rankedVolumes.length,
+        trivial,
+        rankedVolumes,
+      },
+      'World Board fix-round-2 brief §3, draft model consistency check',
+      rankedVolumes.length > 0 &&
+        model?.minorImporterFloor === expectedDraftFloor &&
+        trivial.length === 0,
     ),
     makeCheck(
       'arctic-and-kiel',
