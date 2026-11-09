@@ -57,7 +57,7 @@ export async function readCuratedAssets() {
 }
 
 const curated = {
-  shouldCheck: ({ data }) => !data,
+  shouldCheck: () => true,
   async fetchObservations() {
     const data = await readCuratedAssets();
     return {

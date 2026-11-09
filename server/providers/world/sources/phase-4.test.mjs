@@ -252,3 +252,10 @@ test('asset adapters register all five sources and enrich ports only after the W
   }
   assert.equal(worldRefreshSteps['nga-ports'], 'wikidata-assets');
 });
+
+test('a manual refresh reloads asset reviews even with a cached hand table', () => {
+  assert.equal(
+    worldAdapters['curated-assets'].shouldCheck({ data: { rows: [] } }),
+    true,
+  );
+});

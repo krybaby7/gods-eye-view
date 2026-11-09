@@ -101,6 +101,6 @@
     "url": "https://fas.org/initiative/status-world-nuclear-forces/",
     "licence": "Cited factual summaries; no protected tables are reproduced",
     "releaseRhythm": "Manual review, with date and provenance per fact",
-    "marks": ["Draft"]
+    "marks": ["Draft", "FAS has no stated licence"]
   }
 ]
