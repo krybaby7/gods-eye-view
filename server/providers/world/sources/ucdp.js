@@ -43,6 +43,13 @@ const COUNTRY_ALIASES = {
 };
 
 export function shouldCheck(context) {
+  if (
+    !context.data?.deathsByIso3 &&
+    context.observations?.some(
+      ({ indicator }) => indicator === 'condition.conflict_deaths',
+    )
+  )
+    return true;
   return releaseDue(context, monthIndex);
 }
 

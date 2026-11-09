@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { setTimeout as pause } from 'node:timers/promises';
 import { conditionFlag, conditionResult } from '../conditionEvents.js';
 import { columnIndices, csvRows } from './csv.js';
 import { DAY, download, due } from './liveFeedCommon.js';
@@ -8,6 +9,21 @@ const POWELL = 'https://jonathanmpowell.com/coups/';
 const GDELT = 'https://www.gdeltproject.org/data.html';
 const GDELT_MANIFEST = 'https://data.gdeltproject.org/gdeltv2/lastupdate.txt';
 const BATCH = 15 * 60_000;
+const MAX_MISSED_BATCHES = 4;
+
+function gdeltTime(date) {
+  const time = Date.parse(date);
+  return Number.isFinite(time) &&
+    time % BATCH === 0 &&
+    new Date(time).toISOString() === date
+    ? time
+    : NaN;
+}
+
+function inGdeltWindow(time, sampledAt) {
+  return time <= +sampledAt && +sampledAt - time <= 7 * DAY;
+}
+
 const COUNTRIES = {
   AF: 'AFG',
   AG: 'DZA',
@@ -324,11 +340,54 @@ export const coups = {
   },
 };
 
+async function fetchGdeltBatch(
+  fetchImpl,
+  date,
+  sampledAt,
+  countries,
+  expected,
+) {
+  const stamp = date.replace(/\D/g, '').slice(0, 14);
+  const filename = stamp + '.export.CSV';
+  const bytes = await download(
+    fetchImpl,
+    'https://data.gdeltproject.org/gdeltv2/' + filename + '.zip',
+    'bytes',
+    10_000_000,
+  );
+  if (
+    expected &&
+    (bytes.length !== expected.size ||
+      createHash('md5').update(bytes).digest('hex') !== expected.checksum)
+  )
+    throw new Error('GDELT event archive did not match the manifest');
+
+  const decoder = new TextDecoder();
+  let tsv = '';
+  // For a preceding export with no current manifest hash, require the exact
+  // dated entry and let the ZIP reader verify its length and CRC.
+  for await (const chunk of zipEntryChunks(
+    bytes,
+    (name) => name.split('/').at(-1).toLowerCase() === filename.toLowerCase(),
+    40_000_000,
+  )) {
+    tsv += decoder.decode(chunk, { stream: true });
+  }
+  return gdeltBatch(tsv + decoder.decode(), date, sampledAt, countries);
+}
+
 export const gdelt = {
   live: true,
   shouldCheck: (context) => due(context, BATCH),
-  async fetchObservations({ fetchImpl, registry, data, now }) {
+  async fetchObservations({
+    fetchImpl,
+    registry,
+    data,
+    now,
+    currentTime = () => now,
+  }) {
     const manifest = await download(fetchImpl, GDELT_MANIFEST, 'text', 20_000);
+    const sampledAt = currentTime();
     const entry = manifest.match(
       /^(\d+) ([0-9a-f]{32}) https?:\/\/data\.gdeltproject\.org\/gdeltv2\/(\d{14})\.export\.CSV\.zip\s*$/im,
     );
@@ -338,46 +397,47 @@ export const gdelt = {
       /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/,
       '$1-$2-$3T$4:$5:$6.000Z',
     );
-    if (
-      !Number.isFinite(Date.parse(date)) ||
-      Date.parse(date) > +now ||
-      +now - Date.parse(date) > 7 * DAY
-    ) {
+    const latest = gdeltTime(date);
+    // The publisher sometimes advertises the next scheduled file before
+    // its timestamp. Start with the preceding completed slot in that case.
+    if (!(latest < +sampledAt + BATCH && +sampledAt - latest <= 7 * DAY)) {
       throw new Error(
         'GDELT event manifest timestamp outside the sampling window',
       );
     }
-    const batches = (data?.batches ?? []).filter(
-      ({ date }) => +now - Date.parse(date) <= 7 * DAY,
+    const batches = (data?.batches ?? []).filter(({ date }) =>
+      inGdeltWindow(gdeltTime(date), sampledAt),
     );
-    if (!batches.some((batch) => batch.date === date)) {
-      const bytes = await download(
-        fetchImpl,
-        'https://data.gdeltproject.org/gdeltv2/' + stamp + '.export.CSV.zip',
-        'bytes',
-        10_000_000,
-      );
-      if (
-        bytes.length !== Number(size) ||
-        createHash('md5').update(bytes).digest('hex') !== checksum.toLowerCase()
-      ) {
-        throw new Error('GDELT event archive did not match the manifest');
+    const first = latest > +sampledAt ? latest - BATCH : latest;
+    for (let missed = 0; missed <= MAX_MISSED_BATCHES; missed++) {
+      const time = first - missed * BATCH;
+      if (!inGdeltWindow(time, sampledAt)) break;
+      const candidate = new Date(time).toISOString();
+      if (batches.some((batch) => batch.date === candidate)) break;
+      try {
+        const expected =
+          time === latest
+            ? { size: Number(size), checksum: checksum.toLowerCase() }
+            : undefined;
+        batches.push(
+          await fetchGdeltBatch(
+            fetchImpl,
+            candidate,
+            sampledAt,
+            registry.countries,
+            expected,
+          ),
+        );
+        break;
+      } catch (error) {
+        if (![404, 410].includes(error.status)) throw error;
+        if (missed < MAX_MISSED_BATCHES) await pause(500);
       }
-      const decoder = new TextDecoder();
-      let tsv = '';
-      for await (const chunk of zipEntryChunks(
-        bytes,
-        (name) => /\.export\.CSV$/i.test(name),
-        40_000_000,
-      )) {
-        tsv += decoder.decode(chunk, { stream: true });
-      }
-      batches.push(
-        gdeltBatch(tsv + decoder.decode(), date, now, registry.countries),
-      );
-      batches.sort((a, b) => a.date.localeCompare(b.date));
     }
-    return conditionResult(gdeltFlags(batches), data, now, {
+    if (!batches.length)
+      throw new Error('No recent completed GDELT event export was available');
+    batches.sort((a, b) => a.date.localeCompare(b.date));
+    return conditionResult(gdeltFlags(batches), data, sampledAt, {
       batches,
       detail: batches.length + ' sampled 15-minute files. Coverage is partial.',
     });

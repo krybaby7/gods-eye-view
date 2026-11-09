@@ -1,10 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { gdacsFlags, gdacs } from './liveDisasters.js';
-import { faoBanner, cpiRows } from './livePrices.js';
-import { ucdpStockFlags, displacementFlags } from './liveDisplacement.js';
+import { faoBanner, cpiRows, imfCpi } from './livePrices.js';
+import {
+  savedUcdp,
+  ucdpStockFlags,
+  displacementFlags,
+} from './liveDisplacement.js';
 import { download } from './liveFeedCommon.js';
 import { debtDistress } from './liveDebtDsa.js';
+import { shouldCheck as shouldCheckUcdp } from './ucdp.js';
 
 const now = new Date('2026-11-09T10:00:00Z');
 
@@ -91,6 +96,31 @@ test('IMF CPI reads only matching monthly all-items index series', () => {
   ]);
 });
 
+test('IMF requests the public headline index and compares matching SDMX calendar months', async () => {
+  const csv = [
+    'STRUCTURE[;],STRUCTURE_ID,ACTION,COUNTRY,INDEX_TYPE,COICOP_1999,TYPE_OF_TRANSFORMATION,FREQUENCY,TIME_PERIOD,OBS_VALUE',
+    'dataflow,IMF.STA:CPI(5.0.0),R,IND,CPI,_T,IX,M,2025-M09,100',
+    'dataflow,IMF.STA:CPI(5.0.0),R,IND,CPI,_T,IX,M,2026-M09,125',
+    'dataflow,IMF.STA:CPI(5.0.0),R,IND,CPI,CP01,IX,M,2026-M09,200',
+    'dataflow,IMF.STA:CPI(5.0.0),R,IND,CPI,_T,PC_CP_A_PT,M,2026-M09,99',
+    'dataflow,IMF.STA:CPI(5.0.0),R,IND,CPI,_T,IX,M,2026-M10,',
+  ].join('\n');
+  const result = await imfCpi.fetchObservations({
+    now,
+    registry: { countries: [{ iso3: 'IND' }] },
+    fetchImpl(requested) {
+      const url = new URL(requested);
+      assert.equal(url.hostname, 'api.imf.org');
+      assert.match(url.pathname, /\/\*\.CPI\._T\.IX\.M$/);
+      assert.equal(url.searchParams.get('c[TIME_PERIOD]'), 'ge:2025-M06');
+      return new Response(csv);
+    },
+  });
+  assert.equal(result.data.records, 2);
+  assert.equal(result.data.flags[0].date, '2026-09');
+  assert.match(result.data.flags[0].label, /25\.0%/);
+});
+
 test('UNHCR reports dated displacement stocks and keeps missing coverage unknown', () => {
   const rows = [
     { year: 2025, coa_iso: 'SDN', coo_iso: 'SDN', idps: 200000 },
@@ -102,24 +132,55 @@ test('UNHCR reports dated displacement stocks and keeps missing coverage unknown
   assert.equal(flags.length, 1);
 });
 
-test('UCDP flags reuse dated saved observations without claiming raw fatality counts', () => {
-  const flags = ucdpStockFlags(
-    [
-      {
-        iso3: 'IND',
-        indicator: 'condition.conflict_deaths',
-        value: 2.5,
+test('UCDP uses 25 recorded deaths as an inclusive draft threshold', async () => {
+  const {
+    data: { flags },
+  } = await savedUcdp.fetchObservations({
+    features: {
+      ucdp: {
         period: '2026-10',
+        deathsByIso3: { IND: 25, PAK: 24, USA: 25.9, JPN: '40', SDN: 0 },
       },
+    },
+    now,
+  });
+  assert.equal(flags.length, 1);
+  assert.equal(flags[0].iso3, 'IND');
+  assert.equal(flags[0].recordedDeaths, 25);
+  assert.equal(flags[0].date, '2026-10');
+  assert.equal(flags[0].periodStart, '2025-11');
+  assert.match(flags[0].label, /25.*draft threshold/i);
+});
+
+test('UCDP waits for released raw totals in older caches and ignores out-of-window periods', async () => {
+  const result = await savedUcdp.fetchObservations({
+    observations: [
       {
         iso3: 'IND',
         indicator: 'condition.conflict_deaths',
-        value: 0,
-        period: '2026-09',
+        period: '2026-10',
+        value: 100,
       },
     ],
     now,
+  });
+  assert.deepEqual(result.data.flags, []);
+  for (const period of ['2026-12', '2026-07', '2026-00']) {
+    assert.deepEqual(
+      ucdpStockFlags({ period, deathsByIso3: { IND: 500 } }, now),
+      [],
+    );
+  }
+});
+test('a manual refresh backfills raw conflict counts from a pre-fix cache in the same release month', () => {
+  const context = {
+    lastCheckedAt: '2026-11-09T07:00:00Z',
+    now: new Date('2026-11-09T12:00:00Z'),
+    observations: [{ indicator: 'condition.conflict_deaths', value: 0.03 }],
+  };
+  assert.equal(shouldCheckUcdp(context), true);
+  assert.equal(
+    shouldCheckUcdp({ ...context, data: { deathsByIso3: { IND: 343 } } }),
+    false,
   );
-  assert.equal(flags.length, 1);
-  assert.match(flags[0].label, /2.5 per million/);
 });

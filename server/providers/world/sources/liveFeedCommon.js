@@ -49,7 +49,10 @@ export async function download(
       );
     }
     await response.body?.cancel();
-    throw new Error('HTTP ' + response.status + ' from ' + origin);
+    throw Object.assign(
+      new Error('HTTP ' + response.status + ' from ' + origin),
+      { status: response.status },
+    );
   }
   const readers = {
     json: readResponseJsonCapped,

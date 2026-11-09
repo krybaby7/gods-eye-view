@@ -13,7 +13,13 @@ const CADENCE = {
 export function liveFlags(snapshot, iso3, slot) {
   return Object.values(snapshot.features ?? {})
     .flatMap((data) => data?.flags ?? [])
-    .filter((flag) => flag.iso3 === iso3 && (!slot || flag.slot === slot));
+    .filter(
+      (flag) =>
+        flag.iso3 === iso3 &&
+        (!slot || flag.slot === slot) &&
+        (flag.sourceId !== 'live-ucdp-saved' ||
+          Number.isSafeInteger(flag.recordedDeaths)),
+    );
 }
 
 export function flagLabels(snapshot, iso3, slot) {

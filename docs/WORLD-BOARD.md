@@ -36,9 +36,9 @@ Wikidata officeholder claims are checked weekly on Refresh. Ambiguous or unavail
 
 A dated flag records what a source reported or what the board detected in that source. It appears on the relevant Condition row and in the country hover. The sheet’s **Condition flags** section links to the evidence. Flag sets and clears appear in the turn summary. Flags leave the numeric scores and lenses unchanged.
 
-- GDELT counts conflict-coded and protest reports across the 15-minute files sampled in the last seven days. The number of sampled files is shown. GDACS red alerts describe hazards and potential exposure.
-- Frankfurter flags a currency that lost at least 20% of its value against USD over a near-30-day window with two dated readings. The IMF CPI adapter compares the same calendar month one year apart and uses a draft 20% threshold. The public CPI probe returned no observations.
-- UNHCR reports annual internal displacement stocks. Saved UCDP Candidate observations can supply an attributed rolling deaths-per-million flag. The FAO index appears as a world banner.
+- GDELT counts conflict-coded and protest reports across the completed 15-minute files sampled in the last seven days. It can look back across gaps, and the flag shows the number of sampled files. GDACS red alerts describe hazards and potential exposure.
+- Frankfurter flags a currency that lost at least 20% of its value against USD over a near-30-day window with two dated readings. The keyless IMF CPI adapter compares the same calendar month one year apart using the national headline index and a draft 20% threshold.
+- UNHCR reports annual internal displacement stocks. The saved UCDP Candidate flag uses a draft threshold of 25 recorded deaths per country in the latest rolling 12-month release. Older caches require a refresh that supplies the raw totals. The FAO index appears as a world banner.
 - Ten draft flags record the external debt distress classification in the published LIC DSA list as of 31 October 2026. The evidence shows the assessment month and source locator.
 
 The optional feeds are disabled by default. Set the following in the server process only after obtaining the appropriate access. These feeds use the manual Refresh control and their source cadence.

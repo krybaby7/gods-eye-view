@@ -11,7 +11,7 @@ const FAO_CSV =
   'https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv?download=true';
 const IMF_SOURCE = 'https://data.imf.org/Datasets/CPI';
 const IMF_CSV =
-  'https://api.imf.org/external/sdmx/3.0/data/dataflow/IMF.STA/CPI/+/*.CPI.CP00.IX.M';
+  'https://api.imf.org/external/sdmx/3.0/data/dataflow/IMF.STA/CPI/+/*.CPI._T.IX.M';
 const FX_SOURCE = 'https://frankfurter.dev/';
 const FX_API = 'https://api.frankfurter.dev/v2/rates';
 const CURRENCIES = Object.fromEntries(
@@ -210,15 +210,21 @@ export function cpiRows(csv) {
     if (
       row[frequency] !== 'M' ||
       !['CPI', 'CPI_IX'].includes(row[indicator]) ||
-      (category !== -1 && row[category] !== 'CP00') ||
+      (category !== -1 && row[category] !== '_T') ||
       (transform !== -1 && row[transform] !== 'IX') ||
       !row[value]?.trim()
     )
       continue;
     const iso3 = row[country] === 'XKX' ? 'KOS' : row[country];
     const reading = Number(row[value]);
-    if (/^[A-Z]{3}$/.test(iso3) && Number.isFinite(reading))
-      result.push({ iso3, period: row[time], value: reading });
+    const period = row[time]?.replace(/^(\d{4})-M(\d{2})$/, '$1-$2');
+    if (
+      /^[A-Z]{3}$/.test(iso3) &&
+      /^\d{4}-(?:0[1-9]|1[0-2])$/.test(period) &&
+      Number.isFinite(reading) &&
+      reading > 0
+    )
+      result.push({ iso3, period, value: reading });
   }
   return result;
 }
@@ -246,13 +252,15 @@ export const imfCpi = {
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 17),
     )
       .toISOString()
-      .slice(0, 7);
-    const url = IMF_CSV + '?startPeriod=' + start;
+      .slice(0, 7)
+      .replace('-', '-M');
+    const url = new URL(IMF_CSV);
+    url.searchParams.set('c[TIME_PERIOD]', 'ge:' + start);
     const csv = await download(
       fetchImpl,
-      url,
+      url.href,
       'text',
-      40_000_000,
+      6_000_000,
       'application/vnd.sdmx.data+csv;version=2.0',
     );
     const countries = countryIds(registry);
@@ -261,6 +269,7 @@ export const imfCpi = {
       throw new Error('IMF CPI returned no mapped monthly all-items series');
     return conditionResult(monthlyCpiFlags(rows, now, IMF_SOURCE), data, now, {
       records: rows.length,
+      mappedCountries: new Set(rows.map(({ iso3 }) => iso3)).size,
     });
   },
 };
