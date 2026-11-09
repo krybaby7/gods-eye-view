@@ -4,7 +4,7 @@ import { countryIds, DAY, download, due } from './liveFeedCommon.js';
 const UNHCR = 'https://api.unhcr.org/population/v1/population/';
 const UNHCR_SOURCE = 'https://www.unhcr.org/refugee-statistics/';
 const UCDP_SOURCE = 'https://ucdp.uu.se/downloads/';
-const CONFLICT_INDICATOR = 'condition.conflict_deaths';
+const DRAFT_CONFLICT_DEATH_THRESHOLD = 25;
 
 export function displacementFlags(rows, supported) {
   const byCountry = new Map();
@@ -45,36 +45,39 @@ export function displacementFlags(rows, supported) {
   );
 }
 
-export function ucdpStockFlags(observations, now) {
-  const latest = new Map();
-  for (const row of observations) {
-    if (
-      row.indicator !== CONFLICT_INDICATOR ||
-      !/^\d{4}-\d{2}$/.test(row.period)
-    )
-      continue;
-    const saved = latest.get(row.iso3);
-    if (
-      !saved ||
-      row.period > saved.period ||
-      (row.period === saved.period && row.retrievedAt >= saved.retrievedAt)
-    )
-      latest.set(row.iso3, row);
-  }
+export function ucdpStockFlags(ucdp, now) {
+  const { period, deathsByIso3 } = ucdp ?? {};
   const cutoff = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 3))
     .toISOString()
     .slice(0, 7);
-  return [...latest.values()].flatMap(({ iso3, period, value }) =>
-    period >= cutoff && value > 0
+  if (
+    !/^\d{4}-(?:0[1-9]|1[0-2])$/.test(period) ||
+    period < cutoff ||
+    period >= now.toISOString().slice(0, 7) ||
+    !deathsByIso3
+  )
+    return [];
+  const periodStart = new Date(
+    Date.UTC(Number(period.slice(0, 4)), Number(period.slice(5)) - 12),
+  )
+    .toISOString()
+    .slice(0, 7);
+  return Object.entries(deathsByIso3).flatMap(([iso3, recordedDeaths]) =>
+    /^[A-Z]{3}$/.test(iso3) &&
+    Number.isSafeInteger(recordedDeaths) &&
+    recordedDeaths >= DRAFT_CONFLICT_DEATH_THRESHOLD
       ? [
           conditionFlag('live-ucdp-saved', {
             iso3,
             slot: 'C2',
             label:
-              'UCDP recorded deaths, rolling 12 months: ' +
-              Number(value.toFixed(2)) +
-              ' per million',
+              recordedDeaths.toLocaleString('en-US') +
+              ' recorded conflict deaths in 12 months (draft threshold: ' +
+              DRAFT_CONFLICT_DEATH_THRESHOLD +
+              ')',
             date: period,
+            periodStart,
+            recordedDeaths,
             source: UCDP_SOURCE,
             sourceName: 'UCDP Candidate',
           }),
@@ -127,7 +130,7 @@ export const unhcr = {
 
 export const savedUcdp = {
   shouldCheck: () => true,
-  async fetchObservations({ observations, data, now }) {
-    return conditionResult(ucdpStockFlags(observations, now), data, now);
+  async fetchObservations({ features, data, now }) {
+    return conditionResult(ucdpStockFlags(features?.ucdp, now), data, now);
   },
 };

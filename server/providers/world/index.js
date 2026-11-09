@@ -191,6 +191,7 @@ export function createWorldService({
           },
           registry,
           now: started,
+          currentTime: now,
           observations,
           data: features[id],
           features,

@@ -13,11 +13,11 @@ God's Eye View's **code** is [MIT](LICENSE)-licensed. **The MIT grant covers the
 | [GDACS](https://www.gdacs.org/xml/rss.xml) | Keyless RSS, hourly check | CC BY 4.0 item data, GDACS and European Commission JRC |
 | [Frankfurter](https://frankfurter.dev/) | Keyless daily rates and dated history | Blended public rates, contributing provider terms apply |
 | [Powell and Thyne](https://jonathanmpowell.com/coups/) | Keyless public CSV, weekly check | Licence unconfirmed. Cited flags attribute Jonathan M. Powell and Clayton L. Thyne |
-| [GDELT 2.0 Events](https://www.gdeltproject.org/data.html) | Keyless public export files, sampled on a 15-minute timer | Free use with attribution to The GDELT Project |
+| [GDELT 2.0 Events](https://www.gdeltproject.org/data.html) | Keyless public exports, sampled on a 15-minute timer. If the next file is announced early or a recent export is missing, sampling looks back at completed slots. | Free use with attribution to The GDELT Project |
 | [FAO Food Price Index](https://www.fao.org/worldfoodsituation/foodpricesindex/en/) | Keyless nominal monthly CSV, weekly check | Cited index and derived change, Food and Agriculture Organization of the United Nations |
-| [IMF CPI](https://data.imf.org/Datasets/CPI) | Public SDMX 3.0, monthly series, weekly check. Live observations unverified. | IMF terms apply, commercial use requires permission |
+| [IMF CPI](https://data.imf.org/Datasets/CPI) | Keyless public SDMX 3.0. National headline index `CPI._T.IX.M`, checked weekly. | IMF terms apply, commercial use requires permission |
 | [UNHCR displacement](https://www.unhcr.org/refugee-statistics/) | Keyless population API, annual stocks, weekly check | API licence unconfirmed, UNHCR attribution |
-| [Saved UCDP Candidate readings](https://ucdp.uu.se/downloads/) | Saved World Board observations, monthly release dates | CC BY 4.0, Uppsala Conflict Data Program |
+| [Saved UCDP Candidate fatality counts](https://ucdp.uu.se/downloads/) | Recorded deaths from the latest rolling 12-month release. Draft flag threshold of 25 recorded deaths per country. | CC BY 4.0, Uppsala Conflict Data Program |
 | [IMF–World Bank LIC DSA](https://www.worldbank.org/en/programs/debt-toolkit/dsa) | Ten bundled draft ratings, editorial annual review | Cited facts and original summaries |
 | [IFES ElectionGuide](https://www.electionguide.org/p/access/) | Token, off by default, daily check if configured | Non-commercial with attribution, other publisher terms apply |
 | [HDX HAPI](https://docs.humdata.org/build/hdx-apis/hapi) | App identifier, off by default, weekly check if configured | IPC and WFP terms apply, attributed through UN OCHA HDX. Only food security and price endpoints are used. |

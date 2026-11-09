@@ -1,6 +1,27 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { startLiveTimers, flagLabels } from './events.js';
+import { startLiveTimers, flagLabels, liveFlags } from './events.js';
+
+test('saved per-million UCDP flags remain hidden until raw totals are available', () => {
+  const flags = [
+    { sourceId: 'live-ucdp-saved', iso3: 'IND', slot: 'C2', label: 'old rate' },
+    {
+      sourceId: 'live-ucdp-saved',
+      iso3: 'IND',
+      slot: 'C2',
+      label: 'draft flag',
+      recordedDeaths: 25,
+    },
+    {
+      sourceId: 'live-gdelt',
+      iso3: 'IND',
+      slot: 'C2',
+      label: 'reported event',
+    },
+  ];
+  const snapshot = { features: { test: { flags } } };
+  assert.deepEqual(liveFlags(snapshot, 'IND', 'C2'), flags.slice(1));
+});
 
 function timerHarness() {
   let time = 0;

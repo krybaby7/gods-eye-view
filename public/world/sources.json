@@ -90,7 +90,7 @@
     "attribution": "The GDELT Project, GDELT 2.0 Events",
     "url": "https://www.gdeltproject.org/data.html",
     "licence": "Free data use with GDELT attribution",
-    "releaseRhythm": "15 minutes while enabled, sampled only",
+    "releaseRhythm": "15 minutes while enabled, completed files sampled only",
     "marks": []
   },
   {
@@ -106,7 +106,7 @@
   {
     "id": "live-imf-cpi",
     "name": "IMF Consumer Price Index",
-    "access": "Public SDMX 3.0 route; live observations unverified",
+    "access": "Keyless public SDMX 3.0 national all-items monthly index",
     "attribution": "International Monetary Fund, CPI all-items monthly index",
     "url": "https://data.imf.org/Datasets/CPI",
     "licence": "IMF terms, commercial use requires permission",
@@ -125,8 +125,8 @@
   },
   {
     "id": "live-ucdp-saved",
-    "name": "Saved UCDP Candidate observations",
-    "access": "Existing World Board observations, no new fetch",
+    "name": "Saved UCDP Candidate fatality counts",
+    "access": "Saved rolling 12-month counts, draft threshold of 25 recorded deaths",
     "attribution": "Uppsala Conflict Data Program Candidate Events Dataset",
     "url": "https://ucdp.uu.se/downloads/",
     "licence": "CC BY 4.0",
