@@ -79,11 +79,13 @@ export function createFixtureWorld(cacheDir, extraAdapters) {
   });
   return {
     snapshot: service.snapshot,
+    progress: service.progress,
+    detail: service.detail,
     store: service.store,
     whenIdle: service.whenIdle,
     refresh: () => {
       second = true;
-      return service.refresh();
+      return service.refreshStatus();
     },
   };
 }
@@ -132,13 +134,28 @@ export async function installFixtures(page, origin, world, report) {
       if (url.origin === origin) {
         if (url.pathname === '/api/world' && request.method === 'GET') {
           report.transport.snapshots++;
-          await reply(await world.snapshot());
+          await reply(await world.snapshot({ compact: true }));
         } else if (
           url.pathname === '/api/world/refresh' &&
           request.method === 'POST'
         ) {
           report.transport.refreshes++;
           await reply(await world.refresh(), 202);
+        } else if (
+          url.pathname === '/api/world/progress' &&
+          request.method === 'GET'
+        ) {
+          await reply(await world.progress());
+        } else if (
+          url.pathname === '/api/world/detail' &&
+          request.method === 'GET'
+        ) {
+          const detail = await world.detail(
+            url.searchParams.get('country'),
+            url.searchParams.get('lens'),
+          );
+          if (detail) await reply(detail);
+          else await reply({ error: 'Unknown World Board detail lens.' }, 404);
         } else {
           report.transport.suppressedApis.push(url.pathname);
           await reply({}, 404);

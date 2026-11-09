@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { setTimeout as delay } from 'node:timers/promises';
 import { crc32, deflateRawSync } from 'node:zlib';
+import { createWorldFetch } from './transport.js';
 
 const now = new Date('2026-11-08T10:00:00Z');
 const registry = {
@@ -100,6 +103,49 @@ test('IMF keeps current-year forecasts, respects aliases and omits unavailable v
   ]);
 });
 
+test('queued IMF series gets a new request deadline after the first body finishes', async (t) => {
+  const { fetchObservations } = await import('./imf.js');
+  const timeout = AbortSignal.timeout;
+  t.mock.method(AbortSignal, 'timeout', () => timeout.call(AbortSignal, 400));
+  const calls = [];
+  const fetchImpl = createWorldFetch((url, { signal }) => {
+    const code = new URL(url).pathname.split('/').at(-1);
+    calls.push(code);
+    return new Response(
+      new ReadableStream({
+        async pull(controller) {
+          try {
+            await delay(260, null, { signal });
+            controller.enqueue(
+              Buffer.from(
+                JSON.stringify({
+                  values: { [code]: { UVK: { 2026: 6 } } },
+                }),
+              ),
+            );
+            controller.close();
+          } catch (error) {
+            controller.error(error);
+          }
+        },
+      }),
+    );
+  });
+  const result = await fetchObservations({
+    fetchImpl,
+    now,
+    registry: {
+      ...registry,
+      indicators: [
+        ...registry.indicators,
+        { id: 'condition.debt', source: 'imf', sourceCode: 'GGXWDG_NGDP' },
+      ],
+    },
+  });
+  assert.deepEqual(calls, ['PCPIPCH', 'GGXWDG_NGDP']);
+  assert.equal(result.observations.length, 2);
+});
+
 const candidateRoot = 'https://ucdp.uu.se/downloads/';
 const candidateCsv =
   'id,country,country_id,date_start,date_end,best,source_article';
@@ -159,7 +205,7 @@ test('UCDP requires twelve complete released months and deduplicates revised eve
       ([synthetic, recorded]) =>
         synthetic.trimEnd() + '\n' + recorded.split(/\r?\n/)[1] + ',\n',
     ),
-    [`${candidateRoot}candidateged/GEDEvent_v25_01_25_12.csv`]: `${candidateCsv}\n900001,Pakistan,770,2025-12-29,2026-01-02,8,"has, comma"\n900002,Pakistan,770,2025-09-30,2025-09-30,99,"old"\n607309,Cambodia (Kampuchea),811,2025-12-08 00:00:00.000,2025-12-08 00:00:00.000,2,\n`,
+    [`${candidateRoot}candidateged/GEDEvent_v25_01_25_12.csv`]: `${candidateCsv}\n900001,Pakistan,770,2025-12-29,2026-01-02,8,"has, comma"\n900002,Pakistan,770,2025-09-30,2025-09-30,99,"old"\n607309,Cambodia (Kampuchea),811,2025-12-08 00:00:00.000,2025-12-08 00:00:00.000,2,\n607310,Canada,20,2025-09-30,2025-09-30,1,\n`,
   });
   const result = await fetchObservations({
     fetchImpl,
@@ -188,7 +234,7 @@ test('UCDP requires twelve complete released months and deduplicates revised eve
   assert.equal(result.data.deathsByIso3.AFG, 18);
   assert.equal(result.data.deathsByIso3.KHM, 2);
   assert.equal(result.data.deathsByIso3.CAN, 0);
-  assert.equal(result.data.deathsByIso3.FIN, 0);
+  assert.equal(Object.hasOwn(result.data.deathsByIso3, 'FIN'), false);
   assert.equal(Object.hasOwn(result.data.deathsByIso3, 'USA'), false);
 });
 
@@ -204,21 +250,23 @@ test('UCDP reports missing coverage before publishing zeroes', async () => {
   );
 });
 
-test('UCDP reuses a versioned ZIP release across turns', async (t) => {
+test('UCDP evicts a corrupt ZIP and reuses the corrected release across turns', async (t) => {
   const { fetchObservations } = await import('./ucdp.js');
   const archive = `${candidateRoot}candidateged/GEDEvent_v25_11_26_10.zip`;
   const csv = `${candidateCsv}\n900001,Pakistan,770,2026-09-01,2026-09-01,25,\n`;
   const bytes = csvZip('events.csv', csv);
+  const broken = Buffer.from(bytes);
+  broken.writeUInt32LE(0, broken.readUInt32LE(broken.length - 6) + 16);
   const fixtureRequest = fixtureFetch({
     [candidateRoot]: `<a href="${archive}">Candidate CSV archive</a>`,
     [`${candidateRoot}olddw.html`]: '',
-    [archive]: bytes,
   });
   let requests = 0;
   const progress = [];
   const context = {
     fetchImpl(url) {
-      if (url === archive) requests++;
+      if (url === archive)
+        return new Response(++requests === 1 ? broken : bytes);
       return fixtureRequest(url);
     },
     registry,
@@ -229,12 +277,25 @@ test('UCDP reuses a versioned ZIP release across turns', async (t) => {
       progress.push(download.bytes);
     },
   };
+  await assert.rejects(
+    fetchObservations(context),
+    /ZIP CSV failed integrity check/,
+  );
+  assert.deepEqual(await readdir(context.cacheDirectory), []);
   const first = await fetchObservations(context);
   const second = await fetchObservations(context);
-  assert.equal(requests, 1);
+  assert.equal(requests, 2);
   assert.equal(first.data.deathsByIso3.PAK, 25);
   assert.deepEqual(first, second);
-  assert.deepEqual(progress, [bytes.length, bytes.length]);
+  assert.deepEqual(progress, [broken.length, bytes.length, bytes.length]);
+  const rebuilt = await fetchObservations({
+    ...context,
+    data: { period: first.data.period },
+    observations: [...population, ...first.observations],
+    rederive: true,
+    fetchImpl: () => assert.fail('A complete legacy release is already cached'),
+  });
+  assert.deepEqual(rebuilt, first);
 });
 
 const vdemRoot = 'https://www.v-dem.net/';
@@ -378,6 +439,70 @@ test('V-Dem reuses the cached versioned archive and reports bytes', async (t) =>
   assert.deepEqual(first.observations, second.observations);
   assert.equal(downloads, 1);
   assert.equal(progress.at(-1)?.bytes, archive.length);
+  const rebuilt = await fetchObservations({
+    ...context,
+    data: { sourceVersion: first.data.sourceVersion },
+    observations: first.observations,
+    rederive: true,
+    fetchImpl: () =>
+      assert.fail('The archived V-Dem release is already cached'),
+  });
+  assert.deepEqual(rebuilt, first);
+});
+
+test('V-Dem evicts a ZIP after a CRC failure and downloads it on the next turn', async (t) => {
+  const { fetchObservations } = await import('./vdem.js');
+  const cacheDirectory = await vdemTestDirectory(t);
+  const archive = csvZip(
+    'V-Dem-CY-Full+Others-v16.csv',
+    'country_text_id,year,v2cacamps\r\nFIN,2025,1',
+  );
+  const broken = Buffer.from(archive);
+  broken.writeUInt32LE(0, broken.readUInt32LE(broken.length - 6) + 16);
+  let requests = 0;
+  const context = {
+    async fetchImpl(url) {
+      if (url === vdemPage)
+        return new Response(await fixture('vdem-release.html'));
+      assert.equal(url, vdemFile);
+      return new Response(++requests === 1 ? broken : archive);
+    },
+    registry,
+    now,
+    cacheDirectory,
+  };
+  await assert.rejects(
+    fetchObservations(context),
+    /ZIP CSV failed integrity check/,
+  );
+  assert.deepEqual(await readdir(cacheDirectory), []);
+  assert.equal((await fetchObservations(context)).observations[0].value, 1);
+  assert.equal(requests, 2);
+});
+
+test('V-Dem retains the current and previous release archives', async (t) => {
+  const { fetchObservations } = await import('./vdem.js');
+  const cacheDirectory = await vdemTestDirectory(t);
+  const releasePage = await fixture('vdem-release.html');
+  const files = new Set();
+  for (const version of [16, 17, 18]) {
+    const url = vdemFile.replace('v16', `v${version}`);
+    const key = createHash('sha256').update(url).digest('hex');
+    if (version > 16) files.add(key).add(key + '.json');
+    await fetchObservations({
+      fetchImpl: fixtureFetch({
+        [vdemPage]: releasePage.replaceAll('v16', `v${version}`),
+        [url]: csvZip(
+          `V-Dem-CY-Full+Others-v${version}.csv`,
+          'country_text_id,year,v2cacamps\r\nFIN,2025,1',
+        ),
+      }),
+      registry,
+      now,
+      cacheDirectory,
+    });
+  }
+  assert.deepEqual(new Set(await readdir(cacheDirectory)), files);
 });
 
 test('streaming a ZIP entry from disk checks its CRC', async (t) => {

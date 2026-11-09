@@ -8,6 +8,8 @@ import {
   sourceCountries,
 } from './common.js';
 
+export const version = 1;
+
 const COUNTRY_URL = 'https://api.worldbank.org/v2/country/all';
 const POPULATION = { id: 'population.total', sourceCode: 'SP.POP.TOTL' };
 const USER_AGENT =

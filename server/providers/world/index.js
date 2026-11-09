@@ -1,7 +1,13 @@
 import { resolve } from 'node:path';
+import { promisify } from 'node:util';
+import { gzip } from 'node:zlib';
 import { admitSameSiteRequest } from '../../../src/localRequestGate.mjs';
 import { loadWorldRegistry } from './registry.js';
-import { worldAdapters, worldRefreshSteps } from './refreshRegistry.js';
+import {
+  worldAdapters,
+  worldFeatureViews,
+  worldRefreshSteps,
+} from './refreshRegistry.js';
 import { scoreCountries } from './scores.js';
 import { runWorldSources } from './sourceQueue.js';
 import { createWorldFetch } from './sources/transport.js';
@@ -10,6 +16,11 @@ import { createTurn } from './turn.js';
 import './phase-3.js';
 
 const PREFIX = '/api/world';
+const REFRESH = PREFIX + '/refresh';
+const PROGRESS = PREFIX + '/progress';
+const DETAIL = PREFIX + '/detail';
+const ROUTES = new Set([PREFIX, REFRESH, PROGRESS, DETAIL]);
+const gzipAsync = promisify(gzip);
 // These small API sources can paint the first board while the archives download.
 const BASE_SOURCES = new Set(['worldbank', 'imf']);
 const EMPTY_FEATURES = Object.freeze({});
@@ -36,17 +47,35 @@ function vintageKey({
   ]);
 }
 
-function sendJson(res, status, payload) {
+function acceptsGzip(header = '') {
+  const encodings = new Map(
+    header.split(',').map((entry) => {
+      const [name, ...parameters] = entry.trim().toLowerCase().split(';');
+      const quality = parameters.find((parameter) =>
+        parameter.trim().startsWith('q='),
+      );
+      return [name, quality ? Number(quality.trim().slice(2)) : 1];
+    }),
+  );
+  return (encodings.get('gzip') ?? encodings.get('*') ?? 0) > 0;
+}
+
+async function sendJson(res, status, payload, encoding) {
+  const json = JSON.stringify(payload);
+  const compressed = acceptsGzip(encoding) ? await gzipAsync(json) : null;
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Cache-Control', 'no-store');
-  res.end(JSON.stringify(payload));
+  res.setHeader('Vary', 'Accept-Encoding');
+  if (compressed) res.setHeader('Content-Encoding', 'gzip');
+  res.end(compressed ?? json);
 }
 
 export function createWorldService({
   cacheDir,
   adapters = worldAdapters,
   refreshSteps = worldRefreshSteps,
+  featureViews = worldFeatureViews,
   fetchImpl,
   loadRegistry = loadWorldRegistry,
   now = () => new Date(),
@@ -63,6 +92,8 @@ export function createWorldService({
   let registry;
   let saved;
   let board;
+  let summaryFor;
+  let summary;
   let active = null;
   let progress = null;
   let error = null;
@@ -88,16 +119,29 @@ export function createWorldService({
   async function runTurn() {
     const baseline = saved;
     const firstTurn = baseline.turns.length === 0;
+    const resume = firstTurn ? baseline.firstTurn : null;
     const started = now();
-    const startedAt = started.toISOString();
+    const checkedAt = started.toISOString();
+    const startedAt = resume?.startedAt ?? checkedAt;
     const lastCheckedAt = { ...baseline.lastCheckedAt };
+    const sourceVersions = { ...baseline.sourceVersions };
     const sources = registry.sources;
     const features = { ...baseline.board?.features };
-    const pending = new Set(sources.map(({ id }) => id));
+    const completed = new Map(
+      Object.entries(resume?.results ?? {}).filter(
+        ([id, { adapterVersion }]) =>
+          adapterVersion === (adapters[id]?.version ?? 1),
+      ),
+    );
+    const pending = new Set(
+      sources.map(({ id }) => id).filter((id) => !completed.has(id)),
+    );
     const running = new Set();
     const downloads = new Map();
-    const completed = new Map();
     let observations = baseline.observations;
+    let newObservations = firstTurn
+      ? (resume?.newObservations ?? observations.length)
+      : 0;
     let checkpoint = Promise.resolve();
 
     function addProgress() {
@@ -117,6 +161,7 @@ export function createWorldService({
     function boardAt(asOf) {
       return {
         asOf,
+        revision: (board.revision ?? 0) + 1,
         countries: scoreCountries(registry, observations, asOf),
         features: { ...features },
       };
@@ -124,16 +169,21 @@ export function createWorldService({
 
     function persistEarlyBoard() {
       const next = {
-        board: boardAt(now().toISOString()),
+        board,
         observations,
         turns: baseline.turns,
         lastCheckedAt: { ...lastCheckedAt },
+        sourceVersions: { ...sourceVersions },
+        firstTurn: {
+          startedAt,
+          newObservations,
+          results: Object.fromEntries(completed),
+        },
       };
       checkpoint = checkpoint
         .then(async () => {
           await store.write(next);
           saved = next;
-          board = next.board;
         })
         .catch((failure) => {
           logger.warn?.(
@@ -164,14 +214,21 @@ export function createWorldService({
       addProgress();
       try {
         const adapter = adapters[id];
+        const version = adapter?.version ?? 1;
+        const rederive = Boolean(
+          (lastCheckedAt[id] || features[id] !== undefined) &&
+          (sourceVersions[id] ?? 1) !== version,
+        );
         if (
           !adapter ||
           !adapter.shouldCheck({
-            lastCheckedAt: dependencyUpdated ? null : lastCheckedAt[id],
+            lastCheckedAt:
+              dependencyUpdated || rederive ? null : lastCheckedAt[id],
             now: started,
             observations,
             data: features[id],
             features,
+            rederive,
           })
         ) {
           return {
@@ -192,13 +249,25 @@ export function createWorldService({
           observations,
           data: features[id],
           features,
+          rederive,
         });
+        const replacedIndicators =
+          rederive && !result.error && result.observations !== undefined
+            ? new Set(
+                registry.indicators
+                  .filter(({ source }) => source === id)
+                  .map(({ id }) => id),
+              )
+            : null;
+        const existing = replacedIndicators?.size
+          ? observations.filter(
+              ({ indicator }) => !replacedIndicators.has(indicator),
+            )
+          : observations;
         const additions = mergeObservations(
-          observations,
+          existing,
           result.observations ?? [],
-        ).slice(observations.length);
-        if (result.data !== undefined) features[id] = result.data;
-        if (!result.error) lastCheckedAt[id] = startedAt;
+        ).slice(existing.length);
         return {
           status: {
             id,
@@ -211,9 +280,12 @@ export function createWorldService({
               unit: result.unit ?? 'record',
             }),
             ...(result.detail && { detail: result.detail }),
+            ...(rederive && !result.error && { rederived: true }),
           },
           observations: additions,
           changes: result.changes,
+          replacedIndicators,
+          data: result.data,
           dataUpdated: result.data !== undefined,
         };
       } catch (failure) {
@@ -230,11 +302,6 @@ export function createWorldService({
           },
           observations: [],
         };
-      } finally {
-        pending.delete(id);
-        running.delete(id);
-        downloads.delete(id);
-        addProgress();
       }
     }
 
@@ -248,24 +315,48 @@ export function createWorldService({
           : Boolean(prior?.dataUpdated || additions.length);
       const result = await check(
         id,
-        additions.length
-          ? [...baseline.observations, ...additions]
-          : baseline.observations,
+        mergeObservations(baseline.observations, additions),
         dependencyUpdated,
       );
-      observations = mergeObservations(observations, result.observations);
-      if (
-        firstTurn &&
-        !BASE_SOURCES.has(id) &&
-        (result.dataUpdated || result.observations.length)
-      ) {
-        await persistEarlyBoard();
+      const adapterVersion = adapters[id]?.version ?? 1;
+      if (result.status.status === 'loaded') {
+        lastCheckedAt[id] = checkedAt;
+        sourceVersions[id] = adapterVersion;
       }
-      return result;
+      if (result.replacedIndicators?.size) {
+        observations = observations.filter(
+          ({ indicator }) => !result.replacedIndicators.has(indicator),
+        );
+      }
+      observations = mergeObservations(observations, result.observations);
+      newObservations += result.observations.length;
+      if (result.dataUpdated) features[id] = result.data;
+      if (
+        result.dataUpdated ||
+        result.observations.length ||
+        result.replacedIndicators?.size
+      ) {
+        board = boardAt(now().toISOString());
+      }
+      pending.delete(id);
+      running.delete(id);
+      downloads.delete(id);
+      addProgress();
+      const { status, changes, dataUpdated } = result;
+      const completedResult = {
+        status,
+        changes,
+        dataUpdated,
+        adapterVersion,
+        observations: result.observations,
+      };
+      completed.set(id, completedResult);
+      if (firstTurn && !BASE_SOURCES.has(id)) await persistEarlyBoard();
+      return completedResult;
     }
     const queue = { adapters, dependencies: refreshSteps, completed, run };
     const base = firstTurn
-      ? sources.filter(({ id }) => BASE_SOURCES.has(id))
+      ? sources.filter(({ id }) => BASE_SOURCES.has(id) && !completed.has(id))
       : [];
     if (base.length) {
       await runWorldSources(base, queue);
@@ -288,7 +379,7 @@ export function createWorldService({
       })),
       previous: baseline.board?.countries ?? null,
       countries: nextBoard.countries,
-      newObservations: observations.length - baseline.observations.length,
+      newObservations,
       featureChanges: results.flatMap(({ changes }) => changes ?? []),
     });
     const next = {
@@ -296,6 +387,7 @@ export function createWorldService({
       observations,
       turns: [...baseline.turns, turn],
       lastCheckedAt,
+      sourceVersions,
     };
     await store.write(next);
     saved = next;
@@ -311,6 +403,7 @@ export function createWorldService({
       .then(runTurn)
       .catch((failure) => {
         logger.warn?.('[world] Refresh could not be saved', failure);
+        board = saved.board ?? board;
         error = 'The World Board refresh could not be saved.';
       })
       .finally(() => {
@@ -319,10 +412,27 @@ export function createWorldService({
       });
   }
 
-  function view() {
+  function boardFeatures(compact) {
+    const features = board.features ?? EMPTY_FEATURES;
+    if (!compact) return features;
+    if (summaryFor !== features) {
+      summary = { ...features };
+      for (const { summary: project } of featureViews.values()) {
+        for (const [id, summarize] of Object.entries(project ?? {})) {
+          if (Object.hasOwn(features, id))
+            summary[id] = summarize(features[id]);
+        }
+      }
+      summaryFor = features;
+    }
+    return summary;
+  }
+
+  function view(compact = false) {
     return {
       ...board,
-      features: board.features ?? EMPTY_FEATURES,
+      revision: board.revision ?? 0,
+      features: boardFeatures(compact),
       indicators: registry.indicators,
       sources: registry.sources,
       countryIndex: registry.countries,
@@ -332,22 +442,47 @@ export function createWorldService({
     };
   }
 
-  async function snapshot() {
+  async function snapshot({ compact = false } = {}) {
     await ready();
     if (!saved.turns.length && !startedFirstTurn) start();
-    return view();
+    return view(compact);
   }
 
-  async function refresh() {
+  async function refresh({ compact = false } = {}) {
     await ready();
     start();
-    return view();
+    return compact ? progressView() : view();
+  }
+
+  function progressView() {
+    return {
+      refresh: progress,
+      revision: board.revision ?? 0,
+      ...(error && { error }),
+    };
+  }
+
+  async function readProgress() {
+    await ready();
+    return progressView();
+  }
+
+  async function detail(country, lens) {
+    await ready();
+    const project = featureViews.get(lens)?.detail;
+    if (!project) return null;
+    return {
+      country,
+      lens,
+      data:
+        project({ country, board, features: boardFeatures(false), registry }) ??
+        null,
+    };
   }
 
   async function handle(req, res, next) {
-    const pathname = (req.url ?? '').split('?')[0];
-    if (pathname !== PREFIX && pathname !== PREFIX + '/refresh')
-      return next?.();
+    const [pathname, query] = (req.url ?? '').split('?', 2);
+    if (!ROUTES.has(pathname)) return next?.();
     const headers = req.headers ?? {};
     const verdict = admitSameSiteRequest({
       hostHeader: headers.host,
@@ -367,16 +502,35 @@ export function createWorldService({
           'The World Board is available only on the machine running the server.',
       });
     }
-    const isRefresh = pathname !== PREFIX;
+    const isRefresh = pathname === REFRESH;
     const method = isRefresh ? 'POST' : 'GET';
     if (req.method !== method) {
       res.setHeader('Allow', method);
       return sendJson(res, 405, { error: 'Use ' + method + '.' });
     }
     try {
-      return isRefresh
-        ? sendJson(res, 202, await refresh())
-        : sendJson(res, 200, await snapshot());
+      const encoding = headers['accept-encoding'];
+      if (isRefresh)
+        return sendJson(res, 202, await refresh({ compact: true }), encoding);
+      if (pathname === PROGRESS)
+        return sendJson(res, 200, await readProgress(), encoding);
+      if (pathname === DETAIL) {
+        const params = new URLSearchParams(query);
+        const country = params.get('country');
+        const lens = params.get('lens');
+        await ready();
+        if (
+          country !== null &&
+          !registry.countries.some(({ iso3 }) => iso3 === country)
+        ) {
+          return sendJson(res, 400, { error: 'Unknown World Board country.' });
+        }
+        const payload = await detail(country, lens);
+        return payload
+          ? sendJson(res, 200, payload, encoding)
+          : sendJson(res, 404, { error: 'Unknown World Board detail lens.' });
+      }
+      return sendJson(res, 200, await snapshot({ compact: true }), encoding);
     } catch (failure) {
       logger.warn?.('[world] Request failed', failure);
       return sendJson(res, 500, {
@@ -385,7 +539,16 @@ export function createWorldService({
     }
   }
 
-  return { snapshot, refresh, handle, store, whenIdle: () => active };
+  return {
+    snapshot,
+    refresh,
+    refreshStatus: () => refresh({ compact: true }),
+    progress: readProgress,
+    detail,
+    handle,
+    store,
+    whenIdle: () => active,
+  };
 }
 
 export function worldProxy(options) {
