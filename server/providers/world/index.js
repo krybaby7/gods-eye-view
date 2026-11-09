@@ -1,14 +1,16 @@
+import { resolve } from 'node:path';
 import { admitSameSiteRequest } from '../../../src/localRequestGate.mjs';
 import { loadWorldRegistry } from './registry.js';
 import { worldAdapters, worldRefreshSteps } from './refreshRegistry.js';
 import { scoreCountries } from './scores.js';
+import { runWorldSources } from './sourceQueue.js';
+import { createWorldFetch } from './sources/transport.js';
 import { createWorldStore } from './store.js';
 import { createTurn } from './turn.js';
 import './dependencies.js';
 
-const USER_AGENT =
-  'GodsEyeView-WorldBoard/0.2 (https://github.com/krybaby7/gods-eye-view)';
 const PREFIX = '/api/world';
+const BASE_SOURCES = new Set(['worldbank', 'imf', 'ucdp']);
 const EMPTY_FEATURES = Object.freeze({});
 const LOOPBACK_ADDRESSES = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 const LOCAL_HOST = /^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i;
@@ -44,16 +46,18 @@ export function createWorldService({
   cacheDir,
   adapters = worldAdapters,
   refreshSteps = worldRefreshSteps,
-  fetchImpl = (url, options) =>
-    globalThis.fetch(url, {
-      ...options,
-      headers: { 'User-Agent': USER_AGENT, ...options?.headers },
-    }),
+  fetchImpl,
   loadRegistry = loadWorldRegistry,
   now = () => new Date(),
   logger = console,
   store = createWorldStore({ cacheDir }),
 } = {}) {
+  const worldFetch = createWorldFetch(fetchImpl);
+  const cacheDirectory = resolve(
+    cacheDir ?? '.gev-cache',
+    'world',
+    'downloads',
+  );
   let initialized;
   let registry;
   let saved;
@@ -81,22 +85,66 @@ export function createWorldService({
   }
 
   async function runTurn() {
+    const baseline = saved;
+    const firstTurn = baseline.turns.length === 0;
     const started = now();
     const startedAt = started.toISOString();
-    const lastCheckedAt = { ...saved.lastCheckedAt };
+    const lastCheckedAt = { ...baseline.lastCheckedAt };
     const sources = registry.sources;
-    const features = { ...saved.board?.features };
+    const features = { ...baseline.board?.features };
     const pending = new Set(sources.map(({ id }) => id));
+    const running = new Set();
+    const downloads = new Map();
+    const completed = new Map();
+    let observations = baseline.observations;
+    let checkpoint = Promise.resolve();
 
     function addProgress() {
+      const source =
+        downloads.keys().next().value ??
+        running.values().next().value ??
+        pending.values().next().value ??
+        null;
       progress = {
         completed: sources.length - pending.size,
         total: sources.length,
-        source: pending.values().next().value ?? null,
+        source,
+        ...(downloads.has(source) && { download: downloads.get(source) }),
       };
     }
 
+    function boardAt(asOf) {
+      return {
+        asOf,
+        countries: scoreCountries(registry, observations, asOf),
+        features: { ...features },
+      };
+    }
+
+    function persistEarlyBoard() {
+      const next = {
+        board: boardAt(now().toISOString()),
+        observations,
+        turns: baseline.turns,
+        lastCheckedAt: { ...lastCheckedAt },
+      };
+      checkpoint = checkpoint
+        .then(async () => {
+          await store.write(next);
+          saved = next;
+          board = next.board;
+        })
+        .catch((failure) => {
+          logger.warn?.(
+            '[world] First-launch checkpoint could not be saved',
+            failure,
+          );
+        });
+      return checkpoint;
+    }
+
     function mergeObservations(existing, additions) {
+      if (!additions.length) return existing;
       const known = new Set(existing.map(vintageKey));
       const next = [...existing];
       for (const observation of additions) {
@@ -110,6 +158,9 @@ export function createWorldService({
 
     async function check(id, observations, dependencyUpdated = false) {
       let checked = false;
+      const clock = performance.now();
+      running.add(id);
+      addProgress();
       try {
         const adapter = adapters[id];
         if (
@@ -129,7 +180,12 @@ export function createWorldService({
         }
         checked = true;
         const result = await adapter.fetchObservations({
-          fetchImpl,
+          fetchImpl: worldFetch,
+          cacheDirectory,
+          onProgress(download) {
+            downloads.set(id, download);
+            addProgress();
+          },
           registry,
           now: started,
           observations,
@@ -148,6 +204,7 @@ export function createWorldService({
             status: result.error ? 'failed' : 'loaded',
             ...(result.error && { error: result.error }),
             checked,
+            durationMs: Math.round(performance.now() - clock),
             count: result.count ?? additions.length,
             ...(result.count !== undefined && {
               unit: result.unit ?? 'record',
@@ -164,25 +221,25 @@ export function createWorldService({
             id,
             status: 'failed',
             checked,
+            durationMs: Math.round(performance.now() - clock),
             count: 0,
-            error: failure?.cause?.code ?? failure?.message ?? String(failure),
+            error: failure?.cause?.code
+              ? `${failure?.message ?? failure} (${failure.cause.code})`
+              : (failure?.message ?? String(failure)),
           },
           observations: [],
         };
       } finally {
         pending.delete(id);
+        running.delete(id);
+        downloads.delete(id);
         addProgress();
       }
     }
 
     addProgress();
-    const completed = new Map();
-    async function run(id) {
-      if (completed.has(id)) return completed.get(id);
+    async function run(id, prior) {
       const dependency = refreshSteps[id];
-      const prior = pending.has(dependency)
-        ? await run(dependency)
-        : completed.get(dependency);
       const additions = prior?.observations ?? [];
       const dependencyUpdated =
         dependency === 'worldbank' && id === 'ucdp'
@@ -190,37 +247,53 @@ export function createWorldService({
           : Boolean(prior?.dataUpdated || additions.length);
       const result = await check(
         id,
-        [...saved.observations, ...additions],
+        additions.length
+          ? [...baseline.observations, ...additions]
+          : baseline.observations,
         dependencyUpdated,
       );
-      completed.set(id, result);
+      observations = mergeObservations(observations, result.observations);
+      if (
+        firstTurn &&
+        !BASE_SOURCES.has(id) &&
+        (result.dataUpdated || result.observations.length)
+      ) {
+        await persistEarlyBoard();
+      }
       return result;
     }
-    const results = [];
-    for (const { id } of sources) results.push(await run(id));
-    const observations = mergeObservations(
-      saved.observations,
-      results.flatMap((result) => result.observations),
+    const queue = { adapters, dependencies: refreshSteps, completed, run };
+    const base = firstTurn
+      ? sources.filter(({ id }) => BASE_SOURCES.has(id))
+      : [];
+    if (base.length) {
+      await runWorldSources(base, queue);
+      await persistEarlyBoard();
+    }
+    await runWorldSources(
+      sources.filter(({ id }) => !completed.has(id)),
+      queue,
     );
+    const results = sources.map(({ id }) => completed.get(id));
     const asOf = now().toISOString();
-    const countries = scoreCountries(registry, observations, asOf);
+    const nextBoard = boardAt(asOf);
     const turn = createTurn({
-      number: (saved.turns.at(-1)?.number ?? 0) + 1,
+      number: (baseline.turns.at(-1)?.number ?? 0) + 1,
       startedAt,
       endedAt: asOf,
       sources: results.map(({ status }, i) => ({
         ...status,
         ...(sources[i].name && { name: sources[i].name }),
       })),
-      previous: saved.board?.countries ?? null,
-      countries,
-      newObservations: observations.length - saved.observations.length,
+      previous: baseline.board?.countries ?? null,
+      countries: nextBoard.countries,
+      newObservations: observations.length - baseline.observations.length,
       featureChanges: results.flatMap(({ changes }) => changes ?? []),
     });
     const next = {
-      board: { asOf, countries, features },
+      board: nextBoard,
       observations,
-      turns: [...saved.turns, turn],
+      turns: [...baseline.turns, turn],
       lastCheckedAt,
     };
     await store.write(next);
