@@ -43,23 +43,29 @@ const ROLE_PATTERNS = {
 };
 
 function directoryQuery(role, codes) {
-  // Kosovo has no assigned ISO 3166-1 alpha-3 code. Match its entity explicitly.
-  const kosovo = codes.includes('KOS')
-    ? 'UNION { BIND(wd:Q1246 AS ?country) BIND("KOS" AS ?iso) }'
-    : '';
+  const isoMatch = `{ VALUES ?iso { ${codes.map((code) => '"' + code + '"').join(' ')} }
+    ?country wdt:P298 ?iso . }`;
+  // Kosovo has no ISO alpha-3 code. Resolve that UNION before the office joins.
+  const hasKosovo = codes.includes('KOS');
+  const countries = hasKosovo
+    ? `{ SELECT ?iso ?country WHERE {
+          ${isoMatch} UNION { BIND(wd:Q1246 AS ?country) BIND("KOS" AS ?iso) }
+        } }`
+    : isoMatch;
+  // Blazegraph's default plan timed out on this UNION with the P6 statements.
+  const optimizer =
+    hasKosovo && role === 'head-of-government'
+      ? 'hint:Query hint:optimizer "None" .'
+      : '';
   return `
     SELECT DISTINCT ?iso ?role ?person ?personLabel ?officeLabel ?governmentLabel
         ?since ?end ?rank ?image ?x ?bluesky ?mastodon ?youtube ?facebook
         ?instagram ?vk ?weibo ?website WHERE {
+      ${optimizer}
       BIND("${role}" AS ?role)
       {
         SELECT DISTINCT ?iso ?country ?person ?office ?since ?end ?rank WHERE {
-          {
-            SELECT ?iso ?country WHERE {
-              { VALUES ?iso { ${codes.map((code) => '"' + code + '"').join(' ')} }
-                ?country wdt:P298 ?iso . } ${kosovo}
-            }
-          }
+          ${countries}
           ${ROLE_PATTERNS[role]}
           FILTER NOT EXISTS { ?country wdt:P576 [] }
           ?person wdt:P31 wd:Q5 .

@@ -124,10 +124,14 @@ test('posts one role and up to 40 countries per request, in sequence', async () 
   const adapter = await import('./wikidata.js');
   const registry = {
     countries: Array.from({ length: 41 }, (_, i) => ({
-      iso3: 'A' + String.fromCharCode(65 + Math.floor(i / 26), 65 + (i % 26)),
+      iso3:
+        i === 40
+          ? 'KOS'
+          : 'A' + String.fromCharCode(65 + Math.floor(i / 26), 65 + (i % 26)),
     })),
   };
   const seen = [];
+  const queryShapes = [];
   let reading = false;
   let lastFinished;
   const { count } = await adapter.fetchObservations({
@@ -151,6 +155,12 @@ test('posts one role and up to 40 countries per request, in sequence', async () 
       );
       assert.equal(roles.length, 1);
       seen.push([roles[0].slice(1, -1), codes.length]);
+      queryShapes.push({
+        role: roles[0].slice(1, -1),
+        kosovo: query.includes('BIND(wd:Q1246 AS ?country)'),
+        nested: query.includes('SELECT ?iso ?country WHERE'),
+        boundOrder: query.includes('hint:Query hint:optimizer "None"'),
+      });
       reading = true;
       return new Response(
         new ReadableStream({
@@ -176,6 +186,19 @@ test('posts one role and up to 40 countries per request, in sequence', async () 
     },
   });
   assert.equal(count, 8);
+  assert.equal(queryShapes.filter(({ kosovo }) => kosovo).length, 4);
+  assert.ok(queryShapes.every(({ kosovo, nested }) => kosovo === nested));
+  assert.deepEqual(
+    queryShapes.filter(({ boundOrder }) => boundOrder),
+    [
+      {
+        role: 'head-of-government',
+        kosovo: true,
+        nested: true,
+        boundOrder: true,
+      },
+    ],
+  );
   assert.deepEqual(seen, [
     ['head-of-state', 40],
     ['head-of-state', 1],
