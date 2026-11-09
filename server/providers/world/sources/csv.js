@@ -1,3 +1,34 @@
+import { StringDecoder } from 'node:string_decoder';
+
+const MAX_CSV_RECORD_LENGTH = 1_000_000;
+
+export async function* csvRecords(chunks) {
+  const decoder = new StringDecoder('utf8');
+  let quoted = false;
+  let record = '';
+  for await (const chunk of chunks) {
+    const text = decoder.write(chunk);
+    let start = 0;
+    for (const match of text.matchAll(/["\r\n]/g)) {
+      if (match[0] === '"') {
+        // Escaped quotes toggle twice, even when split across two chunks.
+        quoted = !quoted;
+      } else if (!quoted) {
+        record += text.slice(start, match.index);
+        if (record) yield record;
+        record = '';
+        start = match.index + 1;
+      }
+    }
+    record += text.slice(start);
+    if (record.length > MAX_CSV_RECORD_LENGTH)
+      throw new Error('CSV record exceeds size limit');
+  }
+  if (quoted) throw new Error('Malformed CSV field');
+  record += decoder.end();
+  if (record) yield record;
+}
+
 export function* csvRows(text) {
   // The quoted branch preserves commas and newlines inside source article fields.
   const field = /(?:"((?:[^"]|"")*)"|([^",\r\n]*))([,\r\n]|$)/gy;

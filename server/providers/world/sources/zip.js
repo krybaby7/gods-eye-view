@@ -1,4 +1,5 @@
-import { Readable } from 'node:stream';
+import { open } from 'node:fs/promises';
+import { addAbortSignal, pipeline, Readable } from 'node:stream';
 import { crc32, createInflateRaw } from 'node:zlib';
 
 function findZipEnd(zip) {
@@ -13,48 +14,58 @@ function findZipEnd(zip) {
   throw new Error('ZIP end of directory not found');
 }
 
-function findZipEntry(zip, matchesName) {
-  const end = findZipEnd(zip);
-  const directory = zip.readUInt32LE(end + 16);
-  const entries = zip.readUInt16LE(end + 10);
+async function findZipEntry(read, length, matchesName) {
+  const tailSize = Math.min(length, 22 + 0xffff);
+  const tail = await read(length - tailSize, tailSize);
+  const tailEnd = findZipEnd(tail);
+  const end = length - tailSize + tailEnd;
+  const directory = tail.readUInt32LE(tailEnd + 16);
+  const entries = tail.readUInt16LE(tailEnd + 10);
   if (
-    zip.readUInt32LE(end + 4) !== 0 ||
-    directory + zip.readUInt32LE(end + 12) !== end
+    tail.readUInt32LE(tailEnd + 4) !== 0 ||
+    directory + tail.readUInt32LE(tailEnd + 12) !== end
   ) {
     throw new Error('Unsupported ZIP directory');
   }
 
   let cursor = directory;
   for (let index = 0; index < entries; index += 1) {
-    if (cursor + 46 > end || zip.readUInt32LE(cursor) !== 0x02014b50) {
+    if (cursor + 46 > end) throw new Error('Invalid ZIP directory entry');
+    const header = await read(cursor, 46);
+    if (header.readUInt32LE(0) !== 0x02014b50) {
       throw new Error('Invalid ZIP directory entry');
     }
-    const nameEnd = cursor + 46 + zip.readUInt16LE(cursor + 28);
+    const nameSize = header.readUInt16LE(28);
     const next =
-      nameEnd + zip.readUInt16LE(cursor + 30) + zip.readUInt16LE(cursor + 32);
+      cursor +
+      46 +
+      nameSize +
+      header.readUInt16LE(30) +
+      header.readUInt16LE(32);
     if (next > end) throw new Error('Invalid ZIP directory entry length');
-    if (matchesName(zip.toString('utf8', cursor + 46, nameEnd))) {
-      const offset = zip.readUInt32LE(cursor + 42);
-      const size = zip.readUInt32LE(cursor + 20);
-      if (offset + 30 > directory || zip.readUInt32LE(offset) !== 0x04034b50) {
+    const name = await read(cursor + 46, nameSize);
+    if (matchesName(name.toString('utf8'))) {
+      const offset = header.readUInt32LE(42);
+      const compressedSize = header.readUInt32LE(20);
+      if (offset + 30 > directory) throw new Error('Invalid ZIP entry header');
+      const local = await read(offset, 30);
+      if (local.readUInt32LE(0) !== 0x04034b50) {
         throw new Error('Invalid ZIP entry header');
       }
       const start =
-        offset +
-        30 +
-        zip.readUInt16LE(offset + 26) +
-        zip.readUInt16LE(offset + 28);
+        offset + 30 + local.readUInt16LE(26) + local.readUInt16LE(28);
       if (
-        start + size > directory ||
-        (zip.readUInt16LE(cursor + 8) & 1) !== 0
+        start + compressedSize > directory ||
+        (header.readUInt16LE(8) & 1) !== 0
       ) {
         throw new Error('Unsupported ZIP entry');
       }
       return {
-        bytes: zip.subarray(start, start + size),
-        method: zip.readUInt16LE(cursor + 10),
-        size: zip.readUInt32LE(cursor + 24),
-        checksum: zip.readUInt32LE(cursor + 16),
+        start,
+        compressedSize,
+        method: header.readUInt16LE(10),
+        size: header.readUInt32LE(24),
+        checksum: header.readUInt32LE(16),
       };
     }
     cursor = next;
@@ -62,18 +73,47 @@ function findZipEntry(zip, matchesName) {
   throw new Error('CSV file missing from ZIP');
 }
 
-export async function* zipEntryChunks(bytes, matchesName, maxBytes) {
-  const zip = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const entry = findZipEntry(zip, matchesName);
+async function readFileRange(file, position, length) {
+  const buffer = Buffer.allocUnsafe(length);
+  let offset = 0;
+  while (offset < length) {
+    const { bytesRead } = await file.read(
+      buffer,
+      offset,
+      length - offset,
+      position + offset,
+    );
+    if (!bytesRead) throw new Error('Unexpected end of ZIP');
+    offset += bytesRead;
+  }
+  return buffer;
+}
+
+async function* readChunks(read, start, length) {
+  const end = start + length;
+  for (let offset = start; offset < end; offset += 64 * 1024) {
+    yield await read(offset, Math.min(end - offset, 64 * 1024));
+  }
+}
+
+async function* expandEntry(read, entry, maxBytes, signal) {
   if (entry.method !== 0 && entry.method !== 8)
     throw new Error('Unsupported ZIP compression');
-  const stream = Readable.from([entry.bytes]);
+  if (entry.size > maxBytes)
+    throw new Error('Expanded ZIP CSV exceeds size limit');
+  const stream = Readable.from(
+    readChunks(read, entry.start, entry.compressedSize),
+    { objectMode: false },
+  );
   const contents =
-    entry.method === 8 ? stream.pipe(createInflateRaw()) : stream;
+    entry.method === 8
+      ? pipeline(stream, createInflateRaw(), () => {})
+      : stream;
+  if (signal) addAbortSignal(signal, contents);
   let size = 0;
   let checksum = 0;
   try {
-    for await (const chunk of contents) {
+    for await (const chunk of contents.iterator({ destroyOnReturn: false })) {
       size += chunk.length;
       if (size > entry.size || size > maxBytes)
         throw new Error('Expanded ZIP CSV exceeds size limit');
@@ -86,5 +126,26 @@ export async function* zipEntryChunks(bytes, matchesName, maxBytes) {
   } finally {
     contents.destroy();
     stream.destroy();
+  }
+}
+
+export async function* zipEntryChunks(archive, matchesName, maxBytes, signal) {
+  signal?.throwIfAborted();
+  const file = typeof archive === 'string' ? await open(archive, 'r') : null;
+  try {
+    const bytes = file
+      ? null
+      : Buffer.from(archive.buffer, archive.byteOffset, archive.byteLength);
+    const length = file ? (await file.stat()).size : bytes.length;
+    const read = (offset, size) => {
+      signal?.throwIfAborted();
+      return file
+        ? readFileRange(file, offset, size)
+        : bytes.subarray(offset, offset + size);
+    };
+    const entry = await findZipEntry(read, length, matchesName);
+    yield* expandEntry(read, entry, maxBytes, signal);
+  } finally {
+    await file?.close();
   }
 }
