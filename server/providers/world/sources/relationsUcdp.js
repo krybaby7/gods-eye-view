@@ -1,8 +1,7 @@
 import { TextDecoder } from 'node:util';
-import { readResponseBytesCapped } from '../../common/http.js';
 import { makeRelation, relationResult } from '../relations.js';
-import { fetchResponse } from './common.js';
 import { columnIndices, csvRows } from './csv.js';
+import { downloadWorldFile } from './download.js';
 import { zipEntryChunks } from './zip.js';
 
 const RELEASE = '26.1';
@@ -12,6 +11,8 @@ const URLS = [
   'https://ucdp.uu.se/downloads/dyadic/ucdp-dyadic-261-csv.zip',
 ];
 const LIMIT = 10_000_000;
+export const estimatedBytes = 100_000;
+export const requestHost = 'ucdp.uu.se';
 const NAME_ALIASES = {
   'Central African Republic': 'CAF',
   'DR Congo': 'COD',
@@ -164,25 +165,51 @@ export function shouldCheck(context) {
   return context.data?.sourceVersion !== RELEASE;
 }
 
-async function readCsv(fetchImpl, url, signal) {
-  const response = await fetchResponse(fetchImpl, url, signal);
-  const bytes = await readResponseBytesCapped(response, LIMIT, signal);
+async function readCsv(path, signal) {
   const decoder = new TextDecoder();
   let csv = '';
   for await (const chunk of zipEntryChunks(
-    bytes,
+    path,
     (name) => name.endsWith('.csv'),
     LIMIT,
+    signal,
   )) {
     csv += decoder.decode(chunk, { stream: true });
   }
   return csv + decoder.decode();
 }
 
-export async function fetchObservations({ fetchImpl, registry, data }) {
-  const signal = AbortSignal.timeout(40_000);
-  const conflict = await readCsv(fetchImpl, URLS[0], signal);
-  const dyads = await readCsv(fetchImpl, URLS[1], signal);
+export async function fetchObservations({
+  fetchImpl,
+  registry,
+  data,
+  cacheDirectory,
+  onProgress,
+  signal,
+}) {
+  const options = {
+    fetchImpl,
+    cacheDirectory,
+    signal,
+    immutable: true,
+    maxBytes: LIMIT,
+  };
+  const first = await downloadWorldFile(URLS[0], { ...options, onProgress });
+  const second = await downloadWorldFile(URLS[1], {
+    ...options,
+    onProgress(progress) {
+      onProgress?.({
+        ...progress,
+        bytes: first.bytes + progress.bytes,
+        totalBytes:
+          progress.totalBytes === null
+            ? null
+            : first.bytes + progress.totalBytes,
+      });
+    },
+  });
+  const conflict = await readCsv(first.path, signal);
+  const dyads = await readCsv(second.path, signal);
   const result = relationResult(
     ucdpRelations(conflict, dyads, registry.countries),
     data,

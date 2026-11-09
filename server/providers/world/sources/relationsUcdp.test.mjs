@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ucdpRelations } from './relationsUcdp.js';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { zipFixture } from './fixtures/zipFixture.mjs';
+import { fetchObservations, ucdpRelations } from './relationsUcdp.js';
 
 const header =
   'conflict_id,location,side_a,side_a_id,side_b,side_b_id,year,intensity_level,type_of_conflict,start_date2,start_prec2,gwno_a,gwno_b';
@@ -35,4 +39,32 @@ test('preserves country coalitions and reported episode end', () => {
   assert.deepEqual(rows[2].fromActors, ['GBR', 'USA']);
   assert.deepEqual(rows[2].toActors, ['PAK']);
   assert.equal(rows[1].end, '2025-05-10');
+});
+
+test('UCDP relations reuses both versioned ZIPs and reports aggregate bytes', async (t) => {
+  const cacheDirectory = await mkdtemp(join(tmpdir(), 'world-ucdp-relations-'));
+  t.after(() => rm(cacheDirectory, { recursive: true, force: true }));
+  const files = [
+    zipFixture('conflict.csv', conflict),
+    zipFixture('dyads.csv', dyads),
+  ];
+  const requests = [];
+  const progress = [];
+  const context = {
+    cacheDirectory,
+    registry: { countries },
+    onProgress: (event) => progress.push(event),
+    fetchImpl: async (url) => {
+      requests.push(url);
+      const body = files[url.includes('dyadic') ? 1 : 0];
+      return new Response(body, {
+        headers: { 'Content-Length': String(body.length) },
+      });
+    },
+  };
+  const first = await fetchObservations(context);
+  const second = await fetchObservations(context);
+  assert.deepEqual(first.data, second.data);
+  assert.equal(requests.length, 2);
+  assert.equal(progress.at(-1)?.bytes, files[0].length + files[1].length);
 });

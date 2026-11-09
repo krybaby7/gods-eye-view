@@ -201,6 +201,7 @@ export function wikidataRelations(kind, bindings, countryIds) {
 
 function adapter(kind) {
   return {
+    requestHost: new URL(SPARQL).hostname,
     shouldCheck(context) {
       const checked = Date.parse(context.lastCheckedAt);
       return (
