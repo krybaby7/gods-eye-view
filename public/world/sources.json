@@ -321,7 +321,7 @@
     "url": "https://jonathanmpowell.com/coups/",
     "licence": "Publisher licence unconfirmed; derived, cited event flags",
     "releaseRhythm": "Weekly while enabled",
-    "marks": []
+    "marks": ["LicenceUnconfirmed"]
   },
   {
     "id": "live-gdelt",
@@ -341,12 +341,12 @@
     "url": "https://www.fao.org/worldfoodsituation/foodpricesindex/en/",
     "licence": "Publisher terms apply; cited index and derived change",
     "releaseRhythm": "Monthly release, checked weekly while enabled",
-    "marks": []
+    "marks": ["LicenceUnconfirmed"]
   },
   {
     "id": "live-imf-cpi",
     "name": "IMF Consumer Price Index",
-    "access": "Keyless public SDMX 3.0 national all-items monthly index",
+    "access": "Keyless public SDMX 3.0 national all-items monthly index and published year-on-year rate",
     "attribution": "International Monetary Fund, CPI all-items monthly index",
     "url": "https://data.imf.org/Datasets/CPI",
     "licence": "IMF terms, commercial use requires permission",
@@ -361,7 +361,7 @@
     "url": "https://www.unhcr.org/refugee-statistics/",
     "licence": "API data licence unconfirmed; derived stock flags",
     "releaseRhythm": "Annual stock, checked weekly while enabled",
-    "marks": []
+    "marks": ["LicenceUnconfirmed"]
   },
   {
     "id": "live-ucdp-saved",
@@ -401,7 +401,7 @@
     "url": "https://docs.humdata.org/build/hdx-apis/hapi",
     "licence": "Underlying IPC and WFP terms apply",
     "releaseRhythm": "Weekly if explicitly configured",
-    "marks": []
+    "marks": ["LicenceUnconfirmed"]
   },
   {
     "id": "live-ioda",
@@ -411,7 +411,7 @@
     "url": "https://ioda.inetintel.cc.gatech.edu/",
     "licence": "Redistribution licence unconfirmed",
     "releaseRhythm": "Hourly if explicitly configured",
-    "marks": []
+    "marks": ["LicenceUnconfirmed"]
   },
   {
     "id": "live-ucdp-token",

@@ -11,7 +11,7 @@ const FAO_CSV =
   'https://www.fao.org/media/docs/worldfoodsituationlibraries/wfs-library/food_price_indices_data.csv?download=true';
 const IMF_SOURCE = 'https://data.imf.org/Datasets/CPI';
 const IMF_CSV =
-  'https://api.imf.org/external/sdmx/3.0/data/dataflow/IMF.STA/CPI/+/*.CPI._T.IX.M';
+  'https://api.imf.org/external/sdmx/3.0/data/dataflow/IMF.STA/CPI/+/*.CPI._T.IX+PC_PA.M';
 const FX_SOURCE = 'https://frankfurter.dev/';
 const FX_API = 'https://api.frankfurter.dev/v2/rates';
 const CURRENCIES = Object.fromEntries(
@@ -207,11 +207,13 @@ export function cpiRows(csv) {
     throw new Error('IMF CPI CSV headers unavailable');
   const result = [];
   for (const row of lines) {
+    const yearOnYear =
+      row[transform] === 'PC_PA' || row[indicator] === 'CPI_YOY';
     if (
       row[frequency] !== 'M' ||
-      !['CPI', 'CPI_IX'].includes(row[indicator]) ||
+      !['CPI', 'CPI_IX', 'CPI_YOY'].includes(row[indicator]) ||
       (category !== -1 && row[category] !== '_T') ||
-      (transform !== -1 && row[transform] !== 'IX') ||
+      (transform !== -1 && !yearOnYear && row[transform] !== 'IX') ||
       !row[value]?.trim()
     )
       continue;
@@ -222,14 +224,19 @@ export function cpiRows(csv) {
       /^[A-Z]{3}$/.test(iso3) &&
       /^\d{4}-(?:0[1-9]|1[0-2])$/.test(period) &&
       Number.isFinite(reading) &&
-      reading > 0
+      (yearOnYear || reading > 0)
     )
-      result.push({ iso3, period, value: reading });
+      result.push({
+        iso3,
+        period,
+        ...(yearOnYear ? { yearOnYear: reading } : { value: reading }),
+      });
   }
   return result;
 }
 
 export const fao = {
+  version: 2,
   live: true,
   shouldCheck: (context) => due(context, 7 * DAY),
   async fetchObservations({ fetchImpl, now, data }) {
@@ -245,6 +252,7 @@ export const fao = {
 };
 
 export const imfCpi = {
+  version: 2,
   live: true,
   shouldCheck: (context) => due(context, 7 * DAY),
   async fetchObservations({ fetchImpl, now, data, registry }) {
@@ -267,14 +275,22 @@ export const imfCpi = {
     const rows = cpiRows(csv).filter(({ iso3 }) => countries.has(iso3));
     if (!rows.length)
       throw new Error('IMF CPI returned no mapped monthly all-items series');
-    return conditionResult(monthlyCpiFlags(rows, now, IMF_SOURCE), data, now, {
-      records: rows.length,
-      mappedCountries: new Set(rows.map(({ iso3 }) => iso3)).size,
-    });
+    const covered = new Set();
+    return conditionResult(
+      monthlyCpiFlags(rows, now, IMF_SOURCE, covered),
+      data,
+      now,
+      {
+        records: rows.length,
+        mappedCountries: new Set(rows.map(({ iso3 }) => iso3)).size,
+        covered: ({ iso3 }) => covered.has(iso3),
+      },
+    );
   },
 };
 
 export const fx = {
+  version: 2,
   live: true,
   shouldCheck: (context) => due(context, DAY),
   async fetchObservations({ fetchImpl, now, data, registry }) {
@@ -302,10 +318,12 @@ export const fx = {
         ids.filter((id) => countries.has(id)),
       ]),
     );
-    const flags = fxFlags(rates, mapping, now, FX_SOURCE);
+    const covered = new Set();
+    const flags = fxFlags(rates, mapping, now, FX_SOURCE, covered);
     return conditionResult(flags, data, now, {
       rateCount: rates.length,
       currencyCount: new Set(rates.map(({ quote }) => quote)).size,
+      covered: ({ iso3 }) => covered.has(iso3),
     });
   },
 };

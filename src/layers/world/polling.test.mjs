@@ -90,3 +90,56 @@ test('progress polls recover with backoff and load the board only for new data a
   await setImmediate();
   assert.equal(pollCount, 11);
 });
+
+test('manual Refresh reaches the server while a live tick progress poll is pending', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  globalThis.document = new EventTarget();
+  t.after(() => delete globalThis.document);
+  const live = { kind: 'live', completed: 0, total: 1, source: 'live-gdelt' };
+  const held = Promise.withResolvers();
+  let pollSignal;
+  let manualPosts = 0;
+  const layer = createWorldLayer({
+    source: {
+      getSnapshot: async () => ({
+        revision: 2,
+        countryIndex: [],
+        progress: live,
+      }),
+      async getProgress({ signal }) {
+        pollSignal = signal;
+        await held.promise;
+        return { refresh: live, revision: 2 };
+      },
+      async refresh({ sourceId }) {
+        assert.equal(sourceId, undefined);
+        manualPosts++;
+        return { refresh: { ...live, queued: true }, revision: 2 };
+      },
+    },
+  });
+  layer.init({
+    camera: {},
+    scene: {
+      canvas: new EventTarget(),
+      requestRender() {},
+      preRender: { addEventListener: () => () => {} },
+    },
+  });
+  layer.enable();
+  t.after(() => {
+    held.resolve();
+    layer.destroy();
+  });
+  await layer.update();
+  t.mock.timers.tick(1_000);
+  await setImmediate();
+  assert.equal(pollSignal?.aborted, false);
+  await layer.refresh();
+  assert.equal(manualPosts, 1);
+  assert.equal(pollSignal.aborted, true);
+  assert.deepEqual(layer.getSnapshot().progress, { ...live, queued: true });
+  held.resolve();
+  await setImmediate();
+  assert.equal(layer.getSnapshot().progress.queued, true);
+});

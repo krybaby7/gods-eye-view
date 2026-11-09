@@ -26,7 +26,7 @@ const TAGS = {
   modified: /<gdacs:datemodified>\s*([^<]+)\s*<\/gdacs:datemodified>/i,
 };
 
-export function gdacsFlags(xml, now, supported) {
+export function gdacsFlags(xml, now, supported, covered = new Set()) {
   if (
     !/<rss(?:\s|>)/i.test(xml) ||
     !/<\/rss>\s*(?:<!--[\s\S]*?-->\s*)*$/i.test(xml)
@@ -37,11 +37,10 @@ export function gdacsFlags(xml, now, supported) {
     throw new Error('Incomplete GDACS RSS');
   const flags = new Map();
   for (const [, item] of items) {
-    if (
-      item.match(TAGS.level)?.[1]?.trim().toLowerCase() !== 'red' ||
-      /<gdacs:iscurrent>\s*false\s*<\/gdacs:iscurrent>/i.test(item)
-    )
-      continue;
+    const level = item.match(TAGS.level)?.[1]?.trim().toLowerCase();
+    const current = !/<gdacs:iscurrent>\s*false\s*<\/gdacs:iscurrent>/i.test(
+      item,
+    );
     const type = item.match(TAGS.type)?.[1];
     const eventId = item.match(TAGS.id)?.[1];
     const published = item.match(TAGS.date)?.[1];
@@ -67,6 +66,9 @@ export function gdacsFlags(xml, now, supported) {
       .toUpperCase()
       .split(/[^A-Z]+/)
       .filter((id) => supported.has(id))) {
+      if (level || !current)
+        covered.add('live-gdacs:' + iso3 + ':' + type + ':' + eventId);
+      if (level !== 'red' || !current) continue;
       const label =
         'Red GDACS ' +
         (HAZARDS[type] ?? 'disaster') +
@@ -82,6 +84,7 @@ export function gdacsFlags(xml, now, supported) {
         key: type + ':' + eventId,
         label,
         date,
+        expiresAt: new Date(modified + 7 * DAY).toISOString(),
         source:
           'https://www.gdacs.org/report.aspx?eventtype=' +
           type +
@@ -96,14 +99,17 @@ export function gdacsFlags(xml, now, supported) {
 }
 
 export const gdacs = {
+  version: 2,
   live: true,
   shouldCheck: (context) => due(context, HOUR),
   async fetchObservations({ fetchImpl, now, data, registry }) {
     const xml = await download(fetchImpl, SOURCE, 'text');
+    const covered = new Set();
     return conditionResult(
-      gdacsFlags(xml, now, countryIds(registry)),
+      gdacsFlags(xml, now, countryIds(registry), covered),
       data,
       now,
+      { covered: ({ id }) => covered.has(id) },
     );
   },
 };

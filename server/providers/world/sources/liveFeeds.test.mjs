@@ -4,6 +4,7 @@ import { gdacsFlags, gdacs } from './liveDisasters.js';
 import { faoBanner, cpiRows, imfCpi } from './livePrices.js';
 import {
   savedUcdp,
+  unhcr,
   ucdpStockFlags,
   displacementFlags,
 } from './liveDisplacement.js';
@@ -103,6 +104,7 @@ test('IMF requests the public headline index and compares matching SDMX calendar
     'dataflow,IMF.STA:CPI(5.0.0),R,IND,CPI,_T,IX,M,2026-M09,125',
     'dataflow,IMF.STA:CPI(5.0.0),R,IND,CPI,CP01,IX,M,2026-M09,200',
     'dataflow,IMF.STA:CPI(5.0.0),R,IND,CPI,_T,PC_CP_A_PT,M,2026-M09,99',
+    'dataflow,IMF.STA:CPI(5.0.0),R,IND,CPI,_T,PC_PA,M,2026-M09,20.0',
     'dataflow,IMF.STA:CPI(5.0.0),R,IND,CPI,_T,IX,M,2026-M10,',
   ].join('\n');
   const result = await imfCpi.fetchObservations({
@@ -111,14 +113,19 @@ test('IMF requests the public headline index and compares matching SDMX calendar
     fetchImpl(requested) {
       const url = new URL(requested);
       assert.equal(url.hostname, 'api.imf.org');
-      assert.match(url.pathname, /\/\*\.CPI\._T\.IX\.M$/);
+      assert.match(url.pathname, /\/\*\.CPI\._T\.IX\+PC_PA\.M$/);
       assert.equal(url.searchParams.get('c[TIME_PERIOD]'), 'ge:2025-M06');
       return new Response(csv);
     },
   });
-  assert.equal(result.data.records, 2);
+  assert.equal(result.data.records, 3);
   assert.equal(result.data.flags[0].date, '2026-09');
-  assert.match(result.data.flags[0].label, /25\.0%/);
+  assert.match(result.data.flags[0].label, /20\.0%/);
+  assert.equal(result.data.flags[0].value, 20);
+  assert.equal(
+    result.data.flags[0].evidence,
+    'IMF published year-on-year rate',
+  );
 });
 
 test('UNHCR reports dated displacement stocks and keeps missing coverage unknown', () => {
@@ -128,8 +135,37 @@ test('UNHCR reports dated displacement stocks and keeps missing coverage unknown
   ];
   const flags = displacementFlags(rows, new Set(['SDN', 'IND']));
   assert.equal(flags[0].iso3, 'SDN');
-  assert.match(flags[0].label, /200,000.*stock/i);
+  assert.match(flags[0].label, /200,000.*2025 annual stock/i);
   assert.equal(flags.length, 1);
+});
+
+test('UNHCR falls back by completed year and drops older rows returned in the selected release', async () => {
+  const visited = [];
+  const result = await unhcr.fetchObservations({
+    now: new Date('2026-03-15T00:00:00Z'),
+    registry: { countries: [{ iso3: 'SDN' }, { iso3: 'IND' }] },
+    fetchImpl(url) {
+      const year = Number(new URL(url).searchParams.get('year'));
+      visited.push(year);
+      return Response.json(
+        year === 2025
+          ? { maxPages: 0, items: [] }
+          : {
+              maxPages: 1,
+              items: [
+                { year: 2024, coa_iso: 'SDN', coo_iso: 'SDN', idps: 200000 },
+                { year: 2023, coa_iso: 'IND', coo_iso: 'IND', idps: 300000 },
+              ],
+            },
+      );
+    },
+  });
+  assert.deepEqual(visited, [2025, 2024]);
+  assert.equal(result.data.period, '2024');
+  assert.deepEqual(
+    result.data.flags.map(({ iso3, date }) => [iso3, date]),
+    [['SDN', '2024']],
+  );
 });
 
 test('UCDP uses 25 recorded deaths as an inclusive draft threshold', async () => {

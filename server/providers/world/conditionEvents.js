@@ -1,17 +1,121 @@
 const DAY = 86_400_000;
 const FX_THRESHOLD = 0.2;
 const CPI_THRESHOLD = 0.2;
+const rules = {
+  'live-coups': [
+    'Coup attempt or irregular change in the last 90 days',
+    'reported coup coding',
+    90,
+  ],
+  'live-gdacs': [
+    'GDACS red alert in the current report window',
+    'official alert',
+    7,
+  ],
+  'live-gdelt': [
+    'At least 5 events from 3 source domains in 72 hours',
+    'news-derived, low confidence',
+    3,
+  ],
+  'live-fx': [
+    'At least 20% depreciation versus USD over about 30 days',
+    'published reference rates',
+    7,
+  ],
+  'live-imf-cpi': [
+    'At least 20% year-on-year all-items inflation',
+    'published series or calculated from indices',
+    150,
+  ],
+  'live-unhcr': [
+    'At least 100,000 internally displaced in the latest eligible year',
+    'published annual stock',
+    730,
+  ],
+  'live-ucdp-saved': [
+    'At least 25 recorded deaths over 12 released months',
+    'preliminary event data',
+    120,
+  ],
+  'live-ucdp-token': [
+    'At least 25 recorded deaths in the latest completed month',
+    'preliminary event data',
+    90,
+  ],
+  'live-debt-dsa': [
+    'Latest published assessment reports debt distress',
+    'official assessment',
+    730,
+  ],
+  'live-electionguide': [
+    'Election scheduled within 30 days',
+    'published calendar',
+    0,
+  ],
+  'live-hdx': [
+    'IPC Phase 4+ or a monitored market price at least 20% higher in three months',
+    'reported humanitarian indicator',
+    120,
+  ],
+  'live-ioda': [
+    'Current country-level outage signal within 24 hours',
+    'network measurement',
+    1,
+  ],
+};
 
 export function conditionFlag(sourceId, fields) {
   const { iso3, slot, key = slot } = fields;
   return {
+    rule: rules[sourceId]?.[0] ?? 'Condition rule',
+    evidence: rules[sourceId]?.[1] ?? 'single-source evidence',
+    ruleReviewed: false,
     ...fields,
     id: sourceId + ':' + iso3 + ':' + key,
     sourceId,
   };
 }
 
+function expired(flag, now) {
+  const days = rules[flag.sourceId]?.[2];
+  if (days === undefined) return false;
+  const date = /^\d{4}$/.test(flag.date) ? flag.date + '-12-31' : flag.date;
+  const until = flag.expiresAt
+    ? Date.parse(flag.expiresAt)
+    : Date.parse(date) + days * DAY;
+  return Number.isFinite(until) && +now > until;
+}
+
+export function liveFeatureView(sourceId, data, health, now, compact = false) {
+  const { flags = [], inactiveFlags = [], ...extra } = data ?? {};
+  if (compact) delete extra.batches;
+  const clock = {
+    lastGoodAt: health?.lastGoodAt ?? null,
+    staleSince: health?.staleSince ?? null,
+  };
+  return {
+    ...extra,
+    ...clock,
+    ...(health?.error && { error: health.error }),
+    flags: [...flags, ...inactiveFlags].map((flag) => ({
+      rule: rules[sourceId]?.[0],
+      evidence: rules[sourceId]?.[1],
+      ruleReviewed: false,
+      ...flag,
+      ...clock,
+      status:
+        flag.status ??
+        (expired(flag, now)
+          ? 'no-recent-data'
+          : health?.staleSince
+            ? 'stale'
+            : 'active'),
+    })),
+  };
+}
+
 export function conditionResult(flags, previous, now, extra = {}) {
+  const { covered, ...metadata } = extra;
   const before = new Map(
     (previous?.flags ?? []).map((flag) => [flag.id, flag]),
   );
@@ -44,13 +148,23 @@ export function conditionResult(flags, previous, now, extra = {}) {
     });
   }
   for (const [id, flag] of after) if (!before.has(id)) transition(flag, 'set');
-  for (const [id, flag] of before)
-    if (!after.has(id)) transition(flag, 'cleared');
+  const inactive = new Map(
+    (previous?.inactiveFlags ?? []).map((flag) => [flag.id, flag]),
+  );
+  for (const [id, flag] of before) {
+    if (after.has(id)) continue;
+    const recent = !expired(flag, now) && (covered?.(flag) ?? true);
+    const status = recent ? 'cleared' : 'no-recent-data';
+    if (recent) transition(flag, 'cleared');
+    inactive.set(id, { ...flag, status, statusAt: reportTime });
+  }
+  for (const id of after.keys()) inactive.delete(id);
   return {
     data: {
       flags,
       events: [...(previous?.events ?? []), ...events].slice(-500),
-      ...extra,
+      inactiveFlags: [...inactive.values()].slice(-500),
+      ...metadata,
     },
     count: flags.length,
     unit: 'flag',
@@ -58,7 +172,7 @@ export function conditionResult(flags, previous, now, extra = {}) {
   };
 }
 
-export function fxFlags(rows, currencies, now, source) {
+export function fxFlags(rows, currencies, now, source, covered = new Set()) {
   const byQuote = new Map();
   for (const { date, quote, rate } of rows) {
     const time = /^\d{4}-\d{2}-\d{2}$/.test(date) ? Date.parse(date) : NaN;
@@ -86,6 +200,7 @@ export function fxFlags(rows, currencies, now, source) {
         (a, b) => Math.abs(a.time - baseline) - Math.abs(b.time - baseline),
       )[0];
     if (!past) continue;
+    for (const iso3 of currencies[quote]) covered.add(iso3);
     const decline = (latest.rate - past.rate) / latest.rate;
     if (decline < FX_THRESHOLD) continue;
     for (const iso3 of currencies[quote]) {
@@ -113,32 +228,41 @@ export function fxFlags(rows, currencies, now, source) {
   return flags;
 }
 
-export function monthlyCpiFlags(rows, now, source) {
+export function monthlyCpiFlags(rows, now, source, covered = new Set()) {
   const periodNow = now.toISOString().slice(0, 7);
   const cutoff = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 4))
     .toISOString()
     .slice(0, 7);
   const byCountry = new Map();
-  for (const { iso3, period, value } of rows) {
+  for (const { iso3, period, value, yearOnYear } of rows) {
     if (
       !/^[A-Z]{3}$/.test(iso3) ||
       !/^\d{4}-(?:0[1-9]|1[0-2])$/.test(period) ||
       period > periodNow ||
-      !Number.isFinite(value) ||
-      value <= 0
+      (!Number.isFinite(yearOnYear) && (!Number.isFinite(value) || value <= 0))
     )
       continue;
     if (!byCountry.has(iso3)) byCountry.set(iso3, new Map());
-    byCountry.get(iso3).set(period, value);
+    const series = byCountry.get(iso3);
+    series.set(period, {
+      ...series.get(period),
+      ...(value !== undefined && { value }),
+      ...(yearOnYear !== undefined && { yearOnYear }),
+    });
   }
   const flags = [];
   for (const [iso3, series] of byCountry) {
     const period = [...series.keys()].sort().at(-1);
     if (period < cutoff) continue;
     const previousYear = Number(period.slice(0, 4)) - 1 + period.slice(4);
-    const previous = series.get(previousYear);
-    if (!previous) continue;
-    const inflation = (series.get(period) - previous) / previous;
+    const current = series.get(period);
+    const previous = series.get(previousYear)?.value;
+    const published = Number.isFinite(current.yearOnYear);
+    if (!published && (!previous || !current.value)) continue;
+    const inflation = published
+      ? current.yearOnYear / 100
+      : (current.value - previous) / previous;
+    covered.add(iso3);
     if (inflation < CPI_THRESHOLD) continue;
     flags.push(
       conditionFlag('live-imf-cpi', {
@@ -152,6 +276,10 @@ export function monthlyCpiFlags(rows, now, source) {
         periodStart: previousYear,
         source,
         sourceName: 'IMF CPI',
+        evidence: published
+          ? 'IMF published year-on-year rate'
+          : 'Calculated from the same calendar month of the IMF index',
+        value: inflation * 100,
       }),
     );
   }

@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { startLiveTimers, flagLabels, liveFlags } from './events.js';
+import {
+  startLiveTimers,
+  flagLabels,
+  liveFlags,
+  liveFlagNotes,
+} from './events.js';
 
 test('saved per-million UCDP flags remain hidden until raw totals are available', () => {
   const flags = [
@@ -45,7 +50,7 @@ function timerHarness() {
   };
 }
 
-test('timed feeds defer while a turn is busy and advance only after their own source turn', async () => {
+test('timed feeds defer while a turn is busy and advance without a new turn', async () => {
   const clock = timerHarness();
   let snapshot = { progress: true, turn: { number: 1, sources: [] } };
   const seen = [];
@@ -69,7 +74,7 @@ test('timed feeds defer while a turn is busy and advance only after their own so
   await clock.step();
   snapshot = {
     progress: false,
-    turn: { number: 2, sources: [{ id: 'first' }] },
+    turn: { number: 1, sources: [] },
   };
   await clock.step();
   assert.deepEqual(seen, ['first', 'second']);
@@ -124,9 +129,51 @@ test('a skipped scoped check backs off and lets the next overdue feed run', asyn
       seen.push(id);
     },
   });
-  for (let i = 0; i < 4; i += 1) await clock.step();
+  for (let i = 0; i < 2; i += 1) await clock.step();
   assert.deepEqual(seen, ['first', 'second']);
-  for (let i = 0; i < 3; i += 1) await clock.step();
-  assert.equal(clock.pending().at, 215);
+  await clock.step();
+  assert.equal(clock.pending().at, 200);
+  await clock.step();
+  assert.deepEqual(seen, ['first', 'second', 'first']);
   dispose();
+});
+
+test('dated stale, expired and cleared flags keep separate labels and evidence', () => {
+  const base = {
+    iso3: 'CAN',
+    label: 'Protest reports',
+    evidence: 'news-derived, low confidence',
+    sourceName: 'GDELT',
+    rule: '5 events from 3 source domains in 72 hours',
+    ruleReviewed: false,
+  };
+  const snapshot = {
+    features: {
+      feed: {
+        flags: [
+          {
+            ...base,
+            status: 'stale',
+            staleSince: '2026-11-09T15:00:00Z',
+            lastGoodAt: '2026-11-09T14:00:00Z',
+          },
+        ],
+        inactiveFlags: [
+          { ...base, status: 'no-recent-data' },
+          { ...base, status: 'cleared' },
+        ],
+      },
+    },
+  };
+  const labels = flagLabels(snapshot, 'CAN');
+  assert.equal(labels.length, 2);
+  assert.match(
+    labels[0],
+    /stale since 2026-11-09T15:00:00Z.*last good 2026-11-09T14:00:00Z.*news-derived, low confidence.*5 events.*Draft/i,
+  );
+  assert.match(labels[1], /no recent data/i);
+  assert.deepEqual(
+    liveFlagNotes(liveFlags(snapshot, 'CAN').at(-1))[0],
+    'Cleared',
+  );
 });

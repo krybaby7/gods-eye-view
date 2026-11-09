@@ -1,8 +1,7 @@
 import { flagLabels, liveFlags, startLiveTimers } from './events.js';
 import { renderLiveFlagPanel } from '../../ui/worldLiveFlagPanel.js';
 
-function liveOverlay({ viewer, signal, fixtures, refresh }) {
-  let latest;
+function liveOverlay({ viewer, signal, fixtures, refresh, getSnapshot }) {
   const document = viewer.scene.canvas.ownerDocument;
   const banner = document.createElement('a');
   banner.className = 'world-live-fao world-board-hud';
@@ -13,13 +12,12 @@ function liveOverlay({ viewer, signal, fixtures, refresh }) {
   document.getElementById('world-lens-bar')?.after(banner);
   const stop = startLiveTimers({
     refresh,
-    snapshot: () => latest,
+    snapshot: getSnapshot,
     signal,
     fixtures,
   });
   return {
     update(snapshot) {
-      latest = snapshot;
       const item = snapshot.features?.['live-fao']?.banner;
       banner.hidden = !item || !snapshot.visible;
       if (item && !banner.hidden) {

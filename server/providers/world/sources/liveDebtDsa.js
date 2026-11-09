@@ -7,6 +7,7 @@ const DATA = new URL(
   import.meta.url,
 );
 export const debtDistress = {
+  version: 2,
   shouldCheck: () => true,
   async fetchObservations({ registry, now, data }) {
     const { rows } = JSON.parse(await readFile(DATA, 'utf8'));

@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   conditionFlag,
   conditionResult,
+  liveFeatureView,
   monthlyCpiFlags,
   fxFlags,
 } from './conditionEvents.js';
@@ -45,6 +46,36 @@ test('flag transitions set and clear with dated event evidence and never emit ob
   ]);
   assert.equal(clear.data.events.at(-1).stage, 'reversed');
   assert.equal(clear.data.events.at(-1).sets[0].status, 'cleared');
+});
+
+test('failed pulls show the last good time and aging flags show no recent data', () => {
+  const flag = conditionFlag('live-gdelt', {
+    iso3: 'IND',
+    slot: 'C2',
+    date: '2026-11-09T00:00:00.000Z',
+    label: 'Reports',
+    source,
+  });
+  const first = conditionResult([flag], null, now);
+  const health = {
+    lastGoodAt: now.toISOString(),
+    staleSince: '2026-11-09T09:00:00.000Z',
+  };
+  const stale = liveFeatureView(
+    'live-gdelt',
+    first.data,
+    health,
+    new Date('2026-11-09T09:00:00Z'),
+  );
+  assert.equal(stale.flags[0].status, 'stale');
+  assert.equal(stale.flags[0].lastGoodAt, health.lastGoodAt);
+  assert.equal(stale.flags[0].staleSince, health.staleSince);
+  const later = new Date('2026-11-12T01:00:00Z');
+  const aged = liveFeatureView('live-gdelt', first.data, health, later);
+  assert.equal(aged.flags[0].status, 'no-recent-data');
+  const next = conditionResult([], first.data, later);
+  assert.deepEqual(next.changes, []);
+  assert.equal(next.data.inactiveFlags[0].status, 'no-recent-data');
 });
 
 test('FX uses the inverse USD quote and ignores stale and incomplete windows', () => {

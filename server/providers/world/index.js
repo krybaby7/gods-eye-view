@@ -3,6 +3,7 @@ import { promisify } from 'node:util';
 import { gzip } from 'node:zlib';
 import { admitSameSiteRequest } from '../../../src/localRequestGate.mjs';
 import './actors.js';
+import { liveFeatureView } from './conditionEvents.js';
 import './events.js';
 import { liveSourceFromRequest, sourcesForWorldTurn } from './liveScope.js';
 import { loadWorldRegistry } from './registry.js';
@@ -97,22 +98,50 @@ export function createWorldService({
   let registry;
   let saved;
   let board;
+  let live;
   let summaryFor;
   let summary;
   let active = null;
+  let activeKind = null;
+  let manualQueued = false;
   let progress = null;
   let error = null;
   let startedFirstTurn = false;
 
   function ready() {
-    initialized ??= Promise.all([loadRegistry(), store.read()])
-      .then(([loadedRegistry, state]) => {
+    const loadLive = () =>
+      store.readLive?.().catch((failure) => {
+        logger.warn?.('[world] Live conditions could not be restored', failure);
+        return null;
+      });
+    initialized ??= Promise.all([loadRegistry(), store.read(), loadLive()])
+      .then(([loadedRegistry, state, liveState]) => {
         registry = loadedRegistry;
         saved = state;
         board = saved.board ?? {
           asOf: now().toISOString(),
           countries: scoreCountries(registry, [], now()),
         };
+        live = {
+          features: { ...liveState?.features },
+          sources: { ...liveState?.sources },
+          revision: liveState?.revision ?? 0,
+          baseTurn: liveState?.baseTurn ?? 0,
+          changes: liveState?.changes ?? [],
+        };
+        // Legacy durable states stored live data alongside board features.
+        // Preserve history and use the newest good source result on restart.
+        for (const [id, data] of Object.entries(board.features ?? {})) {
+          if (!isLive(id)) continue;
+          const lastGoodAt = saved.lastCheckedAt[id] ?? board.asOf;
+          if (lastGoodAt > (live.sources[id]?.lastGoodAt ?? '')) {
+            live.features[id] = data;
+            live.sources[id] = {
+              lastGoodAt,
+              version: saved.sourceVersions?.[id] ?? 1,
+            };
+          }
+        }
       })
       .catch((failure) => {
         initialized = null;
@@ -121,16 +150,32 @@ export function createWorldService({
     return initialized;
   }
 
+  function isLive(id) {
+    return adapters[id]?.live === true || id.startsWith('live-');
+  }
+
+  function revision() {
+    return (board.revision ?? 0) + live.revision;
+  }
+
   async function runTurn(sources, liveOnly) {
     const baseline = saved;
-    const firstTurn = !liveOnly && baseline.turns.length === 0;
+    const firstTurn = baseline.turns.length === 0;
     const resume = firstTurn ? baseline.firstTurn : null;
     const started = now();
     const checkedAt = started.toISOString();
     const startedAt = resume?.startedAt ?? checkedAt;
-    const lastCheckedAt = { ...baseline.lastCheckedAt };
-    const sourceVersions = { ...baseline.sourceVersions };
-    const features = { ...baseline.board?.features };
+    const lastCheckedAt = Object.fromEntries(
+      Object.entries(baseline.lastCheckedAt).filter(([id]) => !isLive(id)),
+    );
+    const sourceVersions = Object.fromEntries(
+      Object.entries(baseline.sourceVersions ?? {}).filter(
+        ([id]) => !isLive(id),
+      ),
+    );
+    const features = { ...baseline.board?.features, ...live.features };
+    const liveSources = { ...live.sources };
+    let liveUpdated = false;
     const completed = new Map(
       Object.entries(resume?.results ?? {}).filter(
         ([id, { adapterVersion }]) =>
@@ -155,6 +200,8 @@ export function createWorldService({
         pending.values().next().value ??
         null;
       progress = {
+        kind: liveOnly ? 'live' : 'manual',
+        ...(manualQueued && { queued: true }),
         completed: sources.length - pending.size,
         total: sources.length,
         source,
@@ -166,10 +213,10 @@ export function createWorldService({
       return {
         asOf,
         revision: (board.revision ?? 0) + 1,
-        countries: liveOnly
-          ? baseline.board.countries
-          : scoreCountries(registry, observations, asOf),
-        features: { ...features },
+        countries: scoreCountries(registry, observations, asOf),
+        features: Object.fromEntries(
+          Object.entries(features).filter(([id]) => !isLive(id)),
+        ),
       };
     }
 
@@ -183,7 +230,9 @@ export function createWorldService({
         firstTurn: {
           startedAt,
           newObservations,
-          results: Object.fromEntries(completed),
+          results: Object.fromEntries(
+            [...completed].filter(([id]) => !isLive(id)),
+          ),
         },
       };
       checkpoint = checkpoint
@@ -221,15 +270,20 @@ export function createWorldService({
       try {
         const adapter = adapters[id];
         const version = adapter?.version ?? 1;
+        const checkedAt = isLive(id)
+          ? liveSources[id]?.lastGoodAt
+          : lastCheckedAt[id];
+        const savedVersion = isLive(id)
+          ? liveSources[id]?.version
+          : sourceVersions[id];
         const rederive = Boolean(
-          (lastCheckedAt[id] || features[id] !== undefined) &&
-          (sourceVersions[id] ?? 1) !== version,
+          (checkedAt || features[id] !== undefined) &&
+          (savedVersion ?? 1) !== version,
         );
         if (
           !adapter ||
           !adapter.shouldCheck({
-            lastCheckedAt:
-              dependencyUpdated || rederive ? null : lastCheckedAt[id],
+            lastCheckedAt: dependencyUpdated || rederive ? null : checkedAt,
             now: started,
             observations,
             data: features[id],
@@ -294,6 +348,7 @@ export function createWorldService({
           replacedIndicators,
           data: result.data,
           dataUpdated: result.data !== undefined,
+          cached: result.cached,
         };
       } catch (failure) {
         return {
@@ -326,7 +381,27 @@ export function createWorldService({
         dependencyUpdated,
       );
       const adapterVersion = adapters[id]?.version ?? 1;
-      if (result.status.status === 'loaded') {
+      if (isLive(id) && result.status.checked) {
+        const previous = liveSources[id];
+        const succeeded = result.status.status === 'loaded';
+        const finishedAt = now().toISOString();
+        liveSources[id] = {
+          ...previous,
+          lastAttemptAt: finishedAt,
+          ...(succeeded
+            ? {
+                lastGoodAt: result.cached ? previous?.lastGoodAt : finishedAt,
+                version: adapterVersion,
+                error: null,
+                staleSince: null,
+              }
+            : {
+                error: result.status.error,
+                staleSince: previous?.staleSince ?? finishedAt,
+              }),
+        };
+        liveUpdated = true;
+      } else if (result.status.status === 'loaded') {
         lastCheckedAt[id] = checkedAt;
         sourceVersions[id] = adapterVersion;
       }
@@ -341,9 +416,11 @@ export function createWorldService({
       }
       if (result.dataUpdated) features[id] = result.data;
       if (
-        result.dataUpdated ||
-        result.observations.length ||
-        result.replacedIndicators?.size
+        !liveOnly &&
+        !isLive(id) &&
+        (result.dataUpdated ||
+          result.observations.length ||
+          result.replacedIndicators?.size)
       ) {
         board = boardAt(now().toISOString());
       }
@@ -376,7 +453,27 @@ export function createWorldService({
       queue,
     );
     const results = sources.map(({ id }) => completed.get(id));
-    if (liveOnly && !results[0].status.checked) return;
+    const lastTurn = baseline.turns.at(-1)?.number ?? 0;
+    const pendingLiveChanges = live.baseTurn === lastTurn ? live.changes : [];
+    const changes = results.flatMap(({ changes }) => changes ?? []);
+    if (liveUpdated) {
+      const liveChanges = results.flatMap(({ status, changes }) =>
+        isLive(status.id) ? (changes ?? []) : [],
+      );
+      const nextLive = {
+        features: Object.fromEntries(
+          Object.entries(features).filter(([id]) => isLive(id)),
+        ),
+        sources: liveSources,
+        revision: live.revision + 1,
+        // A durable manual turn consumes these changes by advancing its number.
+        baseTurn: lastTurn,
+        changes: [...pendingLiveChanges, ...liveChanges].slice(-500),
+      };
+      await store.writeLive?.(nextLive);
+      live = nextLive;
+    }
+    if (liveOnly) return;
     const asOf = now().toISOString();
     const nextBoard = boardAt(asOf);
     const turn = createTurn({
@@ -390,7 +487,7 @@ export function createWorldService({
       previous: baseline.board?.countries ?? null,
       countries: nextBoard.countries,
       newObservations,
-      featureChanges: results.flatMap(({ changes }) => changes ?? []),
+      featureChanges: [...pendingLiveChanges, ...changes],
     });
     const next = {
       board: nextBoard,
@@ -405,10 +502,22 @@ export function createWorldService({
   }
 
   function start(sources = registry.sources, liveOnly = false) {
-    if (active) return;
+    if (active) {
+      if (!liveOnly && activeKind === 'live') {
+        manualQueued = true;
+        progress = { ...progress, queued: true };
+      }
+      return;
+    }
     startedFirstTurn = true;
     error = null;
-    progress = { completed: 0, total: sources.length, source: null };
+    activeKind = liveOnly ? 'live' : 'manual';
+    progress = {
+      kind: activeKind,
+      completed: 0,
+      total: sources.length,
+      source: null,
+    };
     active = Promise.resolve()
       .then(() => runTurn(sources, liveOnly))
       .catch((failure) => {
@@ -419,13 +528,18 @@ export function createWorldService({
       .finally(() => {
         progress = null;
         active = null;
+        activeKind = null;
+        if (manualQueued) {
+          manualQueued = false;
+          start();
+          return active;
+        }
       });
   }
 
   function boardFeatures(compact) {
     const features = board.features ?? EMPTY_FEATURES;
-    if (!compact) return features;
-    if (summaryFor !== features) {
+    if (compact && summaryFor !== features) {
       summary = { ...features };
       for (const { summary: project } of featureViews.values()) {
         for (const [id, summarize] of Object.entries(project ?? {})) {
@@ -435,13 +549,23 @@ export function createWorldService({
       }
       summaryFor = features;
     }
-    return summary;
+    const displayed = { ...(compact ? summary : features) };
+    for (const id of Object.keys(live.sources)) {
+      displayed[id] = liveFeatureView(
+        id,
+        live.features[id],
+        live.sources[id],
+        now(),
+        compact,
+      );
+    }
+    return displayed;
   }
 
   function view(compact = false) {
     return {
       ...board,
-      revision: board.revision ?? 0,
+      revision: revision(),
       features: boardFeatures(compact),
       indicators: registry.indicators,
       sources: registry.sources,
@@ -470,7 +594,7 @@ export function createWorldService({
   function progressView() {
     return {
       refresh: progress,
-      revision: board.revision ?? 0,
+      revision: revision(),
       ...(error && { error }),
     };
   }
