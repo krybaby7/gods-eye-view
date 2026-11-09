@@ -107,7 +107,11 @@ export const ownershipLens = {
   color: ownershipColor,
   legend: (snapshot) => ({
     name: 'Ownership',
-    stops: ['Documented foreign ownership'],
+    stops: [
+      'Documented foreign ownership',
+      'Grey dashes mark documented military presence',
+      'Dotted lines and ? markers show exact site unknown',
+    ],
     note: snapshot.selected
       ? `${snapshot.selected} · verified owner evidence · hatching means unknown`
       : 'Select a country to show its documented assets abroad',
@@ -140,6 +144,36 @@ export function assetPoint(asset) {
     : null;
 }
 
+function countryPoint(iso3, labelPoint) {
+  const point = labelPoint(iso3);
+  return point ? [point.lon, point.lat] : null;
+}
+
+export function assetConnections(snapshot, labelPoint) {
+  if (snapshot.lens !== 'ownership' || !snapshot.selected) return [];
+  const owner = snapshot.selected;
+  const holdings = ownedAbroad(snapshot, owner);
+  const holdingIds = new Set(holdings.map(({ id }) => id));
+  const presence = (
+    assetCatalog(snapshot).bySendingCountry.get(owner) ?? []
+  ).filter(
+    (asset) => asset.status === 'operating' && !holdingIds.has(asset.id),
+  );
+  const connections = [];
+  for (const [assets, kind] of [
+    [holdings, 'ownership'],
+    [presence, 'presence'],
+  ]) {
+    for (const asset of assets) {
+      const exact = assetPoint(asset);
+      const coordinates = exact ?? countryPoint(asset.locatedIn, labelPoint);
+      if (coordinates)
+        connections.push({ asset, coordinates, approximate: !exact, kind });
+    }
+  }
+  return connections;
+}
+
 function markerOwner(asset, selected) {
   const owners = verifiedOwners(asset);
   return (
@@ -149,18 +183,21 @@ function markerOwner(asset, selected) {
   );
 }
 
-export function assetMarkers(snapshot, scale) {
+export function assetMarkers(snapshot, scale, labelPoint = () => null) {
   const ownership = snapshot.lens === 'ownership';
   const focused = new Set(
-    ownership
-      ? ownedAbroad(snapshot, snapshot.selected).map(({ id }) => id)
-      : [],
+    assetConnections(snapshot, labelPoint).map(({ asset }) => asset.id),
   );
   const stories = [];
+  const approximate = new Map();
   for (const asset of assetCatalog(snapshot).byId.values()) {
-    const position = assetPoint(asset);
     const style = assetKinds[asset.type];
-    if (!position || !style || !asset.locatedIn) continue;
+    if (!style || !asset.locatedIn) continue;
+    const position = assetPoint(asset);
+    if (!position) {
+      addToIndex(approximate, asset.locatedIn, asset);
+      continue;
+    }
     const [lon, lat] = position;
     const countryType = `${asset.locatedIn}:${asset.type}`;
     const group = focused.has(asset.id)
@@ -183,7 +220,7 @@ export function assetMarkers(snapshot, scale) {
     });
   }
 
-  return aggregateHotspots(stories, { categories }).map((group) => {
+  const markers = aggregateHotspots(stories, { categories }).map((group) => {
     const members = group.stories.map(({ asset }) => asset);
     const single = members.length === 1;
     const first = members[0];
@@ -200,9 +237,31 @@ export function assetMarkers(snapshot, scale) {
       size: single ? 24 : hotspotSizePx(members.length),
     };
   });
+  for (const [host, members] of approximate) {
+    const coordinates = countryPoint(host, labelPoint);
+    if (!coordinates) continue;
+    const first = members[0];
+    const single = members.length === 1;
+    markers.push({
+      id: single ? first.id : `fallback:${host}`,
+      coordinates,
+      members,
+      type: first.type,
+      approximate: true,
+      owner: ownership && single ? markerOwner(first, snapshot.selected) : null,
+      focus: members.some(({ id }) => focused.has(id)),
+      size: single ? 24 : hotspotSizePx(members.length),
+    });
+  }
+  return markers;
 }
 
 export function assetClusterMembers(snapshot, id) {
+  const host = /^fallback:([A-Z]{3})$/.exec(id)?.[1];
+  if (host)
+    return (assetCatalog(snapshot).byHost.get(host) ?? []).filter(
+      (asset) => assetKinds[asset.type] && !assetPoint(asset),
+    );
   const scale = /^cluster:(global|regional):/.exec(id)?.[1];
   return scale
     ? (assetMarkers(snapshot, scale).find((marker) => marker.id === id)

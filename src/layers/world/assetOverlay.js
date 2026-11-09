@@ -1,15 +1,14 @@
 import * as Cesium from 'cesium';
 import {
+  assetConnections,
   assetKinds,
   assetMarkers,
-  assetPoint,
   boardAssetScale,
-  ownedAbroad,
   ownerColor,
 } from './assets.js';
 
 function assetIcon(document, marker) {
-  const { type, owner, focus, members, size } = marker;
+  const { type, owner, focus, members, size, approximate } = marker;
   const style = assetKinds[type];
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size * 2;
@@ -17,11 +16,14 @@ function assetIcon(document, marker) {
   const c = size;
   ctx.beginPath();
   ctx.arc(c, c, c - 5, 0, 2 * Math.PI);
-  ctx.fillStyle = '#10212d';
+  ctx.fillStyle = approximate ? '#10212ddd' : '#10212d';
   ctx.fill();
-  ctx.strokeStyle = owner ? ownerColor(owner) : style.color;
+  const accent = approximate ? '#f6cf85' : style.color;
+  ctx.strokeStyle = owner ? ownerColor(owner) : accent;
   ctx.lineWidth = owner ? 5 : 2.5;
+  if (approximate) ctx.setLineDash([4, 4]);
   ctx.stroke();
+  ctx.setLineDash([]);
   if (focus) {
     ctx.beginPath();
     ctx.arc(c, c, c - 1.6, 0, 2 * Math.PI);
@@ -32,9 +34,13 @@ function assetIcon(document, marker) {
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'center';
   ctx.font = `bold ${members.length > 1 ? Math.min(size, 22) : 24}px system-ui`;
-  ctx.fillStyle = style.color;
+  ctx.fillStyle = accent;
   ctx.fillText(
-    members.length > 1 ? String(members.length) : style.glyph,
+    approximate
+      ? '?'
+      : members.length > 1
+        ? String(members.length)
+        : style.glyph,
     c,
     c + 1,
   );
@@ -75,12 +81,13 @@ export function createAssetOverlay({ viewer, labelPoint, requestRender }) {
 
   function drawMarkers() {
     markers.removeAll();
-    for (const marker of assetMarkers(snapshot, scale)) {
+    for (const marker of assetMarkers(snapshot, scale, labelPoint)) {
       const key = [
         marker.type,
         marker.owner ? 'owner-' + marker.owner : 'neutral',
         marker.focus ? 'focus' : 'base',
         marker.members.length,
+        marker.approximate ? 'approximate' : 'site',
       ].join(':');
       if (!images.has(key))
         images.set(key, assetIcon(scene.canvas.ownerDocument, marker));
@@ -103,15 +110,31 @@ export function createAssetOverlay({ viewer, labelPoint, requestRender }) {
     const color = Cesium.Color.fromCssColorString(ownerColor(owner)).withAlpha(
       0.8,
     );
-    for (const asset of ownedAbroad(snapshot, owner)) {
-      const location = assetPoint(asset);
-      const positions = location ? returnLine(location, endpoint) : [];
+    const presenceColor =
+      Cesium.Color.fromCssColorString('#d8dce5').withAlpha(0.8);
+    for (const { asset, coordinates, approximate, kind } of assetConnections(
+      snapshot,
+      labelPoint,
+    )) {
+      const positions = returnLine(coordinates, endpoint);
       if (positions.length < 2) continue;
+      const presence = kind === 'presence';
+      const lineColor = presence ? presenceColor : color;
+      const material =
+        presence || approximate
+          ? Cesium.Material.fromType('PolylineDash', {
+              color: lineColor,
+              dashLength: approximate ? 10 : 18,
+              dashPattern: approximate
+                ? 0b1111000011110000
+                : 0b1111111100000000,
+            })
+          : Cesium.Material.fromType('Color', { color: lineColor });
       lines.add({
         id: 'world-card:asset:' + asset.id,
         positions,
-        width: 2.5,
-        material: Cesium.Material.fromType('Color', { color }),
+        width: presence ? 2 : 2.5,
+        material,
       });
     }
   }

@@ -256,7 +256,7 @@
   {
     "id": "wikidata-assets",
     "name": "Wikidata facilities and port operators",
-    "access": "Keyless Wikidata Query Service SPARQL, class-bounded queries",
+    "access": "Keyless Wikidata Query Service, paced POST batches by facility class and host",
     "attribution": "Wikidata contributors, structured data",
     "url": "https://www.wikidata.org/",
     "licence": "CC0",
@@ -266,12 +266,12 @@
   {
     "id": "nga-ports",
     "name": "NGA World Port Index",
-    "access": "Keyless NGA Maritime Safety Information World Port Index JSON",
+    "access": "Keyless World Port Index data via the U.S. Department of Energy NETL public mirror",
     "attribution": "U.S. National Geospatial-Intelligence Agency, World Port Index (Pub. 150)",
-    "url": "https://msi.nga.mil/Publications/WPI",
+    "url": "https://arcgis.netl.doe.gov/server/rest/services/Hosted/CCS_EJ_SJ_Data/FeatureServer/17",
     "licence": "Public domain (U.S. government)",
-    "releaseRhythm": "Index updates as published; local check no more often than every 30 days",
-    "marks": ["LiveUnverified"]
+    "releaseRhythm": "Mirror publication schedule is unconfirmed. Local checks run no more often than every 30 days.",
+    "marks": ["Mirror"]
   },
   {
     "id": "ourairports",

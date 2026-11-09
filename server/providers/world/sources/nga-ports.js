@@ -1,15 +1,26 @@
-import { readResponseJsonCapped } from '../../common/http.js';
+import { readFile } from 'node:fs/promises';
 import {
   assetCountryResolver,
   assetRow,
   createAssetAdapter,
   point,
 } from './asset-common.js';
+import { downloadWorldFile } from './download.js';
 
 const source = 'nga-ports';
-const page = 'https://msi.nga.mil/Publications/WPI';
+// Public U.S. DOE National Energy Technology Laboratory mirror of NGA Pub. 150.
+const layer =
+  'https://arcgis.netl.doe.gov/server/rest/services/Hosted/CCS_EJ_SJ_Data/FeatureServer/17';
 const url =
-  'https://msi.om.east.paas.nga.mil/api/publications/world-port-index?output=json';
+  layer +
+  '/query?' +
+  new URLSearchParams({
+    where: "harbor_size_code='Large'",
+    outFields: 'wpinumber,main_port_name,wpi_cc,harbor_size_code',
+    returnGeometry: 'true',
+    outSR: '4326',
+    f: 'json',
+  });
 
 function comparableName(name) {
   return name
@@ -90,7 +101,7 @@ export function parseWorldPortIndex(
         locatedIn,
         geometry,
         source,
-        sourceUrl: page,
+        sourceUrl: layer,
         licence: 'Public domain (U.S. government)',
         now,
         operator: match?.operator ?? null,
@@ -105,18 +116,61 @@ export function parseWorldPortIndex(
   return assets;
 }
 
+const wpiCountryCodes = new Map([
+  ['United States', 'USA'],
+  ['Hong Kong', 'HKG'],
+  ["Cote D'Ivoire", 'CIV'],
+  ['Saint Helena, Ascension, and Tristan da Cunha', 'SHN'],
+]);
+
+export function parseWpiFeatureLayer(payload, options) {
+  if (payload?.exceededTransferLimit)
+    throw new Error('The DOE World Port Index response was truncated');
+  if (!Array.isArray(payload?.features))
+    throw new Error('Unexpected DOE World Port Index feature layer');
+  const ports = payload.features.map(({ attributes, geometry }) => ({
+    portNumber: attributes?.wpinumber,
+    portName: attributes?.main_port_name,
+    countryCode: wpiCountryCodes.get(attributes?.wpi_cc) ?? attributes?.wpi_cc,
+    harborSize: attributes?.harbor_size_code,
+    longitude: geometry?.x,
+    latitude: geometry?.y,
+  }));
+  return parseWorldPortIndex({ ports }, options);
+}
+
 export const ngaPorts = createAssetAdapter(
-  async ({ registry, now, request, features }) => {
+  async ({
+    registry,
+    now,
+    fetchImpl,
+    cacheDirectory,
+    onProgress,
+    features,
+  }) => {
     const country = await assetCountryResolver(registry);
     const operatorCandidates = features?.['wikidata-assets']?.portOperators;
-    const payload = await request(url, 25_000_000, readResponseJsonCapped);
-    const rows = parseWorldPortIndex(payload, {
+    const { path } = await downloadWorldFile(url, {
+      fetchImpl,
+      cacheDirectory,
+      onProgress,
+      maxBytes: 2_000_000,
+    });
+    const payload = JSON.parse(await readFile(path, 'utf8'));
+    const rows = parseWpiFeatureLayer(payload, {
       country,
       now,
       operatorCandidates,
     });
     if (!rows.length) throw new Error('NGA returned no large harbors');
-    return { data: { rows }, count: rows.length, unit: 'large harbor' };
+    return {
+      data: { rows },
+      count: rows.length,
+      unit: 'large harbor',
+      detail:
+        'NGA World Port Index via the public U.S. Department of Energy mirror.',
+    };
   },
   30,
+  { estimatedBytes: 35_000 },
 );

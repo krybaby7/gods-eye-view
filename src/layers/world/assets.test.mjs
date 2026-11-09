@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   assetCatalog,
+  assetConnections,
   assetMarkers,
   assetClusterMembers,
   ownershipColor,
@@ -75,6 +76,68 @@ const snapshot = {
     'curated-assets': { rows, nuclearBadges: [{ countryCode: 'CHN' }] },
   },
 };
+
+test('missing sites share a distinct host-country marker without replacing real site coordinates', () => {
+  const labelPoint = (iso3) =>
+    iso3 === 'DEU' ? { lon: 10.6, lat: 51.3 } : null;
+  const extra = { ...rows[2], id: 'missing-two', type: 'military_base' };
+  const features = { 'curated-assets': { rows: [...rows, extra] } };
+  const board = { ...snapshot, features };
+  const markers = assetMarkers(board, 'global', labelPoint);
+  const fallback = markers.find(({ id }) => id === 'fallback:DEU');
+  assert.equal(fallback.approximate, true);
+  assert.deepEqual(fallback.coordinates, [10.6, 51.3]);
+  assert.deepEqual(
+    assetClusterMembers(board, fallback.id).map(({ id }) => id),
+    ['c', 'missing-two'],
+  );
+  assert.ok(
+    markers.some(
+      ({ id, approximate }) => id === 'cluster:global:DEU:fab' && !approximate,
+    ),
+  );
+  assert.ok(!markers.some(({ id }) => id === 'f'));
+});
+
+test('ownership lines use host label points for an unknown site and identify military presence separately', () => {
+  const labelPoint = (iso3) =>
+    iso3 === 'DEU' ? { lon: 10.6, lat: 51.3 } : null;
+  const verified = { ...rows[2], id: 'title', reviewed: true };
+  const presence = {
+    ...rows[5],
+    id: 'presence',
+    sendingCountry: 'CHN',
+    locatedIn: 'DEU',
+    status: 'operating',
+  };
+  const board = {
+    ...snapshot,
+    lens: 'ownership',
+    selected: 'CHN',
+    features: {
+      'curated-assets': { rows: [...rows, verified, presence] },
+    },
+  };
+  assert.deepEqual(
+    assetConnections(board, labelPoint).map(
+      ({ asset, coordinates, approximate, kind }) => [
+        asset.id,
+        coordinates,
+        approximate,
+        kind,
+      ],
+    ),
+    [
+      ['a', [10, 51], false, 'ownership'],
+      ['title', [10.6, 51.3], true, 'ownership'],
+      ['presence', [10.6, 51.3], true, 'presence'],
+    ],
+  );
+  assert.equal(
+    ownedAbroad(board, 'CHN').some(({ id }) => id === 'presence'),
+    false,
+  );
+});
 
 test('ownership is limited to independently documented owners abroad', () => {
   assert.deepEqual(

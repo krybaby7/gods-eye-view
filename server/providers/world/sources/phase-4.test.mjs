@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createAssetAdapter, assetCountryResolver } from './asset-common.js';
+import { assetCountryResolver } from './asset-common.js';
 import { parseOurAirports } from './ourairports.js';
 import { parsePowerPlants } from './wri-power.js';
-import { parseWorldPortIndex } from './nga-ports.js';
+import { parseWpiFeatureLayer, parseWorldPortIndex } from './nga-ports.js';
 import { parseWikidataAssets, wikidataAssets } from './wikidata-assets.js';
 import { readCuratedAssets } from '../assets.js';
 import { worldAdapters, worldRefreshSteps } from '../refreshRegistry.js';
@@ -159,7 +159,7 @@ test('curated packs keep all rows and distinguish draft corporate attribution fr
   const { rows, nuclearBadges } = await readCuratedAssets();
   assert.equal(
     rows.filter((asset) => asset.type === 'military_base').length,
-    80,
+    101,
   );
   assert.equal(rows.filter((asset) => asset.type === 'fab').length, 50);
   assert.equal(nuclearBadges.length, 9);
@@ -168,7 +168,28 @@ test('curated packs keep all rows and distinguish draft corporate attribution fr
       (row) => row.reviewed === false && row.sourceUrl,
     ),
   );
-  assert.ok(rows.every((row) => row.geometry === null));
+  assert.ok(
+    rows.some(({ type, geometry }) => type === 'military_base' && geometry),
+  );
+  assert.ok(rows.some(({ type, geometry }) => type === 'fab' && geometry));
+  assert.ok(rows.some(({ geometry }) => !geometry));
+  assert.ok(
+    rows.every(
+      ({ geometry, coordinateSourceUrl }) =>
+        Boolean(geometry) === Boolean(coordinateSourceUrl),
+    ),
+  );
+  for (const code of ['GBR', 'RUS', 'TUR', 'CHN', 'FRA', 'AUS', 'ITA']) {
+    assert.ok(
+      rows.some(({ sendingCountry }) => sendingCountry === code),
+      code,
+    );
+  }
+  assert.ok(
+    rows
+      .filter(({ type }) => type === 'military_base')
+      .every(({ ownerCountry, owners }) => !ownerCountry && !owners.length),
+  );
   const base = rows.find(({ name }) => name === 'Camp Lemonnier');
   assert.equal(base.sendingCountry, 'USA');
   assert.equal(base.locatedIn, 'DJI');
@@ -177,18 +198,6 @@ test('curated packs keep all rows and distinguish draft corporate attribution fr
   assert.ok(fab.operator);
   assert.ok(!fab.owners.some((owner) => owner.verified));
   assert.ok(rows.every((asset) => asset.canInterrupt.length === 0));
-});
-
-test('429 defers the next asset download to the provider retry time', async () => {
-  const adapter = createAssetAdapter(
-    async ({ request }) => request('https://example.test/', 1024),
-    1,
-  );
-  const fetchImpl = async () =>
-    new Response('', { status: 429, headers: { 'Retry-After': '120' } });
-  await assert.rejects(adapter.fetchObservations({ now, fetchImpl }), /429/);
-  assert.equal(adapter.shouldCheck({ now: new Date(+now + 119000) }), false);
-  assert.equal(adapter.shouldCheck({ now: new Date(+now + 120000) }), true);
 });
 
 test('documented NGA endpoint normalizes DMS coordinates and large harbor code', () => {
@@ -210,30 +219,90 @@ test('documented NGA endpoint normalizes DMS coordinates and large harbor code',
   );
 });
 
-test('Wikidata batches its two facility classes and candidates atomically', async () => {
+test('Wikidata posts bounded host batches, keeps unaffected results, and defers a 503 with Retry-After', async () => {
   const calls = [];
-  const fetchImpl = async (url) => {
-    calls.push(new URL(url).searchParams.get('query'));
-    if (calls.length === 2) return new Response('', { status: 503 });
-    return new Response(
-      JSON.stringify({
-        results: { bindings: [{ item: { value: 'nuclear fixture' } }] },
-      }),
-    );
-  };
-  await assert.rejects(
-    wikidataAssets.fetchObservations({
-      registry: { countries: [] },
-      now,
-      fetchImpl,
-    }),
-    /503/,
+  const binding = Object.fromEntries(
+    Object.entries({
+      item: 'http://www.wikidata.org/entity/Q100',
+      itemLabel: 'Nuclear plant',
+      kind: 'nuclear_plant',
+      iso: 'AAA',
+      point: 'Point(-90 30)',
+    }).map(([key, value]) => [key, { value }]),
   );
+  const fetchImpl = async (url, options) => {
+    assert.equal(url, 'https://query.wikidata.org/sparql');
+    assert.equal(options.method, 'POST');
+    calls.push(new URLSearchParams(options.body).get('query'));
+    if (calls.length === 2)
+      return new Response('', {
+        status: 503,
+        headers: { 'Retry-After': '120' },
+      });
+    return new Response(JSON.stringify({ results: { bindings: [binding] } }));
+  };
+  const countries = Array.from({ length: 41 }, (_, i) => ({
+    iso3: 'A' + String.fromCharCode(65 + Math.floor(i / 26), 65 + (i % 26)),
+  }));
+  const oldSite = { id: 'asset_wd-Q90', type: 'spaceport', locatedIn: 'AAA' };
+  const oldPlant = {
+    id: 'asset_wd-Q99',
+    type: 'nuclear_plant',
+    locatedIn: 'AAA',
+  };
+  const result = await wikidataAssets.fetchObservations({
+    registry: { countries },
+    now,
+    fetchImpl,
+    data: { rows: [oldSite, oldPlant] },
+  });
   assert.equal(calls.length, 2);
   assert.match(calls[0], /Q134447/);
   assert.match(calls[0], /OPTIONAL\s*\{\s*\?item wdt:P625/);
-  assert.doesNotMatch(calls[0], /Q194188/);
-  assert.match(calls[1], /Q194188/);
+  assert.match(calls[0], /VALUES \?iso \{[^}]*"AAA"/);
+  assert.doesNotMatch(calls[0], /"ABO"/);
+  assert.match(calls[1], /VALUES \?iso \{ "ABO" \}/);
+  assert.match(result.error, /HTTP 503/);
+  assert.deepEqual(
+    result.data.rows.map(({ id }) => id),
+    ['asset_wd-Q100', oldSite.id],
+  );
+  assert.equal(
+    wikidataAssets.shouldCheck({
+      now: new Date(+now + 119000),
+      data: result.data,
+    }),
+    false,
+  );
+  assert.equal(
+    wikidataAssets.shouldCheck({
+      now: new Date(+now + 121000),
+      data: result.data,
+    }),
+    true,
+  );
+});
+
+test('reads the DOE WPI mirror geometry and rejects truncated feature layers', () => {
+  const features = [
+    {
+      attributes: {
+        wpinumber: 8210,
+        main_port_name: 'Baltimore',
+        wpi_cc: 'United States',
+        harbor_size_code: 'Large',
+      },
+      geometry: { x: -76.58, y: 39.26 },
+    },
+  ];
+  const [port] = parseWpiFeatureLayer({ features }, options);
+  assert.equal(port.id, 'asset_nga-8210');
+  assert.deepEqual(port.geometry.coordinates, [-76.58, 39.26]);
+  assert.throws(
+    () =>
+      parseWpiFeatureLayer({ features, exceededTransferLimit: true }, options),
+    /truncated/,
+  );
 });
 
 test('asset adapters register all five sources and enrich ports only after the Wikidata check', async () => {
