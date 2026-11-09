@@ -87,7 +87,7 @@ test('scoped live refreshes leave the dataset and its scores unchanged', async (
   assert.equal(scoped.countries.IND.slots.C3.score, score);
   assert.equal(scoped.features.gdacs.active, false);
   assert.equal(scoped.turn.statusChanges, 1);
-  assert.equal(scoped.turn.newEvents, 0);
+  assert.equal(scoped.turn.newEvents, 1);
   assert.equal(datasetCalls, 1);
   assert.equal(liveCalls, 2);
 

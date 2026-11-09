@@ -130,7 +130,7 @@ export function createTurn({
     endedAt,
     sources,
     newObservations,
-    newEvents: flagChanges.filter(({ action }) => action === 'set').length,
+    newEvents: flagChanges.length,
     statusChanges: flagChanges.length,
     newEstimates: 0,
     changes,
