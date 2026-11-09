@@ -9,6 +9,7 @@ import {
 } from './liveDisplacement.js';
 import { download } from './liveFeedCommon.js';
 import { debtDistress } from './liveDebtDsa.js';
+import { shouldCheck as shouldCheckUcdp } from './ucdp.js';
 
 const now = new Date('2026-11-09T10:00:00Z');
 
@@ -170,4 +171,16 @@ test('UCDP waits for released raw totals in older caches and ignores out-of-wind
       [],
     );
   }
+});
+test('a manual refresh backfills raw conflict counts from a pre-fix cache in the same release month', () => {
+  const context = {
+    lastCheckedAt: '2026-11-09T07:00:00Z',
+    now: new Date('2026-11-09T12:00:00Z'),
+    observations: [{ indicator: 'condition.conflict_deaths', value: 0.03 }],
+  };
+  assert.equal(shouldCheckUcdp(context), true);
+  assert.equal(
+    shouldCheckUcdp({ ...context, data: { deathsByIso3: { IND: 343 } } }),
+    false,
+  );
 });
