@@ -56,7 +56,13 @@ export async function download(
     text: readResponseTextCapped,
     bytes: readResponseBytesCapped,
   };
-  return readers[kind](response, cap, signal);
+  try {
+    return await readers[kind](response, cap, signal);
+  } catch (error) {
+    if (error instanceof SyntaxError)
+      throw new Error('Invalid JSON from ' + origin);
+    throw error;
+  }
 }
 
 export function dateOf(value) {

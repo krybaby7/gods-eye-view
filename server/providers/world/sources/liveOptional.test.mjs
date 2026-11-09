@@ -58,7 +58,7 @@ test('optional adapters parse licensed fixtures through their own explicit confi
       endpoint: 'https://www.electionguide.org/api/elections/',
       token: 'fixture-token',
     },
-    hdx: { appIdentifier: 'fixture-identifier' },
+    hdx: { appIdentifier: 'fixture+id/=' },
     ioda: { licenceApproved: true },
     candidate: {
       endpoint: 'https://ucdpapi.pcr.uu.se/api/gedeventscandidate/26.0.10',
@@ -95,16 +95,20 @@ test('optional adapters parse licensed fixtures through their own explicit confi
       ...context,
       fetchImpl: async (url, options) => {
         if (id === 'live-hdx') {
-          const { pathname } = new URL(url);
+          const { pathname, searchParams } = new URL(url);
           assert(
             [
               '/api/v2/food-security-nutrition-poverty/food-security',
               '/api/v2/food-security-nutrition-poverty/food-prices-market-monitor',
             ].includes(pathname),
           );
+          assert.equal(searchParams.get('app_identifier'), 'fixture+id/=');
+          assert.equal(searchParams.get('start_date'), '2026-05-13');
+          assert.equal(searchParams.get('output_format'), 'json');
+          assert.equal(options.redirect, 'error');
           assert.equal(
-            options.headers['X-HDX-HAPI-APP-IDENTIFIER'],
-            'fixture-identifier',
+            options.headers?.['X-HDX-HAPI-APP-IDENTIFIER'],
+            undefined,
           );
           return Response.json({
             data: pathname.endsWith('/food-security')
@@ -165,5 +169,25 @@ test('optional adapters parse licensed fixtures through their own explicit confi
         result.data.flags.some(({ label }) => label.includes('market price')),
       );
     assert.equal(result.observations, undefined);
+  }
+});
+
+test('HAPI suppresses an identifier echoed by a transport or malformed response', async () => {
+  const appIdentifier = 'fixture+id/=';
+  const adapter = optionalLiveSources({ hdx: { appIdentifier } })['live-hdx'];
+  for (const fetchImpl of [
+    async (url) => {
+      throw new Error(url);
+    },
+    async () => new Response(appIdentifier),
+  ]) {
+    await assert.rejects(
+      adapter.fetchObservations({ ...context, fetchImpl }),
+      (error) => {
+        assert.doesNotMatch(error.message, /fixture|app_identifier/i);
+        assert.equal(error.cause, undefined);
+        return true;
+      },
+    );
   }
 });

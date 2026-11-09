@@ -36,13 +36,13 @@ function allowedEndpoint(value, hosts) {
     : null;
 }
 
-function withHeader(fetchImpl, key, value) {
+function protectedFetch(fetchImpl, headers) {
   return async (url, options) => {
     try {
       return await fetchImpl(url, {
         ...options,
         redirect: 'error',
-        headers: { ...options?.headers, [key]: value },
+        ...(headers && { headers: { ...options?.headers, ...headers } }),
       });
     } catch {
       throw new Error('Optional feed request could not be completed');
@@ -274,11 +274,9 @@ export function optionalLiveSources(config = {}) {
       Boolean(election && config.electionguide?.token),
       DAY,
       async ({ fetchImpl, now, registry }) => {
-        const fetch = withHeader(
-          fetchImpl,
-          'Authorization',
-          'Bearer ' + config.electionguide.token,
-        );
+        const fetch = protectedFetch(fetchImpl, {
+          Authorization: 'Bearer ' + config.electionguide.token,
+        });
         return electionFlags(
           expectRows(await download(fetch, election), 'results', 'data'),
           now,
@@ -290,23 +288,21 @@ export function optionalLiveSources(config = {}) {
       Boolean(config.hdx?.appIdentifier),
       7 * DAY,
       async ({ fetchImpl, now, registry }) => {
-        const fetch = withHeader(
-          fetchImpl,
-          'X-HDX-HAPI-APP-IDENTIFIER',
-          config.hdx.appIdentifier,
-        );
+        const fetch = protectedFetch(fetchImpl);
         const root =
           'https://hapi.humdata.org/api/v2/food-security-nutrition-poverty/';
-        const dates =
-          '?reference_period_start_min=' +
-          new Date(+now - 180 * DAY).toISOString().slice(0, 10) +
-          '&limit=10000';
+        const query = new URLSearchParams({
+          app_identifier: config.hdx.appIdentifier,
+          start_date: new Date(+now - 180 * DAY).toISOString().slice(0, 10),
+          output_format: 'json',
+          limit: '10000',
+        });
         const ipc = expectRows(
-          await download(fetch, root + 'food-security' + dates),
+          await download(fetch, root + 'food-security?' + query),
           'data',
         );
         const prices = expectRows(
-          await download(fetch, root + 'food-prices-market-monitor' + dates),
+          await download(fetch, root + 'food-prices-market-monitor?' + query),
           'data',
         );
         return hdxFlags(ipc, prices, now, countryIds(registry));
@@ -334,11 +330,9 @@ export function optionalLiveSources(config = {}) {
       Boolean(candidate && config.candidate?.token),
       7 * DAY,
       async ({ fetchImpl, now, registry }) => {
-        const fetch = withHeader(
-          fetchImpl,
-          'x-ucdp-access-token',
-          config.candidate.token,
-        );
+        const fetch = protectedFetch(fetchImpl, {
+          'x-ucdp-access-token': config.candidate.token,
+        });
         return candidateFlags(
           expectRows(await download(fetch, candidate), 'Result', 'result'),
           now,
