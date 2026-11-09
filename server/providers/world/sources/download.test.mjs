@@ -80,9 +80,11 @@ test('bulk download stays alive while chunks arrive within the stall window', as
 });
 
 test('bulk download keeps a stalled prefix and resumes with an exact Range', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const prefixReceived = Promise.withResolvers();
   let calls = 0;
   let canceled = false;
-  const { download } = await downloadFixture(
+  const { download, cacheDirectory } = await downloadFixture(
     t,
     (_, { headers }) => {
       if (++calls === 1) {
@@ -102,13 +104,34 @@ test('bulk download keeps a stalled prefix and resumes with an exact Range', asy
       assert.equal(headers.get('If-Range'), etag);
       return bodyResponse('def', { 'Content-Range': 'bytes 3-5/6' }, 206);
     },
-    { stallTimeoutMs: 200 },
+    {
+      stallTimeoutMs: 200,
+      onProgress({ bytes }) {
+        if (bytes === 3) prefixReceived.resolve();
+      },
+    },
   );
 
-  await assert.rejects(download(), {
+  const stalled = assert.rejects(download(), {
     code: 'DOWNLOAD_STALLED',
     message: /stalled.*200 ms/i,
   });
+  await prefixReceived.promise;
+  // Advance the network clock only once the prefix is durable on disk.
+  const deadline = performance.now() + 5_000;
+  for (;;) {
+    const part = (await readdir(cacheDirectory)).find((name) =>
+      name.endsWith('.part'),
+    );
+    if (part && (await stat(path.join(cacheDirectory, part))).size === 3) break;
+    assert.ok(
+      performance.now() < deadline,
+      'The downloaded prefix was not written',
+    );
+    await new Promise((resolve) => realSetTimeout(resolve, 5));
+  }
+  t.mock.timers.tick(200);
+  await stalled;
   assert.equal(canceled, true);
   const result = await download();
   assert.equal(await readFile(result.path, 'utf8'), 'abcdef');
