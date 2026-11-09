@@ -2,6 +2,7 @@ import { readCuratedAssets } from '../server/providers/world/assets.js';
 import { ownerColor } from '../src/layers/world/assets.js';
 
 const fabId = 'asset_fixture-cn-fab';
+const unknownSiteId = 'asset_fixture-cn-missing-site';
 const clusterId = 'cluster:global:DEU:port';
 const syntheticSource = 'https://example.test/asset-evidence';
 const point = (lon, lat) => ({ type: 'Point', coordinates: [lon, lat] });
@@ -62,6 +63,14 @@ const fab = fixtureAsset(
     ],
   },
 );
+const unknownSite = fixtureAsset(
+  unknownSiteId,
+  'fab',
+  'Fixture Fab with Unknown Site',
+  'JPN',
+  null,
+  { owners: fab.owners },
+);
 const curated = await readCuratedAssets();
 function staticFixture(data) {
   return {
@@ -91,18 +100,25 @@ export const fixtureAdapters = {
       ),
     ],
   }),
-  'wikidata-assets': staticFixture({ rows: [fab], portOperators: [] }),
+  'wikidata-assets': staticFixture({
+    rows: [fab, unknownSite],
+    portOperators: [],
+  }),
   'nga-ports': staticFixture({
     rows: ports.map((port) => ({ ...port, source: 'nga-ports' })),
   }),
   ourairports: staticFixture({ rows: [] }),
   'curated-assets': staticFixture({
     ...curated,
-    rows: curated.rows.filter(({ name }) =>
-      ['Fab 24', 'PLA Support Base in Djibouti', 'Camp Lemonnier'].includes(
-        name,
+    rows: curated.rows
+      .filter(({ name }) =>
+        ['Fab 24', 'PLA Support Base in Djibouti', 'Camp Lemonnier'].includes(
+          name,
+        ),
+      )
+      .map((asset) =>
+        asset.name === 'Fab 24' ? { ...asset, geometry: null } : asset,
       ),
-    ),
   }),
 };
 
@@ -236,12 +252,14 @@ export default async function phase4({
       }, wait);
       await camera(11.6, 49.4, 9_000_000);
       await page.waitForFunction(
-        ({ pickId, color }) => {
+        ({ pickId, approximateId, color }) => {
           const { C } = window.worldQa;
           const { primitives } = window.__godsEyeView.viewer.scene;
           const expected = C.Color.fromCssColorString(color).withAlpha(0.8);
           let ring = false;
           let line = false;
+          let approximateMarker = false;
+          let approximateLine = false;
           for (let i = 0; i < primitives.length; i++) {
             const group = primitives.get(i);
             if (
@@ -254,6 +272,10 @@ export default async function phase4({
               continue;
             for (let j = 0; j < group.length; j++) {
               const marker = group.get(j);
+              if (marker.id === approximateId) {
+                approximateMarker ||= marker.image?.endsWith(':approximate');
+                approximateLine ||= marker.material?.type === 'PolylineDash';
+              }
               if (marker.id !== pickId) continue;
               ring ||= Boolean(marker.image?.includes('owner-CHN:focus'));
               line ||= Boolean(
@@ -262,10 +284,14 @@ export default async function phase4({
               );
             }
           }
-          return ring && line;
+          return ring && line && approximateMarker && approximateLine;
         },
         wait,
-        { pickId: assetId(fabId), color: ownerColor('CHN') },
+        {
+          pickId: assetId(fabId),
+          approximateId: assetId(unknownSiteId),
+          color: ownerColor('CHN'),
+        },
       );
       await shot('phase4-ownership');
       await pickAsset(fabId);
@@ -301,7 +327,7 @@ export default async function phase4({
       await clickAssetList('Fab 24');
       assert.match(
         await text('#world-card-content'),
-        /Draft, not yet reviewed.*Legal owner.*Unknown.*Map location.*Unavailable.*Reported group affiliation.*TSMC/s,
+        /Draft, not yet reviewed.*Legal owner.*Unknown.*Map location.*Exact site unknown.*Reported group affiliation.*TSMC/s,
       );
       assert.ok(
         await page.$('#world-card-content a[href*="investor.tsmc.com"]'),

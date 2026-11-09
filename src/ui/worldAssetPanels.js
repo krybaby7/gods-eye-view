@@ -61,7 +61,7 @@ function assetList({ document, snapshot, openCard }, assets) {
     const summary = [
       assetLabel(asset),
       countryName(snapshot, asset.locatedIn),
-      !assetPoint(asset) && 'Map location unavailable',
+      !assetPoint(asset) && 'Exact site unknown',
       asset.historical && 'Historical',
       asset.reviewed === false && draft,
     ].filter(Boolean);
@@ -172,7 +172,9 @@ export function renderAssetCard(context) {
       root.append(
         assetSection(
           context,
-          assetLabel(cluster[0]) + ' cluster',
+          id.startsWith('fallback:')
+            ? `${countryName(snapshot, cluster[0].locatedIn)} · exact sites unknown`
+            : assetLabel(cluster[0]) + ' cluster',
           cluster,
           'No mapped members.',
         ),
@@ -209,7 +211,12 @@ export function renderAssetCard(context) {
         ? asset.status.charAt(0).toUpperCase() + asset.status.slice(1)
         : null,
     ],
-    ['Map location', assetPoint(asset) ? 'Source coordinates' : 'Unavailable'],
+    [
+      'Map location',
+      assetPoint(asset)
+        ? 'Source coordinates'
+        : 'Exact site unknown. A country marker represents the host.',
+    ],
     ['Licence', asset.licence],
     ['Date checked', asset.lastVerified],
   ];
@@ -257,6 +264,7 @@ export function renderAssetCard(context) {
     ),
     link(document, asset.operatorSourceUrl, 'Operator source'),
     link(document, asset.operatorReferenceUrl, 'Operator reference'),
+    link(document, asset.coordinateSourceUrl, 'Coordinate source'),
     ...owners.map((owner) =>
       link(document, owner.sourceUrl, `Ownership evidence · ${owner.actor}`),
     ),
