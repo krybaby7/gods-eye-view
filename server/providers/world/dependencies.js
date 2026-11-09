@@ -86,7 +86,15 @@ function selectedRoutes(model, rows) {
 }
 
 export function compactEnergyModel(model) {
-  if (model?.mode !== 'modelled' || !model.energyExposure) return model;
+  if (model?.mode !== 'modelled') return model;
+  if (!model.energyExposure) {
+    return {
+      mode: 'pending',
+      period: model.period,
+      label: 'Refresh to rebuild energy exposure',
+      rebuildRequired: true,
+    };
+  }
   const {
     exposure,
     importTonnes,
@@ -107,6 +115,8 @@ export function compactEnergyModel(model) {
 
 export function energyDetail(model, country) {
   if (!model) return null;
+  if (model.mode === 'modelled' && !model.energyExposure)
+    return { rebuildRequired: true };
   if (!country)
     return { calibration: model.calibration, routeAudit: model.routeAudit };
   return {

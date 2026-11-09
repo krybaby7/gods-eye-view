@@ -1,5 +1,24 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+
+test('opening a legacy board with the old energy model keeps obsolete detail off the wire', async () => {
+  const { compactEnergyModel, energyDetail } =
+    await import('./dependencies.js');
+  const model = {
+    mode: 'modelled',
+    period: '2024',
+    rows: [{ dependent: 'SAU', shares: { all: 1 } }],
+    exposure: { SAU: [{ shares: { all: 1 } }] },
+    paths: { old: [1, 2, 3] },
+  };
+  assert.deepEqual(compactEnergyModel(model), {
+    mode: 'pending',
+    period: '2024',
+    label: 'Refresh to rebuild energy exposure',
+    rebuildRequired: true,
+  });
+  assert.deepEqual(energyDetail(model, 'SAU'), { rebuildRequired: true });
+});
 import {
   buildEnergyModel,
   commodity,
