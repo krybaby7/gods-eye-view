@@ -311,6 +311,8 @@ export default async function phase2({
       await page.waitForSelector(
         '[data-world-chokepoint="chokepoint6"] [data-status="disrupted"]',
       );
+      // The UI can receive updated feature data before the refresh turn reaches disk.
+      await world.whenIdle();
       const data = (await world.store.read()).board.features.portwatch;
       assert.equal(
         data.gates.find(({ id }) => id === hormuz).status,

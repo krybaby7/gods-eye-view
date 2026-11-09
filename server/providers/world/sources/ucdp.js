@@ -2,23 +2,29 @@ import { createReadStream } from 'node:fs';
 import { readResponseTextCapped } from '../../common/http.js';
 import {
   countryCode,
-  fetchResponse,
+  fetchResponseWithDeadline,
   monthIndex,
   observation,
   releaseDue,
   sourceCountries,
 } from './common.js';
 import { columnIndices, csvRecords, csvRows } from './csv.js';
-import { downloadWorldFile } from './download.js';
+import {
+  downloadWorldFile,
+  hasWorldDownload,
+  pruneWorldDownloads,
+} from './download.js';
 import { zipEntryChunks } from './zip.js';
 
 const CATALOG = 'https://ucdp.uu.se/downloads/';
 const HISTORY = `${CATALOG}olddw.html`;
 const DOWNLOADS = `${CATALOG}candidateged/`;
 const BULK_LIMIT = 50_000_000;
+const EVENT_COLUMNS = ['id', 'country', 'date_start', 'date_end', 'best'];
 
 export const estimatedBytes = 34_000_000;
 export const requestHost = new URL(CATALOG).hostname;
+export const version = 2;
 
 // Candidate's country column uses Gleditsch and Ward labels.
 const COUNTRY_ALIASES = {
@@ -99,6 +105,26 @@ function releasesIn(html) {
   ).filter(Boolean);
 }
 
+async function cachedReleases(sourceVersion, cacheDirectory) {
+  const versions = /^UCDP Candidate (.+)$/.exec(sourceVersion ?? '')?.[1];
+  if (!versions) return [];
+  const releases = [];
+  for (const version of versions.split(' + ')) {
+    if (!/^\d{2}\.(?:0\.\d{1,2}|\d{2}\.\d{2}\.\d{2})$/.test(version)) return [];
+    let cached;
+    for (const extension of ['csv', 'zip']) {
+      const url = `${DOWNLOADS}GEDEvent_v${version.replaceAll('.', '_')}.${extension}`;
+      if (await hasWorldDownload(url, cacheDirectory)) {
+        [cached] = releasesIn(`href="${url}"`);
+        break;
+      }
+    }
+    if (!cached) return [];
+    releases.push(cached);
+  }
+  return releases;
+}
+
 function countryKey(name) {
   return name
     .normalize('NFKD')
@@ -148,19 +174,13 @@ function populationsFor(observations, period) {
 
 const EVENT_DATE = /^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)?$/;
 
-async function mergeEvents(chunks, events, countryNames) {
+async function mergeEvents(chunks, events, countryNames, coveredCountries) {
   let columns;
   for await (const record of csvRecords(chunks)) {
     const row = csvRows(record).next().value;
     if (!row) continue;
     if (!columns) {
-      columns = columnIndices(row, [
-        'id',
-        'country',
-        'date_start',
-        'date_end',
-        'best',
-      ]);
+      columns = columnIndices(row, EVENT_COLUMNS);
       continue;
     }
     const [id, country, dateStart, dateEnd, best] = columns.map(
@@ -173,8 +193,10 @@ async function mergeEvents(chunks, events, countryNames) {
       !EVENT_DATE.test(dateEnd)
     )
       throw new Error('Invalid UCDP Candidate event identity or dates');
+    const iso3 = countryNames.get(countryKey(country));
+    if (iso3) coveredCountries.add(iso3);
     events.set(id, {
-      iso3: countryNames.get(countryKey(country)),
+      iso3,
       country,
       dateStart: dateStart.slice(0, 7),
       dateEnd: dateEnd.slice(0, 7),
@@ -192,25 +214,34 @@ export async function fetchObservations({
   cacheDirectory,
   onProgress,
   signal,
+  data,
+  rederive,
 }) {
   const indicator = registry.indicators.find(({ source }) => source === 'ucdp');
   if (!populationsFor(observations, String(now.getUTCFullYear())).size)
     throw new Error('World Bank population is unavailable for UCDP Candidate');
-  const catalogues = await Promise.all(
-    [CATALOG, HISTORY].map(async (url) => {
-      const timeout = AbortSignal.timeout(30_000);
-      const catalogueSignal = signal
-        ? AbortSignal.any([signal, timeout])
-        : timeout;
-      return readResponseTextCapped(
-        await fetchResponse(fetchImpl, url, catalogueSignal),
-        2_000_000,
-        catalogueSignal,
-      );
-    }),
-  );
-  const releases = catalogues
-    .flatMap(releasesIn)
+  let available = rederive
+    ? await cachedReleases(
+        data?.sourceVersion ??
+          observations.find(
+            (item) =>
+              item.indicator === indicator.id && item.period === data?.period,
+          )?.sourceVersion,
+        cacheDirectory,
+      )
+    : [];
+  if (!available.length) {
+    const catalogues = await Promise.all(
+      [CATALOG, HISTORY].map((url) =>
+        fetchResponseWithDeadline(fetchImpl, url, {
+          signal,
+          read: readResponseTextCapped,
+        }),
+      ),
+    );
+    available = catalogues.flatMap(releasesIn);
+  }
+  const releases = available
     .filter(({ end }) => end < monthIndex(now))
     .sort((a, b) => b.end - a.end || a.start - b.start);
   const newest = releases[0]?.end;
@@ -240,6 +271,8 @@ export async function fetchObservations({
       'World Bank population is unavailable for the UCDP Candidate period',
     );
   const events = new Map();
+  const coveredCountries = new Set();
+  const currentDownloads = [];
   for (const { url, extension } of selected) {
     const { path } = await downloadWorldFile(url, {
       cacheDirectory,
@@ -248,17 +281,23 @@ export async function fetchObservations({
       signal,
       maxBytes: BULK_LIMIT,
       immutable: true,
+      format: extension,
+      csvColumns: EVENT_COLUMNS,
+      source: 'ucdp',
+      parse(path) {
+        const chunks =
+          extension === 'zip'
+            ? zipEntryChunks(
+                path,
+                (name) => /\.csv$/i.test(name),
+                BULK_LIMIT,
+                signal,
+              )
+            : createReadStream(path, { signal });
+        return mergeEvents(chunks, events, countryNames, coveredCountries);
+      },
     });
-    const chunks =
-      extension === 'zip'
-        ? zipEntryChunks(
-            path,
-            (name) => /\.csv$/i.test(name),
-            BULK_LIMIT,
-            signal,
-          )
-        : createReadStream(path, { signal });
-    await mergeEvents(chunks, events, countryNames);
+    currentDownloads.push(path);
   }
 
   const totals = new Map();
@@ -277,9 +316,6 @@ export async function fetchObservations({
   }
   const sourceVersion = `UCDP Candidate ${selected.map(({ version }) => version).join(' + ')}`;
   const countries = sourceCountries(registry);
-  const missing = countries.filter(
-    ({ iso3 }) => !populations.has(iso3) || Number.isNaN(totals.get(iso3)),
-  ).length;
   if (unmapped.size) {
     throw new Error(
       `Unmapped UCDP Candidate event countries: ${[...unmapped].sort().join(', ')}`,
@@ -287,10 +323,17 @@ export async function fetchObservations({
   }
   const deathsByIso3 = Object.fromEntries(
     countries.flatMap(({ iso3 }) => {
+      // The event files contain no country roster. A row in a selected release
+      // establishes coverage even when the event falls outside the score window.
+      if (!coveredCountries.has(iso3)) return [];
       const deaths = totals.get(iso3) ?? 0;
       return Number.isSafeInteger(deaths) ? [[iso3, deaths]] : [];
     }),
   );
+  const missing = countries.filter(
+    ({ iso3 }) => !populations.has(iso3) || deathsByIso3[iso3] === undefined,
+  ).length;
+  await pruneWorldDownloads('ucdp', currentDownloads);
   return {
     observations: countries.flatMap(({ iso3 }) => {
       const population = populations.get(iso3);
@@ -308,7 +351,7 @@ export async function fetchObservations({
         },
       );
     }),
-    data: { period, deathsByIso3 },
-    detail: `UCDP Candidate public bulk files, ${firstPeriod} through ${period}. ${missing} countries lacked a usable population or fatality count.`,
+    data: { period, deathsByIso3, sourceVersion },
+    detail: `UCDP Candidate public bulk files, ${firstPeriod} through ${period}. Zero reported deaths require a country record in a selected release. ${missing} countries lacked coverage, a usable population, or a fatality count.`,
   };
 }

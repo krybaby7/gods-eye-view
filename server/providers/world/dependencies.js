@@ -1,5 +1,8 @@
 import { readFile } from 'node:fs/promises';
-import { registerWorldSources } from './refreshRegistry.js';
+import {
+  registerWorldFeatureView,
+  registerWorldSources,
+} from './refreshRegistry.js';
 import * as fred from './sources/fred.js';
 import { portwatch } from './sources/portwatch.js';
 
@@ -46,8 +49,9 @@ const eia = {
 };
 
 const dependencies = {
-  shouldCheck: ({ data }) =>
-    data?.mode !== 'modelled' || data?.version !== 'BACI HS22 V202601',
+  version: 2,
+  shouldCheck: ({ data, rederive }) =>
+    rederive || data?.mode !== 'modelled' || !data.energyExposure,
   async fetchObservations() {
     const data = await readEnergyDependencies();
     return {
@@ -64,4 +68,62 @@ registerWorldSources({
   'energy-dependencies': dependencies,
   portwatch,
   fred,
+});
+
+const featureId = 'energy-dependencies';
+
+function selectedRoutes(model, rows) {
+  const paths = {};
+  const routePorts = {};
+  for (const row of rows) {
+    const key = row.id ?? `${row.provider}/${row.dependent}`;
+    const path = model.paths?.[key];
+    const ports = model.routePorts?.[key];
+    if (path) paths[key] = path;
+    if (ports) routePorts[key] = ports;
+  }
+  return { rows, paths, routePorts };
+}
+
+export function compactEnergyModel(model) {
+  if (model?.mode !== 'modelled' || !model.energyExposure) return model;
+  const {
+    exposure,
+    importTonnes,
+    paths,
+    routePorts,
+    rows,
+    pipelineGas,
+    ...summary
+  } = model;
+  const routeHighlights = rows
+    .filter(
+      ({ route, volume }) => route.length && volume.unit === 'tonnes/year',
+    )
+    .sort((a, b) => b.volume.value - a.volume.value)
+    .slice(0, 4);
+  return { ...summary, ...selectedRoutes(model, routeHighlights) };
+}
+
+export function energyDetail(model, country) {
+  if (!model) return null;
+  if (!country)
+    return { calibration: model.calibration, routeAudit: model.routeAudit };
+  return {
+    ...selectedRoutes(
+      model,
+      (model.rows ?? []).filter(
+        ({ provider, dependent }) =>
+          provider === country || dependent === country,
+      ),
+    ),
+    exposure: model.exposure?.[country] ?? [],
+    importTonnes: model.importTonnes?.[country] ?? {},
+    pipelineGas: model.pipelineGas?.[country],
+  };
+}
+
+registerWorldFeatureView('energy', {
+  summary: { [featureId]: compactEnergyModel },
+  detail: ({ features, country }) => energyDetail(features[featureId], country),
 });

@@ -1,13 +1,33 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
-import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  open,
+  readFile,
+  readdir,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from 'node:fs/promises';
 import path from 'node:path';
 import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { setTimeout as delay } from 'node:timers/promises';
-import { isConnectionError } from './transport.js';
+import { columnIndices, csvRows } from './csv.js';
+import { fetchOnDispatch, isConnectionError } from './transport.js';
 
 const activeDownloads = new Map();
+const CACHE_DIRECTORY = '.gev-cache/world/downloads';
+const PART_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const CACHE_KEY = /^[a-f0-9]{64}$/;
+
+function cacheFile(url, cacheDirectory) {
+  return path.resolve(
+    cacheDirectory,
+    createHash('sha256').update(String(url)).digest('hex'),
+  );
+}
 
 function downloadError(code, message) {
   return Object.assign(new Error(message), { code });
@@ -23,10 +43,105 @@ async function readEntry(file) {
   try {
     const metadata = JSON.parse(await readFile(file + '.json', 'utf8'));
     const entry = await stat(file);
-    return entry.isFile() ? { ...metadata, bytes: entry.size } : null;
+    return entry.isFile()
+      ? { metadata, bytes: entry.size, mtimeMs: entry.mtimeMs }
+      : null;
   } catch (error) {
     if (error.code === 'ENOENT' || error instanceof SyntaxError) return null;
     throw error;
+  }
+}
+
+async function assertSignature(file, format, csvColumns) {
+  const handle = await open(file, 'r');
+  const buffer = Buffer.alloc(4096);
+  let bytesRead;
+  try {
+    ({ bytesRead } = await handle.read(buffer));
+  } finally {
+    await handle.close();
+  }
+  const prefix = buffer.subarray(0, bytesRead);
+  if (
+    /^\s*(?:<!doctype\s+html\b|<(?:html|head|body|title)(?:\s|>))/i.test(
+      prefix.toString('utf8'),
+    )
+  ) {
+    throw downloadError('DOWNLOAD_SIGNATURE', 'Download is an HTML page.');
+  }
+  if (!format) return;
+  let valid = false;
+  if (format === 'zip') {
+    valid = prefix.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 3, 4]));
+  } else if (format === 'gzip') {
+    valid = prefix.subarray(0, 3).equals(Buffer.from([0x1f, 0x8b, 8]));
+  } else if (format === 'csv') {
+    const text = prefix.toString('utf8');
+    const lineEnd = text.search(/[\r\n]/);
+    const header = lineEnd === -1 ? text : text.slice(0, lineEnd);
+    try {
+      columnIndices(csvRows(header).next().value, csvColumns);
+      valid =
+        (lineEnd !== -1 || bytesRead < buffer.length) && !/^\s*</.test(header);
+    } catch {
+      // A non-CSV response cannot supply the expected schema.
+    }
+  }
+  if (!valid)
+    throw downloadError(
+      'DOWNLOAD_SIGNATURE',
+      `Download is not the expected ${format} file.`,
+    );
+}
+
+function statIfPresent(file) {
+  return stat(file).catch((error) => {
+    if (error.code !== 'ENOENT') throw error;
+    return null;
+  });
+}
+
+async function pruneStaleParts(directory, current) {
+  const cutoff = Date.now() - PART_MAX_AGE_MS;
+  const names = await readdir(directory);
+  const parts = new Set(
+    names.flatMap((name) => {
+      const [key, suffix] = name.split('.');
+      return CACHE_KEY.test(key) && suffix === 'part' ? [key] : [];
+    }),
+  );
+  for (const key of parts) {
+    const file = path.join(directory, key);
+    const part = file + '.part';
+    const info =
+      (await statIfPresent(part)) ?? (await statIfPresent(part + '.json'));
+    if (
+      info?.mtimeMs < cutoff &&
+      (file === current || !activeDownloads.has(file))
+    )
+      await clearEntry(part);
+  }
+}
+
+export async function hasWorldDownload(url, cacheDirectory = CACHE_DIRECTORY) {
+  const entry = await readEntry(cacheFile(url, cacheDirectory));
+  return Boolean(entry && entry.bytes === entry.metadata?.size);
+}
+
+export async function pruneWorldDownloads(source, current) {
+  if (!current.length) return;
+  const directory = path.dirname(current[0]);
+  const names = await readdir(directory);
+  const previous = [];
+  for (const name of names.filter((name) => CACHE_KEY.test(name))) {
+    const file = path.join(directory, name);
+    if (current.includes(file) || activeDownloads.has(file)) continue;
+    const entry = await readEntry(file);
+    if (entry?.metadata?.source === source) previous.push({ file, ...entry });
+  }
+  previous.sort((a, b) => b.mtimeMs - a.mtimeMs);
+  for (const { file } of previous.slice(1)) {
+    if (!activeDownloads.has(file)) await clearEntry(file);
   }
 }
 
@@ -143,19 +258,15 @@ async function transfer(url, file, options) {
     overallTimeoutMs,
     maxBytes,
     immutable,
+    format,
+    csvColumns,
+    source,
   } = options;
   const abort = new AbortController();
   const signal = callerSignal
     ? AbortSignal.any([callerSignal, abort.signal])
     : abort.signal;
-  const overallTimer = setTimeout(() => {
-    abort.abort(
-      downloadError(
-        'DOWNLOAD_TIMEOUT',
-        `Download reached its overall limit of ${overallTimeoutMs} ms.`,
-      ),
-    );
-  }, overallTimeoutMs);
+  let overallTimer;
   let stallTimer;
   const resetStall = () => {
     clearTimeout(stallTimer);
@@ -168,15 +279,40 @@ async function transfer(url, file, options) {
       );
     }, stallTimeoutMs);
   };
+  const onDispatch = () => {
+    overallTimer ??= setTimeout(() => {
+      abort.abort(
+        downloadError(
+          'DOWNLOAD_TIMEOUT',
+          `Download reached its overall limit of ${overallTimeoutMs} ms.`,
+        ),
+      );
+    }, overallTimeoutMs);
+    resetStall();
+  };
   const part = file + '.part';
   let response;
   try {
     signal.throwIfAborted();
-    await mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
-    const complete = await readEntry(file);
+    const directory = path.dirname(file);
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+    await pruneStaleParts(directory, file);
+    let complete = await readEntry(file);
+    if (complete) {
+      complete = { ...complete.metadata, bytes: complete.bytes };
+      try {
+        await assertSignature(file, format, csvColumns);
+      } catch (error) {
+        if (error.code !== 'DOWNLOAD_SIGNATURE') throw error;
+        await clearEntry(file);
+        complete = null;
+      }
+    }
     const reusable = complete && complete.bytes === complete.size;
-    const useComplete = () => {
+    const useComplete = async () => {
       enforceSize(complete.bytes, maxBytes);
+      if (source && complete.source !== source)
+        await writeMetadata(file, { ...complete, source });
       onProgress?.({
         bytes: complete.bytes,
         totalBytes: complete.bytes,
@@ -186,7 +322,11 @@ async function transfer(url, file, options) {
     };
     if (reusable && immutable) return useComplete();
 
-    let partial = await readEntry(part);
+    const readPartial = async () => {
+      const entry = await readEntry(part);
+      return entry && { ...entry.metadata, bytes: entry.bytes };
+    };
+    let partial = await readPartial();
     let resumedFrom = 0;
     let retried = false;
     const retry = async (error) => {
@@ -197,7 +337,7 @@ async function transfer(url, file, options) {
       if (response?.body && !response.body.locked)
         await response.body.cancel().catch(() => {});
       response = null;
-      partial = await readEntry(part);
+      partial = await readPartial();
       await delay(500, null, { signal });
     };
     while (true) {
@@ -216,13 +356,14 @@ async function transfer(url, file, options) {
         if (complete.lastModified)
           headers.set('If-Modified-Since', complete.lastModified);
       }
-      resetStall();
       try {
-        response = await fetchImpl(url, {
-          headers,
-          signal,
-          retryConnection: false,
-        });
+        response = await fetchOnDispatch(
+          fetchImpl,
+          url,
+          { headers, signal, retryConnection: false },
+          onDispatch,
+          () => clearTimeout(stallTimer),
+        );
       } catch (error) {
         await retry(error);
         continue;
@@ -263,6 +404,7 @@ async function transfer(url, file, options) {
       enforceSize(size, maxBytes);
       const metadata = {
         size,
+        ...(source && { source }),
         etag: response.headers.get('ETag') ?? (range ? partial.etag : null),
         lastModified:
           response.headers.get('Last-Modified') ??
@@ -299,6 +441,7 @@ async function transfer(url, file, options) {
       }
       clearTimeout(stallTimer);
       signal.throwIfAborted();
+      await assertSignature(part, format, csvColumns);
       // Invalidate old validators before replacing the file so an interrupted publication
       // can never revalidate a new file using an older release's metadata.
       await rm(file + '.json', { force: true });
@@ -317,7 +460,8 @@ async function transfer(url, file, options) {
   } catch (error) {
     if (
       error.code === 'RESPONSE_TOO_LARGE' ||
-      error.code === 'DOWNLOAD_LENGTH'
+      error.code === 'DOWNLOAD_LENGTH' ||
+      error.code === 'DOWNLOAD_SIGNATURE'
     ) {
       await clearEntry(part);
     }
@@ -334,7 +478,7 @@ async function transfer(url, file, options) {
 export async function downloadWorldFile(
   url,
   {
-    cacheDirectory = '.gev-cache/world/downloads',
+    cacheDirectory = CACHE_DIRECTORY,
     fetchImpl = fetch,
     signal,
     onProgress,
@@ -342,15 +486,18 @@ export async function downloadWorldFile(
     overallTimeoutMs = 30 * 60_000,
     maxBytes = Infinity,
     immutable = false,
+    format,
+    csvColumns = [],
+    source,
+    parse,
   } = {},
 ) {
-  const key = createHash('sha256').update(String(url)).digest('hex');
-  const file = path.resolve(cacheDirectory, key);
+  const file = cacheFile(url, cacheDirectory);
   const previous = activeDownloads.get(file);
   const pending = (
     previous ? previous.catch(() => {}) : Promise.resolve()
-  ).then(() =>
-    transfer(url, file, {
+  ).then(async () => {
+    const result = await transfer(url, file, {
       fetchImpl,
       signal,
       onProgress,
@@ -358,8 +505,18 @@ export async function downloadWorldFile(
       overallTimeoutMs,
       maxBytes,
       immutable,
-    }),
-  );
+      format,
+      csvColumns,
+      source,
+    });
+    if (!parse) return result;
+    try {
+      return { ...result, parsed: await parse(file) };
+    } catch (error) {
+      if (!signal?.aborted) await clearEntry(file);
+      throw error;
+    }
+  });
   activeDownloads.set(file, pending);
   try {
     return await pending;

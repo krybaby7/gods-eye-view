@@ -67,7 +67,12 @@ function routePositions(points) {
   return positions;
 }
 
-export function createEnergyOverlay({ viewer, labelPoint, requestRender }) {
+export function createEnergyOverlay({
+  viewer,
+  labelPoint,
+  requestRender,
+  getDetail,
+}) {
   const primitives = viewer.scene.primitives;
   const markers = primitives.add(
     new Cesium.BillboardCollection({ scene: viewer.scene }),
@@ -79,6 +84,7 @@ export function createEnergyOverlay({ viewer, labelPoint, requestRender }) {
   let selected;
   let gates = [];
   let visible = false;
+  let routeRequest;
 
   function drawMarkers(dataTo) {
     markers.removeAll();
@@ -102,16 +108,18 @@ export function createEnergyOverlay({ viewer, labelPoint, requestRender }) {
     }
   }
 
-  function drawRoutes(snapshot) {
+  function drawRoutes(snapshot, detail = dependencies) {
     routes.removeAll();
     const points = new Map(
       gates.map(({ id, coordinates }) => [id, coordinates]),
     );
     const rows = selected
-      ? dependencyRows(snapshot).filter(
-          ({ dependent, provider }) =>
-            dependent === selected || provider === selected,
-        )
+      ? (detail?.rows ?? [])
+          .filter(
+            ({ dependent, provider }) =>
+              dependent === selected || provider === selected,
+          )
+          .sort((a, b) => (b.shares.all ?? -1) - (a.shares.all ?? -1))
       : dependencies?.mode === 'modelled'
         ? dependencyRows(snapshot)
             .filter(
@@ -127,7 +135,8 @@ export function createEnergyOverlay({ viewer, labelPoint, requestRender }) {
       const from = labelPoint(row.provider);
       const to = labelPoint(row.dependent);
       const gatesOnRoute = row.route.map((id) => points.get(id));
-      const path = dependencies?.paths?.[`${row.provider}/${row.dependent}`];
+      const path =
+        detail?.paths?.[row.id ?? `${row.provider}/${row.dependent}`];
       const coordinates =
         path ??
         (from && to && gatesOnRoute.length && gatesOnRoute.every(Boolean)
@@ -136,8 +145,8 @@ export function createEnergyOverlay({ viewer, labelPoint, requestRender }) {
       const positions = routePositions(coordinates);
       if (positions.length < 2) continue;
       routes.add({
-        id: row.route.length
-          ? 'world-card:chokepoint:' + row.route[0]
+        id: (row.pathGates ?? row.route).length
+          ? 'world-card:chokepoint:' + (row.pathGates ?? row.route)[0]
           : undefined,
         positions,
         width: selected ? 2.5 : 1.5,
@@ -157,6 +166,7 @@ export function createEnergyOverlay({ viewer, labelPoint, requestRender }) {
       const nextVisible = snapshot.visible;
       markers.show = routes.show = nextVisible;
       if (!nextVisible) {
+        routeRequest = undefined;
         visible = false;
         return;
       }
@@ -173,10 +183,25 @@ export function createEnergyOverlay({ viewer, labelPoint, requestRender }) {
         gates = energyGates(snapshot);
         drawMarkers(traffic?.dataTo);
       }
-      if (routesChanged) drawRoutes(snapshot);
+      if (routesChanged) {
+        routeRequest = undefined;
+        drawRoutes(snapshot);
+        if (selected && getDetail && dependencies?.energyExposure) {
+          const pending = getDetail(selected, 'energy');
+          routeRequest = pending;
+          pending
+            .then((detail) => {
+              if (routeRequest !== pending || !detail) return;
+              drawRoutes(snapshot, detail);
+              requestRender();
+            })
+            .catch(() => {});
+        }
+      }
       if (trafficChanged || routesChanged) requestRender();
     },
     destroy() {
+      routeRequest = undefined;
       primitives.remove(markers);
       primitives.remove(routes);
     },

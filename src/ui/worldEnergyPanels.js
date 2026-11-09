@@ -4,6 +4,7 @@ import {
   dependencyRows,
   energyGates,
   gateReferences,
+  isMinorImporter,
   netEnergyImports,
 } from '../layers/world/energy.js';
 
@@ -80,12 +81,29 @@ function dependencyItem({ document, snapshot, openCard }, row, title) {
   const item = node(document, 'li');
   const ports =
     snapshot.features?.['energy-dependencies']?.routePorts?.[
-      `${row.provider}/${row.dependent}`
+      row.id ?? `${row.provider}/${row.dependent}`
     ];
   item.append(node(document, 'h4', title));
   item.append(
     details(document, [
       ...(ports ? [['Representative ports', ports.join(' → ')]] : []),
+      ...(row.approximateRoute
+        ? [['Route', 'Approximate port assignment']]
+        : []),
+      ...(row.routeOriginAdjustment
+        ? [
+            [
+              'Route origin adjustment',
+              `EIA estimate · ${pct(row.routeOriginAdjustment.share)} assigned to ${row.routeOriginAdjustment.origin}`,
+            ],
+          ]
+        : []),
+      ...(row.quantityReestimated
+        ? [['BACI quantity', 'Quantity re-estimated']]
+        : []),
+      ...(row.volume
+        ? [['Volume', `${numeric(row.volume.value)} ${row.volume.unit}`]]
+        : []),
       ['Share of seaborne imports', pct(row.shares.seaborne)],
       ['Share of all imports', pct(row.shares.all)],
       [
@@ -116,6 +134,30 @@ function dependencyItem({ document, snapshot, openCard }, row, title) {
         : []),
     ]),
   );
+  if (row.routeOriginAdjustment) {
+    item.append(
+      source(
+        document,
+        row.routeOriginAdjustment.sourceUrl,
+        'EIA source for the route origin',
+      ),
+    );
+  }
+  if (row.portSplits) {
+    const split = node(document, 'details');
+    split.append(node(document, 'summary', 'Modelled port split'));
+    const allocations = node(document, 'ul');
+    for (const {
+      share,
+      ports: [from, to],
+    } of row.portSplits) {
+      allocations.append(
+        node(document, 'li', `${pct(share)} · ${from} → ${to}`),
+      );
+    }
+    split.append(allocations);
+    item.append(split);
+  }
   const gates = new Map(
     energyGates(snapshot).map((gate) => [gate.id, gate.name]),
   );
@@ -124,7 +166,10 @@ function dependencyItem({ document, snapshot, openCard }, row, title) {
     const button = node(
       document,
       'button',
-      gates.get(id),
+      gates.get(id) +
+        (row.gateShares?.[id] < 1
+          ? ` · ${pct(row.gateShares[id])} of flow`
+          : ''),
       'world-energy-route',
     );
     button.type = 'button';
@@ -147,6 +192,37 @@ function dependencyList(context, rows, actor) {
     );
   }
   return list;
+}
+
+function countryDependencies(context, iso3, direction, actor) {
+  const { document, snapshot, getDetail } = context;
+  const area = node(document, 'div');
+  const model = snapshot.features?.['energy-dependencies'];
+  if (!getDetail || model?.mode !== 'modelled' || !model.energyExposure) {
+    const rows = dependencyRows(snapshot, { [direction]: iso3 });
+    if (rows.length) area.append(dependencyList(context, rows, actor));
+    return area;
+  }
+  area.textContent = 'Loading trade flows…';
+  getDetail(iso3, 'energy')
+    .then((detail) => {
+      if (!detail) {
+        area.textContent = 'Trade flows unavailable.';
+        return;
+      }
+      const features = {
+        ...snapshot.features,
+        'energy-dependencies': { ...model, ...detail },
+      };
+      const detailed = { ...context, snapshot: { ...snapshot, features } };
+      const rows = dependencyRows(detailed.snapshot, { [direction]: iso3 });
+      area.replaceChildren();
+      if (rows.length) area.append(dependencyList(detailed, rows, actor));
+    })
+    .catch(() => {
+      area.textContent = 'Trade flows unavailable.';
+    });
+  return area;
 }
 
 function modelAssumptions({ document, snapshot }) {
@@ -190,7 +266,9 @@ export function renderExposure(context) {
   area.append(node(document, 'h3', 'Exposure'));
   area.append(dependencyNotice(context));
   const exposures = countryExposure(snapshot, iso3);
-  if (exposures?.length) {
+  if (isMinorImporter(snapshot, iso3)) {
+    area.append(node(document, 'p', 'Minor importer · draft floor'));
+  } else if (exposures?.length) {
     const gates = new Map(
       energyGates(snapshot).map(({ id, name }) => [id, name]),
     );
@@ -212,8 +290,17 @@ export function renderExposure(context) {
   }
   const assumptions = modelAssumptions(context);
   if (assumptions) area.append(assumptions);
-  const rows = dependencyRows(snapshot, { dependent: iso3 });
-  if (rows.length) area.append(dependencyList(context, rows, 'provider'));
+  if (snapshot.features?.['energy-dependencies']?.portTableReviewed === false) {
+    area.append(
+      node(
+        document,
+        'p',
+        'Energy port table is a draft, not yet reviewed.',
+        'world-energy-note',
+      ),
+    );
+  }
+  area.append(countryDependencies(context, iso3, 'dependent', 'provider'));
   area.append(
     details(document, [
       [
@@ -238,8 +325,9 @@ export function renderLeverage(context) {
   const { document, snapshot, sheetModel } = context;
   const area = node(document, 'section', undefined, 'world-energy-section');
   area.append(node(document, 'h3', 'Leverage'), dependencyNotice(context));
-  const rows = dependencyRows(snapshot, { provider: sheetModel.iso3 });
-  if (rows.length) area.append(dependencyList(context, rows, 'dependent'));
+  area.append(
+    countryDependencies(context, sheetModel.iso3, 'provider', 'dependent'),
+  );
   return area;
 }
 
@@ -406,12 +494,13 @@ export function renderChokepoint(context) {
       published,
       gap,
       unit,
+      note,
     } of calibration) {
       area.append(
         node(
           document,
           'p',
-          `${commodity} · ${period} · ${numeric(modelled)} modelled / ${numeric(published)} EIA ${unit} · gap ${numeric(gap)} ${unit}`,
+          `${commodity} · ${period} · ${numeric(modelled)} modelled / ${numeric(published)} EIA ${unit} · gap ${numeric(gap)} ${unit}${note ? ` · ${note}` : ''}`,
         ),
       );
     }
@@ -419,7 +508,9 @@ export function renderChokepoint(context) {
   area.append(node(document, 'h3', 'Ranked dependents'));
   const gateRows = chokepointExposure(snapshot, gate.id);
   const dependents = (
-    gateRows.length ? gateRows : dependencyRows(snapshot, { gate: gate.id })
+    snapshot.features?.['energy-dependencies']?.mode === 'modelled'
+      ? gateRows
+      : dependencyRows(snapshot, { gate: gate.id })
   ).filter(
     (row, index, all) =>
       all.findIndex(({ dependent }) => dependent === row.dependent) === index,

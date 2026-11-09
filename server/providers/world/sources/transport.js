@@ -20,6 +20,13 @@ const REDIRECTS = new Set([301, 302, 303, 307, 308]);
 const IPV4_DISPATCHER = new Agent({
   connect: { family: 4, autoSelectFamily: false },
 });
+const queuedFetches = new WeakSet();
+
+export function fetchOnDispatch(fetchImpl, url, options, onDispatch, onQueue) {
+  if (queuedFetches.has(fetchImpl))
+    return fetchImpl(url, { ...options, onDispatch, onQueue });
+  return fetchImpl(url, { ...options, signal: onDispatch() ?? options.signal });
+}
 
 export function isConnectionError(error) {
   return (
@@ -126,14 +133,24 @@ export function createWorldFetch(
     tail.then(() => {
       if (lane.tail === tail && lane.retryAt <= Date.now()) hosts.delete(host);
     });
-    const { signal, retryConnection = true, ...requestOptions } = options;
+    const {
+      signal: queueSignal,
+      onDispatch,
+      onQueue,
+      retryConnection = true,
+      ...requestOptions
+    } = options;
+    let signal = queueSignal;
     try {
+      onQueue?.();
       await untilReady(previous, signal);
       while (lane.retryAt > Date.now()) {
         await wait(Math.min(lane.retryAt - Date.now(), 2_147_483_647), null, {
           signal,
         });
       }
+      signal?.throwIfAborted();
+      signal = onDispatch?.() ?? signal;
       signal?.throwIfAborted();
       const headers = new Headers(options.headers);
       if (!headers.has('User-Agent')) headers.set('User-Agent', USER_AGENT);
@@ -165,7 +182,7 @@ export function createWorldFetch(
     }
   }
 
-  return async (url, options = {}) => {
+  const worldFetch = async (url, options = {}) => {
     if (options.redirect && options.redirect !== 'follow') {
       return requestOnHost(url, options);
     }
@@ -209,4 +226,6 @@ export function createWorldFetch(
       next = destination.href;
     }
   };
+  queuedFetches.add(worldFetch);
+  return worldFetch;
 }

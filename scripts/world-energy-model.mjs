@@ -106,6 +106,27 @@ class MinHeap {
   }
 }
 
+const excludedPassages = new Set(['kiel', 'bering', 'northwest', 'northeast']);
+
+function crossesArcticShortcut(points) {
+  return points.some(
+    ([lon, lat]) =>
+      (lat >= 65.7 && lon >= -171 && lon <= -160) ||
+      (lat >= 70 && ((lon >= 99 && lon <= 179) || (lon >= -145 && lon <= -90))),
+  );
+}
+
+function usesKielCanal(points) {
+  return points.some(
+    ([lon, lat], index) =>
+      index > 0 &&
+      [points[index - 1], [lon, lat]].every(
+        ([x, y]) => x >= 9.06 && x <= 9.79 && y >= 53.78 && y <= 54.88,
+      ) &&
+      Math.abs(lon - points[index - 1][0]) > 0.7,
+  );
+}
+
 export function maritimeRouter(network, { maxSnapKm = 225 } = {}) {
   const ids = new Map();
   const points = [];
@@ -123,6 +144,7 @@ export function maritimeRouter(network, { maxSnapKm = 225 } = {}) {
     return ids.get(key);
   }
   for (const { geometry, properties } of network.features) {
+    if (excludedPassages.has(properties?.pass)) continue;
     const lines =
       geometry.type === 'MultiLineString'
         ? geometry.coordinates
@@ -223,18 +245,39 @@ export function maritimeRouter(network, { maxSnapKm = 225 } = {}) {
 const round = (value, digits = 3) => Number(value.toFixed(digits));
 const priceUnit = 'thousand USD/year';
 const weightUnit = 'tonnes/year';
+const energyUnit = 'PJ/year';
+const energyPerTonne = {
+  'crude oil': 42.3,
+  'refined products': 43,
+  lng: 50,
+  coal: 24,
+};
+export const minorImporterFloor = 10;
+const shortestRouteNote = 'shortest route, before the Red Sea diversions';
 const assumptions = [
   'Representative ports and shortest maritime paths approximate routes. A shipment may use a different port or passage.',
-  'Adjacent-country trade (except LNG) and trade involving landlocked countries are assigned to land. HS 271121 pipeline gas is land-only and kept separate from LNG.',
+  'The combined measure uses 42.3 GJ/t for crude oil, 43 for refined products, 50 for LNG and 24 for coal. These are draft average heating values. Pipeline gas is reported separately.',
+  'The draft minor importer floor is 10 PJ per year.',
+  'For measured multiport splits, national export shares approximate the distribution to each overseas partner. Route lines show the largest modelled port pair for the product.',
+  'HS 271121 pipeline gas is land-only and kept separate from LNG.',
   'Trade with an unresolved route is included in all imports. Only routes assigned to sea enter the seaborne denominator.',
   'If a flow has no reported tonnage, the entire importer and product group uses declared trade value for both shares.',
-  'Declared partners include re-exports. The HS product groups are coarse.',
+  'Declared partners include re-exports. An EIA-documented China crude origin correction affects routing only. The HS product groups are coarse.',
   'Routes describe a baseline, before modelling Red Sea diversions. EIA counts observed transit, including routes and product scopes this model approximates.',
   'IMF PortWatch live traffic is gated pending permission and is not an input to these structural shares.',
 ];
 
 function shareRow(crossing, { seaborne, all, unknown, unit }) {
-  const shares = dependencyShares({ crossing, seaborne, total: all });
+  const clampRounding = (denominator) =>
+    crossing > denominator &&
+    crossing - denominator <= Math.abs(denominator) * 1e-12
+      ? crossing
+      : denominator;
+  const shares = dependencyShares({
+    crossing,
+    seaborne: clampRounding(seaborne),
+    total: clampRounding(all),
+  });
   return {
     volume: { value: round(crossing), unit },
     shares: {
@@ -271,6 +314,9 @@ function calibrate(references, transit) {
         commodity: kind,
         period,
         unit,
+        ...(['suez', 'bab-el-mandeb', 'cape-of-good-hope'].includes(
+          routeId,
+        ) && { note: shortestRouteNote }),
         published: value,
         modelled: round(modelled),
         gap: round(modelled - value),
@@ -286,6 +332,8 @@ export function buildEnergyModel(flows, { routeFor, references }) {
   );
   const transit = new Map();
   const exposure = {};
+  const energyByImporter = new Map();
+  const importTonnes = {};
   const coverage = {
     importers: 0,
     modelledImporters: 0,
@@ -296,6 +344,8 @@ export function buildEnergyModel(flows, { routeFor, references }) {
   };
   const pipelineGas = {};
   const bilateral = [];
+  const routeAudit = { assessed: 0, arcticShortcuts: 0, kiel: 0 };
+  const inspectedRoutes = new Set();
   for (const group of groups.values()) {
     const { dependent, item } = group[0];
     const byValue = group.some(({ tonnes }) => tonnes === null);
@@ -308,33 +358,118 @@ export function buildEnergyModel(flows, { routeFor, references }) {
       const { provider, tonnes, reportedTonnes = tonnes ?? 0, value } = flow;
       const amount = byValue ? value : tonnes;
       totals.all += amount;
-      const route =
+      const energy = ((energyPerTonne[item] ?? 0) * reportedTonnes) / 1e6;
+      const combined = energyByImporter.get(dependent) ?? {
+        all: 0,
+        seaborne: 0,
+        unknown: 0,
+        unit: energyUnit,
+        crossings: new Map(),
+      };
+      if (energyPerTonne[item]) {
+        energyByImporter.set(dependent, combined);
+        combined.all += energy;
+        const items = (importTonnes[dependent] ??= {});
+        items[item] = (items[item] ?? 0) + reportedTonnes;
+      }
+      const routeOptions =
         item === 'pipeline gas'
           ? { mode: 'land' }
           : routeFor(provider, dependent, item);
-      if (route.mode === 'land') {
-        coverage.landFlows++;
-        continue;
+      const routes = Array.isArray(routeOptions)
+        ? [...routeOptions]
+        : [routeOptions];
+      if (flow.routeOriginAdjustment) {
+        const { origin, share } = flow.routeOriginAdjustment;
+        const inferred = routeFor(origin, dependent, item);
+        const inferredRoutes = Array.isArray(inferred) ? inferred : [inferred];
+        for (let index = 0; index < routes.length; index++) {
+          routes[index] = {
+            ...routes[index],
+            share: (routes[index].share ?? 1) * (1 - share),
+          };
+        }
+        routes.push(
+          ...inferredRoutes.map((route) => ({
+            ...route,
+            share: (route.share ?? 1) * share,
+          })),
+        );
       }
-      if (route.mode !== 'sea') {
-        coverage.unknownFlows++;
-        totals.unknown += amount;
-        continue;
+      if (flow.landShare > 0) {
+        for (let index = 0; index < routes.length; index++) {
+          routes[index] = {
+            ...routes[index],
+            share: (routes[index].share ?? 1) * (1 - flow.landShare),
+          };
+        }
+        routes.push({ mode: 'land', share: flow.landShare });
       }
-      coverage.seaFlows++;
-      totals.seaborne += amount;
-      routed.push({ provider, amount, route });
-      for (const gate of route.gates) {
-        crossings.set(gate, (crossings.get(gate) ?? 0) + amount);
-        const estimate = transit.get(gate) ?? { oil: 0, lng: 0 };
-        // Calendar 2024 has 366 days. Generic conversion factors approximate the EIA units.
-        if (item === 'crude oil')
-          estimate.oil += (reportedTonnes * 7.33) / 366_000_000;
-        if (item === 'refined products')
-          estimate.oil += (reportedTonnes * 7.9) / 366_000_000;
-        if (item === 'lng')
-          estimate.lng += (reportedTonnes * 48_700) / 366_000_000_000;
-        transit.set(gate, estimate);
+      const seaborne = [];
+      const flowGates = {};
+      for (const route of routes) {
+        const share = route.share ?? 1;
+        if (share <= 0) continue;
+        const portion = amount * share;
+        if (route.mode === 'land') {
+          coverage.landFlows++;
+          continue;
+        }
+        if (route.mode !== 'sea') {
+          coverage.unknownFlows++;
+          totals.unknown += portion;
+          combined.unknown += energy * share;
+          continue;
+        }
+        coverage.seaFlows++;
+        totals.seaborne += portion;
+        combined.seaborne += energy * share;
+        seaborne.push({ portion, route });
+        if (!inspectedRoutes.has(route.coordinates)) {
+          inspectedRoutes.add(route.coordinates);
+          routeAudit.assessed++;
+          if (crossesArcticShortcut(route.coordinates))
+            routeAudit.arcticShortcuts++;
+          if (usesKielCanal(route.coordinates)) routeAudit.kiel++;
+        }
+        for (const gate of route.gates) {
+          crossings.set(gate, (crossings.get(gate) ?? 0) + portion);
+          flowGates[gate] = (flowGates[gate] ?? 0) + share;
+          const mix = combined.crossings.get(gate) ?? {};
+          mix[item] = (mix[item] ?? 0) + energy * share;
+          combined.crossings.set(gate, mix);
+          const estimate = transit.get(gate) ?? { oil: 0, lng: 0 };
+          const routedTonnes = reportedTonnes * share;
+          // Calendar 2024 has 366 days. Generic factors approximate EIA units.
+          if (item === 'crude oil')
+            estimate.oil += (routedTonnes * 7.33) / 366_000_000;
+          if (item === 'refined products')
+            estimate.oil += (routedTonnes * 7.9) / 366_000_000;
+          if (item === 'lng')
+            estimate.lng += (routedTonnes * 48_700) / 366_000_000_000;
+          transit.set(gate, estimate);
+        }
+      }
+      if (seaborne.length) {
+        const dominant = seaborne.reduce((a, b) =>
+          a.portion >= b.portion ? a : b,
+        );
+        routed.push({
+          provider,
+          amount: seaborne.reduce((sum, entry) => sum + entry.portion, 0),
+          route: dominant.route,
+          gateShares: flowGates,
+          portSplits:
+            seaborne.length > 1
+              ? seaborne.map(({ route }) => ({
+                  share: round(route.share, 6),
+                  ports: route.ports,
+                  gates: route.gates,
+                }))
+              : undefined,
+          quantityReestimated: flow.quantityReestimated,
+          routeOriginAdjustment: flow.routeOriginAdjustment,
+        });
       }
     }
     if (item === 'pipeline gas') {
@@ -345,14 +480,30 @@ export function buildEnergyModel(flows, { routeFor, references }) {
     for (const [gate, amount] of crossings) {
       exposure[dependent].push({ gate, item, ...shareRow(amount, totals) });
     }
-    for (const { provider, amount, route } of routed) {
+    for (const {
+      provider,
+      amount,
+      route,
+      gateShares,
+      portSplits,
+      quantityReestimated,
+      routeOriginAdjustment,
+    } of routed) {
       if (amount <= 0) continue;
       bilateral.push({
         id: [provider, dependent, item].join('/'),
         provider,
         dependent,
         item,
-        route: route.gates,
+        route: Object.keys(gateShares),
+        gateShares,
+        ...(portSplits && { portSplits }),
+        ...(route.gates.length !== Object.keys(gateShares).length && {
+          pathGates: route.gates,
+        }),
+        ...(quantityReestimated && { quantityReestimated: true }),
+        ...(routeOriginAdjustment && { routeOriginAdjustment }),
+        ...(route.approximate && { approximateRoute: true }),
         path: route.coordinates,
         ports: route.ports,
         ...shareRow(amount, totals),
@@ -379,7 +530,7 @@ export function buildEnergyModel(flows, { routeFor, references }) {
   const paths = {};
   const routePorts = {};
   const rows = [...included].map(({ path, ports, ...row }) => {
-    const pair = row.provider + '/' + row.dependent;
+    const pair = row.id;
     paths[pair] ??= thinRoute(path);
     if (ports) routePorts[pair] ??= ports;
     return row;
@@ -388,6 +539,25 @@ export function buildEnergyModel(flows, { routeFor, references }) {
   coverage.modelledImporters = Object.keys(exposure).length;
   for (const rows of Object.values(exposure))
     rows.sort((a, b) => b.shares.all - a.shares.all);
+  const energyExposure = {};
+  const energyImports = {};
+  for (const [dependent, total] of energyByImporter) {
+    energyImports[dependent] = round(total.all);
+    if (!total.seaborne) continue;
+    energyExposure[dependent] = [...total.crossings]
+      .map(([gate, mix]) => {
+        const items = Object.entries(mix).sort((a, b) => b[1] - a[1]);
+        return {
+          gate,
+          item: items[0][0],
+          ...shareRow(
+            items.reduce((sum, [, amount]) => sum + amount, 0),
+            total,
+          ),
+        };
+      })
+      .sort((a, b) => b.volume.value - a.volume.value);
+  }
   return {
     mode: 'modelled',
     version: 'BACI HS22 V202601',
@@ -398,6 +568,11 @@ export function buildEnergyModel(flows, { routeFor, references }) {
     coverage,
     calibration: calibrate(references, transit),
     exposure,
+    energyExposure,
+    energyImports,
+    importTonnes,
+    routeAudit,
+    minorImporterFloor,
     pipelineGas,
     paths,
     routePorts,
