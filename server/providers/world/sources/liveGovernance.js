@@ -13,6 +13,8 @@ const GDELT_MANIFEST = 'https://data.gdeltproject.org/gdeltv2/lastupdate.txt';
 const BATCH = 15 * 60_000;
 const MAX_MISSED_BATCHES = 4;
 const GDELT_WINDOW = 3 * DAY;
+// CAMEO actor roles for military, rebel and other identified armed forces.
+const ARMED_ACTOR_ROLES = new Set(['MIL', 'REB', 'INS', 'SEP', 'UAF']);
 const COUNTRY_DOMAIN_CATEGORIES = new Set([
   'ac',
   'co',
@@ -140,9 +142,28 @@ export function gdeltBatch(tsv, date, now, countries) {
       !Number.isFinite(time) ||
       time > +now ||
       time + DAY <= +now - GDELT_WINDOW ||
-      !['14', '18', '19', '20'].includes(root)
+      !['14', '19', '20'].includes(root)
     )
       continue;
+    if (
+      root !== '14' &&
+      ![...row.slice(12, 15), ...row.slice(22, 25)].some((role) =>
+        ARMED_ACTOR_ROLES.has(role),
+      )
+    )
+      continue;
+    // CAMEO date, actors, action and location form a conservative event key.
+    // Incomplete identities are omitted rather than counted as independent events.
+    const actor1 = (row[5] || row[6]).trim().toUpperCase();
+    const actor2 = (row[15] || row[16]).trim().toUpperCase();
+    const action = (row[27] || row[26]).trim();
+    const location =
+      row[58]?.trim() ||
+      [row[52], row[53], row[54], row[56], row[57]]
+        .map((part) => part.trim().toUpperCase())
+        .join('|');
+    if (!actor1 || !actor2 || !action || !row[52] || !row[53]) continue;
+    const eventKey = [eventDate, actor1, actor2, action, location].join('|');
     const source = URL.parse(row[60]);
     if (
       !source ||
@@ -160,6 +181,7 @@ export function gdeltBatch(tsv, date, now, countries) {
       root === '14' ? 'C6' : 'C2',
       domain,
       source.href,
+      eventKey,
     ]);
   }
   return { date, events, records };
@@ -173,8 +195,8 @@ export function gdeltFlags(batches, now, source = GDELT) {
   const seen = new Set();
   const sampledFiles = new Set(recent.map(({ date }) => date)).size;
   for (const { date, events = [] } of recent) {
-    for (const [id, iso3, slot, domain, url] of events) {
-      if (seen.has(id)) continue;
+    for (const [id, iso3, slot, domain, url, eventKey] of events) {
+      if (!eventKey || seen.has(id)) continue;
       seen.add(id);
       const key = iso3 + ':' + slot;
       const group = totals.get(key) ?? {
@@ -183,11 +205,15 @@ export function gdeltFlags(batches, now, source = GDELT) {
         dates: [],
         sources: new Map(),
         articles: new Set(),
+        eventKeys: new Set(),
       };
       const article = articleIdentity(url);
       if (group.articles.has(article)) continue;
       group.articles.add(article);
-      group.dates.push(date);
+      if (!group.eventKeys.has(eventKey)) {
+        group.eventKeys.add(eventKey);
+        group.dates.push(date);
+      }
       const lastSource = group.sources.get(domain);
       if (!lastSource || lastSource.date <= date)
         group.sources.set(domain, { url, date });
@@ -208,8 +234,11 @@ export function gdeltFlags(batches, now, source = GDELT) {
         label:
           dates.length +
           ' ' +
-          (slot === 'C6' ? 'protest' : 'conflict-coded') +
-          ' reports in sampled 15-minute files · news-derived, low confidence',
+          (slot === 'C6' ? 'protest' : 'armed-conflict-coded') +
+          ' events in sampled 15-minute files · news-derived, low confidence',
+        ...(slot === 'C2' && {
+          rule: 'At least 5 distinct events from 3 source domains in 72 hours with a coded armed actor',
+        }),
         source,
         sourceName: 'GDELT',
         stage: 'reported',
@@ -283,7 +312,7 @@ async function fetchGdeltBatch(
 }
 
 export const gdelt = {
-  version: 2,
+  version: 3,
   live: true,
   shouldCheck: (context) => due(context, BATCH),
   async fetchObservations({
@@ -297,14 +326,17 @@ export const gdelt = {
     if (
       rederive &&
       data?.batches &&
-      !data.batches.some(({ events }) => Array.isArray(events))
+      !data.batches.every(
+        ({ events }) =>
+          Array.isArray(events) && events.every((event) => event.length >= 6),
+      )
     ) {
       return {
         ...conditionResult([], data, now, {
           batches: [],
           covered: () => false,
           detail:
-            'Old samples had no event IDs or source domains. Waiting for a fresh sample.',
+            'Old samples had no event identity keys. Waiting for a fresh sample.',
         }),
         cached: true,
       };
