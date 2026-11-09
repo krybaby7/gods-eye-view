@@ -18,6 +18,7 @@ import { createWorldFetch } from './transport.js';
 const url = 'https://source.test/archive.zip';
 const etag = '"version-1"';
 const lastModified = 'Mon, 09 Nov 2026 00:00:00 GMT';
+const realSetTimeout = setTimeout;
 
 async function downloadFixture(t, fetchImpl, options) {
   const cacheDirectory = await mkdtemp(
@@ -301,6 +302,10 @@ test('bulk download rejects HTML served as a ZIP before publishing', async (t) =
   );
   await assert.rejects(download(), { code: 'DOWNLOAD_SIGNATURE' });
   assert.deepEqual(await readdir(cacheDirectory), []);
+  await assert.rejects(download({ format: undefined }), {
+    code: 'DOWNLOAD_SIGNATURE',
+  });
+  assert.deepEqual(await readdir(cacheDirectory), []);
 });
 
 test('bulk download checks expected CSV columns and the gzip header', async (t) => {
@@ -320,6 +325,7 @@ test('bulk download checks expected CSV columns and the gzip header', async (t) 
 });
 
 test('bulk download stall window starts when its host lane is granted', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
   const { promise: granted, resolve } = Promise.withResolvers();
   const fetchImpl = createWorldFetch((requestUrl) => {
     if (requestUrl.endsWith('/hold')) {
@@ -335,7 +341,8 @@ test('bulk download stall window starts when its host lane is granted', async (t
   });
   const result = download();
   result.catch(() => {});
-  await delay(220);
+  await new Promise((resolve) => realSetTimeout(resolve, 220));
+  t.mock.timers.tick(220);
   await (await first).text();
   assert.equal(await readFile((await result).path, 'utf8'), 'archive');
 });
