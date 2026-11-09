@@ -196,12 +196,12 @@ test('posts one role and up to 40 countries per request, in sequence', async () 
     ['government', 40],
     ['government', 1],
     ['head-of-state', 40],
-    ['head-of-state', 1],
     ['head-of-government', 40],
-    ['head-of-government', 1],
     ['foreign-minister', 40],
-    ['foreign-minister', 1],
     ['defence-minister', 40],
+    ['head-of-state', 1],
+    ['head-of-government', 1],
+    ['foreign-minister', 1],
     ['defence-minister', 1],
   ]);
 });
