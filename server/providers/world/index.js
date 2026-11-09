@@ -10,7 +10,8 @@ import { createTurn } from './turn.js';
 import './phase-3.js';
 
 const PREFIX = '/api/world';
-const BASE_SOURCES = new Set(['worldbank', 'imf', 'ucdp']);
+// These small API sources can paint the first board while the archives download.
+const BASE_SOURCES = new Set(['worldbank', 'imf']);
 const EMPTY_FEATURES = Object.freeze({});
 const LOOPBACK_ADDRESSES = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 const LOCAL_HOST = /^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i;
