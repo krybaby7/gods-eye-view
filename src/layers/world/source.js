@@ -31,6 +31,12 @@ export function createWorldSource({
 
   return {
     getSnapshot: (options) => request('', 'GET', options),
-    refresh: (options) => request('/refresh', 'POST', options),
+    refresh: (options) => {
+      const query =
+        options?.sourceId == null
+          ? ''
+          : `?source=${encodeURIComponent(options.sourceId)}`;
+      return request('/refresh' + query, 'POST', options);
+    },
   };
 }

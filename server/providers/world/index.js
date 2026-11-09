@@ -1,5 +1,8 @@
 import './actors.js';
+import './events.js';
+
 import { admitSameSiteRequest } from '../../../src/localRequestGate.mjs';
+import { liveSourceFromRequest, sourcesForWorldTurn } from './liveScope.js';
 import { loadWorldRegistry } from './registry.js';
 import { worldAdapters, worldRefreshSteps } from './refreshRegistry.js';
 import { scoreCountries } from './scores.js';
@@ -83,11 +86,10 @@ export function createWorldService({
     return initialized;
   }
 
-  async function runTurn() {
+  async function runTurn(sources, liveOnly) {
     const started = now();
     const startedAt = started.toISOString();
     const lastCheckedAt = { ...saved.lastCheckedAt };
-    const sources = registry.sources;
     const features = { ...saved.board?.features };
     const pending = new Set(sources.map(({ id }) => id));
 
@@ -201,12 +203,17 @@ export function createWorldService({
     }
     const results = [];
     for (const { id } of sources) results.push(await run(id));
-    const observations = mergeObservations(
-      saved.observations,
-      results.flatMap((result) => result.observations),
-    );
+    if (liveOnly && !results[0].status.checked) return;
+    const observations = liveOnly
+      ? saved.observations
+      : mergeObservations(
+          saved.observations,
+          results.flatMap((result) => result.observations),
+        );
     const asOf = now().toISOString();
-    const countries = scoreCountries(registry, observations, asOf);
+    const countries = liveOnly
+      ? saved.board.countries
+      : scoreCountries(registry, observations, asOf);
     const turn = createTurn({
       number: (saved.turns.at(-1)?.number ?? 0) + 1,
       startedAt,
@@ -231,13 +238,13 @@ export function createWorldService({
     board = next.board;
   }
 
-  function start() {
+  function start(sources = registry.sources, liveOnly = false) {
     if (active) return;
     startedFirstTurn = true;
     error = null;
-    progress = { completed: 0, total: registry.sources.length, source: null };
+    progress = { completed: 0, total: sources.length, source: null };
     active = Promise.resolve()
-      .then(runTurn)
+      .then(() => runTurn(sources, liveOnly))
       .catch((failure) => {
         logger.warn?.('[world] Refresh could not be saved', failure);
         error = 'The World Board refresh could not be saved.';
@@ -267,9 +274,12 @@ export function createWorldService({
     return view();
   }
 
-  async function refresh() {
+  async function refresh(liveSource = null) {
     await ready();
-    start();
+    const sources = sourcesForWorldTurn(registry.sources, adapters, liveSource);
+    const liveOnly = liveSource !== null;
+    if (liveOnly && !sources.length) return null;
+    if (!liveOnly || saved.board) start(sources, liveOnly);
     return view();
   }
 
@@ -303,9 +313,11 @@ export function createWorldService({
       return sendJson(res, 405, { error: 'Use ' + method + '.' });
     }
     try {
-      return isRefresh
-        ? sendJson(res, 202, await refresh())
-        : sendJson(res, 200, await snapshot());
+      if (!isRefresh) return sendJson(res, 200, await snapshot());
+      const result = await refresh(liveSourceFromRequest(req.url));
+      return result
+        ? sendJson(res, 202, result)
+        : sendJson(res, 400, { error: 'Unknown World Board live source.' });
     } catch (failure) {
       logger.warn?.('[world] Request failed', failure);
       return sendJson(res, 500, {

@@ -4,7 +4,7 @@ Turn on **Events > World Board** to shade countries and open the board. Choose *
 
 Country shading appears at a camera height of 3,500 km and is removed below 3,000 km; the gap prevents flicker while zooming. Select a country to open its sheet, browse the 18 slots, and use **Why this number** for the raw value, period, source, formula and draft anchors. Flags identify unknown, weakest, stale, low-confidence and source-forecast readings. There is no overall total.
 
-The first activation starts a background turn. Later updates are owner-initiated with **Refresh**. Data and turn history are local in `.gev-cache/world/state.json`. A share link uses layer token `5` to retain whether World Board is enabled. Data and country selections are local.
+The first activation starts a background turn. Use **Refresh** to update base datasets and eligible feeds. Live feeds also run their own timed checks while the board is enabled. Data and turn history are local in `.gev-cache/world/state.json`. A share link uses layer token `5` to retain whether World Board is enabled. Data and country selections are local.
 
 Scores use draft anchors: each indicator is transformed where specified, positioned between its two anchors, clipped to the 0–100 range and reversed when higher values are worse. Missing source data remains unknown. After a source failure, the board retains its last available readings. Check source period, retrieval date, coverage and flags before comparison.
 
@@ -31,6 +31,24 @@ The sanctions adapters count designation records by programme from the UN consol
 The sheet header identifies the head of state and head of government when the Wikidata directory has a current claim. The People tab adds foreign and defence ministers, draft organization entries, public account links, and recent posts where available. The leader portrait beside a country code on the globe opens the actor card. A head of government with an attributed portrait takes precedence, followed by the head of state. Commons portraits show the creator, licence and file link in the sheet and actor card.
 
 Wikidata officeholder claims are checked weekly on Refresh. Ambiguous or unavailable officeholders remain blank. Minister coverage depends on Wikidata offices with a matching jurisdiction and a current officeholder. The draft organization directory uses geographic association for armed groups. Bluesky, YouTube and the Federal Reserve’s official RSS feed provide inline posts or linked headlines on Refresh. **Show X timeline** loads the official widget for the open actor. The widget may require sign-in.
+
+## Live condition flags
+
+A dated flag records what a source reported or what the board detected in that source. It appears on the relevant Condition row and in the country hover. The sheet’s **Condition flags** section links to the evidence. Flag sets and clears appear in the turn summary. Flags leave the numeric scores and lenses unchanged.
+
+- GDELT counts conflict-coded and protest reports across the 15-minute files sampled in the last seven days. The number of sampled files is shown. GDACS red alerts describe hazards and potential exposure.
+- Frankfurter flags a currency that lost at least 20% of its value against USD over a near-30-day window with two dated readings. The IMF CPI adapter compares the same calendar month one year apart and uses a draft 20% threshold. The public CPI probe returned no observations.
+- UNHCR reports annual internal displacement stocks. Saved UCDP Candidate observations can supply an attributed rolling deaths-per-million flag. The FAO index appears as a world banner.
+- Ten draft flags record the external debt distress classification in the published LIC DSA list as of 31 October 2026. The evidence shows the assessment month and source locator.
+
+The optional feeds are disabled by default. Set the following in the server process only after obtaining the appropriate access. These feeds use the manual Refresh control and their source cadence.
+
+| Source             | Server variables                                                         |
+| ------------------ | ------------------------------------------------------------------------ |
+| IFES ElectionGuide | `GEV_WORLD_ELECTIONGUIDE_ENDPOINT` and `GEV_WORLD_ELECTIONGUIDE_TOKEN`   |
+| HDX HAPI           | `GEV_WORLD_HDX_APP_IDENTIFIER`                                           |
+| IODA               | `GEV_WORLD_IODA_LICENCE_APPROVED=1`                                      |
+| UCDP Candidate     | `GEV_WORLD_UCDP_CANDIDATE_ENDPOINT` and `GEV_WORLD_UCDP_CANDIDATE_TOKEN` |
 
 ## Adding a phase
 

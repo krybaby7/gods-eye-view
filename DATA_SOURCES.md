@@ -24,6 +24,24 @@ God's Eye View's **code** is [MIT](LICENSE)-licensed. **The MIT grant covers the
 
 Refresh checks the sanctions lists monthly. The board retains programme-level aggregates and coverage counts for mapped and unmapped programmes. Each country link requires separate programme evidence, and the parser ignores nationality, addresses and names. The records can cover selective measures.
 
+### World Board live condition feeds
+
+| Source                                                                             | Access and release rhythm                                                    | Licence and attribution                                                                                   |
+| ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [GDACS](https://www.gdacs.org/xml/rss.xml)                                         | Keyless RSS, hourly check                                                    | CC BY 4.0 item data, GDACS and European Commission JRC                                                    |
+| [Frankfurter](https://frankfurter.dev/)                                            | Keyless daily rates and dated history                                        | Blended public rates, contributing provider terms apply                                                   |
+| [Powell and Thyne](https://jonathanmpowell.com/coups/)                             | Keyless public CSV, weekly check                                             | Licence unconfirmed. Cited flags attribute Jonathan M. Powell and Clayton L. Thyne                        |
+| [GDELT 2.0 Events](https://www.gdeltproject.org/data.html)                         | Keyless public export files, sampled on a 15-minute timer                    | Free use with attribution to The GDELT Project                                                            |
+| [FAO Food Price Index](https://www.fao.org/worldfoodsituation/foodpricesindex/en/) | Keyless nominal monthly CSV, weekly check                                    | Cited index and derived change, Food and Agriculture Organization of the United Nations                   |
+| [IMF CPI](https://data.imf.org/Datasets/CPI)                                       | Public SDMX 3.0, monthly series, weekly check. Live observations unverified. | IMF terms apply, commercial use requires permission                                                       |
+| [UNHCR displacement](https://www.unhcr.org/refugee-statistics/)                    | Keyless population API, annual stocks, weekly check                          | API licence unconfirmed, UNHCR attribution                                                                |
+| [Saved UCDP Candidate readings](https://ucdp.uu.se/downloads/)                     | Saved World Board observations, monthly release dates                        | CC BY 4.0, Uppsala Conflict Data Program                                                                  |
+| [IMF–World Bank LIC DSA](https://www.worldbank.org/en/programs/debt-toolkit/dsa)   | Ten bundled draft ratings, editorial annual review                           | Cited facts and original summaries                                                                        |
+| [IFES ElectionGuide](https://www.electionguide.org/p/access/)                      | Token, off by default, daily check if configured                             | Non-commercial with attribution, other publisher terms apply                                              |
+| [HDX HAPI](https://docs.humdata.org/build/hdx-apis/hapi)                           | App identifier, off by default, weekly check if configured                   | IPC and WFP terms apply, attributed through UN OCHA HDX. Only food security and price endpoints are used. |
+| [IODA](https://ioda.inetintel.cc.gatech.edu/)                                      | Public API, off by default pending licence approval                          | Licence unconfirmed, attributed to Georgia Tech IODA                                                      |
+| [UCDP Candidate API](https://ucdp.uu.se/apidocs/)                                  | Token, off by default, monthly releases                                      | CC BY 4.0, Uppsala Conflict Data Program                                                                  |
+
 How to read this:
 
 - **The non-permissive datasets are carved out, not omitted.** Some bundled data (e.g. TeleGeography, CC BY-NC-SA) isn't MIT-compatible. Rather than hide it, we **bundle it with a clear license carve-out** so the app works out of the box — but it stays under the provider's terms.
