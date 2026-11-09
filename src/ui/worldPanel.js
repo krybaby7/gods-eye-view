@@ -198,6 +198,8 @@ export function createWorldPanel({
     snapshot: currentSnapshot,
     sheetModel,
     openCard,
+    getDetail: (country, lens, options) =>
+      layer.getDetail(country, lens, options),
   });
 
   function setTurnOpen(open) {
@@ -443,7 +445,7 @@ export function createWorldPanel({
     }
     progress.classList.toggle(
       'panel-surface-error',
-      Boolean(snapshot.error && !snapshot.loading),
+      Boolean(snapshot.error && !snapshot.loading && !load),
     );
     progress.textContent = status;
     progress.hidden = !status;
