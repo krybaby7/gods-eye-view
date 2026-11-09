@@ -18,14 +18,24 @@ For C6, the exact `v2cacamps` variable in the V-Dem v16 codebook §3.15.1.1 has 
 
 ## Adding a phase
 
-- Add `src/layers/world/phase-N.js` with a default descriptor. Its optional arrays are `lenses` (id, label, order, color and legend), `overlays` (factories), `tabs` (id, render and optional label/order), `cards` (type, label and render), `header`, `rowFlags` and `hoverFlags`. Vite loads it and `src/ui/styles/world-phase-N.css` automatically.
-- A lens color receives a country and snapshot and returns RGB bytes or null for hatching. A legend receives the snapshot and returns name, stops and note. Lens orders are 10, 20, 30, 40, 50 and 60 for Condition, Strength, Energy, Data age, Diplomacy and Ownership.
+- Add `src/layers/world/phase-N.js` with a default descriptor. Its optional arrays are `lenses` (id, label, order, color and legend, plus optional hover), `overlays` (factories), `tabs` (id, render and optional label/order), `cards` (type, label and render), `header`, `rowFlags` and `hoverFlags`. Vite loads it and `src/ui/styles/world-phase-N.css` automatically.
+- A lens color receives a country and snapshot and returns RGB bytes or null for hatching. A legend receives the snapshot and returns name, stops and note. A lens may describe a country value in its hover text. Lens orders are 10, 20, 30, 40, 50 and 60 for Condition, Strength, Energy, Data age, Diplomacy and Ownership.
 - Overlay factories receive viewer, lifecycle signal, requestRender, labelPoint, fixtures and refresh. Instances implement update(snapshot), destroy and optional frame(camera). Use snapshot.visible for board zoom, and IDs of the form `world-card:<type>:<id>` on pickable primitives.
 - Tab and card renderers return a DOM node and receive document, snapshot, sheetModel and openCard(type, id). A card also receives id. Header renderers receive the tab context. Row and hover hooks return arrays of short flag labels.
 - Register source adapters from a phase module with registerWorldSources(adapters, after) from refreshRegistry.js, and import that module once in index.js. Each source still needs a sources.json row. Adapters can return observations, data, count, unit, changes, detail and error. Extra data persists by source ID in snapshot.features. Adapter errors keep the previous data unless the adapter supplies a replacement. The optional after map names prerequisite source IDs.
 - Add `scripts/qa-world.phase-N.mjs` with a default async check function and optional fixtureAdapters map. The runner uses the same server contract with all live fetches blocked.
 
 [Natural Earth](https://www.naturalearthdata.com/) supplies the geometry. The UK uses full GBR geometry to avoid duplicate shading and is grouped with its four constituent IDs. Åland (`ALD`) uses Finland data. Capital is unset because the pack does not contain it.
+
+## Energy and shipping
+
+The Energy lens shows the largest modelled share of all imports through a chokepoint where a route model is available. Hatching means unknown. The current build shows the unavailability reason in Exposure and Leverage. The World Bank net energy import share, with its observation year, remains available where reported. Stock cover stays unknown.
+
+Chokepoint cards show draft EIA oil and LNG transit estimates with their reporting periods and EIA descriptions of alternate routes where available. Panama uses a fiscal year. The static reference markers remain available without traffic permission. Marine geometry uses the bundled Natural Earth features where they exist. The other static markers are approximate reference locations. PortWatch observes Øresund as a proxy for the Danish Straits and has no separate Dardanelles gauge.
+
+After securing written IMF permission for automated extraction, set `GEV_WORLD_PORTWATCH_BULK_OK=1` for the local server. The adapter fetches gate metadata once, loads 400 transit days, and revisits the most recent 14 stored days plus new dates on Refresh. The card shows the latest available date and transit calls by vessel type. The gauge compares the latest day’s count with the matched prior 7-day mean. The rolling means use matched windows 52 weeks earlier. Seven consecutive complete 7-day ratios below 0.5 produce reduced status. An overlapping open disruption record corroborates disrupted status. Missing data are shown as unknown.
+
+Exposure shows monthly Brent, WTI, and European natural gas from FRED, each in its source units and month. The route model remains unavailable pending a suitable licensed shipping network, independently validated routes and calibration. Offline acceptance uses clearly labelled synthetic route shares to exercise both import denominators and route lines.
 
 ## Fixture acceptance
 
