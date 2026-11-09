@@ -336,6 +336,7 @@
       "server/providers/world/sources/government-rss.js",
       "server/providers/world/sources/wdqs.js",
       "server/providers/world/sources/wikidata.js",
+      "public/world/curated/actor-office-seats.json",
       "server/providers/world/sources/wikimedia-commons.js",
       "server/providers/world/sources/youtube-rss.js",
       "server/providers/common/rss.js",
