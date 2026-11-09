@@ -1,12 +1,24 @@
 import assert from 'node:assert/strict';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
+import { zipOneEntry } from '../../../../src/testSupport/zipFixture.mjs';
 import { assetCountryResolver } from './asset-common.js';
 import { parseOurAirports } from './ourairports.js';
 import { parsePowerPlants } from './wri-power.js';
-import { parseWpiFeatureLayer, parseWorldPortIndex } from './nga-ports.js';
+import {
+  parseWpiFeatureLayer,
+  parseWorldPortIndex,
+  worldPortLayer,
+} from './nga-ports.js';
 import { parseWikidataAssets, wikidataAssets } from './wikidata-assets.js';
 import { readCuratedAssets } from '../assets.js';
-import { worldAdapters, worldRefreshSteps } from '../refreshRegistry.js';
+import {
+  worldAdapters,
+  worldFeatureViews,
+  worldRefreshSteps,
+} from '../refreshRegistry.js';
 import { loadWorldRegistry } from '../registry.js';
 
 const now = new Date('2026-11-09T00:00:00Z');
@@ -14,12 +26,13 @@ const country = (value) =>
   ({ US: 'USA', USA: 'USA', NLD: 'NLD', NL: 'NLD', CHN: 'CHN' })[value];
 const options = { country, now };
 
-test('WRI preserves historical ownership names without attributing company nationality or current status', () => {
+test('WRI retains every historical plant and preserves names without inferring ownership nationality', () => {
   const csv =
     'country,name,gppd_idnr,capacity_mw,latitude,longitude,primary_fuel,owner\n' +
     'USA,River Unit,WRI0001,200,39,-93,Hydro,Example Energy\nUSA,Small,WRI0002,5,34,-93,Wind,\nUSA,Atomic,WRI0003,200,34,-93,Nuclear,';
-  const [asset, extra] = parsePowerPlants(csv, options);
-  assert.equal(extra, undefined);
+  const [asset, small, nuclear] = parsePowerPlants(csv, options);
+  assert.equal(small.capacity.value, 5);
+  assert.equal(nuclear.fuel, 'Nuclear');
   assert.equal(asset.status, 'unknown');
   assert.equal(asset.historical, true);
   assert.deepEqual(asset.geometry.coordinates, [-93, 39]);
@@ -134,16 +147,120 @@ test('Wikidata keeps operator and referenced title separate and preserves ambigu
   );
 });
 
-test('country crosswalk keeps overseas territory and Kosovo separate and maps grouped UK shapes', async () => {
-  const resolve = await assetCountryResolver({
-    countries: [
-      { iso3: 'GBR', shapeIds: ['GBR', 'ENG', 'SCT'] },
-      { iso3: 'GIB', shapeIds: ['GIB'] },
-      { iso3: 'KOS', shapeIds: ['KOS'] },
-      { iso3: 'SSD', shapeIds: ['SDS'] },
+test('Wikidata links company home countries with evidence and removes Q-ID labels', () => {
+  const sourceRow = {
+    item: 'http://www.wikidata.org/entity/Q100',
+    itemLabel: 'Launch site',
+    kind: 'spaceport',
+    iso: 'USA',
+    owner: 'http://www.wikidata.org/entity/Q200',
+    ownerLabel: 'A company',
+    ownerIsCompany: 'true',
+    ownerHomeIso: 'CHN',
+    ownerHqIso: 'USA',
+    operator: 'http://www.wikidata.org/entity/Q300',
+    operatorLabel: 'B company',
+    operatorIsCompany: 'true',
+    operatorHqIso: 'NLD',
+  };
+  const b = (row) =>
+    Object.fromEntries(
+      Object.entries(row).map(([key, value]) => [key, { value }]),
+    );
+  const { rows } = parseWikidataAssets(
+    {
+      results: {
+        bindings: [
+          b(sourceRow),
+          b({
+            ...sourceRow,
+            item: 'http://www.wikidata.org/entity/Q101',
+            itemLabel: 'Q101',
+          }),
+        ],
+      },
+    },
+    options,
+  );
+  assert.equal(rows.length, 1);
+  assert.deepEqual(
+    rows[0].owners.map(({ country, role, homeCountrySourceUrl }) => [
+      country,
+      role,
+      homeCountrySourceUrl,
+    ]),
+    [
+      ['CHN', 'owner', 'https://www.wikidata.org/wiki/Q200#P17'],
+      ['NLD', 'operator', 'https://www.wikidata.org/wiki/Q300#P159'],
     ],
+  );
+  assert.ok(rows[0].owners.every(({ sourceUrl }) => sourceUrl));
+});
+
+test('Hammaguir is a closed site in Algeria with a closure citation', () => {
+  const binding = Object.fromEntries(
+    Object.entries({
+      item: 'http://www.wikidata.org/entity/Q100',
+      itemLabel: 'Hammaguir launch site',
+      kind: 'spaceport',
+      iso: 'FRA',
+    }).map(([key, value]) => [key, { value }]),
+  );
+  const {
+    rows: [site],
+  } = parseWikidataAssets(
+    { results: { bindings: [binding] } },
+    {
+      ...options,
+      country: (value) => value,
+    },
+  );
+  assert.equal(site.locatedIn, 'DZA');
+  assert.equal(site.status, 'closed');
+  assert.equal(site.statusAsOf, '1967-07-01');
+  assert.match(site.statusSourceUrl, /servicehistorique/);
+});
+
+test('DOE WPI uses the unique named feature layer even when its ID changes', () => {
+  assert.match(
+    worldPortLayer({
+      layers: [
+        { id: 17, name: 'Nautical Ports' },
+        { id: 91, name: 'World Port Index' },
+      ],
+    }),
+    /FeatureServer\/91$/,
+  );
+  assert.throws(() => worldPortLayer({ layers: [] }), /one World Port Index/);
+});
+
+test('the asset board projects markers while country detail includes full attributed rows', async () => {
+  const data = await readCuratedAssets();
+  const view = worldFeatureViews.get('assets');
+  const marker = view.summary['curated-assets'](data).rows.find(
+    ({ id }) => id === 'asset_intel-fab-34',
+  );
+  assert.equal(marker.sourceUrl, undefined);
+  assert.equal(marker.owners[0].country, 'USA');
+  const detail = view.detail({
+    country: 'USA',
+    features: { 'curated-assets': data },
   });
+  assert.ok(detail.rows.find(({ id }) => id === marker.id).owners[0].sourceUrl);
+  assert.deepEqual(
+    view.detail({ features: { 'curated-assets': data } }).rows,
+    [],
+  );
+});
+
+test('country crosswalk keeps overseas territory and Kosovo separate and maps grouped UK shapes', async () => {
+  const resolve = await assetCountryResolver(await loadWorldRegistry());
   for (const [key, value] of [
+    ['FIN', 'FIN'],
+    ['BR', 'BRA'],
+    ['FR', 'FRA'],
+    ['AU', 'AUS'],
+    ['KZ', 'KAZ'],
     ['GB', 'GBR'],
     ['GIB', 'GIB'],
     ['GI', 'GIB'],
@@ -196,7 +313,12 @@ test('curated packs keep all rows and distinguish draft corporate attribution fr
   assert.deepEqual(base.owners, []);
   const fab = rows.find(({ name }) => name === 'Fab 23');
   assert.ok(fab.operator);
-  assert.ok(!fab.owners.some((owner) => owner.verified));
+  assert.ok(
+    fab.owners.some(
+      (owner) =>
+        owner.country && owner.sourceUrl && owner.verified && !owner.reviewed,
+    ),
+  );
   assert.ok(rows.every((asset) => asset.canInterrupt.length === 0));
 });
 
@@ -320,6 +442,51 @@ test('asset adapters register all five sources and enrich ports only after the W
     assert.equal(typeof worldAdapters[id].fetchObservations, 'function');
   }
   assert.equal(worldRefreshSteps['nga-ports'], 'wikidata-assets');
+});
+
+test('WRI and OurAirports rederive corrected counts from legacy download files without upstream requests', async (t) => {
+  const cacheDirectory = await mkdtemp(join(tmpdir(), 'gev-assets-cache-'));
+  t.after(() => rm(cacheDirectory, { recursive: true, force: true }));
+  const registry = await loadWorldRegistry();
+  const context = {
+    registry,
+    now,
+    cacheDirectory,
+    fetchImpl(url) {
+      return new Response(
+        url.endsWith('.zip')
+          ? zipOneEntry(
+              'global_power_plant_database.csv',
+              'country,name,gppd_idnr,capacity_mw,latitude,longitude,primary_fuel,owner\nFIN,Test Plant,123,5,60,23,Nuclear,',
+            )
+          : 'id,ident,type,name,latitude_deg,longitude_deg,iso_country,scheduled_service\n1,TEST,large_airport,Test Airport,-7,-40,BR,yes',
+      );
+    },
+  };
+  for (const [id, country] of [
+    ['wri-power', 'FIN'],
+    ['ourairports', 'BRA'],
+  ]) {
+    const adapter = worldAdapters[id];
+    assert.equal(adapter.version, 2);
+    const first = await adapter.fetchObservations(context);
+    assert.equal(
+      adapter.shouldCheck({
+        now,
+        lastCheckedAt: now,
+        data: first.data,
+        rederive: true,
+      }),
+      true,
+    );
+    const rebuilt = await adapter.fetchObservations({
+      ...context,
+      rederive: true,
+      fetchImpl: () => assert.fail('Legacy input is already cached'),
+    });
+    assert.deepEqual(rebuilt, first);
+    assert.equal(rebuilt.data.rows[0].locatedIn, country);
+  }
 });
 
 test('a manual refresh reloads asset reviews even with a cached hand table', () => {

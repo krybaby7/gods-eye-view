@@ -8,6 +8,8 @@ import { createWdqsClient } from './wdqs.js';
 
 const source = 'wikidata-assets';
 const BATCH_SIZE = 40;
+const hammaguirClosure =
+  'https://www.servicehistorique.sga.defense.gouv.fr/sites/default/files/notices_files/SHDGR_REP_1H_1091_A_4881_T1.pdf';
 const portCandidates = [
   'Port of Rotterdam',
   'Port of Singapore',
@@ -38,7 +40,9 @@ function assetQuery(kind, selector, codes) {
   // and optional statements. Blazegraph's default plan timed out on this join.
   return `
     SELECT ?item ?kind ?itemLabel ?iso ?point ?operator ?operatorLabel ?operatorReference
-           ?owner ?ownerLabel ?ownerIso ?ownerReference ?closed WHERE {
+           ?owner ?ownerLabel ?ownerIso ?ownerReference ?closed
+           ?ownerIsCompany ?ownerHomeIso ?ownerHqIso
+           ?operatorIsCompany ?operatorHomeIso ?operatorHqIso WHERE {
       hint:Query hint:optimizer "None" .
       {
         SELECT ?item ?iso ?point WHERE {
@@ -55,6 +59,7 @@ function assetQuery(kind, selector, codes) {
         ?operatorStatement a wikibase:BestRank; ps:P137 ?operator.
         FILTER NOT EXISTS { ?operatorStatement pq:P582 ?operatorEnd. }
         OPTIONAL { ?operatorStatement prov:wasDerivedFrom/pr:P854 ?operatorReference. }
+        ${companyHomeQuery('operator')}
       }
       OPTIONAL {
         ?item p:P127 ?ownerStatement.
@@ -62,6 +67,7 @@ function assetQuery(kind, selector, codes) {
         FILTER NOT EXISTS { ?ownerStatement pq:P582 ?ownerEnd. }
         OPTIONAL { ?owner wdt:P298 ?ownerIso. }
         OPTIONAL { ?ownerStatement prov:wasDerivedFrom/pr:P854 ?ownerReference. }
+        ${companyHomeQuery('owner')}
       }
       OPTIONAL { ?item wdt:P576 ?closed. }
       SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
@@ -69,8 +75,87 @@ function assetQuery(kind, selector, codes) {
   `;
 }
 
+function companyHomeQuery(role) {
+  return `
+    OPTIONAL {
+      ?${role} wdt:P31/wdt:P279* wd:Q4830453.
+      BIND(true AS ?${role}IsCompany)
+      OPTIONAL { ?${role} wdt:P17/wdt:P298 ?${role}HomeIso. }
+      OPTIONAL {
+        ?${role} wdt:P159/wdt:P131*/wdt:P17/wdt:P298 ?${role}HqIso.
+        FILTER (!BOUND(?${role}HomeIso))
+      }
+    }`;
+}
+
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
+}
+
+function facilityName(name) {
+  return name && !/^Q[1-9]\d*$/i.test(name.trim()) ? name.trim() : null;
+}
+
+function assetHistory(row) {
+  if (!/\bhammaguir\b/i.test(row.name)) return row;
+  return {
+    ...row,
+    locatedIn: 'DZA',
+    status: 'closed',
+    statusAsOf: '1967-07-01',
+    statusDetail:
+      'The French military site was evacuated in 1967 under the Évian Accords.',
+    statusSourceUrl: hammaguirClosure,
+  };
+}
+
+function companyAttributions(items, role, country, sourceUrl) {
+  return unique(items.map((item) => item[role])).flatMap((actorId) => {
+    const statements = items.filter((item) => item[role] === actorId);
+    const direct = unique(
+      statements.map((item) => country(item[role + 'Iso'])),
+    );
+    const companies = statements.filter(
+      (item) => item[role + 'IsCompany'] === 'true',
+    );
+    const home = unique(
+      companies.map((item) => country(item[role + 'HomeIso'])),
+    );
+    const hq = unique(companies.map((item) => country(item[role + 'HqIso'])));
+    const countries = direct.length ? direct : home.length ? home : hq;
+    const ownerCountry = countries.length === 1 ? countries[0] : null;
+    const reference = statements.find((item) =>
+      /^https?:\/\//i.test(item[role + 'Reference'] ?? ''),
+    )?.[role + 'Reference'];
+    if (role === 'operator' && (!companies.length || !ownerCountry)) return [];
+    const companyId = /\/entity\/(Q[1-9]\d*)$/.exec(actorId)?.[1];
+    const homeCountrySourceUrl =
+      companies.length && companyId && ownerCountry
+        ? `https://www.wikidata.org/wiki/${companyId}#${home.length ? 'P17' : 'P159'}`
+        : null;
+    return [
+      {
+        actor:
+          unique(
+            statements.map((item) => facilityName(item[role + 'Label'])),
+          )[0] ??
+          companyId ??
+          actorId,
+        country: ownerCountry,
+        share: null,
+        role,
+        countryLabel: homeCountrySourceUrl ? "Owner's home country" : null,
+        homeCountrySourceUrl,
+        sourceUrl:
+          reference ??
+          (homeCountrySourceUrl
+            ? sourceUrl + (role === 'operator' ? '#P137' : '#P127')
+            : null),
+        verified: Boolean(ownerCountry && (reference || homeCountrySourceUrl)),
+        ...(homeCountrySourceUrl && { reviewed: false }),
+      },
+    ];
+  });
 }
 
 function coordinate(wkt) {
@@ -99,7 +184,8 @@ export function parseWikidataAssets(payload, { country, now }) {
   const portOperators = [];
   for (const { id, kind, items } of groups.values()) {
     const sourceUrl = 'https://www.wikidata.org/wiki/' + id;
-    const name = unique(items.map((item) => item.itemLabel))[0] ?? id;
+    const name = unique(items.map((item) => facilityName(item.itemLabel)))[0];
+    if (!name) continue;
     const countries = unique(items.map((item) => country(item.iso)));
     if (countries.length !== 1) continue;
     const [locatedIn] = countries;
@@ -109,8 +195,14 @@ export function parseWikidataAssets(payload, { country, now }) {
         .map((item) => item.point),
     );
     const geometry = locations.length === 1 ? coordinate(locations[0]) : null;
-    const operators = unique(items.map((item) => item.operatorLabel));
+    const operators = unique(
+      items.map((item) => facilityName(item.operatorLabel)),
+    );
     const operator = operators.length ? operators.join(', ') : null;
+    const owners = [
+      ...companyAttributions(items, 'owner', country, sourceUrl),
+      ...companyAttributions(items, 'operator', country, sourceUrl),
+    ];
     if (kind === 'port') {
       if (operators.length === 1 && geometry) {
         portOperators.push({
@@ -118,6 +210,7 @@ export function parseWikidataAssets(payload, { country, now }) {
           iso3: locatedIn,
           coordinates: geometry.coordinates,
           operator,
+          owners,
           sourceUrl,
           referenceUrl:
             unique(items.map((item) => item.operatorReference))[0] ?? null,
@@ -125,54 +218,55 @@ export function parseWikidataAssets(payload, { country, now }) {
       }
       continue;
     }
-    const owners = [];
-    for (const ownerId of unique(items.map((item) => item.owner))) {
-      const statements = items.filter((item) => item.owner === ownerId);
-      const ownerCountries = unique(
-        statements.map((item) => country(item.ownerIso)),
-      );
-      const ownerCountry =
-        ownerCountries.length === 1 ? ownerCountries[0] : null;
-      const ownershipSource =
-        statements.find((item) =>
-          /^https?:\/\//i.test(item.ownerReference ?? ''),
-        )?.ownerReference ?? null;
-      owners.push({
-        actor: unique(statements.map((item) => item.ownerLabel))[0] ?? ownerId,
-        country: ownerCountry,
-        share: null,
-        sourceUrl: ownershipSource,
-        verified: Boolean(ownerCountry && ownershipSource),
-      });
-    }
     rows.push(
-      assetRow({
-        id: 'asset_wd-' + id,
-        type: kind,
-        name,
-        locatedIn,
-        geometry,
-        source,
-        sourceUrl,
-        licence: 'CC0',
-        now,
-        owners,
-        operator,
-        operatorSourceUrl: operator ? sourceUrl : null,
-        status: items.some((item) => Date.parse(item.closed) <= +now)
-          ? 'closed'
-          : 'unknown',
-        statusDetail:
-          'Wikidata facility record. A missing closure date does not establish operating status.',
-      }),
+      assetHistory(
+        assetRow({
+          id: 'asset_wd-' + id,
+          type: kind,
+          name,
+          locatedIn,
+          geometry,
+          source,
+          sourceUrl,
+          licence: 'CC0',
+          now,
+          owners,
+          operator,
+          operatorSourceUrl: operator ? sourceUrl : null,
+          status: items.some((item) => Date.parse(item.closed) <= +now)
+            ? 'closed'
+            : 'unknown',
+          statusDetail:
+            'Wikidata facility record. A missing closure date does not establish operating status.',
+        }),
+      ),
     );
   }
   return { rows, portOperators };
 }
 
 export const wikidataAssets = createAssetAdapter(
-  async ({ registry, now, fetchImpl, data: previous }) => {
+  async ({ registry, now, fetchImpl, data: previous, rederive }) => {
     const country = await assetCountryResolver(registry);
+    if (rederive && previous?.rows) {
+      const data = previous.bindings
+        ? parseWikidataAssets(
+            { results: { bindings: previous.bindings } },
+            { country, now },
+          )
+        : {
+            rows: previous.rows
+              .filter((row) => facilityName(row.name))
+              .map(assetHistory),
+            portOperators: previous.portOperators ?? [],
+          };
+      return {
+        data: { ...previous, ...data },
+        count: data.rows.length,
+        unit: 'facility',
+        detail: 'Rebuilt from cached Wikidata records.',
+      };
+    }
     const codes = [
       ...new Set(
         registry.countries
@@ -246,7 +340,7 @@ export const wikidataAssets = createAssetAdapter(
         data.portOperators = previous?.portOperators ?? [];
     }
     return {
-      data: { ...data, retryAt },
+      data: { ...data, retryAt, ...(!error && { bindings }) },
       count: data.rows.length,
       unit: 'facility',
       detail,

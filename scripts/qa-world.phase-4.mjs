@@ -1,8 +1,8 @@
 import { readCuratedAssets } from '../server/providers/world/assets.js';
 import { ownerColor } from '../src/layers/world/assets.js';
 
-const fabId = 'asset_fixture-cn-fab';
-const unknownSiteId = 'asset_fixture-cn-missing-site';
+const piraeusId = 'asset_piraeus-port-authority';
+const presenceId = 'asset_chn-dji-pla-support-base-in-djibouti';
 const clusterId = 'cluster:global:DEU:port';
 const syntheticSource = 'https://example.test/asset-evidence';
 const point = (lon, lat) => ({ type: 'Point', coordinates: [lon, lat] });
@@ -44,33 +44,6 @@ const ports = [
     point(8.45, 53.6),
   ),
 ];
-const fab = fixtureAsset(
-  fabId,
-  'fab',
-  'Fixture German Fab',
-  'DEU',
-  point(11.6, 49.4),
-  {
-    operator: 'Fixture operator',
-    owners: [
-      {
-        actor: 'Verified Industrial Holdings',
-        country: 'CHN',
-        share: 0.7,
-        verified: true,
-        sourceUrl: syntheticSource,
-      },
-    ],
-  },
-);
-const unknownSite = fixtureAsset(
-  unknownSiteId,
-  'fab',
-  'Fixture Fab with Unknown Site',
-  'JPN',
-  null,
-  { owners: fab.owners },
-);
 const curated = await readCuratedAssets();
 function staticFixture(data) {
   return {
@@ -101,7 +74,7 @@ export const fixtureAdapters = {
     ],
   }),
   'wikidata-assets': staticFixture({
-    rows: [fab, unknownSite],
+    rows: [],
     portOperators: [],
   }),
   'nga-ports': staticFixture({
@@ -112,9 +85,12 @@ export const fixtureAdapters = {
     ...curated,
     rows: curated.rows
       .filter(({ name }) =>
-        ['Fab 24', 'PLA Support Base in Djibouti', 'Camp Lemonnier'].includes(
-          name,
-        ),
+        [
+          'Fab 24',
+          'Port of Piraeus',
+          'PLA Support Base in Djibouti',
+          'Camp Lemonnier',
+        ].includes(name),
       )
       .map((asset) =>
         asset.name === 'Fab 24' ? { ...asset, geometry: null } : asset,
@@ -169,7 +145,9 @@ export default async function phase4({
     await handle.dispose();
     await page.mouse.click(x, y);
     await page.waitForSelector(
-      '#world-card-content [data-world-asset="' + id + '"]',
+      '#world-card-content [data-world-asset="' +
+        id +
+        '"] :is(h3, .world-asset-details)',
     );
   }
 
@@ -192,9 +170,43 @@ export default async function phase4({
   }
 
   await step(
-    'Globe zoom draws and opens a grouped port marker at a source point',
+    'Condition hides markers at board height and shows them below 2,000 km',
     async () => {
+      function visibleAssetCount() {
+        const { C } = window.worldQa;
+        const { primitives } = window.__godsEyeView.viewer.scene;
+        let count = 0;
+        for (let i = 0; i < primitives.length; i++) {
+          const group = primitives.get(i);
+          if (!(group instanceof C.BillboardCollection) || !group.show)
+            continue;
+          for (let j = 0; j < group.length; j++) {
+            if (/^world-(?:card|hint):asset:/.test(group.get(j).id)) count++;
+          }
+        }
+        return count;
+      }
+      await page.click(lens('condition'));
       await camera(10.7, 54, 11_000_000);
+      assert.equal(await page.evaluate(visibleAssetCount), 0);
+      await camera(10.7, 54, 1_900_000);
+      const started = Date.now();
+      while ((await page.evaluate(visibleAssetCount)) === 0) {
+        assert.ok(
+          Date.now() - started < 10_000,
+          'Assets remain hidden at detail height',
+        );
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+    },
+  );
+
+  await step(
+    'Ownership clusters a selected country’s ports at a real member',
+    async () => {
+      await page.click(lens('ownership'));
+      await camera(10.7, 54, 11_000_000);
+      await pickCountry(10.3, 51, 'DEU');
       await pickAsset(clusterId);
       const coordinates = await page.evaluate((pickId) => {
         const { C } = window.worldQa;
@@ -224,20 +236,22 @@ export default async function phase4({
       );
       await shot('phase4-port-cluster');
       await page.click('#world-sheet-close');
+      await page.click('#world-sheet-close');
     },
   );
 
   await step(
-    'Selecting China lights the verified foreign host, a real owner ring, and a real return line',
+    'Selecting China lights the documented Piraeus investment and Djibouti presence',
     async () => {
       await page.click(lens('ownership'));
       assert.equal(await text('#world-legend-title'), 'Ownership');
       await camera(104, 33, 8_000_000);
       await pickCountry(104, 33, 'CHN');
       await page.click(tab('assets'));
+      await page.waitForSelector('#world-sheet-content .world-asset-section');
       assert.match(
         await text('#world-sheet-content'),
-        /Verified assets owned abroad.*Fixture German Fab/s,
+        /Sourced ownership and operators abroad.*Port of Piraeus/s,
       );
       assert.match(
         await text('#world-sheet-extra'),
@@ -246,16 +260,16 @@ export default async function phase4({
       await page.waitForFunction(() => {
         const { solid, hatch } = window.worldQa;
         return (
-          solid.getGeometryInstanceAttributes('world:DEU:DEU:0')?.show[0] &&
+          solid.getGeometryInstanceAttributes('world:GRC:GRC:0')?.show[0] &&
           hatch.getGeometryInstanceAttributes('world:IND:IND:0')?.show[0]
         );
       }, wait);
-      await camera(11.6, 49.4, 9_000_000);
+      await camera(23.636127, 37.941896, 9_000_000);
       await page.waitForFunction(
         ({ pickId, approximateId, color }) => {
           const { C } = window.worldQa;
           const { primitives } = window.__godsEyeView.viewer.scene;
-          const expected = C.Color.fromCssColorString(color).withAlpha(0.8);
+          const expected = C.Color.fromCssColorString(color).withAlpha(0.45);
           let ring = false;
           let line = false;
           let approximateMarker = false;
@@ -272,9 +286,13 @@ export default async function phase4({
               continue;
             for (let j = 0; j < group.length; j++) {
               const marker = group.get(j);
-              if (marker.id === approximateId) {
-                approximateMarker ||= marker.image?.endsWith(':approximate');
-                approximateLine ||= marker.material?.type === 'PolylineDash';
+              if (marker.id === 'world-hint:asset:' + approximateId) {
+                approximateMarker ||= marker.image?.includes(':approximate:');
+              }
+              if (marker.id === 'world-card:asset:' + approximateId) {
+                approximateLine ||=
+                  marker.material?.type === 'PolylineDash' &&
+                  marker.material.uniforms.color.alpha === 0.45;
               }
               if (marker.id !== pickId) continue;
               ring ||= Boolean(marker.image?.includes('owner-CHN:focus'));
@@ -288,20 +306,18 @@ export default async function phase4({
         },
         wait,
         {
-          pickId: assetId(fabId),
-          approximateId: assetId(unknownSiteId),
+          pickId: assetId(piraeusId),
+          approximateId: presenceId,
           color: ownerColor('CHN'),
         },
       );
       await shot('phase4-ownership');
-      await pickAsset(fabId);
+      await pickAsset(piraeusId);
       assert.match(
         await text('#world-card-content'),
-        /Legal owner.*Verified Industrial Holdings · CHN · 70%.*Operator.*Fixture operator.*Status.*Operating.*Licence.*CC0/s,
+        /Draft, not yet reviewed.*Sourced owner or operator.*COSCO.*Owner’s home country CHN.*67%.*Operator.*Piraeus Port Authority/s,
       );
-      assert.ok(
-        await page.$('#world-card-content a[href="' + syntheticSource + '"]'),
-      );
+      assert.ok(await page.$('#world-card-content a[href*="olp.gr"]'));
       await shot('phase4-verified-asset-card');
       await page.click('#world-sheet-close');
     },
@@ -311,23 +327,26 @@ export default async function phase4({
     'Draft military presence and geometry-free fab remain listed with separate provenance',
     async () => {
       await page.click(tab('assets'));
+      await page.waitForSelector('#world-sheet-content .world-asset-section');
       assert.match(
         await text('#world-sheet-content'),
         /Military presence abroad.*PLA Support Base in Djibouti/s,
       );
       await clickAssetList('PLA Support Base in Djibouti');
+      await page.waitForSelector('#world-card-content .world-asset-details');
       assert.match(
         await text('#world-card-content'),
-        /Draft, not yet reviewed.*Host location.*Djibouti.*Legal owner.*Unknown.*Sending military.*China/s,
+        /Draft, not yet reviewed.*Host location.*Djibouti.*Sending military.*China/s,
       );
       await page.click('#world-sheet-close');
       await camera(10.3, 51, 7_500_000);
       await pickCountry(10.3, 51, 'DEU');
       await page.click(tab('assets'));
       await clickAssetList('Fab 24');
+      await page.waitForSelector('#world-card-content .world-asset-details');
       assert.match(
         await text('#world-card-content'),
-        /Draft, not yet reviewed.*Legal owner.*Unknown.*Map location.*Exact site unknown.*Reported group affiliation.*TSMC/s,
+        /Draft, not yet reviewed.*Sourced owner or operator.*TSMC.*Map location.*Exact site unknown/s,
       );
       assert.ok(
         await page.$('#world-card-content a[href*="investor.tsmc.com"]'),

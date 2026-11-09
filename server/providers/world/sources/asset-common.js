@@ -2,6 +2,17 @@ import { readFile } from 'node:fs/promises';
 
 const DAY_MS = 86_400_000;
 let shapes;
+const mapUnitAliases = {
+  BQ: 'NLD',
+  CC: 'AUS',
+  ESH: 'SAH',
+  GF: 'FRA',
+  GP: 'FRA',
+  GUF: 'FRA',
+  MQ: 'FRA',
+  RE: 'FRA',
+  YT: 'FRA',
+};
 
 export async function assetCountryResolver(registry) {
   shapes ??= readFile(
@@ -20,32 +31,38 @@ export async function assetCountryResolver(registry) {
   );
   const keys = new Map();
   const shapeIds = new Map();
-  const add = (key, iso3) => {
+  const add = (key, iso3, priority) => {
     if (!key || key === '-99') return;
     const upper = key.toUpperCase();
-    if (keys.has(upper) && keys.get(upper) !== iso3) keys.set(upper, null);
-    else keys.set(upper, iso3);
+    const previous = keys.get(upper);
+    if (!previous || priority > previous.priority)
+      keys.set(upper, { iso3, priority });
+    else if (priority === previous.priority && previous.iso3 !== iso3)
+      keys.set(upper, { iso3: null, priority });
   };
   for (const record of registry.countries) {
-    add(record.iso3, record.iso3);
-    add(record.name, record.iso3);
-    add(record.aliases?.worldbank, record.iso3);
-    for (const id of record.shapeIds ?? [record.iso3])
-      shapeIds.set(id, record.iso3);
+    add(record.iso3, record.iso3, 3);
+    add(record.name, record.iso3, 1);
+    add(record.aliases?.worldbank, record.iso3, 0);
+    for (const id of record.shapeIds ?? [record.iso3]) shapeIds.set(id, record);
   }
   for (const { iso, iso2, name, country } of await shapes) {
-    const iso3 = shapeIds.get(iso);
-    if (!iso3) continue;
-    add(iso, iso3);
-    add(iso2, iso3);
-    add(name, iso3);
-    if (name === country) add(country, iso3);
+    const record = shapeIds.get(iso);
+    if (!record) continue;
+    const { iso3, kind } = record;
+    add(iso, iso3, 1);
+    add(iso2, iso3, kind === 'state' && iso === iso3 ? 2 : 1);
+    add(name, iso3, 1);
+    if (name === country) add(country, iso3, 1);
   }
   if (keys.has('KOS')) {
-    add('XK', 'KOS');
-    add('XKX', 'KOS');
+    add('XK', 'KOS', 2);
+    add('XKX', 'KOS', 2);
   }
-  return (value) => keys.get(value?.trim().toUpperCase()) ?? null;
+  for (const [key, iso3] of Object.entries(mapUnitAliases)) {
+    if (keys.has(iso3)) add(key, iso3, 0);
+  }
+  return (value) => keys.get(value?.trim().toUpperCase())?.iso3 ?? null;
 }
 
 export function point(longitude, latitude) {
@@ -101,13 +118,15 @@ export function assetRow({
 export function createAssetAdapter(
   fetchObservations,
   intervalDays,
-  { estimatedBytes = 0, requestHost } = {},
+  { estimatedBytes = 0, requestHost, version = 2 } = {},
 ) {
   return {
+    version,
     estimatedBytes,
     requestHost,
-    shouldCheck({ now, lastCheckedAt, data }) {
+    shouldCheck({ now, lastCheckedAt, data, rederive }) {
       if (Date.parse(data?.retryAt) > +now) return false;
+      if (rederive) return true;
       if (!data) return true;
       if (intervalDays === Infinity) return false;
       const last = Date.parse(lastCheckedAt);
