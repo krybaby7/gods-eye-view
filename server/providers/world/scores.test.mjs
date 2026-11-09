@@ -11,7 +11,15 @@ test('transforms, clamps and reverses scores while preserving legitimate zero', 
     scoreIndicator({ anchors, direction: 'higher-is-worse' }, -5),
     100,
   );
-  assert.equal(scoreIndicator({ anchors, transform: 'log10' }, 0), null);
+  assert.equal(scoreIndicator({ anchors, transform: 'log10' }, 0), 0);
+  assert.equal(
+    scoreIndicator(
+      { anchors, transform: 'log10', direction: 'higher-is-worse' },
+      0,
+    ),
+    100,
+  );
+  assert.equal(scoreIndicator({ anchors, transform: 'log10' }, -1), null);
   assert.equal(
     scoreIndicator({ anchors: { a: 0, b: 2 }, transform: 'log10' }, 10),
     50,
