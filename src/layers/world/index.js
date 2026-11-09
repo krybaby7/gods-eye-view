@@ -17,6 +17,7 @@ const overlayFactories = worldPhases.flatMap((phase) => phase.overlays ?? []);
 
 const ID = 'world';
 const POLL_MS = 1000;
+const MAX_POLL_MS = 30_000;
 const FADE_MS = 240;
 const EMPTY = {
   asOf: null,
@@ -25,7 +26,6 @@ const EMPTY = {
   countries: {},
   countryIndex: [],
   turn: null,
-  progress: null,
 };
 
 export function createWorldLayer({
@@ -40,7 +40,10 @@ export function createWorldLayer({
   let lifecycle;
   let pending;
   let poll;
+  let pollDelay = POLL_MS;
   let snapshot = EMPTY;
+  let progress = null;
+  let loading = false;
   let error = null;
   let lens = 'condition';
   let area = 'S1';
@@ -90,6 +93,7 @@ export function createWorldLayer({
   function context() {
     return {
       ...snapshot,
+      progress,
       lens,
       area,
       selected,
@@ -203,19 +207,49 @@ export function createWorldLayer({
   }
 
   async function load(method, parent) {
-    if (!lifecycle || !source || pending) return;
+    if (!lifecycle || !source) return;
+    if (pending) {
+      if (method !== 'refresh' || loading || progress) return;
+      // An explicit Refresh can replace the final board read from the last turn.
+      pending.abort();
+    }
     const controller = new AbortController();
     pending = controller;
     const signals = [controller.signal, lifecycle.signal];
     if (parent) signals.push(parent);
     const signal = AbortSignal.any(signals);
     clearTimeout(poll);
-    error = null;
-    notify();
+    loading = method !== 'getProgress';
+    if (loading) {
+      error = null;
+      notify();
+    }
+    let nextDelay = POLL_MS;
+    let retry = false;
     try {
-      const next = await source[method]({ signal });
+      if (method !== 'getSnapshot') {
+        const status = await source[method]({ signal });
+        signal.throwIfAborted();
+        progress = status.refresh;
+        error = status.error ?? null;
+        if (
+          method === 'refresh'
+            ? progress
+            : progress && status.revision === snapshot.revision
+        ) {
+          pollDelay = POLL_MS;
+          return;
+        }
+        if (method === 'getProgress') notify();
+      }
+      signal.throwIfAborted();
+      const next = await source.getSnapshot({ signal });
       signal.throwIfAborted();
       snapshot = next;
+      pollDelay = POLL_MS;
+      progress = next.progress ?? null;
+      error = next.error ?? null;
+      source.invalidateDetails?.();
       if (!geometry && snapshot.countryIndex.length) {
         const shapes = await loadCountryShapes();
         signal.throwIfAborted();
@@ -228,13 +262,21 @@ export function createWorldLayer({
       needsPaint = overlaysDirty = true;
       requestRender();
     } catch (failure) {
-      if (!signal.aborted) error = failure.message;
+      if (!signal.aborted) {
+        error = failure.message;
+        if (method === 'getProgress') {
+          retry = true;
+          nextDelay = pollDelay;
+          pollDelay = Math.min(pollDelay * 2, MAX_POLL_MS);
+        }
+      }
     } finally {
       if (pending === controller) {
         pending = null;
+        loading = false;
         if (lifecycle && !signal.aborted) {
-          if (!error && snapshot.progress) {
-            poll = setTimeout(() => load('getSnapshot'), POLL_MS);
+          if (progress || retry) {
+            poll = setTimeout(() => load('getProgress'), nextDelay);
           }
           notify();
         }
@@ -287,6 +329,9 @@ export function createWorldLayer({
       lifecycle = null;
       pending = null;
       clearTimeout(poll);
+      progress = null;
+      loading = false;
+      pollDelay = POLL_MS;
       handler?.destroy();
       handler = null;
       removeFrame?.();
@@ -313,9 +358,9 @@ export function createWorldLayer({
       return {
         ...context(),
         enabled: lifecycle !== undefined && lifecycle !== null,
-        loading: Boolean(pending),
+        loading,
         visible: Boolean(lifecycle) && mode === 'board' && geometryReady,
-        error: error || snapshot.error || null,
+        error,
         lenses,
         hovered,
       };
@@ -340,6 +385,10 @@ export function createWorldLayer({
 
     refresh() {
       return load('refresh');
+    },
+
+    getDetail(country, lens, options) {
+      return source.getDetail(country, lens, options);
     },
 
     clearSelection() {

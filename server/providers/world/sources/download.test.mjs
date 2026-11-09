@@ -1,10 +1,19 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises';
+import {
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  utimes,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 import { downloadWorldFile } from './download.js';
+import { createWorldFetch } from './transport.js';
 
 const url = 'https://source.test/archive.zip';
 const etag = '"version-1"';
@@ -282,4 +291,73 @@ test('download size cap catches a body without Content-Length before publication
 
   await assert.rejects(download(), { code: 'RESPONSE_TOO_LARGE' });
   assert.deepEqual(await readdir(cacheDirectory), []);
+});
+
+test('bulk download rejects HTML served as a ZIP before publishing', async (t) => {
+  const { download, cacheDirectory } = await downloadFixture(
+    t,
+    () => bodyResponse('<!DOCTYPE html><title>Login required</title>'),
+    { immutable: true, format: 'zip' },
+  );
+  await assert.rejects(download(), { code: 'DOWNLOAD_SIGNATURE' });
+  assert.deepEqual(await readdir(cacheDirectory), []);
+});
+
+test('bulk download checks expected CSV columns and the gzip header', async (t) => {
+  const { download, cacheDirectory } = await downloadFixture(t, () =>
+    bodyResponse('id,unexpected\n1,2'),
+  );
+  await assert.rejects(
+    download({ format: 'csv', csvColumns: ['id', 'country'] }),
+    {
+      code: 'DOWNLOAD_SIGNATURE',
+    },
+  );
+  await assert.rejects(download({ format: 'gzip' }), {
+    code: 'DOWNLOAD_SIGNATURE',
+  });
+  assert.deepEqual(await readdir(cacheDirectory), []);
+});
+
+test('bulk download stall window starts when its host lane is granted', async (t) => {
+  const { promise: granted, resolve } = Promise.withResolvers();
+  const fetchImpl = createWorldFetch((requestUrl) => {
+    if (requestUrl.endsWith('/hold')) {
+      resolve();
+      return bodyResponse('first request');
+    }
+    return bodyResponse('archive');
+  });
+  const first = fetchImpl('https://source.test/hold');
+  await granted;
+  const { download } = await downloadFixture(t, fetchImpl, {
+    stallTimeoutMs: 150,
+  });
+  const result = download();
+  result.catch(() => {});
+  await delay(220);
+  await (await first).text();
+  assert.equal(await readFile((await result).path, 'utf8'), 'archive');
+});
+
+test('bulk download removes partial files older than a day', async (t) => {
+  const { cacheDirectory, download } = await downloadFixture(t, () =>
+    bodyResponse('new archive'),
+  );
+  const stale = 'a'.repeat(64) + '.part';
+  const fresh = 'b'.repeat(64) + '.part';
+  const orphan = 'c'.repeat(64) + '.part.json';
+  const staleTime = new Date(Date.now() - 25 * 60 * 60 * 1000);
+  for (const name of [stale, fresh]) {
+    await writeFile(path.join(cacheDirectory, name), 'prefix');
+    await writeFile(path.join(cacheDirectory, name + '.json'), '{}');
+  }
+  await writeFile(path.join(cacheDirectory, orphan), '{}');
+  await utimes(path.join(cacheDirectory, orphan), staleTime, staleTime);
+  await utimes(path.join(cacheDirectory, stale), staleTime, staleTime);
+  await download();
+  const files = await readdir(cacheDirectory);
+  assert.ok(files.includes(fresh));
+  assert.ok(!files.includes(stale) && !files.includes(stale + '.json'));
+  assert.ok(!files.includes(orphan));
 });

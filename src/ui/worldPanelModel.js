@@ -39,9 +39,13 @@ function scoreFormula({ transform, direction, anchors: { a, b } }) {
   const input =
     { log10: 'log₁₀(x)', log10p1: 'log₁₀(1 + x)' }[transform] ?? 'x';
   const fraction = `clip((${input} − ${a}) ÷ (${b} − ${a}), 0, 1)`;
-  return direction === 'higher-is-worse'
-    ? `100 × (1 − ${fraction})`
-    : `100 × ${fraction}`;
+  const formula =
+    direction === 'higher-is-worse'
+      ? `100 × (1 − ${fraction})`
+      : `100 × ${fraction}`;
+  return transform === 'log10'
+    ? `${formula}. Measured zero uses the lower log anchor (${a}), a draft rule.`
+    : formula;
 }
 
 function rowFor(country, indicator, source) {

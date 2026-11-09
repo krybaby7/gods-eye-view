@@ -6,7 +6,8 @@ export function scoreIndicator(indicator, value) {
     direction,
   } = indicator;
   let transformed = value;
-  if (transform === 'log10') transformed = Math.log10(value);
+  // Draft zero floor: place measured zero at the lower transformed anchor.
+  if (transform === 'log10') transformed = value === 0 ? a : Math.log10(value);
   if (transform === 'log10p1') transformed = Math.log10(1 + value);
   if (!Number.isFinite(transformed)) return null;
   const position = Math.max(0, Math.min(1, (transformed - a) / (b - a)));
