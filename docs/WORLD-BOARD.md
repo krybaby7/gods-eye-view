@@ -26,6 +26,12 @@ The latest UCDP annual release used here covers 2025 and includes state-based dy
 
 The sanctions adapters count designation records by programme from the UN consolidated XML, UK Sanctions List CSV and OFAC SDN XML. A programme appears as a country relation only when an independent source documents the country link. Refresh reports how many programme identifiers were mapped and how many were left out. If the UN list fails on the first turn, the board displays four cited committee programmes with unavailable designation counts.
 
+## People
+
+The sheet header identifies the head of state and head of government when the Wikidata directory has a current claim. The People tab adds foreign and defence ministers, draft organization entries, public account links, and recent posts where available. The leader portrait beside a country code on the globe opens the actor card. A head of government with an attributed portrait takes precedence, followed by the head of state. Commons portraits show the creator, licence and file link in the sheet and actor card.
+
+Wikidata officeholder claims are checked weekly on Refresh. Ambiguous or unavailable officeholders remain blank. Minister coverage depends on Wikidata offices with a matching jurisdiction and a current officeholder. The draft organization directory uses geographic association for armed groups. Bluesky, YouTube and the Federal Reserve’s official RSS feed provide inline posts or linked headlines on Refresh. **Show X timeline** loads the official widget for the open actor. The widget may require sign-in.
+
 ## Adding a phase
 
 - Add `src/layers/world/phase-N.js` with a default descriptor. Its optional arrays are `lenses` (id, label, order, color and legend, plus optional hover), `overlays` (factories), `tabs` (id, render and optional label/order), `cards` (type, label and render), `header`, `rowFlags` and `hoverFlags`. Vite loads it and `src/ui/styles/world-phase-N.css` automatically.

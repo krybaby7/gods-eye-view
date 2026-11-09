@@ -352,7 +352,17 @@
       "server/providers/world/sources/relationsUcdp.js",
       "server/providers/world/sources/relationsVoting.js",
       "server/providers/world/sources/relationsWikidata.js",
-      "server/providers/world/sources/relationsSanctions.js"
+      "server/providers/world/sources/relationsSanctions.js",
+      "server/providers/world/actors.js",
+      "server/providers/world/sources/actor-feeds.js",
+      "server/providers/world/sources/actor-fetch.js",
+      "server/providers/world/sources/actor-organizations.js",
+      "server/providers/world/sources/bluesky.js",
+      "server/providers/world/sources/government-rss.js",
+      "server/providers/world/sources/wikidata.js",
+      "server/providers/world/sources/wikimedia-commons.js",
+      "server/providers/world/sources/youtube-rss.js",
+      "server/providers/common/rss.js"
     ],
     "external": []
   },
@@ -2400,7 +2410,14 @@
       "src/ui/styles/world-phase-3.css",
       "src/layers/world/relations.js",
       "src/ui/worldRelationsTab.js",
-      "src/ui/worldRelationCard.js"
+      "src/ui/worldRelationCard.js",
+      "src/layers/world/people.js",
+      "src/layers/world/peopleModel.js",
+      "src/layers/world/phase-5.js",
+      "src/ui/worldActorCard.js",
+      "src/ui/worldPeopleElements.js",
+      "src/ui/worldPeopleTab.js",
+      "src/ui/styles/world-phase-5.css"
     ],
     "external": [
       "hls.js",
@@ -2956,7 +2973,14 @@
       "src/ui/styles/world-phase-3.css",
       "src/layers/world/relations.js",
       "src/ui/worldRelationsTab.js",
-      "src/ui/worldRelationCard.js"
+      "src/ui/worldRelationCard.js",
+      "src/layers/world/people.js",
+      "src/layers/world/peopleModel.js",
+      "src/layers/world/phase-5.js",
+      "src/ui/worldActorCard.js",
+      "src/ui/worldPeopleElements.js",
+      "src/ui/worldPeopleTab.js",
+      "src/ui/styles/world-phase-5.css"
     ],
     "external": [
       "hls.js",

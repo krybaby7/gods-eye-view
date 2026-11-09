@@ -172,5 +172,75 @@
     "licence": "US government public information",
     "releaseRhythm": "Checked monthly on Refresh",
     "marks": []
+  },
+  {
+    "id": "wikidata",
+    "name": "Wikidata officeholders",
+    "access": "Keyless Wikidata Query Service",
+    "attribution": "Wikidata contributors",
+    "url": "https://query.wikidata.org/",
+    "licence": "CC0",
+    "releaseRhythm": "Checked weekly on World Board Refresh",
+    "marks": []
+  },
+  {
+    "id": "wikimedia-commons",
+    "name": "Wikimedia Commons portraits",
+    "access": "Keyless MediaWiki imageinfo API",
+    "attribution": "Individual creators via Wikimedia Commons",
+    "url": "https://commons.wikimedia.org/",
+    "licence": "Per file, shown next to each portrait",
+    "releaseRhythm": "Checked weekly or when the directory changes",
+    "marks": ["ShareAlike"]
+  },
+  {
+    "id": "bluesky",
+    "name": "Bluesky public author feeds",
+    "access": "Keyless public AppView",
+    "attribution": "Original account and Bluesky",
+    "url": "https://docs.bsky.app/docs/api/app-bsky-feed-get-author-feed",
+    "licence": "Publisher rights and Bluesky terms apply",
+    "releaseRhythm": "Checked at most daily on World Board Refresh",
+    "marks": ["No stated licence"]
+  },
+  {
+    "id": "youtube-rss",
+    "name": "YouTube channel feeds",
+    "access": "Keyless public Atom feeds",
+    "attribution": "Original channel and YouTube",
+    "url": "https://www.youtube.com/",
+    "licence": "Publisher rights and YouTube terms apply",
+    "releaseRhythm": "Checked at most daily on World Board Refresh",
+    "marks": ["No stated licence"]
+  },
+  {
+    "id": "government-rss",
+    "name": "Federal Reserve official RSS",
+    "access": "Keyless official publisher feed",
+    "attribution": "Federal Reserve Board",
+    "url": "https://www.federalreserve.gov/feeds/feeds.htm",
+    "licence": "Publisher terms apply to linked material",
+    "releaseRhythm": "Checked at most daily on World Board Refresh",
+    "marks": ["No stated licence"]
+  },
+  {
+    "id": "actor-organizations",
+    "name": "World Board organization directory",
+    "access": "Bundled draft table",
+    "attribution": "Wikidata and official organization links",
+    "url": "https://www.wikidata.org/",
+    "licence": "CC0 Wikidata metadata. Publisher terms apply to linked pages",
+    "releaseRhythm": "Manually maintained",
+    "marks": []
+  },
+  {
+    "id": "x-embed",
+    "name": "X official timeline widget",
+    "access": "Optional browser embed. X may require sign-in",
+    "attribution": "X and original account",
+    "url": "https://help.x.com/en/using-x/embed-x-feed",
+    "licence": "X terms and publisher rights apply",
+    "releaseRhythm": "Loaded only by an explicit Show X timeline click",
+    "marks": ["No stated licence"]
   }
 ]

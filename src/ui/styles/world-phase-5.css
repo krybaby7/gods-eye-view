@@ -1,0 +1,163 @@
+.world-people-header {
+  margin-block: 8px 12px;
+}
+
+.world-people-government,
+.world-person-role,
+.world-people-section {
+  color: #bde5ee;
+  font:
+    600 10px / 1.35 'JetBrains Mono',
+    monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.world-people-government,
+.world-people-section {
+  margin-block: 8px;
+}
+
+.world-people-leaders {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.world-person-leader,
+.world-person-row,
+.world-person-post-entry {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(182, 248, 250, 0.22);
+  border-radius: 6px;
+}
+
+.world-person-identity {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.world-person-portrait {
+  width: 35px;
+  height: 42px;
+  flex: 0 0 auto;
+  object-fit: cover;
+  border-radius: 4px;
+  background: #0d1b29;
+}
+
+.world-person-open {
+  padding: 0;
+  border: 0;
+  color: #def8ff;
+  background: transparent;
+  font:
+    600 13px / 1.35 Inter,
+    sans-serif;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.world-person-open:hover,
+.world-person-open:focus-visible {
+  color: #00d4ff;
+  text-decoration: underline;
+}
+
+.world-portrait-credit,
+.world-person-unavailable {
+  color: #a5bac6;
+  font:
+    10px / 1.35 Inter,
+    sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.world-portrait-credit a,
+.world-actor-card .world-detail a,
+.world-person-account,
+.world-person-post,
+.world-person-post-preview {
+  color: #a8ecff;
+}
+
+.world-people-list,
+.world-person-posts {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.world-person-accounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.world-person-account {
+  padding: 3px 6px;
+  border: 1px solid rgba(182, 248, 250, 0.22);
+  border-radius: 5px;
+  font:
+    11px / 1.3 Inter,
+    sans-serif;
+}
+
+.world-person-post,
+.world-person-post-preview {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font:
+    12px / 1.45 Inter,
+    sans-serif;
+}
+
+.world-person-post-preview {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.world-actor-name {
+  margin-block: 0 6px;
+  color: #def8ff;
+  font:
+    700 18px / 1.3 Inter,
+    sans-serif;
+}
+
+.world-actor-portrait {
+  margin: 10px 0;
+}
+
+.world-actor-portrait img {
+  width: 74px;
+  height: 90px;
+}
+
+.world-people-regional,
+.world-person-x {
+  margin-block: 10px;
+}
+
+.world-people-regional summary {
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.world-person-x-frame {
+  width: 100%;
+  height: 340px;
+  border: 0;
+  border-radius: 5px;
+}
