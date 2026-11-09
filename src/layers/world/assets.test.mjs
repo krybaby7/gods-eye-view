@@ -9,6 +9,7 @@ import {
   ownershipLens,
   ownedAbroad,
   boardAssetScale,
+  showAssetMarkers,
 } from './assets.js';
 
 const point = (lon, lat) => ({ type: 'Point', coordinates: [lon, lat] });
@@ -77,6 +78,20 @@ const snapshot = {
   },
 };
 
+test('compact source markers retain their type, geometry and closed status', () => {
+  const board = {
+    features: {
+      'wri-power': {
+        markers: [['closed-1', 'Closed plant', 'FIN', 25, 60, 'closed']],
+      },
+    },
+  };
+  const [marker] = assetMarkers(board, 'regional');
+  assert.equal(marker.closed, true);
+  assert.equal(marker.type, 'power_plant');
+  assert.deepEqual(marker.coordinates, [25, 60]);
+});
+
 test('missing sites share a distinct host-country marker without replacing real site coordinates', () => {
   const labelPoint = (iso3) =>
     iso3 === 'DEU' ? { lon: 10.6, lat: 51.3 } : null;
@@ -129,6 +144,7 @@ test('ownership lines use host label points for an unknown site and identify mil
     ),
     [
       ['a', [10, 51], false, 'ownership'],
+      ['c', [10.6, 51.3], true, 'ownership'],
       ['title', [10.6, 51.3], true, 'ownership'],
       ['presence', [10.6, 51.3], true, 'presence'],
     ],
@@ -142,7 +158,7 @@ test('ownership lines use host label points for an unknown site and identify mil
 test('ownership is limited to independently documented owners abroad', () => {
   assert.deepEqual(
     ownedAbroad(snapshot, 'CHN').map(({ id }) => id),
-    ['a'],
+    ['a', 'c'],
   );
   assert.equal(
     ownershipColor({ iso3: 'FRA' }, { ...snapshot, selected: 'CHN' }),
@@ -158,23 +174,27 @@ test('ownership is limited to independently documented owners abroad', () => {
   assert.equal(assetCatalog(snapshot).byId.get('f').locatedIn, 'GIB');
 });
 
-test('high globe view aggregates a same-type host group at an actual member position', () => {
-  const markers = assetMarkers(snapshot, 'global');
+test('a cluster is anchored to the member nearest its centre', () => {
+  const central = { ...rows[1], id: 'middle', geometry: point(10.5, 51.5) };
+  const board = {
+    ...snapshot,
+    features: { 'curated-assets': { rows: [...rows, central] } },
+  };
+  const markers = assetMarkers(board, 'global');
   const group = markers.find((marker) =>
     marker.members.some(({ id }) => id === 'a'),
   );
-  assert.deepEqual(group.members.map(({ id }) => id).sort(), ['a', 'b']);
-  assert.ok(
-    group.members.some(
-      ({ geometry }) =>
-        geometry.coordinates.toString() === group.coordinates.toString(),
-    ),
-  );
+  assert.deepEqual(group.members.map(({ id }) => id).sort(), [
+    'a',
+    'b',
+    'middle',
+  ]);
+  assert.deepEqual(group.coordinates, [10.5, 51.5]);
   assert.deepEqual(
-    assetClusterMembers(snapshot, group.id)
+    assetClusterMembers(board, group.id)
       .map(({ id }) => id)
       .sort(),
-    ['a', 'b'],
+    ['a', 'b', 'middle'],
   );
   assert.ok(
     !markers.some((marker) =>
@@ -193,7 +213,20 @@ test('ownership selection keeps its verified overseas markers individually picka
     ['a'],
   );
   assert.equal(markers.find((marker) => marker.id === 'a').owner, 'CHN');
-  assert.equal(markers.find((marker) => marker.id === 'd').owner, null);
+  assert.equal(markers.find((marker) => marker.id === 'e').owner, 'CHN');
+  assert.equal(
+    markers.find((marker) => marker.id === 'd'),
+    undefined,
+  );
+});
+
+test('only Ownership shows asset markers at board height, for its selected country', () => {
+  assert.equal(showAssetMarkers(8_000_000, 'condition', 'CHN'), false);
+  assert.equal(showAssetMarkers(2_000_000, 'energy', 'CHN'), false);
+  assert.equal(showAssetMarkers(1_999_999, 'energy'), true);
+  assert.equal(showAssetMarkers(8_000_000, 'ownership'), false);
+  assert.equal(showAssetMarkers(8_000_000, 'ownership', 'CHN'), true);
+  assert.equal(showAssetMarkers(1_000_000, 'ownership', 'CHN'), true);
 });
 
 test('asset aggregation has a dead band near the global threshold', () => {
@@ -207,7 +240,7 @@ test('ownership hover preserves the disputed-territory and missing-country fallb
   const selected = { ...snapshot, selected: 'CHN' };
   assert.equal(
     ownershipLens.hover({ iso3: 'DEU' }, selected),
-    '1 documented owned asset abroad',
+    '2 documented owned assets abroad',
   );
   assert.equal(
     ownershipLens.hover({ iso3: 'FRA' }, selected),

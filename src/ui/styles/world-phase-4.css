@@ -81,6 +81,11 @@
   text-decoration: underline;
 }
 
+.world-asset-closed .world-asset-select {
+  color: #a2acb3;
+  text-decoration: line-through;
+}
+
 .world-asset-disclosure summary {
   padding: 0.25rem 0;
   color: #b9d9ea;

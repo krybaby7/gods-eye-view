@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import {
   assetCountryResolver,
   assetRow,
@@ -32,16 +31,8 @@ export function parsePowerPlants(csv, { country, now }) {
   for (const row of rows) {
     const [rawCountry, name, plant, capacity, lat, lon, fuel, owner] =
       indices.map((index) => row[index]?.trim());
-    const mw = Number(capacity);
-    if (
-      !name ||
-      !plant ||
-      known.has(plant) ||
-      !Number.isFinite(mw) ||
-      mw < 100 ||
-      fuel === 'Nuclear'
-    )
-      continue;
+    const mw = capacity ? Number(capacity) : NaN;
+    if (!name || !plant || known.has(plant)) continue;
     const locatedIn = country(rawCountry);
     if (!locatedIn) continue;
     known.add(plant);
@@ -56,8 +47,9 @@ export function parsePowerPlants(csv, { country, now }) {
         sourceUrl: page,
         licence: 'CC BY 4.0',
         now,
-        capacity: { value: mw, unit: 'MW' },
+        capacity: Number.isFinite(mw) ? { value: mw, unit: 'MW' } : null,
         fuel,
+        sourceCountry: rawCountry,
         historical: true,
         sourceVersion: 'v1.3.0 (2021 historical inventory)',
         statusDetail:
@@ -72,29 +64,36 @@ export function parsePowerPlants(csv, { country, now }) {
 }
 
 export const wriPower = createAssetAdapter(
-  async ({ registry, now, fetchImpl, cacheDirectory, onProgress }) => {
+  async ({ registry, now, fetchImpl, cacheDirectory, onProgress, signal }) => {
     const country = await assetCountryResolver(registry);
-    const { path } = await downloadWorldFile(archive, {
+    const { parsed: rows } = await downloadWorldFile(archive, {
       fetchImpl,
       cacheDirectory,
       onProgress,
+      signal,
       maxBytes: 25_000_000,
       immutable: true,
+      format: 'zip',
+      async parse(path) {
+        const decoder = new TextDecoder();
+        let text = '';
+        for await (const chunk of zipEntryChunks(
+          path,
+          (name) => /(^|\/)global_power_plant_database\.csv$/i.test(name),
+          80_000_000,
+          signal,
+        )) {
+          text += decoder.decode(chunk, { stream: true });
+        }
+        const plants = parsePowerPlants(text + decoder.decode(), {
+          country,
+          now,
+        });
+        if (!plants.length)
+          throw new Error('WRI returned no historical power plants');
+        return plants;
+      },
     });
-    const bytes = await readFile(path);
-    const decoder = new TextDecoder();
-    let text = '';
-    for await (const chunk of zipEntryChunks(
-      bytes,
-      (name) => /(^|\/)global_power_plant_database\.csv$/i.test(name),
-      80_000_000,
-    )) {
-      text += decoder.decode(chunk, { stream: true });
-    }
-    text += decoder.decode();
-    const rows = parsePowerPlants(text, { country, now });
-    if (!rows.length)
-      throw new Error('WRI returned no eligible historical power plants');
     return { data: { rows }, count: rows.length, unit: 'historical plant' };
   },
   Infinity,

@@ -1,26 +1,44 @@
 import { readFile } from 'node:fs/promises';
+import { readResponseJsonCapped } from '../../common/http.js';
 import {
   assetCountryResolver,
   assetRow,
   createAssetAdapter,
   point,
 } from './asset-common.js';
-import { downloadWorldFile } from './download.js';
+import { fetchResponseWithDeadline } from './common.js';
+import { downloadWorldFile, hasWorldDownload } from './download.js';
 
 const source = 'nga-ports';
 // Public U.S. DOE National Energy Technology Laboratory mirror of NGA Pub. 150.
-const layer =
-  'https://arcgis.netl.doe.gov/server/rest/services/Hosted/CCS_EJ_SJ_Data/FeatureServer/17';
-const url =
-  layer +
-  '/query?' +
-  new URLSearchParams({
-    where: "harbor_size_code='Large'",
-    outFields: 'wpinumber,main_port_name,wpi_cc,harbor_size_code',
-    returnGeometry: 'true',
-    outSR: '4326',
-    f: 'json',
-  });
+const service =
+  'https://arcgis.netl.doe.gov/server/rest/services/Hosted/CCS_EJ_SJ_Data/FeatureServer';
+
+function queryUrl(layer) {
+  return (
+    layer +
+    '/query?' +
+    new URLSearchParams({
+      where: "harbor_size_code='Large'",
+      outFields: 'wpinumber,main_port_name,wpi_cc,harbor_size_code',
+      returnGeometry: 'true',
+      outSR: '4326',
+      f: 'json',
+    })
+  );
+}
+
+export function worldPortLayer(metadata) {
+  const matches = Array.isArray(metadata?.layers)
+    ? metadata.layers.filter(
+        ({ name, id }) =>
+          name === 'World Port Index' && Number.isSafeInteger(id) && id >= 0,
+      )
+    : [];
+  if (matches.length !== 1)
+    throw new Error('DOE mirror did not identify one World Port Index layer');
+  return service + '/' + matches[0].id;
+}
 
 function comparableName(name) {
   return name
@@ -64,7 +82,13 @@ function decimalCoordinate(value) {
 
 export function parseWorldPortIndex(
   payload,
-  { country, now, operatorCandidates = [] },
+  {
+    country,
+    now,
+    operatorCandidates = [],
+    operatorReviews = new Map(),
+    sourceUrl = service,
+  },
 ) {
   if (!Array.isArray(payload?.ports))
     throw new Error('Unexpected NGA World Port Index response');
@@ -93,6 +117,7 @@ export function parseWorldPortIndex(
       geometry?.coordinates,
       operatorCandidates,
     );
+    const review = operatorReviews.get(String(id));
     assets.push(
       assetRow({
         id: 'asset_nga-' + id,
@@ -101,12 +126,13 @@ export function parseWorldPortIndex(
         locatedIn,
         geometry,
         source,
-        sourceUrl: layer,
+        sourceUrl,
         licence: 'Public domain (U.S. government)',
         now,
-        operator: match?.operator ?? null,
-        operatorSourceUrl: match?.sourceUrl ?? null,
+        operator: review?.operator ?? match?.operator ?? null,
+        operatorSourceUrl: review?.sourceUrl ?? match?.sourceUrl ?? null,
         operatorReferenceUrl: match?.referenceUrl ?? null,
+        owners: match?.owners ?? [],
         sourceLocator: 'World Port Index ' + id,
         statusDetail:
           'NGA World Port Index large harbor. Live port status is unknown.',
@@ -147,24 +173,58 @@ export const ngaPorts = createAssetAdapter(
     cacheDirectory,
     onProgress,
     features,
+    data,
+    rederive,
+    signal,
   }) => {
     const country = await assetCountryResolver(registry);
     const operatorCandidates = features?.['wikidata-assets']?.portOperators;
-    const { path } = await downloadWorldFile(url, {
+    const { operators } = JSON.parse(
+      await readFile(
+        new URL(
+          '../../../../public/world/curated/port-attributions.json',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+    );
+    const operatorReviews = new Map(operators.map((row) => [row.wpi, row]));
+    const previousLayer = data?.layer ?? data?.rows?.[0]?.sourceUrl;
+    const cachedLayer =
+      rederive &&
+      previousLayer?.startsWith(service + '/') &&
+      /^\d+$/.test(previousLayer.slice(service.length + 1)) &&
+      (await hasWorldDownload(queryUrl(previousLayer), cacheDirectory));
+    const layer = cachedLayer
+      ? previousLayer
+      : worldPortLayer(
+          await fetchResponseWithDeadline(fetchImpl, service + '?f=json', {
+            signal,
+            read: readResponseJsonCapped,
+          }),
+        );
+    const { parsed: rows } = await downloadWorldFile(queryUrl(layer), {
       fetchImpl,
       cacheDirectory,
       onProgress,
+      signal,
       maxBytes: 2_000_000,
+      immutable: cachedLayer,
+      async parse(path) {
+        const payload = JSON.parse(await readFile(path, 'utf8'));
+        const ports = parseWpiFeatureLayer(payload, {
+          country,
+          now,
+          operatorCandidates,
+          operatorReviews,
+          sourceUrl: layer,
+        });
+        if (!ports.length) throw new Error('NGA returned no large harbors');
+        return ports;
+      },
     });
-    const payload = JSON.parse(await readFile(path, 'utf8'));
-    const rows = parseWpiFeatureLayer(payload, {
-      country,
-      now,
-      operatorCandidates,
-    });
-    if (!rows.length) throw new Error('NGA returned no large harbors');
     return {
-      data: { rows },
+      data: { rows, layer },
       count: rows.length,
       unit: 'large harbor',
       detail:

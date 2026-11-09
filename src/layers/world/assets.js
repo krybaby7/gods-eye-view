@@ -38,13 +38,27 @@ function addToIndex(index, key, asset) {
   index.get(key).push(asset);
 }
 
+function markerRows(id, feature) {
+  if (!feature?.markers) return feature?.rows ?? [];
+  const type = id === 'wri-power' ? 'power_plant' : 'airport';
+  return feature.markers.map(([id, name, locatedIn, lon, lat, status]) => ({
+    id,
+    name,
+    locatedIn,
+    type,
+    geometry:
+      Number.isFinite(lon) && Number.isFinite(lat)
+        ? { type: 'Point', coordinates: [lon, lat] }
+        : null,
+    status,
+  }));
+}
+
 export function verifiedOwners(asset) {
-  return asset.reviewed === false
-    ? []
-    : (asset.owners ?? []).filter(
-        (owner) =>
-          owner.verified === true && /^[A-Z]{3}$/.test(owner.country ?? ''),
-      );
+  return (asset.owners ?? []).filter(
+    (owner) =>
+      owner.verified === true && /^[A-Z]{3}$/.test(owner.country ?? ''),
+  );
 }
 
 export function assetCatalog(snapshot) {
@@ -56,7 +70,7 @@ export function assetCatalog(snapshot) {
   const byOwner = new Map();
   const bySendingCountry = new Map();
   for (const id of sourceIds) {
-    for (const asset of features[id]?.rows ?? []) {
+    for (const asset of markerRows(id, features[id])) {
       if (byId.has(asset.id)) continue;
       byId.set(asset.id, asset);
       if (asset.locatedIn) addToIndex(byHost, asset.locatedIn, asset);
@@ -111,9 +125,10 @@ export const ownershipLens = {
       'Documented foreign ownership',
       'Grey dashes mark documented military presence',
       'Dotted lines and ? markers show exact site unknown',
+      'Fainter lines and outlined markers mark draft evidence',
     ],
     note: snapshot.selected
-      ? `${snapshot.selected} · verified owner evidence · hatching means unknown`
+      ? `${snapshot.selected} · sourced owner or operator home country · hatching means unknown`
       : 'Select a country to show its documented assets abroad',
   }),
   hover(country, snapshot) {
@@ -131,6 +146,11 @@ export function boardAssetScale(height, current) {
   if (height > 10_000_000) return 'global';
   if (height < 9_000_000) return 'regional';
   return current;
+}
+
+export function showAssetMarkers(height, lens, selected) {
+  if (lens === 'ownership') return Boolean(selected);
+  return Number.isFinite(height) && height < 2_000_000;
 }
 
 export function assetPoint(asset) {
@@ -167,8 +187,21 @@ export function assetConnections(snapshot, labelPoint) {
     for (const asset of assets) {
       const exact = assetPoint(asset);
       const coordinates = exact ?? countryPoint(asset.locatedIn, labelPoint);
-      if (coordinates)
-        connections.push({ asset, coordinates, approximate: !exact, kind });
+      if (coordinates) {
+        const draft =
+          asset.reviewed === false ||
+          verifiedOwners(asset).some(
+            (evidence) =>
+              evidence.country === owner && evidence.reviewed === false,
+          );
+        connections.push({
+          asset,
+          coordinates,
+          approximate: !exact,
+          kind,
+          draft,
+        });
+      }
     }
   }
   return connections;
@@ -183,8 +216,41 @@ function markerOwner(asset, selected) {
   );
 }
 
+function clusterPosition(members) {
+  if (members.length === 1) return assetPoint(members[0]);
+  const radians = Math.PI / 180;
+  const centre = [0, 0, 0];
+  const points = members.map((asset) => {
+    const [lon, lat] = assetPoint(asset).map((degrees) => degrees * radians);
+    const vector = [
+      Math.cos(lat) * Math.cos(lon),
+      Math.cos(lat) * Math.sin(lon),
+      Math.sin(lat),
+    ];
+    for (let index = 0; index < 3; index++) centre[index] += vector[index];
+    return { asset, vector };
+  });
+  let best;
+  let highest = -Infinity;
+  for (const { asset, vector } of points) {
+    const score = vector.reduce(
+      (dot, value, index) => dot + value * centre[index],
+      0,
+    );
+    if (
+      score > highest + 1e-12 ||
+      (Math.abs(score - highest) <= 1e-12 && asset.id < best.id)
+    ) {
+      highest = score;
+      best = asset;
+    }
+  }
+  return assetPoint(best);
+}
+
 export function assetMarkers(snapshot, scale, labelPoint = () => null) {
   const ownership = snapshot.lens === 'ownership';
+  if (ownership && !snapshot.selected) return [];
   const focused = new Set(
     assetConnections(snapshot, labelPoint).map(({ asset }) => asset.id),
   );
@@ -193,6 +259,12 @@ export function assetMarkers(snapshot, scale, labelPoint = () => null) {
   for (const asset of assetCatalog(snapshot).byId.values()) {
     const style = assetKinds[asset.type];
     if (!style || !asset.locatedIn) continue;
+    if (
+      ownership &&
+      asset.locatedIn !== snapshot.selected &&
+      !focused.has(asset.id)
+    )
+      continue;
     const position = assetPoint(asset);
     if (!position) {
       addToIndex(approximate, asset.locatedIn, asset);
@@ -229,11 +301,13 @@ export function assetMarkers(snapshot, scale, labelPoint = () => null) {
       : new Set();
     return {
       id: single ? first.id : `cluster:${scale}:${group.key}`,
-      coordinates: [group.lon, group.lat],
+      coordinates: clusterPosition(members),
       members,
       type: first.type,
       owner: owners.size === 1 ? owners.values().next().value : null,
       focus: single && focused.has(first.id),
+      closed: members.every(({ status }) => status === 'closed'),
+      draft: members.some(({ reviewed }) => reviewed === false),
       size: single ? 24 : hotspotSizePx(members.length),
     };
   });
@@ -250,6 +324,8 @@ export function assetMarkers(snapshot, scale, labelPoint = () => null) {
       approximate: true,
       owner: ownership && single ? markerOwner(first, snapshot.selected) : null,
       focus: members.some(({ id }) => focused.has(id)),
+      closed: members.every(({ status }) => status === 'closed'),
+      draft: members.some(({ reviewed }) => reviewed === false),
       size: single ? 24 : hotspotSizePx(members.length),
     });
   }
@@ -258,10 +334,18 @@ export function assetMarkers(snapshot, scale, labelPoint = () => null) {
 
 export function assetClusterMembers(snapshot, id) {
   const host = /^fallback:([A-Z]{3})$/.exec(id)?.[1];
-  if (host)
+  if (host) {
+    const selected = snapshot.lens === 'ownership' ? snapshot.selected : null;
     return (assetCatalog(snapshot).byHost.get(host) ?? []).filter(
-      (asset) => assetKinds[asset.type] && !assetPoint(asset),
+      (asset) =>
+        assetKinds[asset.type] &&
+        !assetPoint(asset) &&
+        (!selected ||
+          host === selected ||
+          asset.sendingCountry === selected ||
+          verifiedOwners(asset).some(({ country }) => country === selected)),
     );
+  }
   const scale = /^cluster:(global|regional):/.exec(id)?.[1];
   return scale
     ? (assetMarkers(snapshot, scale).find((marker) => marker.id === id)

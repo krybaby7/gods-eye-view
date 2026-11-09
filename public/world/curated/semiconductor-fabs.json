@@ -1018,7 +1018,9 @@
         {
           "actor": "Intel",
           "country": "USA",
-          "share": 1.0
+          "share": 1.0,
+          "role": "owner",
+          "basis": "Intel retains title to Fab 34 under the Ireland SCIP agreement."
         }
       ],
       "operator": "Intel",

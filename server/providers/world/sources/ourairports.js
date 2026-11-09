@@ -9,7 +9,8 @@ import { columnIndices, csvRows } from './csv.js';
 import { downloadWorldFile } from './download.js';
 
 const source = 'ourairports';
-const url = 'https://davidmegginson.github.io/ourairports-data/airports.csv';
+export const airportCsvUrl =
+  'https://davidmegginson.github.io/ourairports-data/airports.csv';
 const fields = [
   'id',
   'ident',
@@ -51,6 +52,7 @@ export function parseOurAirports(csv, { country, now }) {
           'https://ourairports.com/airports/' + encodeURIComponent(ident) + '/',
         licence: 'Public domain',
         now,
+        sourceCountry: iso,
         statusDetail:
           'OurAirports lists scheduled service. Live airport status is unknown.',
       }),
@@ -60,22 +62,37 @@ export function parseOurAirports(csv, { country, now }) {
 }
 
 export const ourAirports = createAssetAdapter(
-  async ({ registry, now, fetchImpl, cacheDirectory, onProgress }) => {
+  async ({
+    registry,
+    now,
+    fetchImpl,
+    cacheDirectory,
+    onProgress,
+    rederive,
+    signal,
+  }) => {
     const country = await assetCountryResolver(registry);
-    const { path } = await downloadWorldFile(url, {
+    const { parsed: rows } = await downloadWorldFile(airportCsvUrl, {
       fetchImpl,
       cacheDirectory,
       onProgress,
+      signal,
       maxBytes: 60_000_000,
+      immutable: rederive,
+      format: 'csv',
+      csvColumns: fields,
+      async parse(path) {
+        const airports = parseOurAirports(await readFile(path, 'utf8'), {
+          country,
+          now,
+        });
+        if (!airports.length)
+          throw new Error(
+            'OurAirports returned no large airports with scheduled service',
+          );
+        return airports;
+      },
     });
-    const rows = parseOurAirports(await readFile(path, 'utf8'), {
-      country,
-      now,
-    });
-    if (!rows.length)
-      throw new Error(
-        'OurAirports returned no large airports with scheduled service',
-      );
     return { data: { rows }, count: rows.length, unit: 'airport' };
   },
   7,
