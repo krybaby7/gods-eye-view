@@ -209,6 +209,24 @@ export const DATA_CREDITS = [
       '<a href="https://www.v-dem.net/data/the-v-dem-dataset/" target="_blank" rel="noopener">V-Dem</a> · ' +
       '<a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a>',
   },
+  {
+    key: 'world-board-live-condition',
+    html:
+      'World Board condition flags: ' +
+      '<a href="https://www.gdacs.org/xml/rss.xml" target="_blank" rel="noopener">GDACS · European Commission JRC, CC BY 4.0</a> · ' +
+      '<a href="https://frankfurter.dev/" target="_blank" rel="noopener">Frankfurter</a> · ' +
+      '<a href="https://jonathanmpowell.com/coups/" target="_blank" rel="noopener">Powell and Thyne</a> · ' +
+      '<a href="https://www.gdeltproject.org/data.html" target="_blank" rel="noopener">GDELT</a> · ' +
+      '<a href="https://www.fao.org/worldfoodsituation/foodpricesindex/en/" target="_blank" rel="noopener">FAO</a> · ' +
+      '<a href="https://data.imf.org/Datasets/CPI" target="_blank" rel="noopener">IMF CPI</a> · ' +
+      '<a href="https://www.unhcr.org/refugee-statistics/" target="_blank" rel="noopener">UNHCR</a> · ' +
+      '<a href="https://ucdp.uu.se/downloads/" target="_blank" rel="noopener">UCDP Candidate, CC BY 4.0</a> · ' +
+      '<a href="https://www.worldbank.org/en/programs/debt-toolkit/dsa" target="_blank" rel="noopener">IMF–World Bank LIC DSA</a>. ' +
+      'Optional feeds: <a href="https://www.electionguide.org/p/access/" target="_blank" rel="noopener">IFES ElectionGuide</a> · ' +
+      '<a href="https://docs.humdata.org/build/hdx-apis/hapi" target="_blank" rel="noopener">UN OCHA HDX HAPI / IPC / WFP</a> · ' +
+      '<a href="https://ioda.inetintel.cc.gatech.edu/" target="_blank" rel="noopener">IODA</a> · ' +
+      '<a href="https://ucdp.uu.se/apidocs/" target="_blank" rel="noopener">UCDP Candidate API</a>.',
+  },
   // War monitor: headline, snippet, link and publisher only. One group per
   // transport; every fetched source in public/news/sources.json is named here.
   {

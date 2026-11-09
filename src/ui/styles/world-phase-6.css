@@ -1,0 +1,38 @@
+.world-live-fao {
+  position: absolute;
+  z-index: 20;
+  top: clamp(137px, 18vh, 156px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(42rem, 80vw);
+  padding: 0.35rem 0.65rem;
+  border: 1px solid rgb(111 197 199 / 42%);
+  border-radius: 0.45rem;
+  color: #d9ffff;
+  background: rgb(13 27 41 / 92%);
+  font: 0.68rem/1.35 var(--font-mono, monospace);
+  text-align: center;
+}
+.world-live-fao[hidden] {
+  display: none;
+}
+.world-live-evidence {
+  margin-block: 0.35rem;
+  font-size: 0.72rem;
+}
+.world-live-evidence summary {
+  cursor: pointer;
+}
+.world-live-evidence ul {
+  margin-block: 0.4rem;
+  padding-inline-start: 1.05rem;
+}
+.world-live-evidence a {
+  color: #9ce9fc;
+}
+@media (max-width: 600px) {
+  .world-live-fao {
+    top: 118px;
+    width: max-content;
+  }
+}

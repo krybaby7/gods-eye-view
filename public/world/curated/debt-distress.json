@@ -1,0 +1,92 @@
+[
+  {
+    "iso3": "MOZ",
+    "rating": "in-distress",
+    "scope": "overall",
+    "assessmentDate": "2026-01",
+    "dateChecked": "2026-11-09",
+    "reviewed": false,
+    "source": "https://www.elibrary.imf.org/view/journals/002/2026/045/article-A002-en.xml"
+  },
+  {
+    "iso3": "LAO",
+    "rating": "in-distress",
+    "scope": "overall and external",
+    "assessmentDate": "2026-02",
+    "dateChecked": "2026-11-09",
+    "reviewed": false,
+    "source": "https://www.elibrary.imf.org/view/journals/002/2026/050/article-A003-en.xml"
+  },
+  {
+    "iso3": "DJI",
+    "rating": "in-distress",
+    "scope": "overall and external",
+    "assessmentDate": "2025",
+    "dateChecked": "2026-11-09",
+    "reviewed": false,
+    "source": "https://www.elibrary.imf.org/view/journals/002/2025/276/article-A003-en.xml"
+  },
+  {
+    "iso3": "MWI",
+    "rating": "in-distress",
+    "scope": "overall and external",
+    "assessmentDate": "2025-07",
+    "dateChecked": "2026-11-09",
+    "reviewed": false,
+    "source": "https://www.elibrary.imf.org/abstract/journals/002/2025/226/article-A002-en.xml"
+  },
+  {
+    "iso3": "STP",
+    "rating": "in-distress",
+    "scope": "overall",
+    "assessmentDate": "2025-12",
+    "dateChecked": "2026-11-09",
+    "reviewed": false,
+    "source": "https://www.elibrary.imf.org/view/journals/002/2025/347/article-A002-en.xml"
+  },
+  {
+    "iso3": "ZWE",
+    "rating": "in-distress",
+    "scope": "overall and external",
+    "assessmentDate": "2025",
+    "dateChecked": "2026-11-09",
+    "reviewed": false,
+    "source": "https://www.elibrary.imf.org/view/journals/002/2025/282/article-A002-en.xml"
+  },
+  {
+    "iso3": "ETH",
+    "rating": "in-distress",
+    "scope": "external",
+    "assessmentDate": "2026",
+    "dateChecked": "2026-11-09",
+    "reviewed": false,
+    "source": "https://www.elibrary.imf.org/view/journals/002/2026/020/article-A002-en.xml"
+  },
+  {
+    "iso3": "COG",
+    "rating": "in-distress",
+    "scope": "overall and external",
+    "assessmentDate": "2026-02",
+    "dateChecked": "2026-11-09",
+    "reviewed": false,
+    "source": "https://www.imf.org/-/media/files/publications/cr/2026/english/1cogea2026001-source-pdf.pdf"
+  },
+  {
+    "iso3": "ZMB",
+    "rating": "high-risk",
+    "scope": "overall and external",
+    "assessmentDate": "2026-01",
+    "dateChecked": "2026-11-09",
+    "reviewed": false,
+    "source": "https://www.elibrary.imf.org/view/journals/002/2026/021/article-A002-en.xml"
+  },
+  {
+    "iso3": "GNB",
+    "rating": "high-risk",
+    "scope": "overall and external",
+    "assessmentDate": "2026",
+    "dateChecked": "2026-11-09",
+    "reviewed": false,
+    "source": "https://www.elibrary.imf.org/view/journals/002/2026/140/article-A002-en.xml"
+  }
+]

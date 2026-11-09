@@ -4,7 +4,7 @@ Turn on **Events > World Board** to shade countries and open the board. Choose *
 
 Country shading appears at a camera height of 3,500 km and is removed below 3,000 km; the gap prevents flicker while zooming. Select a country to open its sheet, browse the 18 slots, and use **Why this number** for the raw value, period, source, formula and draft anchors. Flags identify unknown, weakest, stale, low-confidence and source-forecast readings. There is no overall total.
 
-The first activation starts a background turn. Later updates are owner-initiated with **Refresh**. Data and turn history are local in `.gev-cache/world/state.json`. A share link uses layer token `5` to retain whether World Board is enabled. Data and country selections are local.
+The first activation starts a background turn. Use **Refresh** to update base datasets and eligible feeds. Live feeds also run their own timed checks while the board is enabled. Data and turn history are local in `.gev-cache/world/state.json`. A share link uses layer token `5` to retain whether World Board is enabled. Data and country selections are local.
 
 Scores use draft anchors: each indicator is transformed where specified, positioned between its two anchors, clipped to the 0–100 range and reversed when higher values are worse. Missing source data remains unknown. After a source failure, the board retains its last available readings. Check source period, retrieval date, coverage and flags before comparison.
 
@@ -15,6 +15,16 @@ The keyless [World Bank API](https://data.worldbank.org/) supplies 14 series plu
 For C2, official keyless [UCDP Candidate Events CSV releases](https://ucdp.uu.se/downloads/) supply the latest 12 complete released months. Best deaths are summed over unique event IDs and divided by the latest World Bank population at or before the period, with the period ending at the last released month. No token is required. UCDP data is CC BY 4.0.
 
 For C6, the exact `v2cacamps` variable in the V-Dem v16 codebook §3.15.1.1 has interval endpoints −3.81 to 3.94. Refresh streams the CSV inside the official Full+Others archive and retains the latest usable reading per mapped country. The v16 compressed download is 26.9 MB. [V-Dem](https://www.v-dem.net/data/the-v-dem-dataset/) data is CC BY-SA 4.0.
+
+## Live condition flags
+
+A dated flag records what a source reported or what the board detected in that source. It appears on the relevant Condition row and in the country hover. The sheet’s **Condition flags** section links to the evidence. Flag sets and clears appear in the turn summary. Flags leave the numeric scores and lenses unchanged.
+
+- GDELT counts conflict-coded and protest reports across the 15-minute files sampled in the last seven days. The number of sampled files is shown. GDACS red alerts describe hazards and potential exposure.
+- Frankfurter flags a currency that lost at least 20% of its value against USD over a near-30-day window with two dated readings. The IMF CPI adapter compares the same calendar month one year apart and uses a draft 20% threshold. The public CPI probe returned no observations.
+- UNHCR reports annual internal displacement stocks. Saved UCDP Candidate observations can supply an attributed rolling deaths-per-million flag. The FAO index appears as a world banner.
+- Ten draft LIC DSA assessments distinguish high risk from reported debt distress. Each links to its dated assessment.
+- IFES ElectionGuide, HDX HAPI, IODA and the UCDP Candidate API require explicit configuration and are disabled by default.
 
 ## Adding a phase
 

@@ -52,5 +52,135 @@
     "licence": "CC BY-SA 4.0",
     "releaseRhythm": "Annual (March)",
     "marks": ["ShareAlike"]
+  },
+  {
+    "id": "live-gdacs",
+    "name": "GDACS disaster alerts",
+    "access": "Keyless public RSS",
+    "attribution": "GDACS and European Commission Joint Research Centre",
+    "url": "https://www.gdacs.org/xml/rss.xml",
+    "licence": "CC BY 4.0 for item data",
+    "releaseRhythm": "Hourly while enabled",
+    "marks": []
+  },
+  {
+    "id": "live-fx",
+    "name": "Frankfurter FX",
+    "access": "Keyless daily public rate history",
+    "attribution": "Frankfurter and contributing central banks",
+    "url": "https://frankfurter.dev/",
+    "licence": "Public blended data, underlying provider terms apply",
+    "releaseRhythm": "Daily while enabled",
+    "marks": []
+  },
+  {
+    "id": "live-coups",
+    "name": "Powell and Thyne coup dataset",
+    "access": "Keyless authors’ CSV",
+    "attribution": "Jonathan M. Powell and Clayton L. Thyne, Global Instances of Coups",
+    "url": "https://jonathanmpowell.com/coups/",
+    "licence": "Publisher licence unconfirmed; derived, cited event flags",
+    "releaseRhythm": "Weekly while enabled",
+    "marks": []
+  },
+  {
+    "id": "live-gdelt",
+    "name": "GDELT event samples",
+    "access": "Keyless 15-minute export manifest and CSV ZIP",
+    "attribution": "The GDELT Project, GDELT 2.0 Events",
+    "url": "https://www.gdeltproject.org/data.html",
+    "licence": "Free data use with GDELT attribution",
+    "releaseRhythm": "15 minutes while enabled, sampled only",
+    "marks": []
+  },
+  {
+    "id": "live-fao",
+    "name": "FAO Food Price Index",
+    "access": "Keyless public nominal monthly CSV",
+    "attribution": "Food and Agriculture Organization of the United Nations",
+    "url": "https://www.fao.org/worldfoodsituation/foodpricesindex/en/",
+    "licence": "Publisher terms apply; cited index and derived change",
+    "releaseRhythm": "Monthly release, checked weekly while enabled",
+    "marks": []
+  },
+  {
+    "id": "live-imf-cpi",
+    "name": "IMF Consumer Price Index",
+    "access": "Public SDMX 3.0 route; live observations unverified",
+    "attribution": "International Monetary Fund, CPI all-items monthly index",
+    "url": "https://data.imf.org/Datasets/CPI",
+    "licence": "IMF terms, commercial use requires permission",
+    "releaseRhythm": "Monthly release, checked weekly while enabled",
+    "marks": ["NonCommercial"]
+  },
+  {
+    "id": "live-unhcr",
+    "name": "UNHCR displacement stocks",
+    "access": "Keyless Refugee Statistics API",
+    "attribution": "United Nations High Commissioner for Refugees, Refugee Data Finder",
+    "url": "https://www.unhcr.org/refugee-statistics/",
+    "licence": "API data licence unconfirmed; derived stock flags",
+    "releaseRhythm": "Annual stock, checked weekly while enabled",
+    "marks": []
+  },
+  {
+    "id": "live-ucdp-saved",
+    "name": "Saved UCDP Candidate observations",
+    "access": "Existing World Board observations, no new fetch",
+    "attribution": "Uppsala Conflict Data Program Candidate Events Dataset",
+    "url": "https://ucdp.uu.se/downloads/",
+    "licence": "CC BY 4.0",
+    "releaseRhythm": "Uses the latest saved monthly release",
+    "marks": []
+  },
+  {
+    "id": "live-debt-dsa",
+    "name": "LIC debt sustainability assessments",
+    "access": "Bundled cited factual summaries",
+    "attribution": "IMF and World Bank LIC Debt Sustainability Framework",
+    "url": "https://www.worldbank.org/en/programs/debt-toolkit/dsa",
+    "licence": "Cited facts and original summaries",
+    "releaseRhythm": "Editorial annual review",
+    "marks": []
+  },
+  {
+    "id": "live-electionguide",
+    "name": "IFES ElectionGuide",
+    "access": "Token, disabled by default",
+    "attribution": "IFES ElectionGuide",
+    "url": "https://www.electionguide.org/p/access/",
+    "licence": "Non-commercial with attribution; other publisher terms apply",
+    "releaseRhythm": "Daily if explicitly configured",
+    "marks": ["NonCommercial"]
+  },
+  {
+    "id": "live-hdx",
+    "name": "HDX HAPI food and prices",
+    "access": "App identifier, disabled by default",
+    "attribution": "UN OCHA HDX HAPI, IPC and World Food Programme",
+    "url": "https://docs.humdata.org/build/hdx-apis/hapi",
+    "licence": "Underlying IPC and WFP terms apply",
+    "releaseRhythm": "Weekly if explicitly configured",
+    "marks": []
+  },
+  {
+    "id": "live-ioda",
+    "name": "IODA outages",
+    "access": "Public API with explicit licence approval, disabled by default",
+    "attribution": "Internet Outage Detection and Analysis, Georgia Tech",
+    "url": "https://ioda.inetintel.cc.gatech.edu/",
+    "licence": "Redistribution licence unconfirmed",
+    "releaseRhythm": "Hourly if explicitly configured",
+    "marks": []
+  },
+  {
+    "id": "live-ucdp-token",
+    "name": "UCDP Candidate API",
+    "access": "Token, disabled by default",
+    "attribution": "Uppsala Conflict Data Program Candidate Events Dataset",
+    "url": "https://ucdp.uu.se/apidocs/",
+    "licence": "CC BY 4.0",
+    "releaseRhythm": "Monthly release, checked weekly if explicitly configured",
+    "marks": []
   }
 ]
