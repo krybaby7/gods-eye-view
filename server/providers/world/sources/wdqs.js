@@ -7,6 +7,28 @@ const PAUSE_MS = 300;
 const DEADLINE_MS = 20_000;
 
 export function createWdqsClient(fetchImpl, now = new Date(), budget) {
+  const sparql = (query) => [
+    ENDPOINT,
+    {
+      method: 'POST',
+      headers: {
+        Accept: 'application/sparql-results+json',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({ query }),
+    },
+  ];
+  const sitelinks = (ids) => [
+    'https://www.wikidata.org/w/api.php?' +
+      new URLSearchParams({
+        action: 'wbgetentities',
+        ids: ids.join('|'),
+        props: 'sitelinks',
+        sitefilter: 'enwiki',
+        format: 'json',
+      }),
+    { headers: { Accept: 'application/json' } },
+  ];
   const started = performance.now();
   let attempted = false;
 
@@ -14,19 +36,12 @@ export function createWdqsClient(fetchImpl, now = new Date(), budget) {
   return async function queryWdqs(query) {
     if (attempted) await wait(PAUSE_MS, null, { signal: budget });
     attempted = true;
+    const labels = Array.isArray(query);
+    const [url, options] = labels ? sitelinks(query) : sparql(query);
     const response = await fetchOnDispatch(
       fetchImpl,
-      ENDPOINT,
-      {
-        method: 'POST',
-        headers: {
-          Accept: 'application/sparql-results+json',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({ query }),
-        signal: budget,
-        redirect: 'error',
-      },
+      url,
+      { ...options, signal: budget, redirect: 'error' },
       () => {
         const deadline = AbortSignal.timeout(DEADLINE_MS);
         return budget ? AbortSignal.any([budget, deadline]) : deadline;
@@ -34,7 +49,7 @@ export function createWdqsClient(fetchImpl, now = new Date(), budget) {
     );
     if (!response.ok) {
       const error = new Error(
-        'HTTP ' + response.status + ' from query.wikidata.org',
+        'HTTP ' + response.status + ' from ' + new URL(url).hostname,
       );
       if (response.status === 429 || response.status >= 500) {
         const retry = response.headers.get('Retry-After')?.trim() ?? '';
@@ -54,6 +69,11 @@ export function createWdqsClient(fetchImpl, now = new Date(), budget) {
       throw error;
     }
     const body = await readResponseJsonCapped(response, 12_000_000);
+    if (labels) {
+      if (!body?.entities || typeof body.entities !== 'object')
+        throw new Error('Invalid Wikidata entity response');
+      return body.entities;
+    }
     if (!Array.isArray(body?.results?.bindings))
       throw new Error('Invalid Wikidata SPARQL response');
     return body.results.bindings;

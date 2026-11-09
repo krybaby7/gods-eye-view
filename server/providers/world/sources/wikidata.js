@@ -15,7 +15,7 @@ const ROLES = [
   'defence-minister',
 ];
 
-export const version = 3;
+export const version = 4;
 export const shouldCheck = (context) =>
   context.rederive || actorSourceDue(context, 7 * 24);
 export const requestHost = 'query.wikidata.org';
@@ -60,23 +60,12 @@ function seatPattern(role, overrides) {
       : `${normal} FILTER(${exclude})`;
   }
   const kind = role === 'foreign-minister' ? 'Q7330070' : 'Q2518691';
-  return `?seat (wdt:P279|wdt:P31) wd:${kind} ;
-               (wdt:P1001|wdt:P17) ?country .`;
-}
-
-function candidatePattern(overrides) {
-  const explicit = new Set(overrides.flatMap(([, seats]) => seats));
-  // The P1308 list can be incomplete for shared and collective offices.
-  // Only their known office items get an indexed reverse candidate lookup.
-  return [
-    '{ ?seat p:P1308/ps:P1308 ?person . }',
-    ...[...explicit].map(
-      (id) =>
-        `{ ?knownStatement ps:P39 wd:${id} .
-         ?person p:P39 ?knownStatement .
-         BIND(wd:${id} AS ?seat) }`,
-    ),
-  ].join(' UNION ');
+  return `{ ?seat wdt:P279 wd:${kind} . } UNION { ?seat wdt:P31 wd:${kind} . }
+          { ?seat wdt:P1001 ?country . }
+          UNION {
+            ?seat wdt:P17 ?country .
+            FILTER NOT EXISTS { ?seat wdt:P1001 [] }
+          }`;
 }
 
 function directoryQuery(role, codes) {
@@ -89,11 +78,6 @@ function directoryQuery(role, codes) {
           ${isoMatch} UNION { BIND(wd:Q1246 AS ?country) BIND("KOS" AS ?iso) }
         } }`
     : isoMatch;
-  // Blazegraph's default plan timed out on this UNION with the P6 statements.
-  const optimizer =
-    hasKosovo && role === 'head-of-government'
-      ? 'hint:Query hint:optimizer "None" .'
-      : '';
   if (role === 'government') {
     return `
       SELECT DISTINCT ?iso ?role ?government ?governmentLabel ?governmentParent WHERE {
@@ -102,31 +86,74 @@ function directoryQuery(role, codes) {
         ?country p:P122 ?form .
         ?form ps:P122 ?government; wikibase:rank ?rank .
         FILTER(?rank != wikibase:DeprecatedRank)
+        FILTER NOT EXISTS { ?form pq:P580 ?start . FILTER(?start > NOW()) }
+        FILTER NOT EXISTS { ?form pq:P582 ?end . FILTER(?end <= NOW()) }
         OPTIONAL {
           ?country p:P122/ps:P122 ?governmentParent .
           ?government wdt:P279+ ?governmentParent .
           FILTER(?government != ?governmentParent)
         }
-        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+        SERVICE wikibase:label {
+          bd:serviceParam wikibase:language "en".
+          ?government rdfs:label ?governmentLabel .
+        }
       }`;
   }
   const overrides = officeOverrides(role, codes);
   return `
+    SELECT DISTINCT ?iso ?role ?seat WHERE {
+      hint:Query hint:optimizer "None" .
+      BIND("${role}" AS ?role)
+      ${countries}
+      ${seatPattern(role, overrides)}
+      FILTER NOT EXISTS { ?country wdt:P576 [] }
+    }`;
+}
+
+function boundTuples(rows, role, codes, includePerson) {
+  const tuples = new Set();
+  const itemId = (value) =>
+    /^https?:\/\/www\.wikidata\.org\/entity\/(Q[1-9]\d*)$/.exec(value)?.[1];
+  for (const row of rows) {
+    const iso = row.iso?.value;
+    const seat = itemId(row.seat?.value);
+    const person = itemId(row.person?.value);
+    if (row.role?.value !== role || !codes.includes(iso) || !seat) continue;
+    if (includePerson && !person) continue;
+    tuples.add(`("${iso}" wd:${seat}${includePerson ? ' wd:' + person : ''})`);
+  }
+  return [...tuples];
+}
+
+function candidatesQuery(role, tuples) {
+  return `
+    SELECT DISTINCT ?iso ?role ?seat ?person WHERE {
+      hint:Query hint:optimizer "None" .
+      BIND("${role}" AS ?role)
+      VALUES (?iso ?seat) { ${tuples.join(' ')} }
+      {
+        ?knownStatement ps:P39 ?seat; pq:P580 ?candidateSince .
+        FILTER NOT EXISTS { ?knownStatement pq:P582 [] }
+        FILTER NOT EXISTS { ?knownStatement pq:P1366 [] }
+        ?person p:P39 ?knownStatement .
+      } UNION {
+        ?seat p:P1308 ?nomination .
+        ?nomination ps:P1308 ?person .
+        FILTER NOT EXISTS { ?nomination pq:P582 [] }
+      }
+    }`;
+}
+
+function verificationQuery(role, tuples) {
+  return `
     SELECT DISTINCT ?iso ?role ?person ?personLabel ?seat ?office ?officeLabel
         ?since ?rank ?nature ?image ?x ?bluesky ?mastodon ?youtube ?facebook
         ?instagram ?vk ?weibo ?website WHERE {
-      ${optimizer}
       BIND("${role}" AS ?role)
       {
         SELECT DISTINCT ?iso ?person ?seat ?office ?since ?rank ?nature WHERE {
-          {
-            SELECT DISTINCT ?iso ?seat ?person WHERE {
-              ${countries}
-              ${seatPattern(role, overrides)}
-              FILTER NOT EXISTS { ?country wdt:P576 [] }
-              { ${candidatePattern(overrides)} }
-            }
-          }
+          hint:SubQuery hint:optimizer "None" .
+          VALUES (?iso ?seat ?person) { ${tuples.join(' ')} }
           ?person p:P39 ?statement .
           ?statement ps:P39 ?office; pq:P580 ?since; wikibase:rank ?rank .
           FILTER(?office = ?seat || EXISTS { ?office wdt:P279 ?seat . })
@@ -393,18 +420,38 @@ export async function fetchObservations({
     }
   }
 
-  async function loadBatch(role, batch) {
-    const sparql = directoryQuery(role, batch);
-    let { rows, failure } = await attempt(sparql);
+  async function attemptWithRetry(sparql) {
+    let result = await attempt(sparql);
     const retryDelay =
-      Date.parse(failure?.retryAt) - (+now + performance.now() - started);
+      Date.parse(result.failure?.retryAt) -
+      (+now + performance.now() - started);
     if (retryDelay > 0 && retryDelay <= MAX_RETRY_MS && !stopped()) {
       try {
         await wait(Math.ceil(retryDelay), null, { signal: budget });
       } catch {
-        return budget.reason;
+        return { failure: budget.reason };
       }
-      ({ rows, failure } = await attempt(sparql));
+      result = await attempt(sparql);
+    }
+    return result;
+  }
+
+  async function loadBatch(role, batch) {
+    let { rows, failure } = await attemptWithRetry(directoryQuery(role, batch));
+    if (!failure && role !== 'government') {
+      const seats = boundTuples(rows, role, batch, false);
+      rows = [];
+      if (seats.length) {
+        const candidates = await attemptWithRetry(candidatesQuery(role, seats));
+        failure = candidates.failure;
+        if (!failure) {
+          const tuples = boundTuples(candidates.rows, role, batch, true);
+          if (tuples.length)
+            ({ rows, failure } = await attemptWithRetry(
+              verificationQuery(role, tuples),
+            ));
+        }
+      }
     }
     if (!failure) {
       for (const code of batch) completed.add(code + ':' + role);
@@ -418,7 +465,7 @@ export async function fetchObservations({
   const describe = (failure) => failure.cause?.code ?? failure.message;
   const timedOut = (failure) =>
     failure.name === 'TimeoutError' ||
-    failure.message === 'HTTP 504 from query.wikidata.org';
+    /^HTTP 504 from (?:query|www)\.wikidata\.org$/.test(failure.message);
 
   for (const [role, batch] of batches) {
     const failure = await loadBatch(role, batch);
@@ -459,6 +506,34 @@ export async function fetchObservations({
     }
     if (recovered === 2) succeeded += 1;
     else errors.push(...(failures.length ? failures : [describe(failure)]));
+  }
+  // WDQS reports an item's QID when it has no English label. Resolve the
+  // title of the English Wikipedia article linked on that exact item.
+  const missingLabels = new Map();
+  for (const row of bindings) {
+    const id = row.person?.value?.split('/').at(-1);
+    if (!/^Q[1-9]\d*$/.test(id) || row.personLabel?.value !== id) continue;
+    if (!missingLabels.has(id)) missingLabels.set(id, []);
+    missingLabels.get(id).push(row);
+  }
+  const unlabeled = [...missingLabels.keys()];
+  for (let offset = 0; offset < unlabeled.length && !stopped(); offset += 50) {
+    const ids = unlabeled.slice(offset, offset + 50);
+    const { rows: entities, failure } = await attemptWithRetry(ids);
+    if (failure) {
+      errors.push(describe(failure));
+      for (const id of ids) {
+        for (const row of missingLabels.get(id))
+          completed.delete(row.iso.value + ':' + row.role.value);
+      }
+      continue;
+    }
+    for (const id of ids) {
+      const title = entities[id]?.sitelinks?.enwiki?.title;
+      if (typeof title !== 'string' || !title || /^\w+:/u.test(title)) continue;
+      for (const row of missingLabels.get(id))
+        row.personLabel = { value: title };
+    }
   }
   const directory = normalizeDirectory(bindings, registry, now);
   const detail =
