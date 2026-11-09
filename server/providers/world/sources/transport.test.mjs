@@ -64,3 +64,33 @@ test('Retry-After also gates queued requests to a rate-limited host', async () =
   await busy.body.cancel();
   await assert.rejects(queued, { name: 'TimeoutError' });
 });
+
+test('an IPv6-unreachable family race switches only the affected host to IPv4', async () => {
+  const attempts = [];
+  const fetchWorld = createWorldFetch(
+    async (url, options) => {
+      attempts.push({ url, dispatcher: options.dispatcher });
+      if (attempts.length === 1) {
+        throw new TypeError('fetch failed', {
+          cause: new AggregateError([
+            { code: 'ETIMEDOUT', address: '203.0.113.9' },
+            { code: 'ENETUNREACH', address: '2001:db8::5' },
+          ]),
+        });
+      }
+      return new Response('ok');
+    },
+    { retryDelayMs: 0 },
+  );
+  for (const url of [
+    'https://slow.example/one',
+    'https://slow.example/two',
+    'https://healthy.example/three',
+  ]) {
+    assert.equal(await (await fetchWorld(url)).text(), 'ok');
+  }
+  assert.equal(attempts[0].dispatcher, undefined);
+  assert.ok(attempts[1].dispatcher);
+  assert.equal(attempts[2].dispatcher, attempts[1].dispatcher);
+  assert.equal(attempts[3].dispatcher, undefined);
+});

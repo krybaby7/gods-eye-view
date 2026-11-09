@@ -1,4 +1,6 @@
+import { isIP } from 'node:net';
 import { setTimeout as wait } from 'node:timers/promises';
+import { Agent } from 'undici';
 
 const USER_AGENT =
   'GodsEyeView-WorldBoard/0.2 (https://github.com/krybaby7/gods-eye-view)';
@@ -15,12 +17,30 @@ const CONNECTION_ERRORS = new Set([
   'UND_ERR_SOCKET',
 ]);
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);
+const IPV4_DISPATCHER = new Agent({
+  connect: { family: 4, autoSelectFamily: false },
+});
 
 export function isConnectionError(error) {
   return (
     CONNECTION_ERRORS.has(error?.code) ||
     error?.errors?.some(isConnectionError) ||
     Boolean(error?.cause && isConnectionError(error.cause))
+  );
+}
+
+function lostAddressRace(error) {
+  const attempts = error?.cause?.errors ?? error?.errors;
+  // On a slow IPv4 connection Node can abandon the attempt after 250 ms,
+  // then exhaust the address list immediately when IPv6 has no route.
+  return (
+    Array.isArray(attempts) &&
+    attempts.some(
+      ({ address, code }) => isIP(address) === 4 && code === 'ETIMEDOUT',
+    ) &&
+    attempts.some(
+      ({ address, code }) => isIP(address) === 6 && code === 'ENETUNREACH',
+    )
   );
 }
 
@@ -94,6 +114,7 @@ export function createWorldFetch(
   { retryDelayMs = 500 } = {},
 ) {
   const hosts = new Map();
+  const preferIpv4 = new Set();
   async function requestOnHost(url, options) {
     const host = new URL(url).hostname;
     const lane = hosts.get(host) ?? { tail: Promise.resolve(), retryAt: 0 };
@@ -117,11 +138,19 @@ export function createWorldFetch(
       const headers = new Headers(options.headers);
       if (!headers.has('User-Agent')) headers.set('User-Agent', USER_AGENT);
       const request = () =>
-        fetchImpl(url, { ...requestOptions, signal, headers });
+        fetchImpl(url, {
+          ...requestOptions,
+          signal,
+          headers,
+          ...(!requestOptions.dispatcher &&
+            preferIpv4.has(host) && { dispatcher: IPV4_DISPATCHER }),
+        });
       let response;
       try {
         response = await request();
       } catch (error) {
+        if (!requestOptions.dispatcher && lostAddressRace(error))
+          preferIpv4.add(host);
         if (!retryConnection || signal?.aborted || !isConnectionError(error))
           throw error;
         await wait(retryDelayMs, null, { signal });
