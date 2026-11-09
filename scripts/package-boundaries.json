@@ -347,7 +347,7 @@
       "src/localRequestGate.mjs",
       "src/sources/httpBody.js"
     ],
-    "external": []
+    "external": ["undici"]
   },
   "search-provider": {
     "runtime": "node",
