@@ -6,7 +6,7 @@ import { ucdpStockFlags, displacementFlags } from './liveDisplacement.js';
 
 const now = new Date('2026-11-09T10:00:00Z');
 const gdacsFixture =
-  '<rss><channel><item><link>https://www.gdacs.org/report.aspx?eventtype=FL&amp;eventid=99</link><gdacs:alertlevel>Red</gdacs:alertlevel><gdacs:eventtype>FL</gdacs:eventtype><gdacs:eventid>99</gdacs:eventid><gdacs:country iso3="IND">India</gdacs:country><gdacs:population value="3456"/><pubDate>Sun, 08 Nov 2026 10:00:00 GMT</pubDate></item><item><gdacs:alertlevel>Orange</gdacs:alertlevel><gdacs:country iso3="PAK">Pakistan</gdacs:country></item></channel></rss>';
+  '<rss><channel><item><link>https://www.gdacs.org/report.aspx?eventtype=FL&amp;eventid=99</link><gdacs:alertlevel>Red</gdacs:alertlevel><gdacs:eventtype>FL</gdacs:eventtype><gdacs:eventid>99</gdacs:eventid><gdacs:country iso3="IND">India</gdacs:country><gdacs:population value="3456"/><pubDate>Sun, 08 Nov 2026 10:00:00 GMT</pubDate></item><item><gdacs:alertlevel>Orange</gdacs:alertlevel><gdacs:country iso3="PAK">Pakistan</gdacs:country></item></channel></rss><!--End 11/9/2026 12:55:39 AM-->';
 
 test('GDACS red sets an attributed date and a valid quieter update clears it', async () => {
   const rows = gdacsFlags(gdacsFixture, now, new Set(['IND', 'PAK']));

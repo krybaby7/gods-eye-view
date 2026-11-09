@@ -27,7 +27,10 @@ const TAGS = {
 };
 
 export function gdacsFlags(xml, now, supported) {
-  if (!/<rss(?:\s|>)/i.test(xml) || !/<\/rss>\s*$/i.test(xml))
+  if (
+    !/<rss(?:\s|>)/i.test(xml) ||
+    !/<\/rss>\s*(?:<!--[\s\S]*?-->\s*)*$/i.test(xml)
+  )
     throw new Error('Unexpected GDACS RSS format');
   const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)];
   if (items.length !== [...xml.matchAll(/<item>/gi)].length)
