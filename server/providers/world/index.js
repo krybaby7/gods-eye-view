@@ -1,3 +1,4 @@
+import './events.js';
 import { admitSameSiteRequest } from '../../../src/localRequestGate.mjs';
 import { liveSourceFromRequest, sourcesForWorldTurn } from './liveScope.js';
 import { loadWorldRegistry } from './registry.js';
