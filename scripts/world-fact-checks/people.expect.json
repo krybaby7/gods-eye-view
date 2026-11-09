@@ -1,0 +1,225 @@
+{
+  "asOf": "2026-11-09",
+  "countries": [
+    {
+      "country": "USA",
+      "source": "https://www.whitehouse.gov/administration/",
+      "roles": {
+        "head-of-state": "Donald Trump",
+        "head-of-government": "Donald Trump",
+        "foreign-minister": {
+          "name": "Marco Rubio",
+          "source": "https://www.whitehouse.gov/administration/cabinet/"
+        },
+        "defence-minister": {
+          "name": "Pete Hegseth",
+          "aliases": ["Peter Hegseth"],
+          "source": "https://www.whitehouse.gov/administration/cabinet/"
+        }
+      }
+    },
+    {
+      "country": "MEX",
+      "source": "https://www.gob.mx/presidencia/articulos/version-estenografica-60-aniversario-del-plan-dn-lll-e",
+      "roles": {
+        "head-of-state": {
+          "name": "Claudia Sheinbaum",
+          "aliases": ["Claudia Sheinbaum Pardo"]
+        },
+        "head-of-government": {
+          "name": "Claudia Sheinbaum",
+          "aliases": ["Claudia Sheinbaum Pardo"]
+        },
+        "foreign-minister": {
+          "name": "Roberto Velasco Álvarez",
+          "source": "https://www.gob.mx/sre/estructuras/juan-ramon-de-la-fuente"
+        },
+        "defence-minister": {
+          "name": "Ricardo Trevilla Trejo",
+          "aliases": ["Ricardo Trevilla"]
+        }
+      }
+    },
+    {
+      "country": "GHA",
+      "source": "https://presidency.gov.gh/ghanaians-expect-results-president-mahama-says-as-he-swears-in-ayariga-zanetor/",
+      "roles": {
+        "head-of-state": {
+          "name": "John Mahama",
+          "aliases": ["John Dramani Mahama"]
+        },
+        "head-of-government": {
+          "name": "John Mahama",
+          "aliases": ["John Dramani Mahama"]
+        },
+        "foreign-minister": {
+          "name": "Samuel Okudzeto Ablakwa",
+          "source": "https://mfa.gov.gh/index.php/deputy-minister-2-2/"
+        },
+        "defence-minister": {
+          "name": "Kenneth Gilbert Adjei",
+          "aliases": ["Gilbert Kenneth Adjei"],
+          "source": "https://mod.gov.gh/the-minister/"
+        }
+      }
+    },
+    {
+      "country": "IRN",
+      "source": "https://en.wikipedia.org/wiki/Politics_of_Iran",
+      "roles": {
+        "head-of-state": {
+          "name": "Mojtaba Khamenei",
+          "aliases": ["Mojtaba Hosseini Khamenei"],
+          "office": "Supreme Leader of Iran"
+        },
+        "head-of-government": {
+          "name": "Masoud Pezeshkian",
+          "office": "President of Iran"
+        },
+        "foreign-minister": {
+          "name": "Abbas Araghchi",
+          "source": "https://en.wikipedia.org/wiki/Minister_of_Foreign_Affairs_(Iran)"
+        },
+        "defence-minister": {
+          "name": "Mehrdad Akhlaghi",
+          "source": "https://en.wikipedia.org/wiki/Ministry_of_Defence_and_Armed_Forces_Logistics_(Iran)"
+        }
+      }
+    },
+    {
+      "country": "CHE",
+      "source": "https://www.admin.ch/en/members-federal-council",
+      "roles": {
+        "head-of-state": [
+          "Guy Parmelin",
+          "Ignazio Cassis",
+          "Karin Keller-Sutter",
+          "Albert Rösti",
+          "Elisabeth Baume-Schneider",
+          "Beat Jans",
+          "Martin Pfister"
+        ],
+        "head-of-government": [
+          "Guy Parmelin",
+          "Ignazio Cassis",
+          "Karin Keller-Sutter",
+          "Albert Rösti",
+          "Elisabeth Baume-Schneider",
+          "Beat Jans",
+          "Martin Pfister"
+        ],
+        "foreign-minister": "Ignazio Cassis",
+        "defence-minister": "Martin Pfister"
+      }
+    },
+    {
+      "country": "BIH",
+      "source": "https://www.vijeceministara.gov.ba/pdf_doc/sazivi%20bos%2021-8-2023.pdf",
+      "roles": {
+        "head-of-state": {
+          "names": ["Denis Bećirović", "Željko Komšić", "Željka Cvijanović"],
+          "source": "https://www.predsjednistvobih.ba/hron/default.aspx?id=18249&langTag=bs-BA"
+        },
+        "head-of-government": "Borjana Krišto",
+        "foreign-minister": "Elmedin Konaković",
+        "defence-minister": "Zukan Helez"
+      }
+    },
+    {
+      "country": "AND",
+      "source": "https://www.govern.ad/ca/govern/els-ministres",
+      "roles": {
+        "head-of-state": {
+          "names": ["Emmanuel Macron", "Josep-Lluís Serrano Pentinat"],
+          "source": "https://www.dfat.gov.au/geo/heads-of-government/andorra"
+        },
+        "head-of-government": {
+          "name": "Xavier Espot Zamora",
+          "aliases": ["Xavier Espot"],
+          "source": "https://www.govern.ad/ca/govern/el-cap-del-govern"
+        },
+        "foreign-minister": {
+          "name": "Imma Tor Faus",
+          "aliases": ["Imma Tor"]
+        },
+        "defence-minister": []
+      }
+    },
+    {
+      "country": "SMR",
+      "source": "https://www.gov.sm/pub2/GovSM/dam/jcr%3A96c3b62c-7286-4256-b982-8c44e3800238/Congresso%20di%20Stato.pdf",
+      "roles": {
+        "head-of-state": {
+          "names": ["Gerardo Giovagnoli", "William Casali"],
+          "source": "https://www.reggenzadellarepubblica.sm/pub1/ReggenzaSM/en/Capitani_Reggenti/Capitani_Reggenti_In_Carica.html"
+        },
+        "head-of-government": [],
+        "foreign-minister": {
+          "name": "Luca Beccari",
+          "source": "https://esteri.sm/pub2/EsteriSM/Segreteria/Segretario.html"
+        },
+        "defence-minister": []
+      }
+    },
+    {
+      "country": "AUT",
+      "source": "https://www.bundeskanzleramt.gv.at/bundeskanzleramt/die-bundesregierung/bundesministerinnen-und-bundesminister.htm",
+      "roles": {
+        "head-of-state": {
+          "name": "Alexander Van der Bellen",
+          "source": "https://www.bundespraesident.at/aktuelles/detail/un-weltklimakonferenz-cop31-in-antalya"
+        },
+        "head-of-government": "Christian Stocker",
+        "foreign-minister": "Beate Meinl-Reisinger",
+        "defence-minister": "Klaudia Tanner"
+      }
+    },
+    {
+      "country": "MMR",
+      "source": "https://www.moi.gov.mm/moi%3Aeng/union-government-list",
+      "roles": {
+        "head-of-state": "Min Aung Hlaing",
+        "head-of-government": {
+          "name": "Min Aung Hlaing",
+          "source": "https://www.moi.gov.mm/sites/default/files/general-pdf/2020-06/Con%20%26%20Repub%20%28Myanm%20%26%20Eng%29%20Big-1.pdf"
+        },
+        "foreign-minister": {
+          "name": "Tin Maung Swe",
+          "aliases": ["U Tin Maung Swe"],
+          "source": "https://www.mofa.gov.mm/en/myanmar-delegation-led-by-union-minister-for-foreign-affairs-attends-the-4th-minsk-international-conference-on-eurasian-security/"
+        },
+        "defence-minister": {
+          "name": "Yar Pyae",
+          "source": "https://www.moi.gov.mm/nlm/17-october-2026"
+        }
+      }
+    }
+  ],
+  "stale": [
+    {
+      "country": "MMR",
+      "roles": ["foreign-minister"],
+      "names": ["Aung San Suu Kyi"],
+      "source": "https://www.mofa.gov.mm/en/myanmar-delegation-led-by-union-minister-for-foreign-affairs-attends-the-4th-minsk-international-conference-on-eurasian-security/"
+    },
+    {
+      "country": "AUT",
+      "roles": ["foreign-minister"],
+      "names": ["Karin Kneissl"],
+      "source": "https://www.bmeia.gv.at/en/the-ministry/the-minister"
+    },
+    {
+      "country": "AUS",
+      "roles": ["foreign-minister", "defence-minister"],
+      "names": ["Marise Payne", "Christopher Pyne"],
+      "source": "https://ministers.dfat.gov.au/minister/pat-conroy/transcript/doorstop-australia-papua-new-guinea-ministerial-forum"
+    },
+    {
+      "country": "GHA",
+      "roles": ["head-of-state", "head-of-government"],
+      "names": ["Nana Akufo-Addo", "Nana Addo Dankwa Akufo-Addo"],
+      "source": "https://presidency.gov.gh/ghanaians-expect-results-president-mahama-says-as-he-swears-in-ayariga-zanetor/"
+    }
+  ],
+  "coverageSource": "https://www.un.org/en/about-us/member-states"
+}

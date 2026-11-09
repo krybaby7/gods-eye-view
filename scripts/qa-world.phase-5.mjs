@@ -158,6 +158,10 @@ export default async function phase5({
         /Head of government.*India government fixture.*Government Fixture Artist.*CC BY 4.0/s,
       );
       await page.click(tab('people'));
+      await page.waitForSelector(
+        '.world-people-tab a.world-person-account',
+        wait,
+      );
       assert.match(
         await text('.world-people-tab'),
         /India foreign fixture.*Unavailable roles.*Defence minister/s,
@@ -212,6 +216,7 @@ export default async function phase5({
       await page.waitForSelector('[data-world-actor="Q502"]', {
         visible: true,
       });
+      await page.waitForSelector('.world-person-x button', wait);
       assert.match(
         await text('.world-actor-card'),
         /Fixture prime minister.*Government Fixture Artist.*CC BY 4.0.*Bluesky.*Fixture Bluesky address/s,

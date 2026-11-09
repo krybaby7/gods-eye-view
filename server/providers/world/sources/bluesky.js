@@ -3,7 +3,9 @@ import { actorSourceDue } from './actor-fetch.js';
 import { fetchActorFeeds, POST_LIMIT, publicAccounts } from './actor-feeds.js';
 
 const ORIGIN = 'https://bsky.app';
-export const shouldCheck = (context) => actorSourceDue(context, 24);
+export const version = 2;
+export const shouldCheck = (context) =>
+  context.rederive || actorSourceDue(context, 24);
 
 export function blueskyFeedUrl({ key }) {
   const url = new URL(

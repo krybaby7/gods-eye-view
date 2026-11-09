@@ -34,6 +34,7 @@ test('Commons uses attributed, free thumbnails and skips unusable metadata', asy
           { imageFile: 'No licence.jpg' },
           { imageFile: 'Original.jpg' },
           { imageFile: 'No author.jpg' },
+          { imageFile: 'CC0.jpg' },
         ],
       },
     },
@@ -77,12 +78,14 @@ test('Commons uses attributed, free thumbnails and skips unusable metadata', asy
               'Example',
             ),
             portrait('No author.jpg', 'CC BY 4.0', thumb, '<img src="/x">'),
+            portrait('CC0.jpg', 'CC0', thumb, 'Example'),
           ],
         },
       });
     },
   });
-  assert.equal(count, 2);
+  assert.equal(count, 3);
+  assert.equal(data.portraits['CC0.jpg'].licence, 'CC0');
   assert.equal(
     new URL(data.portraits['Current CDN.jpg'].thumbnail).hostname,
     'thumb.wikimedia.org',
@@ -95,6 +98,40 @@ test('Commons uses attributed, free thumbnails and skips unusable metadata', asy
     licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
     author: 'Example & Co',
   });
+});
+
+test('social feeds admit organization accounts published on their official site', async () => {
+  const { publicAccounts } = await import('./actor-feeds.js');
+  const profile = 'https://bsky.app/profile/bank.example.org';
+  const accounts = { website: 'https://bank.example.org/', bluesky: profile };
+  const features = {
+    'actor-organizations': {
+      organizations: {
+        Q1: {
+          id: 'Q1',
+          accounts,
+          accountSourceUrl: 'https://bank.example.org/accounts',
+        },
+        Q2: {
+          id: 'Q2',
+          accounts: {
+            ...accounts,
+            bluesky: 'https://bsky.app/profile/other.example.org',
+          },
+          accountSourceUrl: 'https://spoof.example.org/accounts',
+        },
+      },
+    },
+  };
+  assert.deepEqual(
+    publicAccounts(
+      features,
+      'bluesky',
+      'https://bsky.app',
+      /^\/profile\/(.+)$/,
+    ),
+    [{ account: profile, key: 'bank.example.org' }],
+  );
 });
 
 test('Bluesky normalizes authored posts, ignores reposts, and stops after a 429', async () => {

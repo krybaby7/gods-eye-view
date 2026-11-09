@@ -9,9 +9,18 @@ const RETRY_PAUSE = 350;
 export const POST_LIMIT = 4;
 
 export function publicAccounts(features, platform, origin, pattern) {
+  const organizations = Object.values(
+    features['actor-organizations']?.organizations ?? {},
+  ).filter(({ accountSourceUrl, accounts }) => {
+    const source = safeHttps(accountSourceUrl);
+    const site = safeHttps(accounts?.website);
+    return source && site && new URL(source).origin === new URL(site).origin;
+  });
+  // Person accounts originate in the Wikidata platform properties. The
+  // organization table additionally records the first-party account listing.
   return [
     ...new Set(
-      (features.wikidata?.actors ?? []).flatMap(
+      [...(features.wikidata?.actors ?? []), ...organizations].flatMap(
         (actor) => actor.accounts?.[platform] ?? [],
       ),
     ),

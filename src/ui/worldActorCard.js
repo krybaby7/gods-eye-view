@@ -58,7 +58,7 @@ function xTimeline(document, actor) {
   return wrapper;
 }
 
-export function renderActorCard({ document, snapshot, id }) {
+function actorCard({ document, snapshot, id }) {
   const actor = worldActor(snapshot, id);
   const card = node(document, 'article', 'world-actor-card');
   if (!actor) {
@@ -74,18 +74,27 @@ export function renderActorCard({ document, snapshot, id }) {
   }
   card.dataset.worldActor = id;
   card.append(node(document, 'h3', 'world-actor-name', actor.name));
-  for (const { role, office, since, country } of actor.offices) {
+  for (const {
+    role,
+    office,
+    since,
+    country,
+    acting,
+    collective,
+  } of actor.offices) {
     const description = [
       actorRoles[role] ?? role,
       country,
+      collective,
       office,
+      acting && 'Acting',
       since && 'since ' + since,
     ]
       .filter(Boolean)
       .join(' · ');
     card.append(node(document, 'p', 'world-person-role', description));
   }
-  if (actor.kind === 'organization' && !actor.reviewed) {
+  if (actor.reviewed === false) {
     const geographic =
       actor.role === 'armed-group'
         ? ' Country refers to geographic activity.'
@@ -149,12 +158,40 @@ export function renderActorCard({ document, snapshot, id }) {
   const organization = externalLink(
     document,
     actor.sourceUrl,
-    'Organization source',
+    actor.kind === 'organization'
+      ? 'Organization source'
+      : 'Official office source',
   );
   if (wikidata) source.append(wikidata);
   if (organization) source.append(wikidata ? ' · ' : '', organization);
   if (actor.lastChecked)
     source.append(' · checked ' + actor.lastChecked.slice(0, 10));
   if (source.childNodes.length) card.append(source);
+  return card;
+}
+
+export function renderActorCard(context) {
+  const { document, snapshot, id, getDetail } = context;
+  const card = actorCard(context);
+  const actor = worldActor(snapshot, id);
+  if (!actor || !getDetail) return card;
+  getDetail(actor.country, 'people')
+    .then(({ features }) => {
+      const next = actorCard({
+        ...context,
+        snapshot: { features: { ...snapshot.features, ...features } },
+      });
+      card.replaceChildren(...next.childNodes);
+    })
+    .catch(() => {
+      card.append(
+        node(
+          document,
+          'p',
+          'world-detail',
+          'Actor account details are unavailable.',
+        ),
+      );
+    });
   return card;
 }
