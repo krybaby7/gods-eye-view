@@ -422,9 +422,18 @@ export function createWorldPanel({
       const source =
         snapshot.sources?.find(({ id }) => id === load.source)?.name ??
         load.source;
+      const size = (bytes) =>
+        `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(bytes / 1_000_000)} MB`;
+      const download = load.download;
+      const transferred =
+        download &&
+        (download.totalBytes == null
+          ? size(download.bytes)
+          : `${size(download.bytes).replace(/ MB$/, '')} / ${size(download.totalBytes)}`);
       status =
         `Loading World Board · ${load.completed} / ${load.total} sources` +
-        (source ? ` · ${source}` : '');
+        (source ? ` · ${source}` : '') +
+        (transferred ? ` · ${transferred}` : '');
     } else if (snapshot.loading) {
       status = snapshot.turn
         ? 'Refreshing World Board…'
