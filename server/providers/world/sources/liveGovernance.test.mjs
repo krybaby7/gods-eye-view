@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { loadWorldRegistry } from '../registry.js';
 import { coupFlags, gdelt, gdeltBatch, gdeltFlags } from './liveGovernance.js';
+import { fipsCountry, iso2Country } from './liveCountryCodes.js';
 
 const now = new Date('2026-11-09T01:00:00Z');
 const countries = [
@@ -17,8 +19,39 @@ test('Powell and Thyne date and outcome remain visible without stale rows', () =
   assert.match(flags[0].label, /Coup attempt reported/);
 });
 
-test('GDELT attributes by action geography and explains sampled coverage', () => {
-  function event(id, root, fips) {
+test('Powell and Thyne aliases resolve the published historical spellings', () => {
+  const csv = [
+    'country,year,month,day,coup',
+    'Congo,2026,9,1,1',
+    'Sao Tome and Principe,2026,9,2,1',
+    'Swaziland,2026,9,3,1',
+  ].join('\n');
+  assert.deepEqual(
+    coupFlags(csv, now, [], 'https://example.org/coups').map(
+      ({ iso3 }) => iso3,
+    ),
+    ['COG', 'STP', 'SWZ'],
+  );
+});
+
+test('GDELT and IODA crosswalks cover every sovereign country in the full registry', async () => {
+  const { countries } = await loadWorldRegistry();
+  const states = countries
+    .filter(({ kind }) => kind === 'state')
+    .map(({ iso3 }) => iso3);
+  for (const crosswalk of [fipsCountry, iso2Country]) {
+    const covered = new Set(Object.values(crosswalk));
+    assert.deepEqual(
+      states.filter((iso3) => !covered.has(iso3)),
+      [],
+    );
+  }
+  assert.equal(fipsCountry.RI, 'SRB');
+  assert.equal(fipsCountry.AO, 'AGO');
+});
+
+test('GDELT requires five unique events from three domains in 72 hours', () => {
+  function event(id, root, fips, domain = 'one.example', article = id) {
     const fields = Array(61).fill('');
     Object.assign(fields, {
       0: id,
@@ -27,28 +60,39 @@ test('GDELT attributes by action geography and explains sampled coverage', () =>
       28: root,
       52: 'India',
       53: fips,
+      60: 'https://' + domain + '/article/' + article,
     });
     return fields.join('\t');
   }
   const csv = [
     event('9001', '14', 'IN'),
     event('9001', '14', 'IN'),
-    event('9002', '19', 'IN'),
+    event('9002', '14', 'IN', 'two.example'),
+    event('9004', '14', 'IN', 'news.three.co.uk'),
+    event('9005', '14', 'IN', 'sport.three.co.uk'),
+    event('9006', '14', 'IN', 'www.three.co.uk'),
+    event('9007', '14', 'IN', 'www.one.example', '9001'),
+    event('9010', '19', 'CA'),
+    event('9011', '19', 'NZ'),
+    event('9012', '19', 'EI'),
     event('9003', '19', ''),
   ].join('\n');
-  const batch = gdeltBatch(csv, '2026-11-09T00:00:00.000Z', now, countries);
-  assert.deepEqual(batch.counts, { IND: [1, 1] });
-  const flags = gdeltFlags([batch], 'https://example.org/gdelt');
+  const batch = gdeltBatch(csv, '2026-11-09T00:00:00.000Z', now, [
+    ...countries,
+    { iso3: 'CAN' },
+    { iso3: 'NZL' },
+    { iso3: 'IRL' },
+  ]);
+  const flags = gdeltFlags([batch, batch], now);
   assert.deepEqual(
     flags.map(({ iso3, slot, stage }) => [iso3, slot, stage]),
-    [
-      ['IND', 'C2', 'reported'],
-      ['IND', 'C6', 'reported'],
-    ],
+    [['IND', 'C6', 'reported']],
   );
-  assert(
-    flags.every(({ label }) => /reported.*1 sampled.*15-minute/i.test(label)),
-  );
+  assert.equal(flags[0].eventCount, 5);
+  assert.equal(flags[0].sourceDomains.length, 3);
+  assert.equal(flags[0].sourceUrls.length, 3);
+  assert.equal(flags[0].evidence, 'news-derived, low confidence');
+  assert.deepEqual(gdeltFlags([batch], new Date(+now + 72 * 3_600_000)), []);
 });
 
 function gdeltManifest(stamp) {
@@ -82,11 +126,11 @@ test('GDELT samples a current manifest on a delayed turn even with several gaps'
     result.data.batches.map(({ date }) => date),
     [earlier, date],
   );
-  assert.equal(result.data.flags[0].sampledFiles, 2);
+  assert.deepEqual(result.data.flags, []);
 });
 
-test('GDELT rejects future and more than seven day old archive timestamps', async () => {
-  for (const stamp of ['20261109011500', '20261102004500', '20261109005500']) {
+test('GDELT rejects future and more than 72 hour old archive timestamps', async () => {
+  for (const stamp of ['20261109011500', '20261106004500', '20261109005500']) {
     await assert.rejects(
       gdelt.fetchObservations({
         now,

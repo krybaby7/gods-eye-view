@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto';
+import { isIP } from 'node:net';
 import { setTimeout as pause } from 'node:timers/promises';
 import { conditionFlag, conditionResult } from '../conditionEvents.js';
 import { columnIndices, csvRows } from './csv.js';
+import { fipsCountry } from './liveCountryCodes.js';
 import { DAY, download, due } from './liveFeedCommon.js';
 import { zipEntryChunks } from './zip.js';
 
@@ -10,6 +12,38 @@ const GDELT = 'https://www.gdeltproject.org/data.html';
 const GDELT_MANIFEST = 'https://data.gdeltproject.org/gdeltv2/lastupdate.txt';
 const BATCH = 15 * 60_000;
 const MAX_MISSED_BATCHES = 4;
+const GDELT_WINDOW = 3 * DAY;
+const COUNTRY_DOMAIN_CATEGORIES = new Set([
+  'ac',
+  'co',
+  'com',
+  'edu',
+  'go',
+  'gob',
+  'gov',
+  'net',
+  'ne',
+  'or',
+  'org',
+]);
+
+function publisherDomain(hostname) {
+  const host = hostname.toLowerCase().replace(/\.$/, '');
+  if (isIP(host) || !host.includes('.')) return null;
+  const labels = host.split('.');
+  const countryCategory =
+    labels.at(-1).length === 2 && COUNTRY_DOMAIN_CATEGORIES.has(labels.at(-2));
+  return labels.length >= (countryCategory ? 3 : 2)
+    ? labels.slice(countryCategory ? -3 : -2).join('.')
+    : null;
+}
+
+function articleIdentity(url) {
+  const source = new URL(url);
+  return (
+    source.hostname.replace(/^www\d*\./, '') + source.pathname + source.search
+  );
+}
 
 function gdeltTime(date) {
   const time = Date.parse(date);
@@ -21,186 +55,21 @@ function gdeltTime(date) {
 }
 
 function inGdeltWindow(time, sampledAt) {
-  return time <= +sampledAt && +sampledAt - time <= 7 * DAY;
+  return time <= +sampledAt && +sampledAt - time <= GDELT_WINDOW;
 }
 
-const COUNTRIES = {
-  AF: 'AFG',
-  AG: 'DZA',
-  AJ: 'AZE',
-  AL: 'ALB',
-  AM: 'ARM',
-  AR: 'ARG',
-  AS: 'AUS',
-  AU: 'AUT',
-  BA: 'BHR',
-  BB: 'BRB',
-  BC: 'BWA',
-  BD: 'BMU',
-  BE: 'BEL',
-  BG: 'BGD',
-  BH: 'BLZ',
-  BK: 'BIH',
-  BL: 'BOL',
-  BM: 'MMR',
-  BN: 'BEN',
-  BO: 'BLR',
-  BR: 'BRA',
-  BT: 'BTN',
-  BU: 'BGR',
-  BY: 'BDI',
-  CA: 'CAN',
-  CB: 'KHM',
-  CD: 'TCD',
-  CE: 'LKA',
-  CF: 'COG',
-  CG: 'COD',
-  CH: 'CHN',
-  CI: 'CHL',
-  CM: 'CMR',
-  CN: 'COM',
-  CO: 'COL',
-  CS: 'CRI',
-  CT: 'CAF',
-  CU: 'CUB',
-  CY: 'CYP',
-  DA: 'DNK',
-  DJ: 'DJI',
-  DR: 'DOM',
-  EC: 'ECU',
-  EG: 'EGY',
-  EI: 'IRL',
-  EK: 'GNQ',
-  EN: 'EST',
-  ER: 'ERI',
-  ES: 'SLV',
-  ET: 'ETH',
-  EZ: 'CZE',
-  FI: 'FIN',
-  FJ: 'FJI',
-  FR: 'FRA',
-  GA: 'GMB',
-  GB: 'GAB',
-  GG: 'GEO',
-  GH: 'GHA',
-  GM: 'DEU',
-  GR: 'GRC',
-  GT: 'GTM',
-  GV: 'GIN',
-  GY: 'GUY',
-  HA: 'HTI',
-  HK: 'HKG',
-  HO: 'HND',
-  HR: 'HRV',
-  HU: 'HUN',
-  IC: 'ISL',
-  ID: 'IDN',
-  IN: 'IND',
-  IR: 'IRN',
-  IS: 'ISR',
-  IT: 'ITA',
-  IV: 'CIV',
-  IZ: 'IRQ',
-  JA: 'JPN',
-  JM: 'JAM',
-  JO: 'JOR',
-  KE: 'KEN',
-  KG: 'KGZ',
-  KN: 'PRK',
-  KS: 'KOR',
-  KU: 'KWT',
-  KV: 'KOS',
-  KZ: 'KAZ',
-  LA: 'LAO',
-  LE: 'LBN',
-  LG: 'LVA',
-  LH: 'LTU',
-  LI: 'LBR',
-  LO: 'SVK',
-  LT: 'LSO',
-  LU: 'LUX',
-  LY: 'LBY',
-  MA: 'MDG',
-  MD: 'MDA',
-  MG: 'MNG',
-  MI: 'MWI',
-  MK: 'MKD',
-  ML: 'MLI',
-  MO: 'MAR',
-  MP: 'MUS',
-  MR: 'MRT',
-  MX: 'MEX',
-  MY: 'MYS',
-  MZ: 'MOZ',
-  NG: 'NER',
-  NI: 'NGA',
-  NL: 'NLD',
-  NO: 'NOR',
-  NP: 'NPL',
-  NU: 'NIC',
-  NZ: 'NZL',
-  OM: 'OMN',
-  PA: 'PRY',
-  PE: 'PER',
-  PK: 'PAK',
-  PL: 'POL',
-  PM: 'PAN',
-  PO: 'PRT',
-  PP: 'PNG',
-  PU: 'GNB',
-  QA: 'QAT',
-  RO: 'ROU',
-  RP: 'PHL',
-  RS: 'RUS',
-  RW: 'RWA',
-  SA: 'SAU',
-  SE: 'SYC',
-  SF: 'ZAF',
-  SG: 'SEN',
-  SI: 'SVN',
-  SL: 'SLE',
-  SN: 'SGP',
-  SO: 'SOM',
-  SP: 'ESP',
-  SU: 'SDN',
-  SW: 'SWE',
-  SZ: 'CHE',
-  SY: 'SYR',
-  TD: 'TTO',
-  TH: 'THA',
-  TI: 'TJK',
-  TL: 'TKL',
-  TN: 'TON',
-  TO: 'TGO',
-  TS: 'TUN',
-  TU: 'TUR',
-  TW: 'TWN',
-  TX: 'TKM',
-  TZ: 'TZA',
-  UG: 'UGA',
-  UK: 'GBR',
-  UP: 'UKR',
-  US: 'USA',
-  UV: 'BFA',
-  UY: 'URY',
-  UZ: 'UZB',
-  VE: 'VEN',
-  VM: 'VNM',
-  WZ: 'SWZ',
-  YM: 'YEM',
-  ZA: 'ZMB',
-  ZI: 'ZWE',
-  AE: 'ARE',
-  OD: 'SSD',
-  TT: 'TLS',
-  WE: 'PSE',
-  GZ: 'PSE',
-};
 const COUP_ALIASES = {
   'Myanmar (Burma)': 'MMR',
   'DR Congo (Zaire)': 'COD',
   'Ivory Coast': 'CIV',
   'South Sudan': 'SSD',
+  Congo: 'COG',
+  'Congo-Brazzaville': 'COG',
+  'Sao Tome and Principe': 'STP',
+  'São Tomé and Príncipe': 'STP',
+  Swaziland: 'SWZ',
+  eSwatini: 'SWZ',
+  Eswatini: 'SWZ',
 };
 
 export function coupFlags(csv, now, countries, source) {
@@ -252,7 +121,7 @@ export function coupFlags(csv, now, countries, source) {
 
 export function gdeltBatch(tsv, date, now, countries) {
   const known = new Set(countries.map(({ iso3 }) => iso3));
-  const counts = {};
+  const events = [];
   const seen = new Set();
   let records = 0;
   for (const line of tsv.split(/\r?\n/)) {
@@ -262,7 +131,7 @@ export function gdeltBatch(tsv, date, now, countries) {
       throw new Error('Unexpected GDELT event export');
     records++;
     const root = row[28];
-    const iso3 = COUNTRIES[row[53]];
+    const iso3 = fipsCountry[row[53]];
     const eventDate = row[1].replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3');
     const time = Date.parse(eventDate);
     if (
@@ -270,59 +139,95 @@ export function gdeltBatch(tsv, date, now, countries) {
       seen.has(row[0]) ||
       !Number.isFinite(time) ||
       time > +now ||
-      +now - time > 7 * DAY ||
+      time + DAY <= +now - GDELT_WINDOW ||
       !['14', '18', '19', '20'].includes(root)
     )
       continue;
+    const source = URL.parse(row[60]);
+    if (
+      !source ||
+      !['https:', 'http:'].includes(source.protocol) ||
+      source.username ||
+      source.password
+    )
+      continue;
+    const domain = publisherDomain(source.hostname);
+    if (!domain) continue;
     seen.add(row[0]);
-    counts[iso3] ??= [0, 0];
-    counts[iso3][root === '14' ? 1 : 0]++;
+    events.push([
+      row[0],
+      iso3,
+      root === '14' ? 'C6' : 'C2',
+      domain,
+      source.href,
+    ]);
   }
-  return { date, counts, records };
+  return { date, events, records };
 }
 
-export function gdeltFlags(batches, source = GDELT) {
-  if (!batches.length) return [];
+export function gdeltFlags(batches, now, source = GDELT) {
   const totals = new Map();
-  for (const { counts } of batches)
-    for (const [iso3, [conflict, protest]] of Object.entries(counts)) {
-      const [oldConflict, oldProtest] = totals.get(iso3) ?? [0, 0];
-      totals.set(iso3, [oldConflict + conflict, oldProtest + protest]);
-    }
-  const coverage =
-    ' across ' +
-    batches.length +
-    ' sampled 15-minute file' +
-    (batches.length === 1 ? '' : 's');
-  const date = batches.at(-1).date;
-  const periodStart = batches[0].date;
-  return [...totals].flatMap(([iso3, values]) =>
-    values.flatMap((count, index) =>
-      !count
-        ? []
-        : [
-            conditionFlag('live-gdelt', {
-              iso3,
-              slot: index ? 'C6' : 'C2',
-              label:
-                count +
-                ' ' +
-                (index ? 'protest' : 'conflict-coded') +
-                ' events reported' +
-                coverage,
-              date,
-              periodStart,
-              source,
-              sourceName: 'GDELT',
-              stage: 'reported',
-              sampledFiles: batches.length,
-            }),
-          ],
-    ),
+  const recent = batches.filter(({ date }) =>
+    inGdeltWindow(gdeltTime(date), now),
   );
+  const seen = new Set();
+  const sampledFiles = new Set(recent.map(({ date }) => date)).size;
+  for (const { date, events = [] } of recent) {
+    for (const [id, iso3, slot, domain, url] of events) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const key = iso3 + ':' + slot;
+      const group = totals.get(key) ?? {
+        iso3,
+        slot,
+        dates: [],
+        sources: new Map(),
+        articles: new Set(),
+      };
+      const article = articleIdentity(url);
+      if (group.articles.has(article)) continue;
+      group.articles.add(article);
+      group.dates.push(date);
+      const lastSource = group.sources.get(domain);
+      if (!lastSource || lastSource.date <= date)
+        group.sources.set(domain, { url, date });
+      totals.set(key, group);
+    }
+  }
+  return [...totals.values()].flatMap(({ iso3, slot, dates, sources }) => {
+    if (dates.length < 5 || sources.size < 3) return [];
+    dates.sort();
+    const domainDates = [...sources.values()].map(({ date }) => date).sort();
+    const requiredDate = [dates.at(-5), domainDates.at(-3)].sort()[0];
+    return [
+      conditionFlag('live-gdelt', {
+        iso3,
+        slot,
+        date: dates.at(-1),
+        periodStart: dates[0],
+        label:
+          dates.length +
+          ' ' +
+          (slot === 'C6' ? 'protest' : 'conflict-coded') +
+          ' reports in sampled 15-minute files · news-derived, low confidence',
+        source,
+        sourceName: 'GDELT',
+        stage: 'reported',
+        reviewed: false,
+        sampledFiles,
+        eventCount: dates.length,
+        sourceDomains: [...sources.keys()].sort(),
+        sourceUrls: [...sources.values()].slice(0, 3).map(({ url }) => url),
+        expiresAt: new Date(
+          Date.parse(requiredDate) + GDELT_WINDOW,
+        ).toISOString(),
+      }),
+    ];
+  });
 }
 
 export const coups = {
+  version: 2,
   live: true,
   shouldCheck: (context) => due(context, 7 * DAY),
   async fetchObservations({ fetchImpl, registry, data, now }) {
@@ -336,6 +241,7 @@ export const coups = {
       coupFlags(csv, now, registry.countries, POWELL),
       data,
       now,
+      { covered: () => false },
     );
   },
 };
@@ -377,6 +283,7 @@ async function fetchGdeltBatch(
 }
 
 export const gdelt = {
+  version: 2,
   live: true,
   shouldCheck: (context) => due(context, BATCH),
   async fetchObservations({
@@ -385,7 +292,23 @@ export const gdelt = {
     data,
     now,
     currentTime = () => now,
+    rederive,
   }) {
+    if (
+      rederive &&
+      data?.batches &&
+      !data.batches.some(({ events }) => Array.isArray(events))
+    ) {
+      return {
+        ...conditionResult([], data, now, {
+          batches: [],
+          covered: () => false,
+          detail:
+            'Old samples had no event IDs or source domains. Waiting for a fresh sample.',
+        }),
+        cached: true,
+      };
+    }
     const manifest = await download(fetchImpl, GDELT_MANIFEST, 'text', 20_000);
     const sampledAt = currentTime();
     const entry = manifest.match(
@@ -400,7 +323,7 @@ export const gdelt = {
     const latest = gdeltTime(date);
     // The publisher sometimes advertises the next scheduled file before
     // its timestamp. Start with the preceding completed slot in that case.
-    if (!(latest < +sampledAt + BATCH && +sampledAt - latest <= 7 * DAY)) {
+    if (!(latest < +sampledAt + BATCH && +sampledAt - latest <= GDELT_WINDOW)) {
       throw new Error(
         'GDELT event manifest timestamp outside the sampling window',
       );
@@ -437,8 +360,10 @@ export const gdelt = {
     if (!batches.length)
       throw new Error('No recent completed GDELT event export was available');
     batches.sort((a, b) => a.date.localeCompare(b.date));
-    return conditionResult(gdeltFlags(batches), data, sampledAt, {
+    return conditionResult(gdeltFlags(batches, sampledAt), data, sampledAt, {
       batches,
+      sampledFiles: batches.length,
+      covered: () => false,
       detail: batches.length + ' sampled 15-minute files. Coverage is partial.',
     });
   },

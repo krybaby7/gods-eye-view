@@ -30,6 +30,13 @@
 .world-live-evidence a {
   color: #9ce9fc;
 }
+.world-live-evidence [data-status='stale'] {
+  color: #f2cf91;
+}
+.world-live-evidence
+  :is([data-status='no-recent-data'], [data-status='cleared']) {
+  color: #aabfc7;
+}
 @media (max-width: 600px) {
   .world-live-fao {
     top: 118px;

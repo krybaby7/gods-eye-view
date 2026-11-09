@@ -80,7 +80,11 @@ test('optional adapters parse licensed fixtures through their own explicit confi
       ],
     },
     'live-ucdp-token': {
-      Result: [{ id: 1, country: 'India', date_start: '2026-10-10', best: 5 }],
+      Result: [
+        { id: 1, country: 'India', date_start: '2026-10-10', best: 24 },
+        { id: 2, country: 'India', date_start: '2026-10-10', best: 1 },
+        { id: 2, country: 'India', date_start: '2026-10-10', best: 1 },
+      ],
     },
   };
   const expected = {

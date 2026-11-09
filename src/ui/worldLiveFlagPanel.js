@@ -1,3 +1,5 @@
+import { liveFlagNotes } from '../layers/world/events.js';
+
 export function renderLiveFlagPanel(document, flags) {
   if (!flags.length) return null;
   const panel = document.createElement('details');
@@ -8,6 +10,7 @@ export function renderLiveFlagPanel(document, flags) {
   const list = document.createElement('ul');
   for (const flag of flags) {
     const item = document.createElement('li');
+    item.dataset.status = flag.status ?? 'active';
     item.append(flag.label + ' · ' + flag.date + ' · ');
     const url = URL.parse(flag.source);
     if (url?.protocol === 'https:') {
@@ -20,7 +23,7 @@ export function renderLiveFlagPanel(document, flags) {
     } else item.append(flag.sourceName);
     if (flag.dsaMonth) item.append(' · DSA ' + flag.dsaMonth);
     if (flag.sourceLocator) item.append(' · ' + flag.sourceLocator);
-    if (flag.reviewed === false) item.append(' · Draft, not yet reviewed');
+    for (const note of liveFlagNotes(flag)) item.append(' · ' + note);
     list.append(item);
   }
   panel.append(list);

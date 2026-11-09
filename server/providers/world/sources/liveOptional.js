@@ -1,4 +1,6 @@
 import { conditionFlag, conditionResult } from '../conditionEvents.js';
+import { iso2Country } from './liveCountryCodes.js';
+import { candidateCountryResolver } from './ucdp.js';
 import {
   countryIds,
   dateOf,
@@ -12,19 +14,7 @@ const ELECTIONS = 'https://www.electionguide.org/p/access/';
 const HDX = 'https://docs.humdata.org/build/hdx-apis/hapi';
 const IODA = 'https://ioda.inetintel.cc.gatech.edu/';
 const UCDP = 'https://ucdp.uu.se/apidocs/';
-const IODA_CODES = {
-  IN: 'IND',
-  PK: 'PAK',
-  US: 'USA',
-  GB: 'GBR',
-  IR: 'IRN',
-  CN: 'CHN',
-  RU: 'RUS',
-  UA: 'UKR',
-  SD: 'SDN',
-  MM: 'MMR',
-  ET: 'ETH',
-};
+const DRAFT_CANDIDATE_THRESHOLD = 25;
 
 function allowedEndpoint(value, hosts) {
   const url = URL.parse(value);
@@ -68,6 +58,7 @@ function expectRows(payload, ...fields) {
 
 function optional(enabled, interval, read) {
   return {
+    version: 2,
     live: enabled,
     shouldCheck: (context) => enabled && due(context, interval),
     async fetchObservations(context) {
@@ -192,7 +183,7 @@ function outageFlags(rows, now, supported, extraCodes) {
   return rows.flatMap((row) => {
     const { entityType, entityCode } = row;
     const iso3 =
-      extraCodes?.[entityCode] ?? IODA_CODES[entityCode] ?? entityCode;
+      extraCodes?.[entityCode] ?? iso2Country[entityCode] ?? entityCode;
     const start = Number(row.time) * 1000;
     const duration = Number(row.duration) * 1000;
     if (
@@ -212,6 +203,7 @@ function outageFlags(rows, now, supported, extraCodes) {
         key: String(start),
         label: 'Country-level internet outage signal',
         date: new Date(start).toISOString(),
+        expiresAt: new Date(start + duration).toISOString(),
         source: IODA,
         sourceName: 'IODA',
         stage: 'observed',
@@ -221,14 +213,14 @@ function outageFlags(rows, now, supported, extraCodes) {
 }
 
 function candidateFlags(rows, now, countries) {
-  const byName = new Map(countries.map(({ iso3, name }) => [name, iso3]));
+  const resolve = candidateCountryResolver({ countries });
   const totals = new Map();
   const ids = new Set();
   const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1))
     .toISOString()
     .slice(0, 7);
   for (const row of rows) {
-    const iso3 = byName.get(row.country);
+    const iso3 = resolve(row.country);
     const date = dateOf(row.date_start);
     const deaths = Number(row.best);
     if (
@@ -236,7 +228,7 @@ function candidateFlags(rows, now, countries) {
       !row.id ||
       ids.has(row.id) ||
       !date?.startsWith(month) ||
-      !Number.isFinite(deaths) ||
+      !Number.isSafeInteger(deaths) ||
       deaths < 0
     )
       continue;
@@ -244,13 +236,19 @@ function candidateFlags(rows, now, countries) {
     totals.set(iso3, (totals.get(iso3) ?? 0) + deaths);
   }
   return [...totals].flatMap(([iso3, deaths]) =>
-    deaths > 0
+    deaths >= DRAFT_CANDIDATE_THRESHOLD
       ? [
           conditionFlag('live-ucdp-token', {
             iso3,
             slot: 'C2',
             date: month,
-            label: 'UCDP Candidate recorded fatalities: ' + deaths,
+            label:
+              'UCDP Candidate recorded fatalities: ' +
+              deaths +
+              ' (draft threshold: ' +
+              DRAFT_CANDIDATE_THRESHOLD +
+              ')',
+            recordedDeaths: deaths,
             source: UCDP,
             sourceName: 'UCDP Candidate',
           }),

@@ -12,7 +12,7 @@ const CADENCE = {
 
 export function liveFlags(snapshot, iso3, slot) {
   return Object.values(snapshot.features ?? {})
-    .flatMap((data) => data?.flags ?? [])
+    .flatMap((data) => [...(data?.flags ?? []), ...(data?.inactiveFlags ?? [])])
     .filter(
       (flag) =>
         flag.iso3 === iso3 &&
@@ -22,17 +22,38 @@ export function liveFlags(snapshot, iso3, slot) {
     );
 }
 
-export function flagLabels(snapshot, iso3, slot) {
-  return liveFlags(snapshot, iso3, slot).map((flag) =>
-    [
-      flag.label,
-      flag.sourceName,
-      flag.date,
-      flag.reviewed === false ? 'Draft, not yet reviewed' : null,
+export function liveFlagStatus({ status, staleSince, lastGoodAt }) {
+  if (status === 'stale') {
+    return [
+      staleSince ? `Stale since ${staleSince}` : 'Stale',
+      lastGoodAt && `last good ${lastGoodAt}`,
     ]
       .filter(Boolean)
-      .join(' · '),
-  );
+      .join(' · ');
+  }
+  if (status === 'no-recent-data') return 'No recent data';
+  if (status === 'cleared') return 'Cleared';
+  return null;
+}
+
+export function liveFlagNotes(flag) {
+  return [
+    liveFlagStatus(flag),
+    flag.evidence,
+    flag.rule && `Rule: ${flag.rule}`,
+    (flag.reviewed === false || flag.ruleReviewed === false) &&
+      'Draft, not yet reviewed',
+  ].filter(Boolean);
+}
+
+export function flagLabels(snapshot, iso3, slot) {
+  return liveFlags(snapshot, iso3, slot)
+    .filter(({ status }) => status !== 'cleared')
+    .map((flag) =>
+      [flag.label, flag.sourceName, flag.date, ...liveFlagNotes(flag)]
+        .filter(Boolean)
+        .join(' · '),
+    );
 }
 
 export function startLiveTimers({
@@ -52,7 +73,6 @@ export function startLiveTimers({
     Object.entries(feeds).map(([id, interval]) => [id, clock() + interval]),
   );
   let handle;
-  let awaiting;
   let stopped = false;
   function stop() {
     stopped = true;
@@ -65,31 +85,15 @@ export function startLiveTimers({
   async function pump() {
     if (stopped) return;
     const current = snapshot();
-    if (!current || current.progress) return schedule(retryMs);
-    const turn = current.turn?.number ?? 0;
-    if (awaiting) {
-      const superseded =
-        turn > awaiting.turn &&
-        !current.turn.sources?.some(({ id }) => id === awaiting.id);
-      if (turn === awaiting.turn && clock() - awaiting.started < 3 * retryMs) {
-        return schedule(retryMs);
-      }
-      // A skipped scoped check produces no turn. Back off at the normal
-      // cadence so an unchanged turn cannot monopolize the queue.
-      next.set(
-        awaiting.id,
-        clock() + (superseded ? retryMs : feeds[awaiting.id]),
-      );
-      awaiting = null;
-    }
+    if (!current?.turn || current.progress) return schedule(retryMs);
     const [id, at] = [...next].sort((a, b) => a[1] - b[1])[0];
     const delay = at - clock();
     if (delay > 0) return schedule(delay);
-    awaiting = { id, turn, started: clock() };
+    next.set(id, clock() + feeds[id]);
     try {
       await refresh(id);
     } catch {
-      // The acknowledgement window also handles failed requests.
+      // Keep the feed's normal cadence after a transport failure.
     }
     schedule(retryMs);
   }

@@ -209,8 +209,10 @@ export function createWorldLayer({
   async function load(method, parent, sourceId) {
     if (!lifecycle || !source) return;
     if (pending) {
-      if (method !== 'refresh' || loading || progress) return;
-      // An explicit Refresh can replace the final board read from the last turn.
+      const manual = method === 'refresh' && sourceId == null;
+      const canQueue = progress?.kind === 'live' && !progress.queued;
+      if (!manual || ((loading || progress) && !canQueue)) return;
+      // Manual Refresh can replace a final read or queue behind a live tick.
       pending.abort();
     }
     const controller = new AbortController();
@@ -306,6 +308,7 @@ export function createWorldLayer({
           viewer,
           signal: lifecycle.signal,
           requestRender,
+          getSnapshot: context,
           labelPoint: (iso3) => geometry?.labelPoint(iso3),
           fixtures: new URLSearchParams(globalThis.location?.search).has(
             'world-fixtures',

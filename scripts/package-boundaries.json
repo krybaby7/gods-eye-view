@@ -332,6 +332,7 @@
       "server/providers/world/events.js",
       "server/providers/world/conditionEvents.js",
       "server/providers/world/liveScope.js",
+      "server/providers/world/sources/liveCountryCodes.js",
       "server/providers/world/sources/liveFeedCommon.js",
       "server/providers/world/sources/liveDebtDsa.js",
       "server/providers/world/sources/liveDisasters.js",
