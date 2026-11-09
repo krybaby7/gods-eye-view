@@ -89,3 +89,23 @@ test('fixture mode installs no timer and draft labels include source and date', 
   ]);
   assert.deepEqual(flagLabels(snapshot, 'IND', 'C3'), []);
 });
+
+test('a skipped scoped check backs off and lets the next overdue feed run', async () => {
+  const clock = timerHarness();
+  const snapshot = { progress: false, turn: { number: 2, sources: [] } };
+  const seen = [];
+  const dispose = startLiveTimers({
+    ...clock,
+    snapshot: () => snapshot,
+    feeds: { first: 100, second: 100 },
+    retryMs: 5,
+    refresh: async (id) => {
+      seen.push(id);
+    },
+  });
+  for (let i = 0; i < 4; i += 1) await clock.step();
+  assert.deepEqual(seen, ['first', 'second']);
+  for (let i = 0; i < 3; i += 1) await clock.step();
+  assert.equal(clock.pending().at, 215);
+  dispose();
+});

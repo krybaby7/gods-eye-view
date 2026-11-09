@@ -62,17 +62,18 @@ export function startLiveTimers({
     if (!current || current.progress) return schedule(retryMs);
     const turn = current.turn?.number ?? 0;
     if (awaiting) {
-      if (
+      const superseded =
         turn > awaiting.turn &&
-        current.turn.sources?.some(({ id }) => id === awaiting.id)
-      ) {
-        next.set(awaiting.id, clock() + feeds[awaiting.id]);
-      } else if (
-        turn === awaiting.turn &&
-        clock() - awaiting.started < 3 * retryMs
-      ) {
+        !current.turn.sources?.some(({ id }) => id === awaiting.id);
+      if (turn === awaiting.turn && clock() - awaiting.started < 3 * retryMs) {
         return schedule(retryMs);
       }
+      // A skipped scoped check produces no turn. Back off at the normal
+      // cadence so an unchanged turn cannot monopolize the queue.
+      next.set(
+        awaiting.id,
+        clock() + (superseded ? retryMs : feeds[awaiting.id]),
+      );
       awaiting = null;
     }
     const [id, at] = [...next].sort((a, b) => a[1] - b[1])[0];
@@ -82,7 +83,7 @@ export function startLiveTimers({
     try {
       await refresh(id);
     } catch {
-      // The overlay retries an unacknowledged scoped turn after the next poll.
+      // The acknowledgement window also handles failed requests.
     }
     schedule(retryMs);
   }
