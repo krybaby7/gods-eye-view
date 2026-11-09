@@ -207,7 +207,12 @@ export const DATA_CREDITS = [
       '<a href="https://www.imf.org/external/datamapper/" target="_blank" rel="noopener">IMF DataMapper</a> · ' +
       '<a href="https://ucdp.uu.se/downloads/" target="_blank" rel="noopener">UCDP</a> · ' +
       '<a href="https://www.v-dem.net/data/the-v-dem-dataset/" target="_blank" rel="noopener">V-Dem</a> · ' +
-      '<a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a>',
+      '<a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a> · ' +
+      '<a href="https://datasets.wri.org/datasets/global-power-plant-database" target="_blank" rel="noopener">WRI Global Power Plant Database</a> · ' +
+      '<a href="https://www.wikidata.org/" target="_blank" rel="noopener">Wikidata</a> · ' +
+      '<a href="https://msi.nga.mil/Publications/WPI" target="_blank" rel="noopener">NGA World Port Index</a> · ' +
+      '<a href="https://ourairports.com/data/" target="_blank" rel="noopener">OurAirports</a> · ' +
+      '<a href="https://fas.org/initiative/status-world-nuclear-forces/" target="_blank" rel="noopener">Federation of American Scientists</a> · curated government and company citations',
   },
   // War monitor: headline, snippet, link and publisher only. One group per
   // transport; every fetched source in public/news/sources.json is named here.

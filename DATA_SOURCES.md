@@ -15,6 +15,8 @@ How to read this:
 
 ---
 
+Assets use the historical [WRI Global Power Plant Database v1.3.0](https://datasets.wri.org/datasets/global-power-plant-database) (CC BY 4.0), [Wikidata](https://www.wikidata.org/) nuclear and launch facilities and operator claims (CC0), [NGA World Port Index](https://msi.nga.mil/Publications/WPI) large harbors (U.S. government public domain), and [OurAirports](https://ourairports.com/data/) scheduled large airports (public domain). These are keyless sources. The replacement NGA route, OurAirports mirror and narrower Wikidata queries were fixture-tested after the first live attempts failed. Curated facts are marked draft and link to government reports, company filings or the [Federation of American Scientists](https://fas.org/initiative/status-world-nuclear-forces/).
+
 ## Live sources (fetched at runtime — not stored in this repo)
 
 | Source                                                                | Used for                                                                                                                            | License / terms                                                                                                                                                                                                                                                                                                                                       | Attribution                                                                                                                                 |
