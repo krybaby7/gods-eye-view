@@ -336,6 +336,7 @@
       "server/providers/world/sources/relationsVoting.js",
       "server/providers/world/sources/relationsWikidata.js",
       "server/providers/world/sources/relationsSanctions.js",
+      "server/providers/world/sources/ukSanctionsOdt.js",
       "server/providers/world/registry.js",
       "server/providers/world/scores.js",
       "server/providers/world/sourceQueue.js",
