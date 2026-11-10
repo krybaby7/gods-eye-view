@@ -1,5 +1,6 @@
 const MINUTE = 60_000;
 const DAY = 1_440 * MINUTE;
+const MAX_RETRY_MS = 30_000;
 const CADENCE = {
   'live-gdelt': 15 * MINUTE,
   'live-gdacs': 60 * MINUTE,
@@ -72,7 +73,7 @@ export function startLiveTimers({
   const next = new Map(
     Object.entries(feeds).map(([id, interval]) => [id, clock() + interval]),
   );
-  const retryAt = new Map();
+  const retries = new Map();
   let handle;
   let stopped = false;
   function stop() {
@@ -88,7 +89,7 @@ export function startLiveTimers({
     const current = snapshot();
     if (!current?.turn || current.progress) return schedule(retryMs);
     const [id, at] = [...next]
-      .map(([id, at]) => [id, Math.max(at, retryAt.get(id) ?? 0)])
+      .map(([id, at]) => [id, Math.max(at, retries.get(id)?.at ?? 0)])
       .sort((a, b) => a[1] - b[1])[0];
     const delay = at - clock();
     if (delay > 0) return schedule(delay);
@@ -100,9 +101,14 @@ export function startLiveTimers({
     }
     if (accepted) {
       next.set(id, clock() + feeds[id]);
-      retryAt.delete(id);
+      retries.delete(id);
     } else {
-      retryAt.set(id, clock() + retryMs);
+      const previous = retries.get(id);
+      const delay = Math.min(
+        MAX_RETRY_MS,
+        previous ? previous.delay * 2 : retryMs,
+      );
+      retries.set(id, { delay, at: clock() + delay });
     }
     schedule(retryMs);
   }

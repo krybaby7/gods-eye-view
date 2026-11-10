@@ -50,7 +50,7 @@ test('GDELT and IODA crosswalks cover every sovereign country in the full regist
   assert.equal(fipsCountry.AO, 'AGO');
 });
 
-test('GDELT requires five unique events from three domains in 72 hours', () => {
+test('GDELT deduplicates articles and publisher subdomains within 72 hours', () => {
   function event(id, root, fips, domain = 'one.example', article = id) {
     const fields = Array(61).fill('');
     Object.assign(fields, {
@@ -260,4 +260,32 @@ test('GDELT fight codes require a coded armed actor for the conflict slot', () =
     flags.map(({ iso3, eventCount }) => [iso3, eventCount]),
     [['CAN', 5]],
   );
+});
+
+test('GDELT flags three protest events in one ADM1 across three dates', () => {
+  const batches = [7, 8, 9].map((day) => {
+    const row = Array(61).fill('');
+    Object.assign(row, {
+      0: String(day),
+      1: '2026110' + day,
+      5: 'PROTESTERS',
+      28: '14',
+      52: 'New Delhi',
+      53: 'IN',
+      54: 'IN07',
+      60: 'https://publisher-' + day + '.example/article',
+    });
+    return gdeltBatch(
+      row.join('\t'),
+      '2026-11-0' + day + 'T00:00:00.000Z',
+      now,
+      countries,
+    );
+  });
+  assert.deepEqual(gdeltFlags(batches.slice(0, 2), now), []);
+  const [flag] = gdeltFlags(batches, now);
+  assert.equal(flag?.eventCount, 3);
+  assert.equal(flag?.reviewed, false);
+  assert.match(flag.rule, /3 distinct events from 3 source domains/);
+  assert.equal(flag.expiresAt, '2026-11-10T00:00:00.000Z');
 });

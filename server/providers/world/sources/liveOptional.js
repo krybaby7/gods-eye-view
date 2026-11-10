@@ -220,15 +220,14 @@ function candidateFlags(rows, now, countries) {
   const resolve = candidateCountryResolver({ countries });
   const totals = new Map();
   const ids = new Set();
+  let published = false;
   const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1))
     .toISOString()
     .slice(0, 7);
   for (const row of rows) {
-    const iso3 = resolve(row.country);
     const date = dateOf(row.date_start);
     const deaths = Number(row.best);
     if (
-      !iso3 ||
       !row.id ||
       ids.has(row.id) ||
       !date?.startsWith(month) ||
@@ -238,6 +237,9 @@ function candidateFlags(rows, now, countries) {
       deaths < 0
     )
       continue;
+    published = true;
+    const iso3 = resolve(row.country);
+    if (!iso3) continue;
     ids.add(row.id);
     totals.set(iso3, (totals.get(iso3) ?? 0) + deaths);
   }
@@ -261,7 +263,7 @@ function candidateFlags(rows, now, countries) {
         ]
       : [],
   );
-  return { flags, covered: ({ iso3 }) => totals.has(iso3) };
+  return { flags, covered: () => published };
 }
 
 export function optionalLiveSources(config = {}) {

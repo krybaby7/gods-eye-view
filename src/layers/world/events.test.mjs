@@ -205,3 +205,24 @@ test('dated stale, expired and cleared flags keep separate labels and evidence',
     'Cleared',
   );
 });
+
+test('rejected scoped posts back off to 30 seconds and acceptance resets the delay', async () => {
+  const clock = timerHarness();
+  const calls = [];
+  const dispose = startLiveTimers({
+    ...clock,
+    snapshot: () => ({ turn: { number: 2 } }),
+    feeds: { probe: 100 },
+    refresh() {
+      calls.push(clock.clock());
+      if (calls.length === 1) throw new Error('Route offline');
+      return calls.length >= 6 && calls.length !== 7;
+    },
+  });
+  while (calls.length < 8) await clock.step();
+  assert.deepEqual(
+    calls,
+    [100, 5100, 15100, 35100, 65100, 95100, 100100, 105100],
+  );
+  dispose();
+});
