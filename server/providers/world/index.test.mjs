@@ -311,6 +311,66 @@ test('adapter version changes rederive even when the release is not due', async 
   assert.equal(seen.length, 2);
 });
 
+test('cached rederivation retains the release check date and counts only changed values', async (t) => {
+  const { createWorldService } = await import('./index.js');
+  const cache = await setup(t);
+  const sources = [{ id: 'worldbank' }];
+  const indicators = [
+    {
+      id: 'SP.POP.TOTL',
+      source: 'worldbank',
+      slot: 'S1',
+      anchors: { a: 0, b: 100 },
+      staleAfterMonths: 18,
+    },
+  ];
+  const date = (month) => new Date(Date.UTC(2026, month - 1, 15));
+  function service(version, month, value) {
+    return createWorldService({
+      ...cache,
+      now: () => date(month),
+      loadRegistry: async () => ({ ...registry, sources, indicators }),
+      adapters: {
+        worldbank: {
+          version,
+          shouldCheck: ({ lastCheckedAt }) => !lastCheckedAt,
+          fetchObservations({ now, lastCheckedAt, rederive }) {
+            return {
+              observations: [
+                { ...observation(value, now), sourceVersion: String(version) },
+              ],
+              data: { lastCheckedAt },
+              ...(rederive && { checkedRelease: false }),
+            };
+          },
+        },
+      },
+    });
+  }
+  const baseline = service(1, 2, 100);
+  await baseline.refresh();
+  assert.equal((await settled(baseline)).turn.newObservations, 1);
+
+  const unchanged = service(2, 4, 100);
+  await unchanged.refresh();
+  const rederived = (await settled(unchanged)).turn;
+  assert.equal(rederived.sources[0].rederived, true);
+  assert.equal(
+    (await unchanged.snapshot()).features.worldbank.lastCheckedAt,
+    date(2).toISOString(),
+  );
+  assert.equal(rederived.sources[0].count, 0);
+  assert.equal(rederived.newObservations, 0);
+  const saved = await unchanged.store.read();
+  assert.equal(saved.lastCheckedAt.worldbank, date(2).toISOString());
+  assert.equal(saved.observations[0].sourceVersion, '2');
+
+  const changed = service(3, 5, 101);
+  await changed.refresh();
+  assert.equal((await settled(changed)).turn.newObservations, 1);
+  assert.equal((await changed.store.read()).observations[0].value, 101);
+});
+
 test('refresh retains revised vintages, persists turn history and isolates a failed source', async (t) => {
   const { createWorldService } = await import('./index.js');
   const { cacheDir } = await setup(t);
@@ -534,6 +594,35 @@ test('a persistence failure leaves the saved board intact and can be retried', a
   const retried = await settled(service);
   assert.equal(retried.turn.number, 2);
   assert.equal(retried.error, undefined);
+});
+
+test('the request handler catches an asynchronous response failure', async (t) => {
+  const { createWorldService } = await import('./index.js');
+  const warnings = [];
+  const service = createWorldService({
+    ...(await setup(t)),
+    loadRegistry: async () => registry,
+    adapters: {},
+    logger: { warn: (...args) => warnings.push(args) },
+  });
+  const failure = new Error('Response write failed');
+  const res = {
+    setHeader() {},
+    end() {
+      if (this.statusCode === 200) throw failure;
+    },
+  };
+  await service.handle(
+    {
+      url: '/api/world/progress',
+      method: 'GET',
+      headers: { host: 'localhost:5173', 'accept-encoding': 'gzip' },
+      socket: { remoteAddress: '::1' },
+    },
+    res,
+  );
+  assert.equal(res.statusCode, 500);
+  assert.equal(warnings[0][1], failure);
 });
 
 test('local provider registration serves both Vite server modes', async (t) => {
