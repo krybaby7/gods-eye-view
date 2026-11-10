@@ -723,3 +723,54 @@ test('land borders use all polygons for crude and refined products', async () =>
     );
   }
 });
+
+test('manual Refresh replaces the cached round 3 Energy model', async () => {
+  const { createWorldService } = await import('./index.js');
+  const source = 'energy-dependencies';
+  const oldModel = {
+    mode: 'modelled',
+    period: '2024',
+    rows: [],
+    energyExposure: {},
+    calibration: [{ routeId: 'malacca', commodity: 'lng', modelled: 7.391 }],
+  };
+  let state = {
+    board: { countries: {}, features: { [source]: oldModel } },
+    observations: [],
+    turns: [{ number: 1 }],
+    lastCheckedAt: { [source]: '2026-11-10T12:00:00Z' },
+    sourceVersions: { [source]: 4 },
+  };
+  let upstreamRequests = 0;
+  const service = createWorldService({
+    loadRegistry: async () => ({
+      countries: [],
+      indicators: [],
+      sources: [{ id: source }],
+    }),
+    store: {
+      read: async () => state,
+      write: async (next) => {
+        state = next;
+      },
+    },
+    fetchImpl: async () => {
+      upstreamRequests++;
+      throw new Error('Bundled Energy refresh must not fetch upstream');
+    },
+  });
+  assert.deepEqual(
+    (await service.snapshot()).features[source].calibration,
+    oldModel.calibration,
+  );
+  await service.refresh();
+  await service.whenIdle();
+  const refreshed = await service.snapshot();
+  assert.equal(refreshed.turn.sources[0].rederived, true);
+  assert.deepEqual(
+    refreshed.features[source].calibration,
+    energyModel.calibration,
+  );
+  assert.equal(state.sourceVersions[source], 5);
+  assert.equal(upstreamRequests, 0);
+});
