@@ -98,6 +98,9 @@ function dependencyItem({ document, snapshot, openCard }, row, title) {
             ],
           ]
         : []),
+      ...(row.quantityEstimated
+        ? [['BACI quantity', 'Missing quantity estimated']]
+        : []),
       ...(row.quantityReestimated
         ? [['BACI quantity', 'Quantity re-estimated']]
         : []),
@@ -145,7 +148,7 @@ function dependencyItem({ document, snapshot, openCard }, row, title) {
   }
   if (row.portSplits) {
     const split = node(document, 'details');
-    split.append(node(document, 'summary', 'Modelled port split'));
+    split.append(node(document, 'summary', 'Draft modelled port split'));
     const allocations = node(document, 'ul');
     for (const {
       share,
@@ -495,6 +498,7 @@ export function renderChokepoint(context) {
       gap,
       unit,
       note,
+      dataNote,
     } of calibration) {
       area.append(
         node(
@@ -503,6 +507,11 @@ export function renderChokepoint(context) {
           `${commodity} · ${period} · ${numeric(modelled)} modelled / ${numeric(published)} EIA ${unit} · gap ${numeric(gap)} ${unit}${note ? ` · ${note}` : ''}`,
         ),
       );
+      if (dataNote) {
+        const label = node(document, 'p', undefined, 'world-energy-note');
+        label.append(source(document, dataNote.sourceUrl, dataNote.text));
+        area.append(label);
+      }
     }
   }
   area.append(node(document, 'h3', 'Ranked dependents'));

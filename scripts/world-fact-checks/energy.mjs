@@ -19,38 +19,84 @@ const beforeGapPct = {
   panama: { oil: 21.8 },
   'cape-of-good-hope': { oil: -64.6, lng: -79.4 },
 };
-const expectedDraftFloor = 10;
-const makeCheck = (id, expected, found, source, pass) => ({
+// Archived observations from the model at reviewed PR #19 head 7ba05ffe.
+const beforeRound3 = {
+  malacca: { oil: 16.961, lng: 9.51 },
+  hormuz: { oil: 15.846, lng: 9.582 },
+  suez: { oil: 8.088, lng: 5.413 },
+  'bab-el-mandeb': { oil: 8.544, lng: 4.303 },
+  'danish-straits': { oil: 2.894, lng: 0.984 },
+  dardanelles: { oil: 2.197, lng: 0.148 },
+  panama: { oil: 3.454 },
+  'cape-of-good-hope': { oil: 3.196, lng: 1.846 },
+};
+const makeCheck = (id, expected, found, source, pass, date = checkedOn) => ({
   id: 'energy-' + id,
   expected,
   found: found ?? 'Unavailable',
   source,
-  checkedOn,
+  checkedOn: date,
   pass: Boolean(pass),
 });
+const checkedRound3 = '2026-11-10';
+
+const cargoRegression = [
+  {
+    provider: 'IDN',
+    dependent: 'CHN',
+    code: '270119',
+    declaredMt: '49.6',
+    publishedMt: 30.8793,
+  },
+  {
+    provider: 'MEX',
+    dependent: 'USA',
+    code: '271000',
+    declaredMt: '10.7',
+    publishedMt: 9.78427,
+  },
+  {
+    provider: 'ARE',
+    dependent: 'THA',
+    code: '270900',
+    declaredMt: '151.7',
+    publishedMt: 86.9293,
+    reestimate: true,
+  },
+];
+const mainlandPorts = {
+  FRA: [
+    'Granville',
+    'https://www.manche.fr/wp-content/uploads/2023/11/PRDT-GRANVILLE-2024-2029.pdf',
+  ],
+  PRT: ['Lisboa', 'https://www.portodelisboa.pt/pt/terminais'],
+  AUS: [
+    'Broome',
+    'https://www.kimberleyports.wa.gov.au/awcontent/web/documents/rec221362-kpa-port-and-terminal-handbook-v8-0.pdf',
+  ],
+};
 
 export default async function checkEnergy({ board, getDetail }) {
   const model = board?.features?.['energy-dependencies'];
-  const [thailand, taiwan, india, global] = await Promise.all([
-    getDetail('THA', 'energy'),
-    getDetail('TWN', 'energy'),
-    getDetail('IND', 'energy'),
-    getDetail(null, 'energy'),
-  ]);
+  const [thailand, taiwan, india, global, ...ports] = await Promise.all(
+    ['THA', 'TWN', 'IND', null, ...Object.keys(mainlandPorts)].map((country) =>
+      getDetail(country, 'energy'),
+    ),
+  );
   const hormuz = chokepointExposure(board ?? {}, 'chokepoint6');
   const top = hormuz
     .slice(0, 4)
     .map(({ dependent }) => dependent)
     .sort();
   const expectedTop = ['CHN', 'IND', 'JPN', 'KOR'];
-  const gates = new Set(
-    Object.values(model?.energyExposure ?? {})
-      .flat()
-      .map(({ gate }) => gate),
-  );
-  // This is a model consistency check. Checking every displayed dependent
-  // also covers exporters outside a hand-picked list.
-  const rankedVolumes = [...gates].flatMap((gate) =>
+  const totalByGate = new Map();
+  for (const { gate, volume } of Object.values(
+    model?.energyExposure ?? {},
+  ).flat()) {
+    if (volume?.unit !== 'PJ/year' || !Number.isFinite(volume.value)) continue;
+    totalByGate.set(gate, (totalByGate.get(gate) ?? 0) + volume.value);
+  }
+  const rankedVolumes = [...totalByGate].flatMap(([gate, gateTotal]) =>
     chokepointExposure(board, gate)
       .slice(0, 10)
       .map((row, index) => ({
@@ -59,13 +105,15 @@ export default async function checkEnergy({ board, getDetail }) {
         country: row.dependent,
         mainProduct: row.item,
         volume: row.volume,
+        gateTotal: Number(gateTotal.toFixed(3)),
+        transitShare:
+          gateTotal > 0 && row.volume?.unit === 'PJ/year'
+            ? row.volume.value / gateTotal
+            : null,
       })),
   );
   const trivial = rankedVolumes.filter(
-    ({ volume }) =>
-      volume?.unit !== 'PJ/year' ||
-      !Number.isFinite(volume?.value) ||
-      volume.value < expectedDraftFloor,
+    ({ transitShare }) => !Number.isFinite(transitShare) || transitShare < 0.01,
   );
   const thaiMt = thailand?.importTonnes?.['crude oil'] / 1e6;
   const thaiExpectedMt = (971_025 * 366) / 7.33 / 1e6;
@@ -95,17 +143,11 @@ export default async function checkEnergy({ board, getDetail }) {
     ),
     makeCheck(
       'trivial-exporter-imports',
-      `Every displayed top-ten gate dependent has at least ${expectedDraftFloor} PJ/year of modelled transit under the existing draft floor`,
-      {
-        draftFloor: model?.minorImporterFloor,
-        checked: rankedVolumes.length,
-        trivial,
-        rankedVolumes,
-      },
-      'World Board fix-round-2 brief §3, draft model consistency check',
-      rankedVolumes.length > 0 &&
-        model?.minorImporterFloor === expectedDraftFloor &&
-        trivial.length === 0,
+      'Each displayed top-ten dependent carries at least 1% of the total modelled transit at that chokepoint, measured in PJ/year',
+      { checked: rankedVolumes.length, trivial, rankedVolumes },
+      'World Board fix-round-3 brief, model consistency check',
+      rankedVolumes.length > 0 && trivial.length === 0,
+      checkedRound3,
     ),
     makeCheck(
       'arctic-and-kiel',
@@ -159,21 +201,106 @@ export default async function checkEnergy({ board, getDetail }) {
         blackSea.every(({ gates }) => gates.includes('eia-dardanelles')),
     ),
   ];
+  for (const {
+    provider,
+    dependent,
+    code,
+    declaredMt,
+    publishedMt,
+    reestimate,
+  } of cargoRegression) {
+    const cargo = global?.quantityAudit?.cargoes?.find(
+      (row) =>
+        row.provider === provider &&
+        row.dependent === dependent &&
+        row.code === code,
+    );
+    const modelMt = cargo?.tonnes / 1e6;
+    result.push(
+      makeCheck(
+        `cargo-${provider.toLowerCase()}-${dependent.toLowerCase()}-${code}`,
+        reestimate
+          ? `Screen ${declaredMt} Mt in BACI to about 25 Mt using the median price`
+          : `Retain the ${declaredMt} Mt BACI quantity`,
+        {
+          declaredMt: cargo?.declaredTonnes / 1e6,
+          modelMt,
+          quantityReestimated: cargo?.quantityReestimated,
+          context: `The import reporter published ${publishedMt} Mt via UN Comtrade. The BACI regression expectation is from the independent round 3 review.`,
+        },
+        `https://wits.worldbank.org/trade/comtrade/en/country/${dependent}/year/2024/tradeflow/Imports/partner/ALL/product/${code}`,
+        (cargo?.declaredTonnes / 1e6).toFixed(1) === declaredMt &&
+          (reestimate
+            ? cargo.quantityReestimated && modelMt > 24 && modelMt < 27
+            : !cargo.quantityReestimated &&
+              cargo.tonnes === cargo.declaredTonnes),
+        checkedRound3,
+      ),
+    );
+  }
+  for (const [index, [country, [expectedPort, source]]] of Object.entries(
+    mainlandPorts,
+  ).entries()) {
+    const detail = ports[index];
+    const importPorts = Object.fromEntries(
+      [
+        ...Map.groupBy(
+          (detail?.rows ?? []).filter(({ dependent }) => dependent === country),
+          ({ item }) => item,
+        ),
+      ].map(([item, rows]) => [
+        item,
+        [
+          ...new Set(
+            rows.map(({ id }) => detail.routePorts?.[id]?.[1]).filter(Boolean),
+          ),
+        ].sort(),
+      ]),
+    );
+    result.push(
+      makeCheck(
+        `mainland-import-port-${country.toLowerCase()}`,
+        `${expectedPort}, a verified mainland location, as the representative crude fallback`,
+        importPorts,
+        source,
+        importPorts['crude oil']?.length === 1 &&
+          importPorts['crude oil'][0] === expectedPort,
+        checkedRound3,
+      ),
+    );
+  }
   for (const row of global?.calibration ?? []) {
     const before = beforeGapPct[row.routeId]?.[row.commodity];
-    const { routeId, commodity, modelled, published, unit, gapPct, note } = row;
+    const {
+      routeId,
+      commodity,
+      modelled,
+      published,
+      unit,
+      gapPct,
+      note,
+      dataNote,
+    } = row;
+    const beforeModelled = beforeRound3[routeId]?.[commodity];
     const found = {
-      beforeGapPct: before,
+      originalGapPct: before,
+      beforeModelled,
+      beforeGapPct:
+        published > 0
+          ? Number((100 * (beforeModelled / published - 1)).toFixed(1))
+          : null,
       afterGapPct: gapPct,
       modelled,
       published,
       unit,
       ...(note && { note }),
+      ...(dataNote && { dataNote: dataNote.text }),
     };
     let expected = 'Published and modelled 2024 values present';
     let pass =
       Number.isFinite(modelled) &&
       Number.isFinite(published) &&
+      Number.isFinite(beforeModelled) &&
       before !== undefined;
     if (routeId === 'hormuz' || routeId === 'malacca') {
       expected = 'Absolute calibration gap at most 25%';
@@ -186,14 +313,22 @@ export default async function checkEnergy({ board, getDetail }) {
     ) {
       expected = 'shortest route, before the Red Sea diversions';
       pass &&= note === expected;
+      if (routeId === 'suez' && commodity === 'lng') {
+        expected =
+          'EIA published 0.5 bcf/d in 2024. Report the remaining gap after filtering port origins in the pre-diversion model.';
+        pass &&=
+          published === 0.5 &&
+          Math.abs(modelled - published) < Math.abs(beforeModelled - published);
+      }
     }
     result.push(
       makeCheck(
         `calibration-${routeId}-${commodity}`,
         expected,
         found,
-        eiaChokepoints,
+        dataNote ? [eiaChokepoints, dataNote.sourceUrl] : eiaChokepoints,
         pass,
+        checkedRound3,
       ),
     );
   }
