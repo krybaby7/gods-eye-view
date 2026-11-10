@@ -357,3 +357,49 @@ test('an executive presidency maps both roles for cited constitutional systems',
     );
   }
 });
+test('verified Philippine and Ghana appointments supersede captured older CIA evidence until expiry', async () => {
+  const { mergeOfficeholders, officialOfficeEvidence } =
+    await import('../officeholders.js');
+  const registry = { countries: [{ iso3: 'GHA' }, { iso3: 'PHL' }] };
+  const cia = [
+    {
+      country: 'GHA',
+      role: 'defence-minister',
+      name: 'Cassiel Ato Baah Forson',
+      asOf: '2025-12-15',
+      source: 'cia-world-leaders',
+    },
+    {
+      country: 'PHL',
+      role: 'foreign-minister',
+      name: 'Enrique Manalo',
+      asOf: '2024-10-09',
+      source: 'cia-world-leaders',
+    },
+  ];
+  const shown = mergeOfficeholders(
+    [],
+    cia,
+    now,
+    [],
+    officialOfficeEvidence(registry, now),
+  );
+  assert.deepEqual(
+    shown.map(({ name }) => name),
+    ['Kenneth Gilbert Adjei', 'Ma. Theresa P. Lazaro'],
+  );
+  assert.deepEqual(
+    shown.map(({ disagreement }) => disagreement.name),
+    cia.map(({ name }) => name),
+  );
+  assert.deepEqual(
+    officialOfficeEvidence(registry, new Date('2027-02-10')),
+    [],
+  );
+  assert.ok(
+    shown.every(
+      ({ reviewed, sourceUrl }) =>
+        reviewed === false && /^https:\/\//.test(sourceUrl),
+    ),
+  );
+});

@@ -233,8 +233,9 @@
     {
       "country": "IDN",
       "roles": ["foreign-minister"],
-      "names": ["Arrmanatha Nasir"],
-      "source": "https://setkab.go.id/en/cabinet-profile/"
+      "names": ["Sugiono"],
+      "source": "https://setkab.go.id/en/president-prabowo-inaugurates-new-ministers-vice-ministers-at-state-palace/",
+      "checkedOn": "2026-11-10"
     },
     {
       "country": "KEN",
@@ -271,6 +272,20 @@
       "roles": ["defence-minister"],
       "names": ["Gen Nakatani", "Nakatani Gen"],
       "source": "https://www.mod.go.jp/en/article/2026/10/2f87c33ad8344908ba5bc80f7f184caa6607e590.html"
+    },
+    {
+      "country": "GHA",
+      "roles": ["defence-minister"],
+      "names": ["Cassiel Ato Baah Forson", "Cassiel Ato Forson"],
+      "source": "https://mod.gov.gh/dr-cassiel-ato-forson-hands-over-to-kenneth-gilbert-adjei-at-defence-ministry/",
+      "checkedOn": "2026-11-10"
+    },
+    {
+      "country": "NZL",
+      "roles": ["defence-minister"],
+      "names": ["Chris Penk"],
+      "source": "https://www.beehive.govt.nz/portfolio/nationalactnew-zealand-first-coalition-government-2023-2026/defence",
+      "checkedOn": "2026-11-10"
     }
   ]
 }
