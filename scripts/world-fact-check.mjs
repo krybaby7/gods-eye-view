@@ -65,6 +65,25 @@ function markdownCell(value) {
   return display(value).replaceAll('|', '\\|').replaceAll(/\r?\n/g, '<br>');
 }
 
+function outcome(pass) {
+  if (pass === null) return 'NOT MEASURED';
+  return pass ? 'PASS' : 'FAIL';
+}
+
+async function readTrace(path) {
+  try {
+    return { evidence: JSON.parse(await readFile(path, 'utf8')) };
+  } catch (error) {
+    const reason =
+      error.code === 'ENOENT'
+        ? 'not found'
+        : error instanceof SyntaxError
+          ? 'invalid JSON'
+          : error.message;
+    return { traceReason: `Browser trace ${reason}: ${path}` };
+  }
+}
+
 export async function runFactChecks({ url, out, trace, print = console.log }) {
   const origin = new URL(url);
   if (
@@ -74,13 +93,7 @@ export async function runFactChecks({ url, out, trace, print = console.log }) {
     throw new Error('--url must be a loopback HTTP or HTTPS server.');
   }
   const tracePath = trace ?? resolve(out, '..', 'refresh-requests.json');
-  const evidence = await readFile(tracePath, 'utf8').then(
-    JSON.parse,
-    (error) => {
-      if (error.code !== 'ENOENT') throw error;
-      return null;
-    },
-  );
+  const { evidence, traceReason } = await readTrace(tracePath);
   const checks = [];
   const measure = (route, encoding) => readApi(origin, route, encoding);
   let initial;
@@ -120,38 +133,55 @@ export async function runFactChecks({ url, out, trace, print = console.log }) {
         measure,
         getDetail,
         trace: evidence,
+        traceReason,
       });
       if (
         !Array.isArray(rows) ||
         !rows.length ||
         rows.some(
-          (row) => !row.id || !row.source || typeof row.pass !== 'boolean',
+          (row) =>
+            !row.id ||
+            !row.source ||
+            (typeof row.pass !== 'boolean' &&
+              !(row.pass === null && row.reason)),
         )
       ) {
         throw new Error(
-          'A check module must return evidence rows with id, source and pass.',
+          'A check module must return evidence rows with id, source and pass, and a reason for any unmeasured row.',
         );
       }
       checks.push(...rows);
     } catch (error) {
+      const missingFile = error.code === 'ENOENT' && error.path;
       checks.push({
         id: file,
         expected: 'Checks return evidence',
         found: error.message,
         source: `scripts/world-fact-checks/${file}`,
-        pass: false,
+        pass: missingFile ? null : false,
+        ...(missingFile && {
+          reason: `Local evidence file not found: ${error.path}`,
+        }),
       });
     }
   }
-  for (const { id, expected, found, source, checkedOn, pass } of checks) {
+  for (const {
+    id,
+    expected,
+    found,
+    source,
+    checkedOn,
+    pass,
+    reason,
+  } of checks) {
     print(
-      `${pass ? 'PASS' : 'FAIL'} ${id} | expected ${display(expected)} | found ${display(found)} | ${display(source)}${checkedOn ? ` (${checkedOn})` : ''}`,
+      `${outcome(pass)} ${id} | expected ${display(expected)} | found ${display(found)} | ${display(source)}${checkedOn ? ` (${checkedOn})` : ''}${reason ? ` | ${reason}` : ''}`,
     );
   }
   const result = {
     url: origin.origin,
     checkedAt: new Date().toISOString(),
-    pass: checks.every(({ pass }) => pass),
+    pass: checks.every(({ pass }) => pass !== false),
     checks,
   };
   const lines = [
@@ -159,11 +189,11 @@ export async function runFactChecks({ url, out, trace, print = console.log }) {
     '',
     `Server ${result.url}, checked ${result.checkedAt}.`,
     '',
-    '| Check | Expected | Found | Source | Date checked | Result |',
-    '| --- | --- | --- | --- | --- | --- |',
+    '| Check | Expected | Found | Source | Date checked | Result | Reason |',
+    '| --- | --- | --- | --- | --- | --- | --- |',
     ...checks.map(
-      ({ id, expected, found, source, checkedOn, pass }) =>
-        `| ${[id, expected, found, source, checkedOn ?? '—', pass ? 'PASS' : 'FAIL'].map(markdownCell).join(' | ')} |`,
+      ({ id, expected, found, source, checkedOn, pass, reason }) =>
+        `| ${[id, expected, found, source, checkedOn ?? '—', outcome(pass), reason ?? '—'].map(markdownCell).join(' | ')} |`,
     ),
     '',
   ];

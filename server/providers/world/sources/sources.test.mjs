@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import {
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  utimes,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -290,12 +297,27 @@ test('UCDP evicts a corrupt ZIP and reuses the corrected release across turns', 
   assert.deepEqual(progress, [broken.length, bytes.length, bytes.length]);
   const rebuilt = await fetchObservations({
     ...context,
+    lastCheckedAt: now.toISOString(),
     data: { period: first.data.period },
     observations: [...population, ...first.observations],
     rederive: true,
     fetchImpl: () => assert.fail('A complete legacy release is already cached'),
   });
-  assert.deepEqual(rebuilt, first);
+  assert.deepEqual(rebuilt, { ...first, checkedRelease: false });
+  const nextArchive = archive.replace('26_10', '26_11');
+  const next = await fetchObservations({
+    ...context,
+    now: new Date('2026-12-01T00:00:00Z'),
+    lastCheckedAt: now.toISOString(),
+    data: first.data,
+    rederive: true,
+    fetchImpl: fixtureFetch({
+      [candidateRoot]: `<a href="${nextArchive}">November archive</a>`,
+      [`${candidateRoot}olddw.html`]: '',
+      [nextArchive]: bytes,
+    }),
+  });
+  assert.equal(next.data.period, '2026-11');
 });
 
 const vdemRoot = 'https://www.v-dem.net/';
@@ -441,13 +463,142 @@ test('V-Dem reuses the cached versioned archive and reports bytes', async (t) =>
   assert.equal(progress.at(-1)?.bytes, archive.length);
   const rebuilt = await fetchObservations({
     ...context,
+    lastCheckedAt: now.toISOString(),
     data: { sourceVersion: first.data.sourceVersion },
     observations: first.observations,
     rederive: true,
     fetchImpl: () =>
       assert.fail('The archived V-Dem release is already cached'),
   });
-  assert.deepEqual(rebuilt, first);
+  assert.deepEqual(rebuilt, { ...first, checkedRelease: false });
+});
+
+test('V-Dem reuses the February check until March and checks for the March release in April', async (t) => {
+  const { fetchObservations, shouldCheck } = await import('./vdem.js');
+  const cacheDirectory = await vdemTestDirectory(t);
+  const release = await fixture('vdem-release.html');
+  const february = new Date('2027-02-15T00:00:00Z');
+  const checked = await fetchObservations({
+    now: february,
+    registry,
+    cacheDirectory,
+    fetchImpl: fixtureFetch({
+      [vdemPage]: release,
+      [vdemFile]: csvZip(
+        'V-Dem-CY-Full+Others-v16.csv',
+        'country_text_id,year,v2cacamps\nFIN,2025,1',
+      ),
+    }),
+  });
+  const context = {
+    registry,
+    cacheDirectory,
+    lastCheckedAt: february.toISOString(),
+    data: checked.data,
+    observations: checked.observations,
+    rederive: true,
+  };
+  assert.equal(shouldCheck({ ...context, now: february }), false);
+  const rebuilt = await fetchObservations({
+    ...context,
+    now: february,
+    fetchImpl: () => assert.fail('February release is already cached'),
+  });
+  assert.deepEqual(rebuilt, { ...checked, checkedRelease: false });
+  const march = new Date('2027-03-01T00:00:00Z');
+  assert.equal(shouldCheck({ ...context, now: march }), true);
+  const april = new Date('2027-04-15T00:00:00Z');
+  const refreshed = await fetchObservations({
+    ...context,
+    now: april,
+    fetchImpl: fixtureFetch({
+      [vdemPage]: release
+        .replaceAll('v16', 'v17')
+        .replaceAll('March 2026', 'March 2027'),
+      [vdemFile.replace('v16', 'v17')]: csvZip(
+        'V-Dem-CY-Full+Others-v17.csv',
+        'country_text_id,year,v2cacamps\nFIN,2026,2',
+      ),
+    }),
+  });
+  assert.equal(refreshed.data.sourceVersion, 'v17');
+  assert.equal(refreshed.observations[0].value, 2);
+});
+
+test('V-Dem keeps an intact ZIP missing the expected CSV until the release changes', async (t) => {
+  const { fetchObservations } = await import('./vdem.js');
+  const cacheDirectory = await vdemTestDirectory(t);
+  const release = await fixture('vdem-release.html');
+  let version = 'v16';
+  const downloads = [];
+  const context = {
+    registry,
+    now,
+    cacheDirectory,
+    fetchImpl(url) {
+      if (url === vdemPage)
+        return new Response(release.replaceAll('v16', version));
+      assert.equal(url, vdemFile.replace('v16', version));
+      downloads.push(version);
+      const name =
+        version === 'v16' ? 'renamed.csv' : 'V-Dem-CY-Full+Others-v17.csv';
+      return new Response(
+        csvZip(name, 'country_text_id,year,v2cacamps\nFIN,2025,1'),
+      );
+    },
+  };
+  await assert.rejects(fetchObservations(context), /CSV file missing from ZIP/);
+  await assert.rejects(fetchObservations(context), /CSV file missing from ZIP/);
+  assert.deepEqual(downloads, ['v16']);
+  version = 'v17';
+  assert.equal((await fetchObservations(context)).observations[0].value, 1);
+  assert.deepEqual(downloads, ['v16', 'v17']);
+});
+
+test('legacy download cleanup keeps current, recent and tagged archives and runs once', async (t) => {
+  const { cleanupLegacyWorldDownloads } = await import('./legacyDownloads.js');
+  const cacheDirectory = await vdemTestDirectory(t);
+  const old = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000);
+  async function seed(url, age, source) {
+    const key = createHash('sha256').update(url).digest('hex');
+    const file = join(cacheDirectory, key);
+    await writeFile(file, 'legacy archive');
+    await writeFile(file + '.json', JSON.stringify({ size: 14, source }));
+    await utimes(file, age, age);
+    return key;
+  }
+  const vdem = await seed(vdemFile, old);
+  const ucdp = await seed(
+    `${candidateRoot}candidateged/GEDEvent_v25_11_26_10.zip`,
+    old,
+  );
+  const tagged = await seed(vdemFile.replace('v16', 'v15'), old, 'vdem');
+  const recent = await seed('https://source.test/recent', new Date());
+  const obsolete = await seed('https://source.test/obsolete', old);
+  const features = {
+    vdem: { sourceVersion: 'v16' },
+    ucdp: { period: '2026-10' },
+  };
+  const observations = [
+    {
+      indicator: 'condition.conflict_deaths',
+      period: '2026-10',
+      sourceVersion: 'UCDP Candidate 25.11.26.10',
+    },
+  ];
+  await cleanupLegacyWorldDownloads(cacheDirectory, features, observations);
+  const retained = [vdem, ucdp, tagged, recent];
+  let files = await readdir(cacheDirectory);
+  for (const key of retained) {
+    assert.ok(files.includes(key));
+    assert.ok(files.includes(key + '.json'));
+  }
+  assert.ok(!files.includes(obsolete));
+  assert.ok(!files.includes(obsolete + '.json'));
+  await utimes(join(cacheDirectory, recent), old, old);
+  await cleanupLegacyWorldDownloads(cacheDirectory, features, observations);
+  files = await readdir(cacheDirectory);
+  assert.ok(files.includes(recent));
 });
 
 test('V-Dem evicts a ZIP after a CRC failure and downloads it on the next turn', async (t) => {
@@ -478,6 +629,27 @@ test('V-Dem evicts a ZIP after a CRC failure and downloads it on the next turn',
   assert.deepEqual(await readdir(cacheDirectory), []);
   assert.equal((await fetchObservations(context)).observations[0].value, 1);
   assert.equal(requests, 2);
+});
+
+test('V-Dem evicts a ZIP with a truncated directory', async (t) => {
+  const { fetchObservations } = await import('./vdem.js');
+  const cacheDirectory = await vdemTestDirectory(t);
+  await assert.rejects(
+    fetchObservations({
+      fetchImpl: fixtureFetch({
+        [vdemPage]: fixture('vdem-release.html'),
+        [vdemFile]: csvZip(
+          'V-Dem-CY-Full+Others-v16.csv',
+          'country_text_id,year,v2cacamps\nFIN,2025,1',
+        ).subarray(0, -5),
+      }),
+      registry,
+      now,
+      cacheDirectory,
+    }),
+    { code: 'ZIP_INTEGRITY', message: 'ZIP end of directory not found' },
+  );
+  assert.deepEqual(await readdir(cacheDirectory), []);
 });
 
 test('V-Dem retains the current and previous release archives', async (t) => {

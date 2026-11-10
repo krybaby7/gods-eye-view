@@ -27,6 +27,10 @@ function archiveUrl(sourceVersion) {
   return `${ORIGIN}/media/datasets/V-Dem-CY-FullOthers-${sourceVersion}_csv.zip`;
 }
 
+export function cachedDownloadUrls(sourceVersion) {
+  return /^v\d+$/.test(sourceVersion ?? '') ? [archiveUrl(sourceVersion)] : [];
+}
+
 async function currentRelease(fetchImpl, signal) {
   const html = await fetchResponseWithDeadline(fetchImpl, RELEASE_PAGE, {
     signal,
@@ -64,15 +68,18 @@ export async function fetchObservations({
   signal,
   onProgress,
   rederive,
+  lastCheckedAt,
   data,
   observations = [],
 }) {
   const indicator = registry.indicators.find(({ source }) => source === 'vdem');
   const savedVersion = data?.sourceVersion;
+  const [cachedUrl] = cachedDownloadUrls(savedVersion);
   const cached =
     rederive &&
-    /^v\d+$/.test(savedVersion ?? '') &&
-    (await hasWorldDownload(archiveUrl(savedVersion), cacheDirectory));
+    !shouldCheck({ lastCheckedAt, now, observations, data }) &&
+    cachedUrl &&
+    (await hasWorldDownload(cachedUrl, cacheDirectory));
   const { sourceVersion, publishedAt } = cached
     ? {
         sourceVersion: savedVersion,
@@ -86,10 +93,13 @@ export async function fetchObservations({
           null,
       }
     : await currentRelease(fetchImpl, signal);
-  const releaseData = { sourceVersion, publishedAt };
+  const releaseData = {
+    data: { sourceVersion, publishedAt },
+    ...(cached && { checkedRelease: false }),
+  };
   const unavailable = (reason) => ({
     observations: [],
-    data: releaseData,
+    ...releaseData,
     detail: `C6 unavailable: V-Dem Full+Others ${sourceVersion}${publishedAt ? ` (${publishedAt})` : ''} ${reason}.`,
   });
   const countries = new Map(
@@ -160,7 +170,7 @@ export async function fetchObservations({
           return unavailable(`does not include ${indicator.sourceCode}`);
         if (latest.size === 0)
           return unavailable(`has no usable ${indicator.sourceCode} values`);
-        return { observations: [...latest.values()], data: releaseData };
+        return { observations: [...latest.values()], ...releaseData };
       },
     });
   } catch (error) {

@@ -18,8 +18,10 @@ import { columnIndices, csvRows } from './csv.js';
 import { fetchOnDispatch, isConnectionError } from './transport.js';
 
 const activeDownloads = new Map();
+const activeLegacyCleanups = new Map();
 const CACHE_DIRECTORY = '.gev-cache/world/downloads';
 const PART_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const LEGACY_MAX_AGE_MS = 30 * PART_MAX_AGE_MS;
 const CACHE_KEY = /^[a-f0-9]{64}$/;
 
 function cacheFile(url, cacheDirectory) {
@@ -142,6 +144,51 @@ export async function pruneWorldDownloads(source, current) {
   previous.sort((a, b) => b.mtimeMs - a.mtimeMs);
   for (const { file } of previous.slice(1)) {
     if (!activeDownloads.has(file)) await clearEntry(file);
+  }
+}
+
+export async function pruneLegacyWorldDownloads(
+  cacheDirectory = CACHE_DIRECTORY,
+  currentUrls = [],
+) {
+  const directory = path.resolve(cacheDirectory);
+  if (activeLegacyCleanups.has(directory))
+    return activeLegacyCleanups.get(directory);
+  const pending = (async () => {
+    const marker = path.join(directory, '.legacy-downloads-pruned');
+    if (await statIfPresent(marker)) return;
+    const cutoff = Date.now() - LEGACY_MAX_AGE_MS;
+    const current = new Set(
+      currentUrls.map((url) => cacheFile(url, directory)),
+    );
+    const names = await readdir(directory).catch((error) => {
+      if (error.code !== 'ENOENT') throw error;
+      return null;
+    });
+    if (!names) return;
+    for (const name of names.filter((name) => CACHE_KEY.test(name))) {
+      const file = path.join(directory, name);
+      if (current.has(file) || activeDownloads.has(file)) continue;
+      const removal = (async () => {
+        const info = await statIfPresent(file);
+        if (!info?.isFile() || info.mtimeMs >= cutoff) return;
+        const entry = await readEntry(file);
+        if (!entry?.metadata?.source) await clearEntry(file);
+      })();
+      activeDownloads.set(file, removal);
+      try {
+        await removal;
+      } finally {
+        if (activeDownloads.get(file) === removal) activeDownloads.delete(file);
+      }
+    }
+    await writeFile(marker, '', { mode: 0o600 });
+  })();
+  activeLegacyCleanups.set(directory, pending);
+  try {
+    await pending;
+  } finally {
+    activeLegacyCleanups.delete(directory);
   }
 }
 
@@ -298,6 +345,10 @@ async function transfer(url, file, options) {
     await mkdir(directory, { recursive: true, mode: 0o700 });
     await pruneStaleParts(directory, file);
     let complete = await readEntry(file);
+    if (complete && complete.bytes !== complete.metadata?.size) {
+      await clearEntry(file);
+      complete = null;
+    }
     if (complete) {
       complete = { ...complete.metadata, bytes: complete.bytes };
       try {
@@ -513,7 +564,13 @@ export async function downloadWorldFile(
     try {
       return { ...result, parsed: await parse(file) };
     } catch (error) {
-      if (!signal?.aborted) await clearEntry(file);
+      if (
+        !signal?.aborted &&
+        ['DOWNLOAD_SIGNATURE', 'DOWNLOAD_LENGTH', 'ZIP_INTEGRITY'].includes(
+          error?.code,
+        )
+      )
+        await clearEntry(file);
       throw error;
     }
   });

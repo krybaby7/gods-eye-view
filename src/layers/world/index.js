@@ -275,6 +275,7 @@ export function createWorldLayer({
       if (!signal.aborted) {
         error = failure.message;
         if (method === 'getProgress') {
+          progress = null;
           retry = true;
           nextDelay = pollDelay;
           pollDelay = Math.min(pollDelay * 2, MAX_POLL_MS);
