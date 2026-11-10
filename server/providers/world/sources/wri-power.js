@@ -97,5 +97,5 @@ export const wriPower = createAssetAdapter(
     return { data: { rows }, count: rows.length, unit: 'historical plant' };
   },
   Infinity,
-  { estimatedBytes: 4_200_000 },
+  { estimatedBytes: 4_200_000, downloadUrls: () => [archive] },
 );

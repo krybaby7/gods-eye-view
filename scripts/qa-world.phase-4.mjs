@@ -2,6 +2,7 @@ import { readCuratedAssets } from '../server/providers/world/assets.js';
 import { ownerColor } from '../src/layers/world/assets.js';
 
 const piraeusId = 'asset_piraeus-port-authority';
+const closedId = 'asset_fixture-closed-plant';
 const presenceId = 'asset_chn-dji-pla-support-base-in-djibouti';
 const clusterId = 'cluster:global:DEU:port';
 const syntheticSource = 'https://example.test/asset-evidence';
@@ -74,7 +75,28 @@ export const fixtureAdapters = {
     ],
   }),
   'wikidata-assets': staticFixture({
-    rows: [],
+    rows: [
+      fixtureAsset(
+        closedId,
+        'nuclear_plant',
+        'Fixture Closed Plant',
+        'IND',
+        null,
+        {
+          status: 'closed',
+          owners: [
+            {
+              actor: 'Fixture company',
+              country: 'CHN',
+              role: 'owner',
+              countryLabel: 'Registered jurisdiction',
+              sourceUrl: syntheticSource,
+              verified: true,
+            },
+          ],
+        },
+      ),
+    ],
     portOperators: [],
   }),
   'nga-ports': staticFixture({
@@ -112,9 +134,9 @@ export default async function phase4({
 }) {
   const assetId = (id) => 'world-card:asset:' + id;
 
-  async function pickAsset(id) {
+  async function pickAsset(id, hintHost) {
     const handle = await page.waitForFunction(
-      (pickId) => {
+      ({ pickId, hintHost }) => {
         const { C } = window.worldQa;
         const { scene } = window.__godsEyeView.viewer;
         for (let i = 0; i < scene.primitives.length; i++) {
@@ -128,7 +150,20 @@ export default async function phase4({
               scene,
               marker.position,
             );
-            if (!screen || scene.pick(screen, 1, 1)?.id !== pickId) {
+            if (screen && hintHost) {
+              screen.x += marker.pixelOffset.x;
+              screen.y += marker.pixelOffset.y;
+            }
+            if (
+              !screen ||
+              scene.pick(screen, 1, 1)?.id !== pickId ||
+              (hintHost &&
+                !scene
+                  .drillPick(screen, undefined, 1, 1)
+                  .some(({ id }) =>
+                    id?.startsWith?.('world:' + hintHost + ':'),
+                  ))
+            ) {
               scene.requestRender();
               continue;
             }
@@ -139,7 +174,7 @@ export default async function phase4({
         return false;
       },
       wait,
-      assetId(id),
+      { pickId: hintHost ? 'world-hint:asset:' + id : assetId(id), hintHost },
     );
     const { x, y } = await handle.jsonValue();
     await handle.dispose();
@@ -261,7 +296,7 @@ export default async function phase4({
         const { solid, hatch } = window.worldQa;
         return (
           solid.getGeometryInstanceAttributes('world:GRC:GRC:0')?.show[0] &&
-          hatch.getGeometryInstanceAttributes('world:IND:IND:0')?.show[0]
+          hatch.getGeometryInstanceAttributes('world:JPN:JPN:0')?.show[0]
         );
       }, wait);
       await camera(23.636127, 37.941896, 9_000_000);
@@ -319,6 +354,19 @@ export default async function phase4({
       );
       assert.ok(await page.$('#world-card-content a[href*="olp.gr"]'));
       await shot('phase4-verified-asset-card');
+      await page.click('#world-sheet-close');
+      assert.match(
+        await text('#world-sheet-content'),
+        /Fixture Closed Plant.*Closed/s,
+      );
+      await camera(82, 23, 7_000_000);
+      await pickAsset(closedId, 'IND');
+      assert.equal(await text('#world-sheet-code'), 'CHN');
+      assert.match(
+        await text('#world-card-content'),
+        /Fixture Closed Plant.*Registered jurisdiction CHN/s,
+      );
+      await shot('phase4-closed-asset-hint');
       await page.click('#world-sheet-close');
     },
   );

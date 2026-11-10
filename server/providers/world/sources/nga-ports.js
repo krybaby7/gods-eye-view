@@ -165,6 +165,14 @@ export function parseWpiFeatureLayer(payload, options) {
   return parseWorldPortIndex({ ports }, options);
 }
 
+function savedLayer(data) {
+  const layer = data?.layer ?? data?.rows?.[0]?.sourceUrl;
+  return layer?.startsWith(service + '/') &&
+    /^\d+$/.test(layer.slice(service.length + 1))
+    ? layer
+    : null;
+}
+
 export const ngaPorts = createAssetAdapter(
   async ({
     registry,
@@ -189,11 +197,10 @@ export const ngaPorts = createAssetAdapter(
       ),
     );
     const operatorReviews = new Map(operators.map((row) => [row.wpi, row]));
-    const previousLayer = data?.layer ?? data?.rows?.[0]?.sourceUrl;
+    const previousLayer = savedLayer(data);
     const cachedLayer =
       rederive &&
-      previousLayer?.startsWith(service + '/') &&
-      /^\d+$/.test(previousLayer.slice(service.length + 1)) &&
+      previousLayer &&
       (await hasWorldDownload(queryUrl(previousLayer), cacheDirectory));
     const layer = cachedLayer
       ? previousLayer
@@ -232,5 +239,11 @@ export const ngaPorts = createAssetAdapter(
     };
   },
   30,
-  { estimatedBytes: 35_000 },
+  {
+    estimatedBytes: 35_000,
+    downloadUrls: (data) => {
+      const layer = savedLayer(data);
+      return layer ? [queryUrl(layer)] : [];
+    },
+  },
 );

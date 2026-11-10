@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import checkAssets from '../../../../scripts/world-fact-checks/assets.mjs';
 import { zipOneEntry } from '../../../../src/testSupport/zipFixture.mjs';
 import { assetCountryResolver } from './asset-common.js';
 import { parseOurAirports } from './ourairports.js';
@@ -219,6 +220,7 @@ test('Hammaguir is a closed site in Algeria with a closure citation', () => {
   assert.equal(site.status, 'closed');
   assert.equal(site.statusAsOf, '1967-07-01');
   assert.match(site.statusSourceUrl, /servicehistorique/);
+  assert.equal(site.reviewed, false);
 });
 
 test('DOE WPI uses the unique named feature layer even when its ID changes', () => {
@@ -319,6 +321,11 @@ test('curated packs keep all rows and distinguish draft corporate attribution fr
         owner.country && owner.sourceUrl && owner.verified && !owner.reviewed,
     ),
   );
+  const hambantota = rows.find(
+    ({ id }) => id === 'asset_hambantota-port-concession',
+  );
+  assert.equal(hambantota.owners[0].share, 0.65);
+  assert.match(hambantota.owners[0].basis, /Effective equity/);
   assert.ok(rows.every((asset) => asset.canInterrupt.length === 0));
 });
 
@@ -356,12 +363,14 @@ test('Wikidata posts bounded host batches, keeps unaffected results, and defers 
     assert.equal(url, 'https://query.wikidata.org/sparql');
     assert.equal(options.method, 'POST');
     calls.push(new URLSearchParams(options.body).get('query'));
-    if (calls.length === 2)
+    if (calls.length === 3)
       return new Response('', {
         status: 503,
         headers: { 'Retry-After': '120' },
       });
-    return new Response(JSON.stringify({ results: { bindings: [binding] } }));
+    return Response.json({
+      results: { bindings: calls.length === 1 ? [] : [binding] },
+    });
   };
   const countries = Array.from({ length: 41 }, (_, i) => ({
     iso3: 'A' + String.fromCharCode(65 + Math.floor(i / 26), 65 + (i % 26)),
@@ -378,12 +387,13 @@ test('Wikidata posts bounded host batches, keeps unaffected results, and defers 
     fetchImpl,
     data: { rows: [oldSite, oldPlant] },
   });
-  assert.equal(calls.length, 2);
-  assert.match(calls[0], /Q134447/);
-  assert.match(calls[0], /OPTIONAL\s*\{\s*\?item wdt:P625/);
-  assert.match(calls[0], /VALUES \?iso \{[^}]*"AAA"/);
-  assert.doesNotMatch(calls[0], /"ABO"/);
-  assert.match(calls[1], /VALUES \?iso \{ "ABO" \}/);
+  assert.equal(calls.length, 3);
+  assert.match(calls[0], /VALUES \?portName/);
+  assert.match(calls[1], /Q134447/);
+  assert.match(calls[1], /OPTIONAL\s*\{\s*\?item wdt:P625/);
+  assert.match(calls[1], /VALUES \?iso \{[^}]*"AAA"/);
+  assert.doesNotMatch(calls[1], /"ABO"/);
+  assert.match(calls[2], /VALUES \?iso \{ "ABO" \}/);
   assert.match(result.error, /HTTP 503/);
   assert.deepEqual(
     result.data.rows.map(({ id }) => id),
@@ -403,6 +413,157 @@ test('Wikidata posts bounded host batches, keeps unaffected results, and defers 
     }),
     true,
   );
+});
+
+test('legacy Wikidata cache runs the owner query and resumes only unfinished batches', async () => {
+  const registry = { countries: [{ iso3: 'FIN' }] };
+  const previous = {
+    rows: [{ id: 'asset_wd-Q77', type: 'spaceport', locatedIn: 'FIN' }],
+    bindings: [],
+  };
+  const context = { registry, now, data: previous, lastCheckedAt: now };
+  assert.equal(wikidataAssets.shouldCheck(context), true);
+  const binding = Object.fromEntries(
+    Object.entries({
+      item: 'http://www.wikidata.org/entity/Q100',
+      itemLabel: 'Fixture nuclear plant',
+      kind: 'nuclear_plant',
+      iso: 'FIN',
+      owner: 'http://www.wikidata.org/entity/Q200',
+      ownerLabel: 'Company',
+      ownerIsCompany: 'true',
+      ownerHomeIso: 'FIN',
+    }).map(([key, value]) => [key, { value }]),
+  );
+  const reply = (bindings) => Response.json({ results: { bindings } });
+  const first = [];
+  const partial = await wikidataAssets.fetchObservations({
+    ...context,
+    rederive: true,
+    fetchImpl(_url, { body }) {
+      first.push(body.get('query'));
+      if (first.length === 1) return reply([]);
+      return first.length === 2
+        ? reply([binding])
+        : new Response(null, {
+            status: 429,
+            headers: { 'Retry-After': '120' },
+          });
+    },
+  });
+  assert.match(first[0], /VALUES \?portName/);
+  assert.match(first[1], /ps:P127/);
+  assert.match(first[1], /ps:P137/);
+  assert.equal(first.length, 3);
+  assert.equal(partial.data.rows[0].owners[0].verified, true);
+  assert.ok(partial.data.rows.some(({ id }) => id === 'asset_wd-Q77'));
+  assert.equal(
+    wikidataAssets.shouldCheck({ ...context, data: partial.data }),
+    false,
+  );
+  const later = new Date(+now + 121_000);
+  assert.equal(
+    wikidataAssets.shouldCheck({ ...context, now: later, data: partial.data }),
+    true,
+  );
+
+  const resumed = [];
+  const complete = await wikidataAssets.fetchObservations({
+    ...context,
+    now: later,
+    data: partial.data,
+    fetchImpl(_url, { body }) {
+      resumed.push(body.get('query'));
+      return reply([]);
+    },
+  });
+  assert.equal(resumed.length, 1);
+  assert.doesNotMatch(resumed.join(' '), /Q134447/);
+  assert.deepEqual(
+    complete.data.rows.map(({ id }) => id),
+    ['asset_wd-Q100'],
+  );
+  assert.equal(complete.data.rows[0].owners[0].verified, true);
+  assert.equal(
+    wikidataAssets.shouldCheck({
+      now: later,
+      lastCheckedAt: later,
+      data: complete.data,
+    }),
+    false,
+  );
+  assert.equal(
+    wikidataAssets.shouldCheck({
+      now: later,
+      lastCheckedAt: later,
+      data: complete.data,
+      rederive: true,
+    }),
+    true,
+  );
+  const rebuilt = await wikidataAssets.fetchObservations({
+    ...context,
+    now: later,
+    lastCheckedAt: later,
+    data: complete.data,
+    rederive: true,
+    fetchImpl() {
+      assert.fail('Local derivation must reuse fresh query bindings');
+    },
+  });
+  assert.equal(rebuilt.data.rows[0].owners[0].verified, true);
+});
+
+test('asset archive URLs protect the current files during legacy cleanup', () => {
+  const layer =
+    'https://arcgis.netl.doe.gov/server/rest/services/Hosted/CCS_EJ_SJ_Data/FeatureServer/91';
+  assert.match(
+    worldAdapters['wri-power'].downloadUrls()[0],
+    /globalpowerplantdatabasev130\.zip$/,
+  );
+  assert.match(worldAdapters.ourairports.downloadUrls()[0], /airports\.csv$/);
+  assert.deepEqual(worldAdapters['nga-ports'].downloadUrls(), []);
+  assert.equal(
+    new URL(worldAdapters['nga-ports'].downloadUrls({ layer })[0]).pathname,
+    new URL(layer).pathname + '/query',
+  );
+});
+
+test('closed foreign ownership is available from both country asset details', () => {
+  const row = {
+    id: 'closed-fixture',
+    locatedIn: 'FIN',
+    status: 'closed',
+    owners: [{ verified: true, country: 'CHN' }],
+  };
+  const features = { 'wikidata-assets': { rows: [row] } };
+  for (const country of ['CHN', 'FIN'])
+    assert.deepEqual(
+      worldFeatureViews.get('assets').detail({ country, features }).rows,
+      [row],
+    );
+});
+
+test('curated port dates are read from the cited rows', async () => {
+  const rows = (await readCuratedAssets()).rows.filter(
+    ({ type }) => type === 'port',
+  );
+  const source = JSON.parse(
+    await readFile(
+      new URL(
+        '../../../../public/world/curated/port-attributions.json',
+        import.meta.url,
+      ),
+      'utf8',
+    ),
+  );
+  assert.ok(rows.length > 0);
+  for (const row of rows) {
+    const original = source.rows.find(({ id }) => id === row.id);
+    assert.match(original.lastVerified, /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(row.lastVerified, original.lastVerified);
+    assert.equal(row.reviewed, false);
+  }
 });
 
 test('reads the DOE WPI mirror geometry and rejects truncated feature layers', () => {
@@ -494,4 +655,38 @@ test('a manual refresh reloads asset reviews even with a cached hand table', () 
     worldAdapters['curated-assets'].shouldCheck({ data: { rows: [] } }),
     true,
   );
+});
+
+test('asset facts separate airport measurements and report verified Wikidata owner coverage', async () => {
+  const board = {
+    features: {
+      'wikidata-assets': {
+        rows: [
+          { owners: [{ verified: true, country: 'CHN', role: 'owner' }] },
+          { owners: [{ verified: true, country: 'USA', role: 'operator' }] },
+          { owners: [{ verified: false, country: 'FIN', role: 'owner' }] },
+        ],
+      },
+    },
+    turn: {
+      sources: [
+        {
+          id: 'wikidata-assets',
+          checked: true,
+          status: 'loaded',
+          detail: '11 of 11 Wikidata asset batches completed.',
+        },
+      ],
+    },
+  };
+  const facts = await checkAssets({ board });
+  const row = (id) => facts.find((fact) => fact.id === id);
+  assert.equal(row('assets-counts-ourairports').pass, null);
+  assert.match(row('assets-counts-ourairports').reason, /publisher aggregate/);
+  assert.ok(row('assets-airport-cache-diagnostic'));
+  const coverage = row('assets-wikidata-owner-query');
+  assert.equal(coverage.pass, true);
+  assert.equal(coverage.found.facilities, 3);
+  assert.equal(coverage.found.withVerifiedOwner, 1);
+  assert.equal(coverage.found.withVerifiedOperator, 1);
 });

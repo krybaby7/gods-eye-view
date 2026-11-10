@@ -118,12 +118,13 @@ export function assetRow({
 export function createAssetAdapter(
   fetchObservations,
   intervalDays,
-  { estimatedBytes = 0, requestHost, version = 2 } = {},
+  { estimatedBytes = 0, requestHost, version = 2, downloadUrls } = {},
 ) {
   return {
     version,
     estimatedBytes,
     requestHost,
+    ...(downloadUrls && { downloadUrls }),
     shouldCheck({ now, lastCheckedAt, data, rederive }) {
       if (Date.parse(data?.retryAt) > +now) return false;
       if (rederive) return true;

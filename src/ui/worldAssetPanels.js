@@ -221,7 +221,9 @@ function ownerText(owner) {
   const share = Number.isFinite(owner.share)
     ? `${number.format(owner.share * 100)}%`
     : null;
-  const home = owner.country ? `Owner’s home country ${owner.country}` : null;
+  const home = owner.country
+    ? `${owner.countryLabel ?? 'Country'} ${owner.country}`
+    : null;
   return [
     owner.actor,
     home,

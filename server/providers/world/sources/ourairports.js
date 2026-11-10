@@ -96,5 +96,5 @@ export const ourAirports = createAssetAdapter(
     return { data: { rows }, count: rows.length, unit: 'airport' };
   },
   7,
-  { estimatedBytes: 13_000_000 },
+  { estimatedBytes: 13_000_000, downloadUrls: () => [airportCsvUrl] },
 );
