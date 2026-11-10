@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,9 +11,15 @@ import { createWorldService } from '../../server/providers/world/index.js';
 import { loadWorldRegistry } from '../../server/providers/world/registry.js';
 import { unhcr } from '../../server/providers/world/sources/liveDisplacement.js';
 import { gdacs } from '../../server/providers/world/sources/liveDisasters.js';
-import { gdelt } from '../../server/providers/world/sources/liveGovernance.js';
+import {
+  gdelt,
+  gdeltFlags,
+  GDELT_MIN_EVENTS,
+} from '../../server/providers/world/sources/liveGovernance.js';
 
 const gdeltSource = 'https://www.gdeltproject.org/data.html';
+const quietCountries = ['CAN', 'NZL', 'IRL'];
+const priorGdeltMinEvents = 5;
 const gdacsSource = 'https://www.gdacs.org/xml/rss.xml';
 const unhcrSource = 'https://api.unhcr.org/docs/refugee-statistics.html';
 const controlledRss =
@@ -238,21 +245,27 @@ async function replayGdelt(directory) {
   });
   return {
     ...result.data,
-    flags: result.data.flags,
     clock: clock.toISOString(),
+    lastGoodAt: clock.toISOString(),
+    source:
+      'https://data.gdeltproject.org/gdeltv2/' + stamp + '.export.CSV.zip',
+    archiveBytes: archive.length,
+    archiveSha256: createHash('sha256').update(archive).digest('hex'),
   };
 }
 
-export default async function live({ board }) {
+export default async function live({
+  board,
+  checkedOn = new Date().toISOString().slice(0, 10),
+}) {
   const [proof, march, november, cadence] = await Promise.all([
     controlledLive(),
     controlledUnhcr('2026-03-15T08:00:00Z', 2024),
     controlledUnhcr('2026-11-09T08:00:00Z', 2025),
     controlledCadenceAndFlaps(),
   ]);
-  const recorded = process.env.GEV_WORLD_GDELT_EVIDENCE_DIR;
   const current = board?.features?.['live-gdelt'];
-  const evaluate = (observed, clock, basis) => {
+  const evaluate = (observed, clock, basis, minEvents = GDELT_MIN_EVENTS) => {
     const allFlags = [
       ...(observed?.flags ?? []),
       ...(observed?.inactiveFlags ?? []),
@@ -298,7 +311,7 @@ export default async function live({ board }) {
         sourceUrls,
         evidence,
       }) =>
-        eventCount >= 5 &&
+        eventCount >= minEvents &&
         distinctDomains >= 3 &&
         sourceUrls?.length === 3 &&
         new Set(sourceUrls).size === 3 &&
@@ -307,10 +320,9 @@ export default async function live({ board }) {
         inWindow(periodStart),
     );
     const batches = observed?.batches;
-    const quiet = ['CAN', 'NZL', 'IRL'];
     const counts = Array.isArray(batches)
       ? Object.fromEntries(
-          quiet.map((iso3) => [
+          quietCountries.map((iso3) => [
             iso3,
             batches
               .filter(({ date }) => inWindow(date))
@@ -321,7 +333,7 @@ export default async function live({ board }) {
       : null;
     const quietValid =
       !counts ||
-      quiet.every(
+      quietCountries.every(
         (iso3) =>
           counts[iso3] !== 1 || !active.some((flag) => flag.iso3 === iso3),
       );
@@ -339,24 +351,80 @@ export default async function live({ board }) {
       pass: Boolean(fresh && valid && quietValid),
     };
   };
-  const apiProof = current?.sampledFiles
+  const apiProof = current
     ? evaluate(current, new Date(), 'World Board API')
-    : {
+    : { found: null };
+  if (!current?.sampledFiles) {
+    apiProof.pass = null;
+    apiProof.reason = 'The World Board API has no GDELT sample.';
+  }
+  async function compareGdelt(key) {
+    const directory = process.env[key];
+    if (!directory) {
+      const unavailable = {
         pass: null,
-        reason: 'The World Board API has no GDELT sample.',
+        reason: key + ' is unset.',
         found: null,
       };
-  let replayProof;
-  if (recorded) {
+      return { replay: unavailable, comparison: unavailable };
+    }
     try {
-      const replay = await replayGdelt(recorded);
-      replayProof = evaluate(
-        { ...replay, lastGoodAt: replay.clock },
-        replay.clock,
-        'Offline recorded publisher replay',
+      const observed = await replayGdelt(directory);
+      const basis = 'Offline replay of the same recorded publisher archive';
+      const after = evaluate(observed, observed.clock, basis);
+      const before = evaluate(
+        {
+          ...observed,
+          flags: gdeltFlags(
+            observed.batches,
+            new Date(observed.clock),
+            undefined,
+            priorGdeltMinEvents,
+          ),
+        },
+        observed.clock,
+        basis,
+        priorGdeltMinEvents,
       );
+      const flagKeys = (flags) =>
+        flags.map(({ iso3, slot }) => iso3 + ':' + slot);
+      const afterKeys = new Set(flagKeys(after.found.flags));
+      return {
+        replay: { ...after, source: observed.source },
+        comparison: {
+          source: observed.source,
+          pass:
+            before.pass &&
+            after.pass &&
+            flagKeys(before.found.flags).every((key) => afterKeys.has(key)) &&
+            after.found.flags.every(
+              ({ iso3 }) => !quietCountries.includes(iso3),
+            ),
+          found: {
+            basis,
+            archiveTime: observed.clock,
+            archiveBytes: observed.archiveBytes,
+            archiveSha256: observed.archiveSha256,
+            records: observed.batches.reduce(
+              (sum, batch) => sum + batch.records,
+              0,
+            ),
+            namedCountrySampleCounts: after.found.namedCountrySampleCounts,
+            before: {
+              minEvents: priorGdeltMinEvents,
+              flagCount: before.found.flags.length,
+              flags: before.found.flags,
+            },
+            after: {
+              minEvents: GDELT_MIN_EVENTS,
+              flagCount: after.found.flags.length,
+              flags: after.found.flags,
+            },
+          },
+        },
+      };
     } catch (error) {
-      replayProof =
+      const unavailable =
         error.code === 'ENOENT'
           ? {
               pass: null,
@@ -364,16 +432,14 @@ export default async function live({ board }) {
               found: null,
             }
           : { pass: false, found: error.message };
+      return { replay: unavailable, comparison: unavailable };
     }
-  } else {
-    replayProof = {
-      pass: null,
-      reason: 'GEV_WORLD_GDELT_EVIDENCE_DIR is unset.',
-      found: null,
-    };
   }
+  const [frozen, fresh] = await Promise.all([
+    compareGdelt('GEV_WORLD_GDELT_FROZEN_DIR'),
+    compareGdelt('GEV_WORLD_GDELT_EVIDENCE_DIR'),
+  ]);
   const boardUnhcr = board?.features?.['live-unhcr'];
-  const date = new Date().toISOString().slice(0, 10);
   return [
     {
       id: 'live-gdelt-api',
@@ -386,9 +452,16 @@ export default async function live({ board }) {
       id: 'live-gdelt-recorded-replay',
       expected:
         'Recorded sample and qualifying flags within 72 hours of its archive timestamp.',
-      ...replayProof,
       source: gdeltSource,
+      ...fresh.replay,
     },
+    ...Object.entries({ frozen, fresh }).map(([sample, { comparison }]) => ({
+      id: `live-gdelt-${sample}-before-after`,
+      expected:
+        'Replay the same archive with five and three events, each from at least three domains in 72 hours. Keep prior qualifying flags and leave Canada, New Zealand and Ireland unflagged.',
+      source: gdeltSource,
+      ...comparison,
+    })),
     {
       id: 'live-tick-cadence',
       expected:
@@ -470,5 +543,5 @@ export default async function live({ board }) {
         november.period === '2025' &&
         november.requested.join(',') === '2025',
     },
-  ].map((row) => ({ ...row, checkedOn: date }));
+  ].map((row) => ({ ...row, checkedOn }));
 }

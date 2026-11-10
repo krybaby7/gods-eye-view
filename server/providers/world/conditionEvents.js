@@ -13,7 +13,7 @@ const rules = {
     7,
   ],
   'live-gdelt': [
-    'At least 5 distinct events from 3 source domains in 72 hours',
+    'At least 3 distinct events from 3 source domains in 72 hours',
     'news-derived, low confidence',
     3,
   ],

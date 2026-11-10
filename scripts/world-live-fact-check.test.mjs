@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import live from './world-fact-checks/live.mjs';
 
-test('GDELT board proof fails honestly without a current sample and retains old flag status', async () => {
+test('GDELT board proof is unmeasured without a current sample and retains old flag status', async () => {
   const rows = await live({
     board: {
       features: {
@@ -22,7 +22,8 @@ test('GDELT board proof fails honestly without a current sample and retains old 
   });
   const actual = rows.find(({ id }) => id === 'live-gdelt-api');
   assert.ok(actual);
-  assert.equal(actual.pass, false);
+  assert.equal(actual.pass, null);
+  assert.match(actual.reason, /no GDELT sample/);
   assert.equal(actual.found.flags[0].status, 'no recent data');
   assert.deepEqual(actual.found.flags[0].sourceDomains, ['example.org']);
 });

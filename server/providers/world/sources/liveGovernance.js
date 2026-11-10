@@ -13,6 +13,7 @@ const GDELT_MANIFEST = 'https://data.gdeltproject.org/gdeltv2/lastupdate.txt';
 const BATCH = 15 * 60_000;
 const MAX_MISSED_BATCHES = 4;
 const GDELT_WINDOW = 3 * DAY;
+export const GDELT_MIN_EVENTS = 3;
 // CAMEO actor roles for military, rebel and other identified armed forces.
 const ARMED_ACTOR_ROLES = new Set(['MIL', 'REB', 'INS', 'SEP', 'UAF']);
 const COUNTRY_DOMAIN_CATEGORIES = new Set([
@@ -181,7 +182,12 @@ export function gdeltBatch(tsv, date, now, countries) {
   return { date, events, records };
 }
 
-export function gdeltFlags(batches, now, source = GDELT) {
+export function gdeltFlags(
+  batches,
+  now,
+  source = GDELT,
+  minEvents = GDELT_MIN_EVENTS,
+) {
   const totals = new Map();
   const recent = batches.filter(({ date }) =>
     inGdeltWindow(gdeltTime(date), now),
@@ -215,10 +221,10 @@ export function gdeltFlags(batches, now, source = GDELT) {
     }
   }
   return [...totals.values()].flatMap(({ iso3, slot, dates, sources }) => {
-    if (dates.length < 5 || sources.size < 3) return [];
+    if (dates.length < minEvents || sources.size < 3) return [];
     dates.sort();
     const domainDates = [...sources.values()].map(({ date }) => date).sort();
-    const requiredDate = [dates.at(-5), domainDates.at(-3)].sort()[0];
+    const requiredDate = [dates.at(-minEvents), domainDates.at(-3)].sort()[0];
     return [
       conditionFlag('live-gdelt', {
         iso3,
@@ -230,9 +236,9 @@ export function gdeltFlags(batches, now, source = GDELT) {
           ' ' +
           (slot === 'C6' ? 'protest' : 'armed-conflict-coded') +
           ' events in sampled 15-minute files · news-derived, low confidence',
-        ...(slot === 'C2' && {
-          rule: 'At least 5 distinct events from 3 source domains in 72 hours with a coded armed actor',
-        }),
+        rule:
+          `At least ${minEvents} distinct events from 3 source domains in 72 hours` +
+          (slot === 'C2' ? ' with a coded armed actor' : ''),
         source,
         sourceName: 'GDELT',
         stage: 'reported',
