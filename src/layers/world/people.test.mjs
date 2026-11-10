@@ -172,7 +172,7 @@ test('role evidence displays date, source, stale cue and the competing holder', 
   assert.match(element.values.join(''), /may be out of date/);
   assert.match(
     element.values.join(''),
-    /sources disagree: Other Holder per Wikidata, 2024-04-03 · also confirmed by Official office source, 2024-04-04/,
+    /sources disagree: Other Holder per Wikidata, 2024-04-03 · displayed holder confirmed by Official office source, 2024-04-04/,
   );
   const agreed = roleEvidence(document, {
     asOf: '2026-11-09',
@@ -188,7 +188,7 @@ test('role evidence displays date, source, stale cue and the competing holder', 
   });
   assert.match(
     agreed.values.join(''),
-    /also confirmed by Wikidata, 2025-10-21/,
+    /displayed holder confirmed by Wikidata, 2025-10-21/,
   );
   assert.doesNotMatch(agreed.values.join(''), /sources disagree/);
 });
