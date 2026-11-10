@@ -15,6 +15,7 @@ const LIMIT = 170_000_000;
 
 export const estimatedBytes = 147_000_000;
 export const version = 2;
+export const downloadUrls = () => [IDEAL_POINTS, AGREEMENT];
 
 export async function votingRelations(idealPoints, lines, countryIds) {
   const countries = new Set(countryIds);

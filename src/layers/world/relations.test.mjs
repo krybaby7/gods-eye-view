@@ -137,3 +137,19 @@ test('only valid dated UCDP evidence paints an exact opposing state pair', () =>
   assert.equal(classifyDiplomacy('IND', 'PAK', rows, '2027-03-01'), null);
   assert.equal(classifyDiplomacy('USA', 'YEM', rows, date), null);
 });
+test('a diplomatic rupture needs separately cited recent hostility to paint rival', () => {
+  const rupture = relation('diplomatic_rupture', 'IND', 'PAK', {
+    sources: ['https://example.com/rupture'],
+  });
+  assert.equal(india([rupture]), null);
+  assert.equal(
+    india([
+      {
+        ...rupture,
+        hostilityOn: '2025-05-15',
+        sources: [...rupture.sources, 'https://example.com/hostility'],
+      },
+    ]),
+    'rival',
+  );
+});

@@ -57,9 +57,9 @@
     "id": "relations-curated",
     "name": "Curated relation evidence",
     "access": "Bundled editorial tables",
-    "attribution": "World Board treaty, diplomatic and territorial research",
-    "url": "https://www.wikidata.org/wiki/Property:P1336",
-    "licence": "Original summaries and cited factual claims; Wikidata seeds CC0",
+    "attribution": "World Board treaty, diplomatic and territorial research. Historical rivalry start years from Thompson, Sakuwa and Suhas (2021), Strategic Rivalries Data, 1816–2020.",
+    "url": "https://www.kentarosakuwa.info/data.html",
+    "licence": "Original summaries and selected cited facts. Wikidata seeds are CC0. No redistribution licence is listed for the rivalry download.",
     "releaseRhythm": "Manual, with checked date",
     "marks": []
   },

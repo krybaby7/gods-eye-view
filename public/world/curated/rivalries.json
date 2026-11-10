@@ -5,15 +5,124 @@
     "from": "USA",
     "to": "CHN",
     "directed": false,
-    "start": "2025-04",
+    "start": "1996",
     "end": null,
-    "detail": "The White House Office of Science and Technology Policy describes China as a geopolitical rival and technological competitor. The 2026 National Defense Strategy describes an Indo-Pacific posture to deter China alongside continued strategic dialogue.",
+    "detail": "The U.S. Defense Department documented coercive and risky interceptions of U.S. aircraft by Chinese forces, with a reduction after late 2023.",
     "sources": [
-      "https://www.whitehouse.gov/releases/2025/04/remarks-by-director-kratsios-at-the-endless-frontiers-retreat/",
-      "https://media.defense.gov/2026/Jan/23/2003864773/-1/-1/0/2026-NATIONAL-DEFENSESTRATEGY.PDF"
+      "https://www.kentarosakuwa.info/data.html",
+      "https://media.defense.gov/2024/Dec/18/2003615520/-1/-1/0/MILITARY-AND-%09SECURITY-DEVELOPMENTS-INVOLVING-THE-PEOPLES-REPUBLIC-OF-CHINA-2024.PDF"
     ],
-    "evidence": "documented",
-    "dateChecked": "2026-11-09",
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2024-12-18",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_iran_israel",
+    "type": "rivalry",
+    "from": "IRN",
+    "to": "ISR",
+    "directed": false,
+    "start": "1979",
+    "end": null,
+    "detail": "The UN Security Council was briefed on Israeli airstrikes across Iran and Iranian drone launches toward Israel.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://dppa.un.org/en/speeches-and-statements/usg-dicarlo-urges-both-israel-and-iran-to-exercise-maximum-restraint"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-06-13",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_koreas",
+    "type": "rivalry",
+    "from": "PRK",
+    "to": "KOR",
+    "directed": false,
+    "start": "1948",
+    "end": null,
+    "detail": "South Korea told the UN Security Council that North Korea had declared it a hostile state and cut cross-border road and rail links.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://digitallibrary.un.org/record/4070650"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2024-12-18",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_india_pakistan",
+    "type": "rivalry",
+    "from": "IND",
+    "to": "PAK",
+    "directed": false,
+    "start": "1947",
+    "end": null,
+    "detail": "The United Nations welcomed a ceasefire following May 2025 hostilities and noted the longstanding Kashmir dispute.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://india.un.org/en/294361-un-chief-welcomes-india-pakistan-ceasefire"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-05-15",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_algeria_morocco",
+    "type": "rivalry",
+    "from": "DZA",
+    "to": "MAR",
+    "directed": false,
+    "start": "1962",
+    "end": null,
+    "detail": "Algeria declared Morocco’s vice-consul in Oran persona non grata and ordered his departure in March 2025.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.mfa.gov.dz/announcements/press-statement-of-the-ministry-of-foreign-affairs-morocco27032025"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-03-27",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_greece_turkiye",
+    "type": "rivalry",
+    "from": "GRC",
+    "to": "TUR",
+    "directed": false,
+    "start": "1955",
+    "end": null,
+    "detail": "Greece’s foreign minister described Türkiye’s standing threat of war over an extension of territorial waters alongside ongoing bilateral contacts. NATO ally takes precedence on the map.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.mfa.gr/en/minister-of-foreign-affairs-george-gerapetritis-interview-with-ta-nea-newspaper-and-journalist-dionysis-nasopoulos-26-07-2025/"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-07-26",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_china_japan",
+    "type": "rivalry",
+    "from": "CHN",
+    "to": "JPN",
+    "directed": false,
+    "start": "1996",
+    "end": null,
+    "detail": "Japan lodged a protest after a helicopter from a China Coast Guard vessel entered airspace over the disputed Senkaku Islands.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.mofa.go.jp/press/release/pressite_000001_01228.html"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-05-03",
+    "dateChecked": "2026-11-10",
     "reviewed": false
   }
 ]

@@ -1,5 +1,6 @@
 {
-  "checkedOn": "2026-11-09",
+  "checkedOn": "2026-11-10",
+  "reviewed": false,
   "blocs": [
     {
       "id": "AU",
@@ -24,17 +25,17 @@
         "GNB": [
           "suspended",
           "2025-11-28",
-          "https://retrievedfromwww.peaceau.org/en/article/communique-of-the-1315th-meeting-emergency-of-the-peace-and-security-council-held-on-28-november-2025-on-the-consideration-of-the-emergency-situation-in-guinea-bissau"
+          "https://www.peaceau.org/en/article/communique-of-the-1315th-meeting-emergency-of-the-peace-and-security-council-held-on-28-november-2025-on-the-consideration-of-the-emergency-situation-in-guinea-bissau"
         ],
         "MDG": [
           "suspended",
           "2025-10-15",
-          "https://130www.peaceau.org/en/article/communique-of-the-1306th-meeting-of-the-psc-emergency-session-held-on-15-october-2025-on-updated-briefing-on-the-situation-in-the-republic-of-madagascar"
+          "https://www.peaceau.org/en/article/communique-of-the-1306th-meeting-of-the-psc-emergency-session-held-on-15-october-2025-on-updated-briefing-on-the-situation-in-the-republic-of-madagascar"
         ],
         "MLI": [
           "suspended",
           "2021-06-01",
-          "https://vww.peaceau.org/en/article/communique-of-1001st-meeting-of-the-african-union-peace-and-security-council-on-the-situation-in-mali-1st-of-june-2021"
+          "https://www.peaceau.org/en/article/communique-of-1001st-meeting-of-the-african-union-peace-and-security-council-on-the-situation-in-mali-1st-of-june-2021"
         ],
         "NER": [
           "suspended",

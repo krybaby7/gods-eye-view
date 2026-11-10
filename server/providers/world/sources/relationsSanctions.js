@@ -110,6 +110,7 @@ function mappedRelation(kind, row, to, designationCount, dateChecked) {
   const { actor, reference, path } = lists[kind];
   const { id, programme, programmeId, scope } = row;
   const fallback = designationCount === undefined;
+  const evidence = programmes[kind]?.scopeEvidence?.[programmeId];
   const stableId =
     kind === 'ofac'
       ? programmeId.toLowerCase().replaceAll(/[^a-z\d-]/g, '-') +
@@ -127,9 +128,11 @@ function mappedRelation(kind, row, to, designationCount, dateChecked) {
     scope,
     ...(!fallback && { designationCount }),
     detail:
-      (scope === 'state'
-        ? 'Measures apply to a government or economic sector. '
-        : 'This geographic programme targets designated persons, groups or specified regions. ') +
+      (evidence?.detail ??
+        (scope === 'state'
+          ? 'Measures apply to a government or economic sector.'
+          : 'This geographic programme targets designated persons, groups or specified regions.')) +
+      ' ' +
       (fallback
         ? 'Independently cited committee evidence. A list count is unavailable.'
         : designationCount +
@@ -137,6 +140,7 @@ function mappedRelation(kind, row, to, designationCount, dateChecked) {
           (designationCount === 1 ? '' : 's') +
           ' in the loaded publication under this programme.'),
     sources: [
+      ...(evidence?.sources ?? []),
       path(id),
       programmes[kind]?.source ?? reference,
       reference,
@@ -233,9 +237,17 @@ export async function programmeRelations(kind, content, dateChecked = null) {
   const unmapped = [...observed.keys()]
     .filter((tag) => !known.has(tag) && !thematic.has(tag))
     .sort();
-  const thematicProgrammes = [...observed.keys()].filter((tag) =>
+  const observedThematic = [...observed.keys()].filter((tag) =>
     thematic.has(tag),
-  ).length;
+  );
+  const thematicDetails =
+    kind === 'un' &&
+    observedThematic.sort().map((programmeId) => ({
+      programmeId,
+      ...programmes.un.scopeEvidence[programmeId],
+      dateChecked,
+      reviewed: false,
+    }));
   return {
     relations,
     coverage: {
@@ -243,7 +255,8 @@ export async function programmeRelations(kind, content, dateChecked = null) {
       mappedRecords: mappedRecords.size,
       programmes: observed.size,
       mappedProgrammes: mapped.length,
-      thematicProgrammes,
+      thematicProgrammes: observedThematic.length,
+      ...(thematicDetails && { thematicDetails }),
       unmappedProgrammes: unmapped.length,
       unmapped,
     },
@@ -253,8 +266,9 @@ export async function programmeRelations(kind, content, dateChecked = null) {
 function adapter(kind, name) {
   const { estimatedBytes, url } = lists[kind];
   return {
-    version: 2,
+    version: 3,
     estimatedBytes,
+    downloadUrls: () => [url],
     shouldCheck(context) {
       return (
         context.rederive ||

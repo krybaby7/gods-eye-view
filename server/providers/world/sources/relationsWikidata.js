@@ -104,6 +104,12 @@ function qualifier(binding, key) {
     : null;
 }
 
+function diplomaticDetail({ start, end }) {
+  return start || end
+    ? 'Diplomatic relation asserted by Wikidata with date qualifiers.'
+    : 'Undated diplomatic relation asserted by Wikidata.';
+}
+
 export function wikidataRelations(
   kind,
   bindings,
@@ -161,8 +167,7 @@ export function wikidataRelations(
           to: b,
           start,
           end,
-          detail:
-            'Diplomatic relation asserted by Wikidata. The source may omit the date that relations began or ended.',
+          detail: diplomaticDetail({ start, end }),
           sources: [source, Q530],
           evidence: 'wikidata-assertion',
           dateChecked: now.toISOString().slice(0, 10),
@@ -200,20 +205,40 @@ export function wikidataRelations(
   return [...result.values()];
 }
 
+function weeklyDue({ data, lastCheckedAt, now }) {
+  const checked = Date.parse(lastCheckedAt);
+  return !data || !Number.isFinite(checked) || +now - checked >= 604_800_000;
+}
+
 function adapter(kind) {
+  const name =
+    kind === 'blocs' ? 'Wikidata blocs' : 'Wikidata diplomatic links';
   return {
-    version: 2,
+    version: kind === 'diplomacy' ? 3 : 2,
     requestHost: new URL(SPARQL).hostname,
     shouldCheck(context) {
-      const checked = Date.parse(context.lastCheckedAt);
-      return (
-        context.rederive ||
-        !context.data ||
-        !Number.isFinite(checked) ||
-        +context.now - checked >= 604_800_000
-      );
+      return context.rederive || weeklyDue(context);
     },
-    async fetchObservations({ fetchImpl, registry, data, now }) {
+    async fetchObservations({
+      fetchImpl,
+      registry,
+      data,
+      now,
+      rederive,
+      lastCheckedAt,
+    }) {
+      if (
+        kind === 'diplomacy' &&
+        rederive &&
+        Array.isArray(data?.relations) &&
+        !weeklyDue({ data, now, lastCheckedAt })
+      ) {
+        const rows = data.relations.map((row) => ({
+          ...row,
+          detail: diplomaticDetail(row),
+        }));
+        return { ...relationResult(rows, data, name), checkedRelease: false };
+      }
       const signal = AbortSignal.timeout(50_000);
       const url = new URL(SPARQL);
       url.searchParams.set('query', queries[kind]);
@@ -233,11 +258,7 @@ function adapter(kind) {
         registry.countries.map(({ iso3 }) => iso3),
         now,
       );
-      return relationResult(
-        rows,
-        data,
-        kind === 'blocs' ? 'Wikidata blocs' : 'Wikidata diplomatic links',
-      );
+      return relationResult(rows, data, name);
     },
   };
 }

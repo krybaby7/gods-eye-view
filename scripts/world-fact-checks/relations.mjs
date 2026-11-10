@@ -1,12 +1,12 @@
 import {
   classifyDiplomacy,
   currentRelations,
+  isDocumentedRivalry,
   relationsBetween,
 } from '../../src/layers/world/relations.js';
+import expectations from './relations.expect.json' with { type: 'json' };
 
-const checkedOn = '2026-11-09';
-const strategy =
-  'https://www.whitehouse.gov/releases/2025/04/remarks-by-director-kratsios-at-the-endless-frontiers-retreat/';
+const { checkedOn, round2 } = expectations;
 const nato =
   'https://www.nato.int/en/about-us/organization/nato-member-countries';
 const ofac =
@@ -29,6 +29,9 @@ const sanctions = {
   IRN: ['Iran sanctions', 'IRAN', 'iran-sanctions'],
   PRK: ['North Korea sanctions', 'DPRK', 'north-korea-sanctions'],
 };
+const pairKey = (a, b) => [a, b].sort().join('–');
+const disputedRio =
+  'https://documents.un.org/doc/undoc/gen/n19/291/27/pdf/n1929127.pdf';
 
 export default async function checkRelations({ board, getDetail }) {
   const now = Date.now();
@@ -37,8 +40,13 @@ export default async function checkRelations({ board, getDetail }) {
   const snapshot = board ?? {};
   const features = snapshot.features ?? {};
   const rows = currentRelations(snapshot, now);
-  const detail = await getDetail('USA', 'diplomacy').catch(() => null);
+  const [detail, ukDetail] = await Promise.all(
+    ['USA', 'GBR'].map((country) =>
+      getDetail(country, 'diplomacy').catch(() => null),
+    ),
+  );
   const usaDetails = currentRelations(detail ?? {}, now);
+  const ukDetails = currentRelations(ukDetail ?? {}, now);
   const checks = [];
   const add = (id, expected, found, source, pass) =>
     checks.push({
@@ -49,22 +57,177 @@ export default async function checkRelations({ board, getDetail }) {
       checkedOn,
       pass,
     });
-  const rivals = (snapshot.countryIndex ?? [])
-    .filter(({ iso3 }) => classifyDiplomacy('USA', iso3, rows) === 'rival')
-    .map(({ iso3 }) => ({
-      country: iso3,
-      sources: relationsBetween('USA', iso3, usaDetails)
-        .filter(({ type }) => ['rivalry', 'diplomatic_rupture'].includes(type))
-        .flatMap(({ sources }) => sources ?? []),
-    }));
+  const rivalryRows = rows.filter(
+    ({ type, end }) => type === 'rivalry' && !end,
+  );
+  const hostileRuptures = rows.filter(
+    (row) =>
+      row.type === 'diplomatic_rupture' && !row.end && isDocumentedRivalry(row),
+  );
+  const painted = new Map();
+  for (const { from, to, sources } of [...rivalryRows, ...hostileRuptures]) {
+    if (classifyDiplomacy(from, to, rows, now) !== 'rival') continue;
+    const pair = pairKey(from, to);
+    painted.set(pair, [...new Set([...(painted.get(pair) ?? []), ...sources])]);
+  }
+  for (const [
+    from,
+    to,
+    start,
+    hostilityOn,
+    citation,
+  ] of expectations.rivalries) {
+    const found = relationsBetween(from, to, rivalryRows);
+    add(
+      'rivalry-' + from + '-' + to,
+      { start, hostilityOn, reviewed: false },
+      { rows: found, mapClass: classifyDiplomacy(from, to, rows, now) },
+      [expectations.dataset, citation],
+      found.length === 1 &&
+        found[0].start === start &&
+        found[0].hostilityOn === hostilityOn &&
+        found[0].reviewed === false &&
+        found[0].sources?.includes(expectations.dataset) &&
+        found[0].sources.includes(citation),
+    );
+  }
+  add(
+    'armenia-azerbaijan-deescalation',
+    'The 2025 initialled peace agreement supersedes the 2023 evidence for an active strategic rivalry',
+    relationsBetween('ARM', 'AZE', rivalryRows),
+    expectations.deescalation,
+    Boolean(board) && !relationsBetween('ARM', 'AZE', rivalryRows).length,
+  );
+  const expectedRivalryPairs = expectations.rivalries
+    .map(([a, b]) => pairKey(a, b))
+    .sort();
+  add(
+    'rivalry-list',
+    {
+      configured: expectedRivalryPairs,
+      round2Configured: round2.configuredRivalries,
+      round2Painted: round2.paintedRivals,
+    },
+    {
+      configured: rivalryRows.length,
+      painted: painted.size,
+      paintedPairs: Object.fromEntries([...painted].sort()),
+      maskedPairs: [...rivalryRows, ...hostileRuptures]
+        .filter(({ from, to }) => !painted.has(pairKey(from, to)))
+        .map(({ from, to, sources }) => ({
+          pair: pairKey(from, to),
+          classification: classifyDiplomacy(from, to, rows, now),
+          sources,
+        })),
+    },
+    expectations.dataset,
+    rivalryRows
+      .map(({ from, to }) => pairKey(from, to))
+      .sort()
+      .join() === expectedRivalryPairs.join() &&
+      hostileRuptures.length === expectations.ruptures.length &&
+      expectations.ruptures.every(([a, b, date, citation]) =>
+        relationsBetween(a, b, hostileRuptures).some(
+          ({ hostilityOn, sources }) =>
+            hostilityOn === date && sources.includes(citation),
+        ),
+      ),
+  );
+  const usaClasses = {
+    ...Object.fromEntries(
+      Object.keys(round2.usaClasses).map((key) => [key, 0]),
+    ),
+    unknown: 0,
+  };
+  const rivals = [];
+  for (const { iso3 } of snapshot.countryIndex ?? []) {
+    if (iso3 === 'USA') continue;
+    const classification =
+      classifyDiplomacy('USA', iso3, rows, now) ?? 'unknown';
+    usaClasses[classification]++;
+    if (classification === 'rival')
+      rivals.push({
+        country: iso3,
+        sources: painted.get(pairKey('USA', iso3)) ?? [],
+      });
+  }
+  const chinaRival = expectations.rivalries
+    .find(([from, to]) => from === 'CHN' && to === 'USA')
+    .at(-1);
   add(
     'usa-rivals',
-    { count: 1, countries: ['CHN'] },
-    { count: rivals.length, rivals },
-    strategy,
+    { countries: ['CHN'], round2Classes: round2.usaClasses },
+    { classes: usaClasses, rivals },
+    chinaRival,
     rivals.length === 1 &&
       rivals[0].country === 'CHN' &&
-      rivals[0].sources.includes(strategy),
+      rivals[0].sources.includes(chinaRival),
+  );
+  const rio = rows.find(({ id }) => id === 'rel_rio');
+  const rioParties = (rio?.participants ?? []).filter(
+    (party) => party !== 'VEN',
+  );
+  const rioAllies = rioParties.filter(
+    (party) => classifyDiplomacy('VEN', party, rows, now) === 'ally',
+  );
+  add(
+    'venezuela-rio-treaty',
+    'Venezuela is inactive in the Rio Treaty and none of its other parties is classified as an ally',
+    {
+      parties: rioParties,
+      allies: rioAllies,
+      inactive: rio?.inactiveParticipants,
+    },
+    [oas, disputedRio],
+    rioParties.length > 0 &&
+      rio.inactiveParticipants?.includes('VEN') &&
+      rio.sources?.includes(oas) &&
+      rio.sources.includes(disputedRio) &&
+      rioAllies.length === 0,
+  );
+  for (const [
+    actor,
+    target,
+    programmeId,
+    scope,
+    source,
+  ] of expectations.sanctions) {
+    const found = (actor === 'USA' ? usaDetails : ukDetails).filter(
+      (row) =>
+        row.type === 'sanctions' &&
+        row.from === actor &&
+        row.programmeId === programmeId,
+    );
+    add(
+      'scope-' + actor + '-' + programmeId,
+      { target, scope },
+      found,
+      source,
+      found.length === 1 &&
+        found[0].to === target &&
+        found[0].scope === scope &&
+        found[0].sources?.includes(source),
+    );
+  }
+  const unCoverage = features['relations-sanctions-un']?.coverage;
+  const actorOnly = unCoverage?.thematicDetails ?? [];
+  add(
+    'un-actor-only-programmes',
+    'QD, SO and TA are documented targeted programmes without state sanctions edges',
+    { thematic: actorOnly, unmapped: unCoverage?.unmapped },
+    Object.values(expectations.un),
+    Object.entries(expectations.un).every(
+      ([programmeId, source]) =>
+        actorOnly.some(
+          (row) =>
+            row.programmeId === programmeId &&
+            row.scope === 'persons' &&
+            row.sources?.includes(source),
+        ) &&
+        !rows.some(
+          (row) => row.from === 'UN' && row.programmeId === programmeId,
+        ),
+    ),
   );
   for (const [iso3, source] of Object.entries(nonrivals)) {
     const classification = classifyDiplomacy('USA', iso3, rows);

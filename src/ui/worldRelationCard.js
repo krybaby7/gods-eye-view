@@ -46,7 +46,11 @@ function relationCard({ document, snapshot, id }) {
   for (const value of [
     row.conditions,
     row.reference,
-    row.start ? 'Start ' + row.start : null,
+    row.start
+      ? 'Start ' + row.start
+      : row.type === 'diplomatic_relation' && !row.end
+        ? 'Undated'
+        : null,
     row.end ? 'End ' + row.end : null,
     row.session
       ? 'UN voting session ' + row.session + ' · ' + row.period

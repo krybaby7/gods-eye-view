@@ -62,6 +62,16 @@ function dayStart(now) {
   return Math.floor(new Date(now).getTime() / DAY) * DAY;
 }
 
+export function isDocumentedRivalry({ type, sources, hostilityOn }) {
+  if (type === 'rivalry') return Boolean(sources?.length);
+  return (
+    type === 'diplomatic_rupture' &&
+    sources?.length >= 2 &&
+    /^\d{4}-\d{2}-\d{2}$/.test(hostilityOn) &&
+    hostilityOn >= '2023-01-01'
+  );
+}
+
 export function classifyDiplomacy(from, to, relations, now = Date.now()) {
   const rows = relationsBetween(from, to, relations);
   const today = dayStart(now);
@@ -83,13 +93,7 @@ export function classifyDiplomacy(from, to, relations, now = Date.now()) {
   if (rows.some(({ type, scope }) => type === 'sanctions' && scope === 'state'))
     return 'sanctions';
   if (rows.some(({ type }) => alliances.has(type))) return 'ally';
-  if (
-    rows.some(
-      ({ type, sources }) =>
-        ['diplomatic_rupture', 'rivalry'].includes(type) && sources?.length,
-    )
-  )
-    return 'rival';
+  if (rows.some(isDocumentedRivalry)) return 'rival';
   if (
     rows.some(({ type, sources }) => partnerships.has(type) && sources?.length)
   )

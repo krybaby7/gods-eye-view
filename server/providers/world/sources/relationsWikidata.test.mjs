@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { wikidataRelations } from './relationsWikidata.js';
+import { diplomacyAdapter, wikidataRelations } from './relationsWikidata.js';
 const value = (value) => ({ value });
 const binding = (iso, item, statement, extra = {}) =>
   Object.fromEntries(
@@ -71,4 +71,52 @@ test('folds diplomatic assertions symmetrically, preserving qualified history an
         evidence === 'wikidata-assertion' && dateChecked === '2026-11-09',
     ),
   );
+});
+test('diplomatic rows mark missing dates and retain month precision where available', () => {
+  const rows = wikidataRelations(
+    'diplomacy',
+    [
+      binding('IND', 'Q0', 'i', { other: 'CHN' }),
+      binding('PAK', 'Q0', 'p', {
+        other: 'CHN',
+        start: '1951-05-01T00:00:00Z',
+        startPrecision: '10',
+      }),
+    ],
+    ['IND', 'CHN', 'PAK'],
+  );
+  assert.match(rows[0].detail, /undated/i);
+  assert.equal(rows[1].start, '1951-05');
+  assert.doesNotMatch(rows[1].detail, /undated/i);
+});
+
+test('a diplomacy version change relabels fresh saved rows and checks Wikidata when due', async () => {
+  const bindingRow = binding('IND', 'Q0', 'i', { other: 'CHN' });
+  const [saved] = wikidataRelations('diplomacy', [bindingRow], ['IND', 'CHN']);
+  const now = new Date('2026-11-10');
+  const context = {
+    now,
+    rederive: true,
+    registry: { countries: [{ iso3: 'IND' }, { iso3: 'CHN' }] },
+    data: { relations: [{ ...saved, detail: 'Legacy undated text' }] },
+  };
+  const fresh = await diplomacyAdapter.fetchObservations({
+    ...context,
+    lastCheckedAt: '2026-11-09',
+    fetchImpl: () =>
+      assert.fail('Fresh saved qualifiers need no upstream request'),
+  });
+  assert.equal(fresh.checkedRelease, false);
+  assert.match(fresh.data.relations[0].detail, /^Undated/);
+  let pulls = 0;
+  const due = await diplomacyAdapter.fetchObservations({
+    ...context,
+    lastCheckedAt: '2026-11-01',
+    fetchImpl: async () => {
+      pulls++;
+      return Response.json({ results: { bindings: [bindingRow] } });
+    },
+  });
+  assert.equal(pulls, 1);
+  assert.notEqual(due.checkedRelease, false);
 });
