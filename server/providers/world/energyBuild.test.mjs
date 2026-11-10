@@ -319,7 +319,7 @@ test('energy port resolution rejects missing routes and respects transit and mai
       ['unknown', 0.19],
     ],
   );
-  assert.equal(route('FRA', 'BRA', 'crude oil').mode, 'unknown');
+  assert.equal(route('FRA', 'BRA', 'crude oil').mode, 'land'); // French Guiana
   assert.equal(route('MYS', 'IDN', 'crude oil').mode, 'unknown');
   assert.equal(route('FRA', 'DEU', 'crude oil').mode, 'land');
   assert.equal(route('MYS', 'THA', 'crude oil').mode, 'land');
@@ -534,7 +534,7 @@ test('fallback ports choose the capital landmass and skip ports on overseas poly
   assert.deepEqual(routes('SEN', 'PRT', 'lng')[0].ports, ['Dakar', 'Lisbon']);
 });
 
-test('multiport origins beyond the draft 1.5 limit are removed independently per destination', async () => {
+test('multiport allocation preserves national supply and bilateral demand while favoring nearby ports', async () => {
   const { routesFor } =
     await import('../../../scripts/build-world-energy-model.mjs');
   const coords = [
@@ -570,19 +570,35 @@ test('multiport origins beyond the draft 1.5 limit are removed independently per
     { features: [] },
     rows,
   );
-  const origins = (to) =>
-    routes('RUS', to, 'lng').map(({ ports, share }) => [
-      ports[0],
-      Number(share.toFixed(6)),
-    ]);
-  assert.deepEqual(origins('FRA'), [
-    ['West terminal', 0.4],
-    ['Centre terminal', 0.6],
-  ]);
-  assert.deepEqual(origins('JPN'), [
-    ['Centre terminal', 0.375],
-    ['East terminal', 0.625],
-  ]);
+  const destinations = [
+    { provider: 'RUS', dependent: 'FRA', item: 'lng', tonnes: 80 },
+    { provider: 'RUS', dependent: 'JPN', item: 'lng', tonnes: 20 },
+  ];
+  const fitted = routes.fit(destinations);
+  const origins = destinations.map(({ provider, dependent, item }) =>
+    fitted.routeFor(provider, dependent, item),
+  );
+  for (const column of origins) {
+    assert.ok(
+      Math.abs(column.reduce((sum, route) => sum + route.share, 0) - 1) < 1e-9,
+    );
+  }
+  for (const [port, target] of [
+    ['West terminal', 20],
+    ['Centre terminal', 30],
+    ['East terminal', 50],
+  ]) {
+    const allocated = origins.reduce(
+      (sum, column, index) =>
+        sum +
+        (column.find(({ ports }) => ports[0] === port)?.share ?? 0) *
+          destinations[index].tonnes,
+      0,
+    );
+    assert.ok(Math.abs(allocated - target) < 0.0001, port);
+  }
+  assert.ok(origins[0][0].share > origins[1][0].share);
+  assert.ok(origins[1][2].share > origins[0][2].share);
 });
 
 test('fallback rejects named island ports even when the island is absent from the boundary pack', async () => {
@@ -686,4 +702,24 @@ test('trivial-exporter fact compares each top-ten dependent with the whole gate 
     fact.found.trivial.map(({ country, gateTotal }) => [country, gateTotal]),
     [['SAU', 10_029]],
   );
+});
+
+test('land borders use all polygons for crude and refined products', async () => {
+  const { routesFor } =
+    await import('../../../scripts/build-world-energy-model.mjs');
+  const routes = routesFor({ features: [] }, { features: [] });
+  for (const [from, to] of [
+    ['MYS', 'THA'],
+    ['ARE', 'OMN'],
+    ['ARE', 'SAU'],
+    ['DEU', 'DNK'],
+    ['CMR', 'GNQ'],
+    ['GAB', 'GNQ'],
+  ]) {
+    assert.equal(
+      routes(from, to, 'refined products').mode,
+      'land',
+      from + '/' + to,
+    );
+  }
 });

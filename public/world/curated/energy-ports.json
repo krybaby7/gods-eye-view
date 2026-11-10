@@ -3,7 +3,7 @@
   "reviewed": false,
   "notes": [
     "Draft model inputs. Coordinates are approximate sea-access anchors in longitude/latitude order and require network resolution testing.",
-    "Published country-level seaborne shares are renormalised for each destination over origins with a sea route within 1.5 times the shortest. This distance limit is draft. A separately unsourced share remains unresolved. A null share identifies representative terminal evidence without a compatible measured allocation. A source period can differ from the model year and is identified on the row."
+    "Measured national export shares and routed destination tonnes are balanced by iterative proportional fitting. The draft seed is an exponential decay with an e-folding distance of 1,000 km along the maritime network. The seaborne basis excludes land and wholly unresolved destination volumes. An all-exports basis reserves known land and unresolved destinations against any unallocated share. Any remaining unsourced origin share stays unresolved. A null share identifies representative terminal evidence without a compatible measured allocation. A source period can differ from the model year and is identified on the row."
   ],
   "rows": [
     {

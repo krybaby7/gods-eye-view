@@ -271,13 +271,13 @@ const energyPerTonne = {
   coal: 24,
 };
 export const minorImporterFloor = 10;
-export const originDistanceLimit = 1.5;
+export const originDecayKm = 1000;
 const shortestRouteNote = 'shortest route, before the Red Sea diversions';
 const assumptions = [
   'Representative ports and shortest maritime paths approximate routes. A fallback is a geographic mainland proxy. A shipment may use a different port or passage.',
   'The combined measure uses 42.3 GJ/t for crude oil, 43 for refined products, 50 for LNG and 24 for coal. These are draft average heating values. Pipeline gas is reported separately.',
   'The draft minor importer floor is 10 PJ per year.',
-  `For measured multiport splits, national export shares are renormalised for each destination over origin ports within ${originDistanceLimit} times the shortest sea route. The distance limit is draft. Route lines show the largest modelled port pair for the product.`,
+  `Measured port allocations balance national terminal shares with destination tonnage. Their draft weights decrease exponentially with sea distance (one e-fold per ${originDecayKm} km). Route lines show the largest modelled port pair for the product.`,
   'HS 271121 pipeline gas is land-only and kept separate from LNG.',
   'Trade with an unresolved route is included in all imports. Only routes assigned to sea enter the seaborne denominator.',
   'All product shares use tonnes. Missing quantities and quantities priced below one third of the tonne-weighted HS6 median are estimated from declared trade value at that median price.',
