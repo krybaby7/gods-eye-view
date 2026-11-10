@@ -1,0 +1,102 @@
+{
+  "groups": [
+    {
+      "iso3": "GBR",
+      "country": "United Kingdom"
+    }
+  ],
+  "overrides": {
+    "KOS": {
+      "aliases": {
+        "worldbank": "XKX",
+        "imf": "UVK",
+        "vdem": "XKX"
+      }
+    },
+    "PSX": {
+      "iso3": "PSE",
+      "aliases": {
+        "worldbank": "PSE",
+        "imf": "WBG"
+      }
+    },
+    "SDS": {
+      "iso3": "SSD",
+      "aliases": {
+        "worldbank": "SSD",
+        "imf": "SSD"
+      }
+    },
+    "ALD": {
+      "name": "Åland",
+      "dataIso3": "FIN",
+      "aliases": {
+        "worldbank": "FIN",
+        "imf": "FIN",
+        "ucdp": "FIN",
+        "vdem": "FIN"
+      }
+    }
+  },
+  "territories": [
+    "ABW",
+    "AIA",
+    "ALD",
+    "ASM",
+    "ATA",
+    "ATC",
+    "ATF",
+    "BLM",
+    "BMU",
+    "CLP",
+    "CUW",
+    "CYM",
+    "FLK",
+    "FRO",
+    "GGY",
+    "GIB",
+    "GRL",
+    "GUM",
+    "HKG",
+    "HMD",
+    "IMN",
+    "IOA",
+    "IOT",
+    "JEY",
+    "MAC",
+    "MAF",
+    "MNP",
+    "MSR",
+    "NCL",
+    "NFK",
+    "PCN",
+    "PRI",
+    "PYF",
+    "SGS",
+    "SHN",
+    "SPM",
+    "SXM",
+    "TCA",
+    "UMI",
+    "VGB",
+    "VIR",
+    "WLF"
+  ],
+  "disputed": [
+    "BJN",
+    "BRI",
+    "BRT",
+    "CNM",
+    "CYN",
+    "ESB",
+    "KAB",
+    "KAS",
+    "PGA",
+    "SAH",
+    "SCR",
+    "SOL",
+    "SPI",
+    "USG",
+    "WSB"
+  ]
+}

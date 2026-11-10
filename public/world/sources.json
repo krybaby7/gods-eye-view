@@ -1,0 +1,56 @@
+[
+  {
+    "id": "worldbank",
+    "name": "World Bank",
+    "access": "Keyless Indicators API",
+    "attribution": "World Bank World Development Indicators and Worldwide Governance Indicators",
+    "url": "https://data.worldbank.org/",
+    "licence": "CC BY 4.0 by default; third-party terms may apply",
+    "releaseRhythm": "Annual observations, with updates as series are released",
+    "marks": ["NonCommercial"],
+    "series": {
+      "MS.MIL.XPND.CD": {
+        "publisher": "SIPRI",
+        "marks": ["NonCommercial"]
+      },
+      "IT.NET.USER.ZS": {
+        "publisher": "ITU",
+        "marks": ["NonCommercial"]
+      },
+      "EG.IMP.CONS.ZS": {
+        "publisher": "IEA",
+        "note": "Underlying redistribution terms unconfirmed"
+      }
+    }
+  },
+  {
+    "id": "imf",
+    "name": "IMF DataMapper",
+    "access": "Keyless DataMapper API",
+    "attribution": "International Monetary Fund, World Economic Outlook",
+    "url": "https://www.imf.org/external/datamapper/",
+    "licence": "IMF terms (attribution required; commercial use requires permission)",
+    "releaseRhythm": "WEO editions in April and October",
+    "marks": ["NonCommercial"]
+  },
+  {
+    "id": "ucdp",
+    "name": "UCDP Candidate Events",
+    "access": "Keyless public bulk CSV",
+    "attribution": "Uppsala Conflict Data Program Candidate Events Dataset",
+    "url": "https://ucdp.uu.se/downloads/",
+    "licence": "CC BY 4.0",
+    "releaseRhythm": "Monthly",
+    "marks": []
+  },
+  {
+    "id": "vdem",
+    "name": "V-Dem",
+    "access": "Keyless Country-Year Full+Others download",
+    "attribution": "Varieties of Democracy Project, V-Dem Country-Year Dataset",
+    "url": "https://www.v-dem.net/data/the-v-dem-dataset/",
+    "licence": "CC BY-SA 4.0",
+    "releaseRhythm": "Annual (March)",
+    "marks": ["ShareAlike"]
+  }
+]

@@ -1,5 +1,9 @@
 # Data Sources & Attribution
 
+## World Board
+
+World Board uses the keyless [World Bank API](https://data.worldbank.org/) (14 series plus population), [IMF DataMapper](https://www.imf.org/external/datamapper/), official [UCDP Candidate Events CSV releases](https://ucdp.uu.se/downloads/), and [V-Dem](https://www.v-dem.net/data/the-v-dem-dataset/), with [Natural Earth](https://www.naturalearthdata.com/) country geometry. World Bank data is generally CC BY 4.0. SIPRI military expenditure and ITU internet-use series carry NonCommercial terms. IEA energy redistribution terms are unconfirmed. IMF DataMapper follows April/October WEO editions, requires attribution and permission for commercial use, flags source forecasts, and supplies no vintage in its response. UCDP is CC BY 4.0. V-Dem Country-Year Full+Others supplies C6 and is CC BY-SA 4.0. See [World Board](docs/WORLD-BOARD.md) for the C2 and C6 source decisions, scoring and fallbacks.
+
 God's Eye View's **code** is [MIT](LICENSE)-licensed. **The MIT grant covers the source code only — it does NOT extend to third-party data or visual assets.** Every third-party source keeps its own license and terms. This file documents the live and bundled data sources; bundled 3D-model provenance is recorded in [`public/models/README.md`](public/models/README.md).
 
 How to read this:

@@ -335,6 +335,7 @@ const loadCountries = createRetryableLoader(async () => {
   packLoads.countries += 1;
   const pack = await loadBundledJson(PACKS.countries.url);
   const index = new Map();
+  const entries = [];
   for (const feature of pack.features || []) {
     const entry = {
       kind: 'country',
@@ -344,11 +345,21 @@ const loadCountries = createRetryableLoader(async () => {
       country: normalizeAdminName(feature.country),
       iso2: feature.iso2?.toLowerCase(),
     };
+    entries.push(entry);
     for (const name of [feature.name, ...(feature.alt || [])])
       addKey(index, normalizeAdminName(name), entry, 0);
   }
-  return { index };
+  return { index, entries };
 });
+
+/** All bundled admin-0 map units, with their decoded polygons and label points. */
+export async function loadCountryShapes() {
+  const { entries } = await loadCountries();
+  return entries.map((entry) => ({
+    shapeId: entry.feature.iso,
+    ...geometryOf(entry),
+  }));
+}
 
 async function countryCandidates(parsed) {
   if (!['any', 'country'].includes(parsed.kind)) return [];
