@@ -3,6 +3,36 @@ import test from 'node:test';
 import { fetchObservations } from './wikidata.js';
 
 const now = new Date('2026-11-09T12:00:00Z');
+
+test('a later acting or closed statement cannot suppress an open regular incumbent', async () => {
+  const role = 'head-of-state';
+  let verification;
+  const { data } = await fetchObservations({
+    registry: registry('SRB'),
+    now,
+    fetchImpl: async (_url, { body }) => {
+      if (roleOf(body) !== role) return reply([]);
+      const query = body.get('query');
+      const regular = row('SRB', role, 'Q11');
+      const acting = row('SRB', role, 'Q12', {
+        since: '2026-01-01',
+        nature: item('Q4676846'),
+      });
+      if (!query.includes('VALUES (?iso ?seat')) return reply([regular]);
+      if (query.includes('SELECT DISTINCT ?iso ?role ?seat ?person'))
+        return reply([regular, acting]);
+      verification = query;
+      return reply([regular, acting]);
+    },
+  });
+  assert.deepEqual(
+    data.actors.map(({ id }) => id),
+    ['Q11'],
+  );
+  assert.match(verification, /\?laterStatement pq:P582/);
+  assert.match(verification, /\?laterStatement pq:P1366/);
+  assert.match(verification, /\?laterStatement pq:P5102/);
+});
 const item = (id) => 'http://www.wikidata.org/entity/' + id;
 const binding = (values) =>
   Object.fromEntries(
@@ -59,7 +89,6 @@ test('requires a dated, open person office statement and keeps the latest start 
         }),
         row('IND', role, 'Q15', {
           since: '2026-01-01',
-          nature: item('Q4676846'),
         }),
         row('IND', role, 'Q16', { since: '2027-01-01' }),
       ]);
@@ -70,7 +99,6 @@ test('requires a dated, open person office statement and keeps the latest start 
     ['Q14', 'Q15'],
   );
   assert.equal(data.actors[0].office, 'Foreign minister');
-  assert.equal(data.actors[1].acting, true);
 });
 
 test('keeps government forms without actors and sorts specific forms first', async () => {

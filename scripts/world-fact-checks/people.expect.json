@@ -1,5 +1,122 @@
 {
   "asOf": "2026-11-09",
+  "round4": {
+    "checkedOn": "2026-11-10",
+    "baseline": { "roles": 780, "disagreements": 266, "stale": 369 },
+    "corroborated": [
+      {
+        "country": "RUS",
+        "role": "head-of-state",
+        "name": "Vladimir Putin",
+        "source": "https://kremlin.ru/structure/president"
+      },
+      {
+        "country": "RUS",
+        "role": "head-of-government",
+        "name": "Mikhail Mishustin",
+        "source": "https://government.ru/gov/persons/151/travel/?area=KHA"
+      },
+      {
+        "country": "RUS",
+        "role": "foreign-minister",
+        "name": "Sergey Lavrov",
+        "aliases": ["Sergei Lavrov"],
+        "source": "https://nac.gov.ru/main/list/composition"
+      },
+      {
+        "country": "RUS",
+        "role": "defence-minister",
+        "name": "Andrei Belousov",
+        "aliases": ["Andrey Belousov"],
+        "source": "https://nac.gov.ru/main/list/composition"
+      },
+      {
+        "country": "ISR",
+        "role": "head-of-government",
+        "name": "Benjamin Netanyahu",
+        "source": "https://main.knesset.gov.il/EN/About/Lexicon/Pages/netanyahu.aspx"
+      },
+      {
+        "country": "MEX",
+        "role": "head-of-state",
+        "name": "Claudia Sheinbaum",
+        "aliases": ["Claudia Sheinbaum Pardo"],
+        "source": "https://www.gob.mx/presidencia"
+      },
+      {
+        "country": "ZAF",
+        "role": "head-of-state",
+        "name": "Cyril Ramaphosa",
+        "aliases": ["Matamela Cyril Ramaphosa"],
+        "source": "https://presidency.gov.za/node/197"
+      },
+      {
+        "country": "IDN",
+        "role": "head-of-state",
+        "name": "Prabowo Subianto",
+        "source": "https://setneg.go.id/baca/index/prabowo_subianto_dan_gibran_rakabuming_raka_resmi_dilantik_sebagai_presiden_dan_wakil_presiden_republik_indonesia"
+      },
+      {
+        "country": "ESP",
+        "role": "head-of-state",
+        "name": "Felipe VI",
+        "aliases": ["Felipe VI of Spain"],
+        "source": "https://www.casareal.es/ES/FamiliaReal/ReyFelipe/Paginas/biografia.aspx"
+      },
+      {
+        "country": "ESP",
+        "role": "head-of-government",
+        "name": "Pedro Sánchez",
+        "aliases": ["Pedro Sánchez Pérez-Castejón"],
+        "source": "https://www.lamoncloa.gob.es/lang/en/presidente/biografia/Paginas/index.aspx"
+      },
+      {
+        "country": "MAR",
+        "role": "head-of-state",
+        "name": "Mohammed VI",
+        "aliases": ["Mohammed VI of Morocco"],
+        "source": "https://maroc.ma/en/news/hm-king-chairs-new-government-appointment-ceremony"
+      },
+      {
+        "country": "IND",
+        "role": "head-of-state",
+        "name": "Droupadi Murmu",
+        "source": "https://presidentofindia.nic.in/president-india-smt-droupadi-murmu"
+      }
+    ],
+    "fresh": {
+      "USA": "https://www.whitehouse.gov/administration/cabinet/",
+      "CHN": "https://english.www.gov.cn/statecouncil/202303/12/content_WS5f334b75c6d029c1c26379c3.html"
+    },
+    "officeholders": [
+      {
+        "country": "RWA",
+        "role": "foreign-minister",
+        "name": "Olivier Nduhungirehe",
+        "source": "https://www.gov.rw/cabinet/"
+      },
+      {
+        "country": "GNB",
+        "role": "head-of-government",
+        "name": "Ilídio Vieira Té",
+        "source": "https://www.imf.org/-/media/files/publications/cr/2026/english/1gnbea2026001-source-pdf.pdf#page=39"
+      },
+      {
+        "country": "PRY",
+        "role": "head-of-state",
+        "name": "Pedro Alliana",
+        "acting": false,
+        "source": "https://www.senado.gov.py/index.php/menu-dircom/sub-menu-noticias-presidencia/pedro-alliana-juro-como-nuevo-presidente-de-la-republica.html"
+      },
+      {
+        "country": "SRB",
+        "role": "head-of-state",
+        "name": "Ana Brnabić",
+        "acting": true,
+        "source": "https://www.parlament.gov.rs/Brnabic_at_Paris_Peace_Forum.54088.537.html"
+      }
+    ]
+  },
   "countries": [
     {
       "country": "USA",

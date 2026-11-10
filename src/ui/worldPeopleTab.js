@@ -54,13 +54,15 @@ export function renderPeopleHeader({
     state.length === executive.length &&
     state.every((person) =>
       executive.some(
-        ({ id, office, asOf, source, disagreement }) =>
+        ({ id, office, asOf, source, disagreement, ambiguity }) =>
           id === person.id &&
           office === person.office &&
           asOf === person.asOf &&
           source === person.source &&
           !disagreement &&
-          !person.disagreement,
+          !person.disagreement &&
+          !ambiguity &&
+          !person.ambiguity,
       ),
     );
   const groups = shared
@@ -108,7 +110,18 @@ export function renderPeopleHeader({
 
 function actorRow(document, actor, country, openCard) {
   const row = node(document, 'li', 'world-person-row');
-  row.append(actorButton(document, actor, openCard));
+  const identity = node(document, 'div', 'world-person-identity');
+  const portrait =
+    actor.offices.some(
+      (entry) => entry.country === country && ministries.includes(entry.role),
+    ) && portraitImage(document, actor);
+  if (portrait) {
+    portrait.loading = 'lazy';
+    identity.append(portrait);
+  }
+  identity.append(actorButton(document, actor, openCard));
+  row.append(identity);
+  if (portrait) row.append(portraitCredit(document, actor.image));
   for (const office of actor.offices.filter(
     (entry) => entry.country === country,
   )) {

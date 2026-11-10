@@ -1,6 +1,6 @@
 import corrections from '../../../public/world/curated/people-evidence-corrections.json' with { type: 'json' };
 import officeSeats from '../../../public/world/curated/actor-office-seats.json' with { type: 'json' };
-import { normalizePersonName } from './personIdentity.js';
+import { personNameMatch } from './personIdentity.js';
 
 export const officeRoles = [
   'head-of-state',
@@ -12,32 +12,64 @@ export const officeRoles = [
 function samePerson(left, right) {
   if (/^Q\d+$/.test(left.id) && /^Q\d+$/.test(right.id))
     return left.id === right.id;
-  const signature = (name) =>
-    normalizePersonName(name).split(' ').sort().join(' ');
   return [left.name, ...(left.aliases ?? [])].some((name) =>
-    [right.name, ...(right.aliases ?? [])].some(
-      (other) => signature(name) === signature(other),
+    [right.name, ...(right.aliases ?? [])].some((other) =>
+      personNameMatch(name, other),
     ),
   );
 }
+
+const orderingDate = (actor) =>
+  actor.source === 'wikidata'
+    ? (actor.since ?? '')
+    : (actor.asOf ?? actor.since ?? '');
 
 function provenance(actor) {
   return {
     name: actor.name,
     source: actor.source,
-    asOf: actor.asOf ?? actor.since ?? null,
+    asOf:
+      actor.source === 'wikidata'
+        ? (actor.lastChecked?.slice(0, 10) ?? actor.asOf ?? null)
+        : (actor.asOf ??
+          actor.lastChecked?.slice(0, 10) ??
+          actor.since ??
+          null),
     sourceUrl: actor.sourceUrl ?? actor.wikidataUrl,
   };
 }
 
-function withEvidence(actor, ageCutoff, other) {
-  const evidence = provenance(actor);
+function withEvidence(
+  actor,
+  ageCutoff,
+  otherEvidence = [],
+  disagreement,
+  ambiguity,
+) {
+  const primary = provenance(actor);
+  const latest = otherEvidence
+    .filter(({ agrees }) => agrees)
+    .reduce(
+      (date, { asOf }) => (asOf && asOf > date ? asOf : date),
+      primary.asOf ?? '',
+    );
   return {
     ...actor,
-    ...evidence,
-    stale: Boolean(evidence.asOf && evidence.asOf < ageCutoff),
-    ...(other && { disagreement: provenance(other) }),
+    ...primary,
+    stale: Boolean(latest && latest < ageCutoff),
+    ...(otherEvidence.length && { otherEvidence }),
+    ...(disagreement && { disagreement: provenance(disagreement) }),
+    ...(ambiguity && { ambiguity }),
   };
+}
+
+function corroboration(actor, others) {
+  return others
+    .filter((other) => other && other !== actor)
+    .map((other) => ({
+      ...provenance(other),
+      agrees: samePerson(actor, other),
+    }));
 }
 
 function withIdentity(actor, match) {
@@ -109,11 +141,7 @@ export function mergeOfficeholders(
       // A chair or incomplete list cannot replace the collective office.
       const matching = (actor, candidates) =>
         candidates.find((candidate) => samePerson(actor, candidate));
-      const newestWikidata =
-        wd
-          .map(({ asOf, since }) => asOf ?? since ?? '')
-          .sort()
-          .at(-1) ?? '';
+      const newestWikidata = wd.map(orderingDate).sort().at(-1) ?? '';
       const show =
         cia.length === expectedSeats && firstCia.asOf > newestWikidata;
       const primary = show ? cia : wd;
@@ -124,82 +152,83 @@ export function mergeOfficeholders(
           : null;
       return primary.map((actor) => {
         const peer = matching(actor, secondary);
-        const preferred =
-          peer && (peer.asOf ?? peer.since) > (actor.asOf ?? actor.since)
-            ? show
-              ? peer
-              : withIdentity(peer, actor)
-            : show
-              ? withIdentity(actor, peer)
-              : actor;
+        const preferred = (show && peer) || actor;
         return withEvidence(
           { ...preferred, collective },
           ageCutoff,
+          corroboration(preferred, [show ? actor : peer]),
           peer ? null : dispute,
         );
       });
     }
-    const matches = [...wd, ...undated].filter((candidate) =>
-      cia.some((actor) => samePerson(actor, candidate)),
+    const plain = cia.filter(({ plainTitle }) => plainTitle);
+    const [ciaChoice, ...alternatives] = plain.length ? plain : cia;
+    const competing = alternatives.filter(
+      (actor) => !samePerson(ciaChoice, actor),
+    );
+    const ambiguity = competing.length
+      ? { source: ciaChoice.source, alternatives: competing.map(provenance) }
+      : undefined;
+    const matches = [...wd, ...undated].filter(
+      (candidate) => ciaChoice && samePerson(ciaChoice, candidate),
     );
     const match = matches.length === 1 ? matches[0] : null;
     const unconfirmed = undated.some(
       (candidate) => !firstWd || !samePerson(candidate, firstWd),
     );
     const ambiguousWikidata = wd.length > 1 && !match;
-    const ambiguousCia = cia.length > 1 && !match;
-    const ciaChoice = match
-      ? cia.find((actor) => samePerson(actor, match))
-      : firstCia;
     const wdChoice = wd.includes(match) ? match : firstWd;
     const [officialChoice] = official;
     if (
       officialChoice &&
       (!ciaChoice || ciaChoice.asOf <= officialChoice.asOf) &&
-      (!wdChoice ||
-        (wdChoice.asOf ?? wdChoice.since ?? '') <= officialChoice.asOf)
+      (!wdChoice || orderingDate(wdChoice) <= officialChoice.asOf)
     ) {
       const officialMatch = [...wd, ...undated].find((candidate) =>
         samePerson(candidate, officialChoice),
       );
       const selected = withIdentity(officialChoice, officialMatch);
-      const otherEvidence = [ciaChoice, wdChoice]
-        .filter(Boolean)
-        .map((actor) => ({
-          ...provenance(actor),
-          agrees: samePerson(actor, selected),
-        }));
+      const otherEvidence = corroboration(selected, [
+        ciaChoice,
+        ...new Set([wdChoice, officialMatch]),
+      ]);
+      const disagreement = [ciaChoice, wdChoice].find(
+        (actor) => actor && !samePerson(actor, selected),
+      );
       return [
         withEvidence(
-          { ...selected, otherEvidence },
+          selected,
           ageCutoff,
-          otherEvidence.find(({ agrees }) => !agrees),
+          otherEvidence,
+          disagreement,
+          ambiguity,
         ),
       ];
     }
-    if (ambiguousCia && (ambiguousWikidata || !wdChoice)) return [];
     if (!ciaChoice && (unconfirmed || ambiguousWikidata)) return [];
-    if (!ciaChoice) return wdChoice ? [withEvidence(wdChoice, ageCutoff)] : [];
-    if (
-      !ambiguousCia &&
+    const useCia =
+      ciaChoice &&
+      !wd.includes(match) &&
       (!wdChoice ||
         ambiguousWikidata ||
         (unconfirmed && undated.includes(match)) ||
-        ciaChoice.asOf > (wdChoice.asOf ?? wdChoice.since ?? ''))
-    ) {
-      return [
-        withEvidence(
-          withIdentity(ciaChoice, match),
-          ageCutoff,
-          wdChoice && !samePerson(ciaChoice, wdChoice) ? wdChoice : null,
-        ),
-      ];
-    }
+        ciaChoice.asOf > orderingDate(wdChoice));
+    const primary = useCia ? ciaChoice : wdChoice;
+    if (!primary) return [];
+    const competingHolder = useCia ? wdChoice : ciaChoice;
+    const otherEvidence = corroboration(primary, [
+      ...new Set([competingHolder, match]),
+      ...official,
+    ]).filter(({ agrees }) => agrees);
     return [
       withEvidence(
-        wdChoice,
+        useCia ? withIdentity(primary, match) : primary,
         ageCutoff,
-        samePerson(wdChoice, ciaChoice) ? null : ciaChoice,
+        otherEvidence,
+        competingHolder && !samePerson(primary, competingHolder)
+          ? competingHolder
+          : null,
+        ambiguity,
       ),
     ];
   });

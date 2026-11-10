@@ -47,6 +47,7 @@ const summaryActor = ({
   sourceUrl,
   stale,
   disagreement,
+  ambiguity,
   otherEvidence,
   draft,
 }) => ({
@@ -67,6 +68,7 @@ const summaryActor = ({
   sourceUrl,
   stale,
   disagreement,
+  ambiguity,
   otherEvidence,
   draft,
 });

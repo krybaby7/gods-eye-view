@@ -1,5 +1,18 @@
 {
-  "notes": "CIA office-title and country-label crosswalk. Title keys are case-insensitive. An empty role list excludes an office that cannot stand for the complete collective.",
+  "notes": "CIA office-title, country-label and cited name-alias crosswalk. Title keys are case-insensitive. An empty role list excludes an office that cannot stand for the complete collective. Name aliases are used for matching and preserve the original source spelling.",
+  "nameAliases": {
+    "ISR": {
+      "binyamin-netanyahu": {
+        "aliases": ["Benjamin Netanyahu"],
+        "sources": [
+          "https://www.cbs.gov.il/he/publications/DocLib/2025/ShnatonElectionsTheKnessetandGovernment.27/st27_01.pdf",
+          "https://main.knesset.gov.il/EN/About/Lexicon/Pages/netanyahu.aspx"
+        ],
+        "checkedOn": "2026-11-10",
+        "reviewed": false
+      }
+    }
+  },
   "countries": {
     "BHS": {
       "country": "Bahamas, The",
