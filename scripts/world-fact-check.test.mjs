@@ -1,8 +1,16 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import {
+  copyFile,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
 import test from 'node:test';
+import { pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { runFactChecks } from './world-fact-check.mjs';
 
@@ -51,6 +59,10 @@ test('reports live board, wire sizes and failures in both evidence files', async
     print() {},
   });
   assert.equal(result.pass, false);
+  assert.equal(
+    result.checks.find(({ id }) => id === 'board-raw-size').checkedOn,
+    result.checkedAt.slice(0, 10),
+  );
   const saved = JSON.parse(
     await readFile(join(out, 'fact-checks.json'), 'utf8'),
   );
@@ -109,3 +121,37 @@ for (const invalidJson of [false, true]) {
     );
   });
 }
+
+test('reports missing local module evidence as unmeasured', async (t) => {
+  const root = await mkdtemp(join(import.meta.dirname, '.fact-check-test-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const runner = join(root, 'world-fact-check.mjs');
+  const modules = join(root, 'world-fact-checks');
+  const out = join(root, 'output');
+  await mkdir(modules);
+  await copyFile(new URL('./world-fact-check.mjs', import.meta.url), runner);
+  await writeFile(
+    join(modules, 'fixture.mjs'),
+    `import { readFile } from 'node:fs/promises';
+    export default () => readFile(new URL('./missing.json', import.meta.url));`,
+  );
+  const { runFactChecks: runFixtureChecks } = await import(
+    pathToFileURL(runner)
+  );
+  const result = await runFixtureChecks({
+    url: await serveBoard(t),
+    out,
+    print() {},
+  });
+  assert.equal(result.pass, true);
+  assert.equal(result.checks.length, 1);
+  assert.equal(result.checks[0].pass, null);
+  assert.equal(
+    result.checks[0].reason,
+    `Local evidence file not found: ${join(modules, 'missing.json')}`,
+  );
+  assert.match(
+    await readFile(join(out, 'fact-checks.md'), 'utf8'),
+    /fixture\.mjs.*NOT MEASURED/,
+  );
+});

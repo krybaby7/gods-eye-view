@@ -85,6 +85,7 @@ async function readTrace(path) {
 }
 
 export async function runFactChecks({ url, out, trace, print = console.log }) {
+  const checkedAt = new Date().toISOString();
   const origin = new URL(url);
   if (
     !loopback.has(origin.hostname) ||
@@ -134,6 +135,7 @@ export async function runFactChecks({ url, out, trace, print = console.log }) {
         getDetail,
         trace: evidence,
         traceReason,
+        checkedOn: checkedAt.slice(0, 10),
       });
       if (
         !Array.isArray(rows) ||
@@ -180,7 +182,7 @@ export async function runFactChecks({ url, out, trace, print = console.log }) {
   }
   const result = {
     url: origin.origin,
-    checkedAt: new Date().toISOString(),
+    checkedAt,
     pass: checks.every(({ pass }) => pass !== false),
     checks,
   };
