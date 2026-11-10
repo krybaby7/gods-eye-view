@@ -4,7 +4,7 @@ Turn on **Events > World Board** to shade countries and open the board. Choose *
 
 Country shading appears at a camera height of 3,500 km and is removed below 3,000 km; the gap prevents flicker while zooming. Select a country to open its sheet, browse the 18 slots, and use **Why this number** for the raw value, period, source, formula and draft anchors. Flags identify unknown, weakest, stale, low-confidence and source-forecast readings. There is no overall total.
 
-The first activation starts a background turn. Later updates are owner-initiated with **Refresh**. Data and turn history are local in `.gev-cache/world/state.json`. A share link uses layer token `5` to retain whether World Board is enabled. Data and country selections are local.
+The first activation starts a background turn. Use **Refresh** to update base datasets and eligible feeds. Live feeds also run their own timed checks while the board is enabled. Data and turn history are local in `.gev-cache/world/state.json`. A share link uses layer token `5` to retain whether World Board is enabled. Data and country selections are local.
 
 Scores use draft anchors: each indicator is transformed where specified, positioned between its two anchors, clipped to the 0–100 range and reversed when higher values are worse. Missing source data remains unknown. After a source failure, the board retains its last available readings. Check source period, retrieval date, coverage and flags before comparison.
 
@@ -20,15 +20,39 @@ The Candidate files list reported events and carry no separate country coverage 
 
 For C6, the exact `v2cacamps` variable in the V-Dem v16 codebook §3.15.1.1 has interval endpoints −3.81 to 3.94. Refresh streams the CSV inside the official Full+Others archive and retains the latest usable reading per mapped country. The v16 compressed download is 26.9 MB. [V-Dem](https://www.v-dem.net/data/the-v-dem-dataset/) data is CC BY-SA 4.0.
 
-
 ## Diplomacy
+
 Select a country and choose **Diplomacy** to see its documented relations. The order is at war, sanctions, ally, rival, partner, neutral. Rival requires a documented diplomatic rupture or a cited rivalry in the hand table. Partner requires a documented partnership. A diplomatic link supports neutral. Unknown and disputed areas hatch.
+
 The Relations tab groups treaty commitments, bloc memberships, rivals, wars, directed sanctions, partnerships and territorial disputes. Click a row or a globe line to open its evidence card. War lines are dotted red and alliances are dashed. If several lines share endpoints, the globe shows the highest-priority line and the tab retains every record.
+
 The latest UCDP annual release used here covers 2025 and includes state-based dyads that meet the 25 battle-death threshold. All annual dyads appear in the tab as historical evidence. The lens reserves red for reported fighting between the exact two states within the past 90 days from the live UCDP Candidate snapshot. A missing live source leaves the annual records available in the tab. The Houthis keep their non-state identity, and reported secondary participants are listed under the side they support. The Voeten agreement file available in Dataverse v39 covers session 79 (2024). The Relations tab shows agreement for each pair, with no effect on map classes. Quad and AUKUS appear as diplomatic and defence cooperation respectively. Curated evidence carries a draft review badge.
+
 The sanctions adapters count designation records by programme from the UN consolidated XML, the UK Sanctions List ODT and the OFAC primary SDN CSV. A country link requires an official programme description. Only measures aimed at a government or economic sector colour the lens. Targeted regimes appear in the tab as sanctions on persons in the named country. Refresh reports mapped, thematic and unmapped programme counts. The source check date comes from the publication's Last-Modified header or its local download date. If the UN list fails on the first turn, the board displays four cited committee programmes with unavailable designation counts.
+
 ## People
+
 The sheet header identifies the head of state and head of government when the Wikidata directory has a current claim. The People tab adds foreign and defence ministers, draft organization entries, public account links, and recent posts where available. The leader portrait beside a country code on the globe opens the actor card. A head of government with an attributed portrait takes precedence, followed by the head of state. Commons portraits show the creator, licence and file link in the sheet and actor card.
+
 Wikidata officeholder claims are checked weekly on Refresh. Ambiguous or unavailable officeholders remain blank. Minister coverage depends on Wikidata offices with a matching jurisdiction and a current officeholder. The draft organization directory uses geographic association for armed groups. Bluesky, YouTube and the Federal Reserve’s official RSS feed provide inline posts or linked headlines on Refresh. **Show X timeline** loads the official widget for the open actor. The widget may require sign-in.
+
+## Live condition flags
+
+A dated flag records what a source reported or what the board detected in that source. The sheet’s **Condition flags** section links to the evidence and shows the draft rule. Scheduled ticks write `world/live.json` and update the live overlay. First launch and manual Refresh create turns. A manual Refresh queued during a tick runs after that tick. The next turn summary includes live flag changes since the previous turn. A failed pull retains the last good flag as stale. Expired evidence reads “No recent data.” A clear requires fresh evidence that the condition ended.
+
+- GDELT requires three distinct coded event identities and articles from three source domains in a rolling 72-hour sample of completed 15-minute files. Subdomains are grouped by their final two labels, or three for common country suffixes such as `co.uk`. Within each country, the identity combines event date, CAMEO root and first-level administrative region. Distinct incidents in the same region with the same date and root share a key. The security slot requires a fight or mass-destruction action and at least one actor coded as military, rebel, insurgent, separatist rebel or other armed forces. Unclassified actors reduce coverage. It displays three source links and labels the draft flag “news-derived, low confidence.” GDACS red alerts describe hazards and potential exposure. [GDELT Event Codebook](https://data.gdeltproject.org/documentation/GDELT-Event_Codebook-V2.0.pdf) · [CAMEO actor codebook](https://eventdata.parusanalytics.com/cameo.dir/Cameo.0.10b2.pdf)
+- Frankfurter flags a currency that lost at least 20% of its value against USD over a near-30-day window with two dated readings. IMF CPI uses the published national all-items year-on-year rate when available for the latest month, then falls back to the same calendar month one year apart in the index. The draft rule compares the unrounded rate with 20%. In the checked release, the index-derived rates for Malawi in August 2026 and Rwanda in September 2026 were 20.021% and 20.048%, respectively. Both round to 20.0% for display.
+- UNHCR checks the latest completed year and steps back until an annual release is available. Only stock rows from that release can flag, and releases older than the last two completed years show no recent data. The saved UCDP Candidate flag uses a draft threshold of 25 recorded deaths per country in the latest rolling 12-month release. A separate 90-day evidence list requires explicitly identified opposing governments and a precise event date. Country fatality totals do not establish bilateral hostilities. The FAO index appears as a world banner.
+- Ten draft flags record the external debt distress classification in the published LIC DSA list as of 31 October 2026. The evidence shows the assessment month and source locator.
+
+The optional feeds are disabled by default. Set the following in the server process only after obtaining the appropriate access. These feeds use the manual Refresh control and their source cadence. For the optional UCDP Candidate feed, a published month can clear a flag for a country with no events in that month.
+
+| Source             | Server variables                                                         |
+| ------------------ | ------------------------------------------------------------------------ |
+| IFES ElectionGuide | `GEV_WORLD_ELECTIONGUIDE_ENDPOINT` and `GEV_WORLD_ELECTIONGUIDE_TOKEN`   |
+| HDX HAPI           | `GEV_WORLD_HDX_APP_IDENTIFIER`                                           |
+| IODA               | `GEV_WORLD_IODA_LICENCE_APPROVED=1`                                      |
+| UCDP Candidate     | `GEV_WORLD_UCDP_CANDIDATE_ENDPOINT` and `GEV_WORLD_UCDP_CANDIDATE_TOKEN` |
 
 ## Adding a phase
 

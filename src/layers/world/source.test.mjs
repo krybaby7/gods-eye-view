@@ -21,10 +21,15 @@ test('board reads, Refresh and progress use their own same-origin routes', async
   });
   assert.deepEqual(await source.getSnapshot(), state);
   assert.deepEqual(await source.refresh(), { refresh: null, revision: 2 });
+  assert.deepEqual(await source.refresh({ sourceId: 'gdacs' }), {
+    refresh: null,
+    revision: 2,
+  });
   assert.deepEqual(await source.getProgress(), { refresh: null, revision: 2 });
   assert.deepEqual(calls, [
     ['/api/world', 'GET', 'no-store'],
     ['/api/world/refresh', 'POST', 'no-store'],
+    ['/api/world/refresh?source=gdacs', 'POST', 'no-store'],
     ['/api/world/progress', 'GET', 'no-store'],
   ]);
 });

@@ -24,7 +24,7 @@ const EVENT_COLUMNS = ['id', 'country', 'date_start', 'date_end', 'best'];
 
 export const estimatedBytes = 34_000_000;
 export const requestHost = new URL(CATALOG).hostname;
-export const version = 2;
+export const version = 3;
 
 // Candidate's country column uses Gleditsch and Ward labels.
 const COUNTRY_ALIASES = {
@@ -49,6 +49,13 @@ const COUNTRY_ALIASES = {
 };
 
 export function shouldCheck(context) {
+  if (
+    !context.data?.deathsByIso3 &&
+    context.observations?.some(
+      ({ indicator }) => indicator === 'condition.conflict_deaths',
+    )
+  )
+    return true;
   return releaseDue(context, monthIndex);
 }
 
@@ -155,6 +162,12 @@ function candidateCountries(registry) {
   return byName;
 }
 
+export function candidateCountryResolver(registry) {
+  const countries = candidateCountries(registry);
+  return (name) =>
+    typeof name === 'string' ? countries.get(countryKey(name)) : undefined;
+}
+
 function populationsFor(observations, period) {
   const byCountry = new Map();
   for (const item of observations) {
@@ -181,13 +194,65 @@ function populationsFor(observations, period) {
 
 const EVENT_DATE = /^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)?$/;
 
-async function mergeEvents(chunks, events, countryNames, coveredCountries) {
+function bilateralEvent(
+  row,
+  columns,
+  id,
+  dateStart,
+  dateEnd,
+  best,
+  actorCountry,
+  sourceUrl,
+) {
+  const [type, aName, bName, aCode, bCode, precision] = columns.map(
+    (index) => row[index],
+  );
+  if (
+    type !== '1' ||
+    precision !== '1' ||
+    dateStart.slice(0, 10) !== dateEnd.slice(0, 10) ||
+    !/^\d+$/.test(aCode) ||
+    !/^\d+$/.test(bCode) ||
+    aCode === bCode ||
+    !(Number(best) > 0)
+  )
+    return null;
+  function government(label) {
+    const name = /^Government of ([^,]+)$/.exec(label ?? '')?.[1];
+    return name && name !== 'Yemen (North Yemen)' ? actorCountry(name) : null;
+  }
+  const a = government(aName);
+  const b = government(bName);
+  return a && b && a !== b
+    ? { a, b, date: dateStart.slice(0, 10), sourceUrl, id }
+    : null;
+}
+
+async function mergeEvents(
+  chunks,
+  events,
+  countryNames,
+  coveredCountries,
+  actorCountry,
+  sourceUrl,
+) {
   let columns;
+  let actors;
   for await (const record of csvRecords(chunks)) {
     const row = csvRows(record).next().value;
     if (!row) continue;
     if (!columns) {
       columns = columnIndices(row, EVENT_COLUMNS);
+      const fields = [
+        'type_of_violence',
+        'side_a',
+        'side_b',
+        'gwnoa',
+        'gwnob',
+        'date_prec',
+      ];
+      const indices = fields.map((field) => row.indexOf(field));
+      if (!indices.includes(-1)) actors = indices;
       continue;
     }
     const [id, country, dateStart, dateEnd, best] = columns.map(
@@ -208,6 +273,18 @@ async function mergeEvents(chunks, events, countryNames, coveredCountries) {
       dateStart: dateStart.slice(0, 7),
       dateEnd: dateEnd.slice(0, 7),
       best: best?.trim() ? Number(best) : NaN,
+      bilateral: actors
+        ? bilateralEvent(
+            row,
+            actors,
+            id,
+            dateStart,
+            dateEnd,
+            best,
+            actorCountry,
+            sourceUrl,
+          )
+        : null,
     });
   }
   if (!columns) throw new Error('Missing UCDP Candidate CSV header');
@@ -275,6 +352,15 @@ export async function fetchObservations({
   const firstPeriod = periodLabel(oldest);
   const period = periodLabel(newest);
   const countryNames = candidateCountries(registry);
+  const states = new Set(
+    registry.countries
+      .filter(({ kind }) => kind === 'state')
+      .map(({ iso3 }) => iso3),
+  );
+  const actorCountry = (name) => {
+    const code = countryNames.get(countryKey(name));
+    return states.has(code) ? code : null;
+  };
   const populations = populationsFor(observations, period);
   if (!populations.size)
     throw new Error(
@@ -304,7 +390,14 @@ export async function fetchObservations({
                 signal,
               )
             : createReadStream(path, { signal });
-        return mergeEvents(chunks, events, countryNames, coveredCountries);
+        return mergeEvents(
+          chunks,
+          events,
+          countryNames,
+          coveredCountries,
+          actorCountry,
+          url,
+        );
       },
     });
     currentDownloads.push(path);
@@ -312,6 +405,16 @@ export async function fetchObservations({
 
   const totals = new Map();
   const unmapped = new Set();
+  const bilateralEvents = new Map();
+  const cutoff = now.toISOString().slice(0, 10);
+  const since = new Date(+now - 90 * 86_400_000).toISOString().slice(0, 10);
+  for (const { bilateral } of events.values()) {
+    if (!bilateral || bilateral.date < since || bilateral.date > cutoff)
+      continue;
+    const key =
+      [bilateral.a, bilateral.b].sort().join(':') + ':' + bilateral.date;
+    bilateralEvents.set(key, bilateral);
+  }
   for (const { iso3, country, dateStart, dateEnd, best } of events.values()) {
     if (dateStart > period || dateEnd < firstPeriod) continue;
     if (!iso3) {
@@ -361,7 +464,12 @@ export async function fetchObservations({
         },
       );
     }),
-    data: { period, deathsByIso3, sourceVersion },
+    data: {
+      period,
+      deathsByIso3,
+      sourceVersion,
+      bilateralEvents: [...bilateralEvents.values()],
+    },
     ...(cached.length && { checkedRelease: false }),
     detail: `UCDP Candidate public bulk files, ${firstPeriod} through ${period}. Zero reported deaths require a country record in a selected release. ${missing} countries lacked coverage, a usable population, or a fatality count.`,
   };

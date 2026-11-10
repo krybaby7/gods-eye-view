@@ -92,7 +92,13 @@ export function createWorldSource({
   return {
     getSnapshot,
     getProgress: (options) => getProgress('/progress', 'GET', options),
-    refresh: (options) => getProgress('/refresh', 'POST', options),
+    refresh: (options) => {
+      const query =
+        options?.sourceId == null
+          ? ''
+          : `?source=${encodeURIComponent(options.sourceId)}`;
+      return getProgress('/refresh' + query, 'POST', options);
+    },
     getDetail,
     invalidateDetails() {
       details = new Map();

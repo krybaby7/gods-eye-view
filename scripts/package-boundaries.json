@@ -382,7 +382,18 @@
       "server/providers/world/sources/nga-ports.js",
       "server/providers/world/sources/ourairports.js",
       "server/providers/world/sources/wikidata-assets.js",
-      "server/providers/world/sources/wri-power.js"
+      "server/providers/world/sources/wri-power.js",
+      "server/providers/world/events.js",
+      "server/providers/world/conditionEvents.js",
+      "server/providers/world/liveScope.js",
+      "server/providers/world/sources/liveCountryCodes.js",
+      "server/providers/world/sources/liveFeedCommon.js",
+      "server/providers/world/sources/liveDebtDsa.js",
+      "server/providers/world/sources/liveDisasters.js",
+      "server/providers/world/sources/liveDisplacement.js",
+      "server/providers/world/sources/liveGovernance.js",
+      "server/providers/world/sources/liveOptional.js",
+      "server/providers/world/sources/livePrices.js"
     ],
     "external": ["undici"]
   },
@@ -2442,7 +2453,11 @@
       "src/layers/world/assetOverlay.js",
       "src/layers/world/phase-4.js",
       "src/ui/styles/world-phase-4.css",
-      "src/ui/worldAssetPanels.js"
+      "src/ui/worldAssetPanels.js",
+      "src/layers/world/phase-6.js",
+      "src/layers/world/events.js",
+      "src/ui/worldLiveFlagPanel.js",
+      "src/ui/styles/world-phase-6.css"
     ],
     "external": [
       "hls.js",
@@ -3010,7 +3025,11 @@
       "src/layers/world/assetOverlay.js",
       "src/layers/world/phase-4.js",
       "src/ui/styles/world-phase-4.css",
-      "src/ui/worldAssetPanels.js"
+      "src/ui/worldAssetPanels.js",
+      "src/layers/world/phase-6.js",
+      "src/layers/world/events.js",
+      "src/ui/worldLiveFlagPanel.js",
+      "src/ui/styles/world-phase-6.css"
     ],
     "external": [
       "hls.js",

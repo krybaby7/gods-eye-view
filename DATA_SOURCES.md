@@ -29,6 +29,24 @@ Refresh checks the sanctions lists monthly. Bulk files stay in the ignored local
 
 Diplomacy paints current armed conflict only when the snapshot supplies a dated UCDP Candidate event between the same two states in the past 90 days. The annual 2025 archive remains in the Relations tab. Its secondary-warring-party rows identify the supported party and do not create map alliances. Voting agreement from session 79 is available per country and has no effect on the lens class.
 
+### World Board live condition feeds
+
+| Source | Access and release rhythm | Licence and attribution |
+| --- | --- | --- |
+| [GDACS](https://www.gdacs.org/xml/rss.xml) | Keyless RSS, hourly check | CC BY 4.0 item data, GDACS and European Commission JRC |
+| [Frankfurter](https://frankfurter.dev/) | Keyless daily rates and dated history | Blended public rates, contributing provider terms apply |
+| [Powell and Thyne](https://jonathanmpowell.com/coups/) | Keyless public CSV, weekly check | Licence unconfirmed. Cited flags attribute Jonathan M. Powell and Clayton L. Thyne |
+| [GDELT 2.0 Events](https://www.gdeltproject.org/data.html) | Keyless public exports, sampled on a 15-minute timer. The draft rolling 72-hour rule requires three event identities and three source domains. Within each country, the identity uses the event date, CAMEO root and first-level administrative region. The [GeoNames country crosswalk](https://download.geonames.org/export/dump/countryInfo.txt) maps GDELT action-location codes and IODA country codes. | Free use with attribution to The GDELT Project. GeoNames is CC BY 4.0. |
+| [FAO Food Price Index](https://www.fao.org/worldfoodsituation/foodpricesindex/en/) | Keyless nominal monthly CSV, weekly check | Cited index and derived change, Food and Agriculture Organization of the United Nations |
+| [IMF CPI](https://data.imf.org/Datasets/CPI) | Keyless public SDMX 3.0. National headline index and published year-on-year rate, checked weekly. | IMF terms apply, commercial use requires permission |
+| [UNHCR displacement](https://www.unhcr.org/refugee-statistics/) | Keyless population API, annual stocks, weekly check | API licence unconfirmed, UNHCR attribution |
+| [Saved UCDP Candidate fatality counts](https://ucdp.uu.se/downloads/) | Recorded deaths from the latest rolling 12-month release. Draft flag threshold of 25 recorded deaths per country. | CC BY 4.0, Uppsala Conflict Data Program |
+| [IMF–World Bank LIC DSA](https://www.worldbank.org/en/programs/debt-toolkit/dsa) | Ten bundled draft ratings, editorial annual review | Cited facts and original summaries |
+| [IFES ElectionGuide](https://www.electionguide.org/p/access/) | Token, off by default, daily check if configured | Non-commercial with attribution, other publisher terms apply |
+| [HDX HAPI](https://docs.humdata.org/build/hdx-apis/hapi) | App identifier, off by default, weekly check if configured | IPC and WFP terms apply, attributed through UN OCHA HDX. Only food security and price endpoints are used. |
+| [IODA](https://ioda.inetintel.cc.gatech.edu/) | Public API, off by default pending licence approval | Licence unconfirmed, attributed to Georgia Tech IODA |
+| [UCDP Candidate API](https://ucdp.uu.se/apidocs/) | Token, off by default, monthly releases | CC BY 4.0, Uppsala Conflict Data Program |
+
 How to read this:
 
 - **The non-permissive datasets are carved out, not omitted.** Some bundled data (e.g. TeleGeography, CC BY-NC-SA) isn't MIT-compatible. Rather than hide it, we **bundle it with a clear license carve-out** so the app works out of the box — but it stays under the provider's terms.

@@ -417,8 +417,11 @@ export function createWorldPanel({
   }
 
   function renderStatus(snapshot) {
-    refresh.disabled = Boolean(snapshot.loading || snapshot.progress);
     const load = snapshot.progress;
+    const ticking = load?.kind === 'live';
+    refresh.disabled = Boolean(
+      snapshot.loading || (load && (!ticking || load.queued)),
+    );
     let status = '';
     if (load) {
       const source =
@@ -432,21 +435,23 @@ export function createWorldPanel({
         (download.totalBytes == null
           ? size(download.bytes)
           : `${size(download.bytes).replace(/ MB$/, '')} / ${size(download.totalBytes)}`);
+      const action = ticking
+        ? load.queued
+          ? 'Refresh queued · Live update'
+          : 'Live update'
+        : 'Loading World Board';
       status =
-        `Loading World Board · ${load.completed} / ${load.total} sources` +
+        `${action} · ${load.completed} / ${load.total} sources` +
         (source ? ` · ${source}` : '') +
         (transferred ? ` · ${transferred}` : '');
     } else if (snapshot.loading) {
       status = snapshot.turn
         ? 'Refreshing World Board…'
         : 'Loading World Board…';
-    } else if (snapshot.error) {
-      status = String(snapshot.error);
     }
-    progress.classList.toggle(
-      'panel-surface-error',
-      Boolean(snapshot.error && !snapshot.loading && !load),
-    );
+    if (snapshot.error)
+      status = [status, snapshot.error].filter(Boolean).join(' · ');
+    progress.classList.toggle('panel-surface-error', Boolean(snapshot.error));
     progress.textContent = status;
     progress.hidden = !status;
   }

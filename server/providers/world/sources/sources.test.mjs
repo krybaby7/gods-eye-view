@@ -245,6 +245,33 @@ test('UCDP requires twelve complete released months and deduplicates revised eve
   assert.equal(Object.hasOwn(result.data.deathsByIso3, 'USA'), false);
 });
 
+test('UCDP bilateral evidence requires two named governments and an exact positive event', async (t) => {
+  const { fetchObservations } = await import('./ucdp.js');
+  const archive = `${candidateRoot}candidateged/GEDEvent_v25_11_26_10.csv`;
+  const csv = [
+    'id,country,date_start,date_end,best,type_of_violence,side_a,side_b,gwnoa,gwnob,date_prec',
+    '1,Pakistan,2026-10-01,2026-10-01,3,1,Government of Pakistan,Government of Afghanistan,770,700,1',
+    '2,Pakistan,2026-10-02,2026-10-02,5,1,Government of Pakistan,Rebel group,770,700,1',
+    '3,Pakistan,2026-10-03,2026-10-04,7,1,Government of Pakistan,Government of Afghanistan,770,700,2',
+    '4,Pakistan,2026-10-04,2026-10-04,0,1,Government of Pakistan,Government of Afghanistan,770,700,1',
+    '5,Pakistan,2026-10-05,2026-10-05,7,1,Government of Pakistan,Government of Yemen (North Yemen),770,679,1',
+  ].join('\n');
+  const result = await fetchObservations({
+    registry,
+    now,
+    cacheDirectory: await candidateCache(t),
+    observations: population,
+    fetchImpl: fixtureFetch({
+      [candidateRoot]: `<a href="${archive}">Candidate CSV</a>`,
+      [`${candidateRoot}olddw.html`]: '',
+      [archive]: csv,
+    }),
+  });
+  assert.deepEqual(result.data.bilateralEvents, [
+    { a: 'PAK', b: 'AFG', date: '2026-10-01', sourceUrl: archive, id: '1' },
+  ]);
+});
+
 test('UCDP reports missing coverage before publishing zeroes', async () => {
   const { fetchObservations } = await import('./ucdp.js');
   const fetchImpl = fixtureFetch({
