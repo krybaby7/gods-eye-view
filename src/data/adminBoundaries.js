@@ -80,7 +80,7 @@ const EARTH_RADIUS_KM = 6371;
 const toRad = (d) => (d * Math.PI) / 180;
 
 /** Spherical ring area (km²) — same formula as naturalEarthRegions.js. */
-function ringAreaKm2(ring) {
+export function ringAreaKm2(ring) {
   const n = ring.length;
   if (n < 3) return 0;
   let sum = 0;

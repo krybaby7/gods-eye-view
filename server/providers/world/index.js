@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { gzip } from 'node:zlib';
+import './actors.js';
 import { admitSameSiteRequest } from '../../../src/localRequestGate.mjs';
 import { loadWorldRegistry } from './registry.js';
 import {
@@ -14,6 +15,8 @@ import { cleanupLegacyWorldDownloads } from './sources/legacyDownloads.js';
 import { createWorldFetch } from './sources/transport.js';
 import { createWorldStore } from './store.js';
 import { createTurn } from './turn.js';
+import './dependencies.js';
+import './phase-3.js';
 import './assets.js';
 
 const PREFIX = '/api/world';
@@ -456,11 +459,12 @@ export function createWorldService({
     if (!compact) return features;
     if (summaryFor !== features) {
       summary = { ...features };
-      for (const { summary: project } of featureViews.values()) {
+      for (const { summary: project, combine } of featureViews.values()) {
         for (const [id, summarize] of Object.entries(project ?? {})) {
           if (Object.hasOwn(features, id))
             summary[id] = summarize(features[id]);
         }
+        combine?.({ summary, features, registry, now: now() });
       }
       summaryFor = features;
     }
@@ -514,8 +518,13 @@ export function createWorldService({
       country,
       lens,
       data:
-        project({ country, board, features: boardFeatures(false), registry }) ??
-        null,
+        project({
+          country,
+          board,
+          features: boardFeatures(false),
+          registry,
+          now: now(),
+        }) ?? null,
     };
   }
 
