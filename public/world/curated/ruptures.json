@@ -1,0 +1,60 @@
+[
+  {
+    "id": "rel_rupture_ukraine_russia",
+    "type": "diplomatic_rupture",
+    "from": "UKR",
+    "to": "RUS",
+    "directed": true,
+    "start": "2022-02-24",
+    "end": null,
+    "detail": "Ukraine severed diplomatic relations with the Russian Federation. The United Nations briefed the Security Council on continuing attacks in November 2026.",
+    "conditions": null,
+    "sources": [
+      "https://mfa.gov.ua/en/news/statement-ministry-foreign-affairs-ukraine-regarding-severance-diplomatic-relations-russian-federation",
+      "https://dppa.un.org/en/node/137309"
+    ],
+    "evidence": "documented",
+    "dateChecked": "2026-11-10",
+    "reviewed": false,
+    "hostilityOn": "2026-11-09"
+  },
+  {
+    "id": "rel_rupture_usa_iran",
+    "type": "diplomatic_rupture",
+    "from": "USA",
+    "to": "IRN",
+    "directed": true,
+    "start": "1980",
+    "end": null,
+    "detail": "The United States cut diplomatic ties with Iran in 1980. The United Nations briefed the Security Council on U.S. strikes on Iranian nuclear sites in June 2025.",
+    "conditions": null,
+    "sources": [
+      "https://history.state.gov/countries/iran",
+      "https://2021-2025.state.gov/u-s-relations-with-iran/",
+      "https://dppa.un.org/en/speeches-and-statements/asg-jenca-warns-security-council-of-dangerous-escalation-after-us"
+    ],
+    "evidence": "documented",
+    "dateChecked": "2026-11-10",
+    "reviewed": false,
+    "hostilityOn": "2025-06-22"
+  },
+  {
+    "id": "rel_rupture_georgia_russia",
+    "type": "diplomatic_rupture",
+    "from": "GEO",
+    "to": "RUS",
+    "directed": true,
+    "start": "2008",
+    "end": null,
+    "detail": "Georgia cut diplomatic relations with Russia following the August 2008 war. The European Union documented continuing Russian military presence in Georgia without its government’s consent in August 2026.",
+    "conditions": null,
+    "sources": [
+      "https://mfa.gov.ge/bilateral-relations/ru",
+      "https://www.eeas.europa.eu/eeas/georgia-statement-spokesperson-marking-18-years-outbreak-war-between-russia-and-georgia_en"
+    ],
+    "evidence": "documented",
+    "dateChecked": "2026-11-10",
+    "reviewed": false,
+    "hostilityOn": "2026-08-07"
+  }
+]

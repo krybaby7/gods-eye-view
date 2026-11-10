@@ -207,7 +207,45 @@ export const DATA_CREDITS = [
       '<a href="https://www.imf.org/external/datamapper/" target="_blank" rel="noopener">IMF DataMapper</a> · ' +
       '<a href="https://ucdp.uu.se/downloads/" target="_blank" rel="noopener">UCDP</a> · ' +
       '<a href="https://www.v-dem.net/data/the-v-dem-dataset/" target="_blank" rel="noopener">V-Dem</a> · ' +
-      '<a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a>',
+      '<a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a> · ' +
+      '<a href="https://portwatch.imf.org/" target="_blank" rel="noopener">IMF PortWatch</a> · ' +
+      '<a href="https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/" target="_blank" rel="noopener">U.S. EIA</a> · ' +
+      '<a href="https://fred.stlouisfed.org/" target="_blank" rel="noopener">FRED (EIA and IMF)</a> · ' +
+      '<a href="https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37" target="_blank" rel="noopener">CEPII BACI (Etalab 2.0)</a> · ' +
+      '<a href="https://github.com/eurostat/searoute" target="_blank" rel="noopener">Eurostat SeaRoute MARNET (EUPL-1.2, ShareAlike, outside app MIT licence)</a> · ' +
+      '<a href="https://datasets.wri.org/datasets/global-power-plant-database" target="_blank" rel="noopener">WRI Global Power Plant Database</a> · ' +
+      '<a href="https://www.wikidata.org/" target="_blank" rel="noopener">Wikidata</a> · ' +
+      '<a href="https://msi.nga.mil/Publications/WPI" target="_blank" rel="noopener">NGA World Port Index</a> · ' +
+      '<a href="https://ourairports.com/data/" target="_blank" rel="noopener">OurAirports</a> · ' +
+      '<a href="https://fas.org/initiative/status-world-nuclear-forces/" target="_blank" rel="noopener">Federation of American Scientists</a> · curated government and company citations',
+  },
+  {
+    key: 'world-board-relations',
+    html:
+      'World Board relations: ' +
+      '<a href="https://ucdp.uu.se/downloads/" target="_blank" rel="noopener">UCDP/PRIO and UCDP Dyadic v26.1</a> · ' +
+      '<a href="https://doi.org/10.7910/DVN/LEJUQZ" target="_blank" rel="noopener">Erik Voeten, Harvard Dataverse v39</a> · ' +
+      '<a href="https://www.wikidata.org/wiki/Property:P463" target="_blank" rel="noopener">Wikidata bloc memberships</a> · ' +
+      '<a href="https://www.wikidata.org/wiki/Property:P530" target="_blank" rel="noopener">Wikidata diplomatic links</a> · ' +
+      '<a href="https://www.wikidata.org/wiki/Property:P1336" target="_blank" rel="noopener">Wikidata territorial seeds</a> · ' +
+      '<a href="https://www.kentarosakuwa.info/data.html" target="_blank" rel="noopener">Thompson, Sakuwa and Suhas, Strategic Rivalries Data (1816–2020)</a> · ' +
+      '<a href="https://main.un.org/securitycouncil/en/content/un-sc-consolidated-list" target="_blank" rel="noopener">UN Security Council</a> · ' +
+      '<a href="https://www.gov.uk/government/publications/the-uk-sanctions-list" target="_blank" rel="noopener">UK FCDO</a> · ' +
+      '<a href="https://ofac.treasury.gov/sanctions-list-service" target="_blank" rel="noopener">US Treasury OFAC</a>. ' +
+      'Treaty and official membership sources are linked in relation cards.',
+  },
+  {
+    key: 'world-board-people',
+    html:
+      'World Board People: ' +
+      '<a href="https://www.wikidata.org/" target="_blank" rel="noopener">Wikidata</a> · ' +
+      '<a href="https://www.cia.gov/resources/world-leaders/" target="_blank" rel="noopener">CIA World Leaders</a> (US government public domain) · ' +
+      '<a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a> (per-photo attribution) · ' +
+      '<a href="https://bsky.app/" target="_blank" rel="noopener">Bluesky</a> · ' +
+      '<a href="https://www.youtube.com/" target="_blank" rel="noopener">YouTube</a> · ' +
+      '<a href="https://www.federalreserve.gov/feeds/feeds.htm" target="_blank" rel="noopener">Federal Reserve RSS</a> · ' +
+      '<a href="https://help.x.com/en/using-x/embed-x-feed" target="_blank" rel="noopener">X timeline widget</a> · ' +
+      'Draft organization directory from Wikidata and official organization links',
   },
   {
     key: 'world-board-live-condition',

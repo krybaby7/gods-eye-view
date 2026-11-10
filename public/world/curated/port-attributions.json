@@ -1,0 +1,127 @@
+{
+  "notes": [
+    "Port authority roles attach to the named World Port Index record. Equity rows describe stakes in the named port authority, terminal company, or concession company. Country attribution follows the documented controlling group's jurisdiction."
+  ],
+  "operators": [
+    {
+      "wpi": "31140",
+      "operator": "Port of Rotterdam Authority",
+      "sourceUrl": "https://www.portofrotterdam.com/en/about-port-authority",
+      "lastVerified": "2026-11-10",
+      "reviewed": false
+    },
+    {
+      "wpi": "31250",
+      "operator": "Antwerp-Bruges Port Authority",
+      "sourceUrl": "https://www.portofantwerpbruges.com/en/about-us",
+      "lastVerified": "2026-11-10",
+      "reviewed": false
+    },
+    {
+      "wpi": "16080",
+      "operator": "Los Angeles Harbor Department",
+      "sourceUrl": "https://portoflosangeles.org/about/port-101",
+      "lastVerified": "2026-11-10",
+      "reviewed": false
+    }
+  ],
+  "rows": [
+    {
+      "id": "asset_piraeus-port-authority",
+      "name": "Port of Piraeus",
+      "locatedIn": "GRC",
+      "operator": "Piraeus Port Authority",
+      "geometry": { "type": "Point", "coordinates": [23.636127, 37.941896] },
+      "coordinateSourceUrl": "https://www.wikidata.org/wiki/Q82310#P625",
+      "sourceUrl": "https://www.olp.gr/en/investor-relations/company-profile",
+      "lastVerified": "2026-11-10",
+      "reviewed": false,
+      "owners": [
+        {
+          "actor": "China COSCO Shipping via COSCO Shipping (Hong Kong)",
+          "country": "CHN",
+          "role": "investor",
+          "share": 0.67,
+          "basis": "Equity in Piraeus Port Authority S.A.",
+          "homeCountrySourceUrl": "https://www.olp.gr/en/investor-relations/corporate-announcements/corporate-announcements-2021/notification-of-significant-change-in-voting-rights"
+        }
+      ]
+    },
+    {
+      "id": "asset_hambantota-port-concession",
+      "name": "Hambantota International Port",
+      "locatedIn": "LKA",
+      "operator": "Hambantota International Port Group",
+      "sourceUrl": "https://www.cmport.com.hk/UpFiles/bpic/2025-04/20250425105733227.pdf",
+      "lastVerified": "2026-11-10",
+      "reviewed": false,
+      "owners": [
+        {
+          "actor": "China Merchants Group via China Merchants Port",
+          "country": "CHN",
+          "role": "investor",
+          "share": 0.65,
+          "basis": "Effective equity in Hambantota International Port Group after the partial disposal through Gainpro.",
+          "homeCountrySourceUrl": "https://www.cmport.com.hk/UpFiles/bpic/2025-04/20250425105733227.pdf"
+        }
+      ]
+    },
+    {
+      "id": "asset_colombo-international-container-terminals",
+      "name": "Colombo International Container Terminals",
+      "locatedIn": "LKA",
+      "operator": "Colombo International Container Terminals",
+      "sourceUrl": "https://www.cmport.com.hk/business/Detail.aspx?id=10000663",
+      "lastVerified": "2026-11-10",
+      "reviewed": false,
+      "owners": [
+        {
+          "actor": "China Merchants Group via China Merchants Port",
+          "country": "CHN",
+          "role": "investor",
+          "share": 0.85,
+          "basis": "Equity in the terminal company.",
+          "homeCountrySourceUrl": "https://www.cmport.com.hk/UpFiles/bpic/2025-04/20250425105733227.pdf"
+        }
+      ]
+    },
+    {
+      "id": "asset_port-de-djibouti-company",
+      "name": "Port of Djibouti",
+      "locatedIn": "DJI",
+      "operator": "Port de Djibouti S.A.",
+      "sourceUrl": "https://www.cmport.com.hk/entouch/business/infor.aspx?id=10006221",
+      "lastVerified": "2026-11-10",
+      "reviewed": false,
+      "owners": [
+        {
+          "actor": "China Merchants Group via China Merchants Port",
+          "country": "CHN",
+          "role": "investor",
+          "share": 0.235,
+          "basis": "Equity in Port de Djibouti S.A.",
+          "homeCountrySourceUrl": "https://www.cmport.com.hk/UpFiles/bpic/2025-04/20250425105733227.pdf"
+        }
+      ]
+    },
+    {
+      "id": "asset_kumport-terminal",
+      "name": "Kumport Terminal",
+      "locatedIn": "TUR",
+      "operator": "Kumport Terminal",
+      "sourceUrl": "https://www.cmport.com.hk/enTouch/news/Detail.aspx?id=10001628",
+      "lastVerified": "2026-11-10",
+      "reviewed": false,
+      "owners": [
+        {
+          "actor": "China Merchants Port, COSCO Pacific and CIC Capital consortium",
+          "country": "CHN",
+          "role": "investor",
+          "share": 0.65,
+          "basis": "Consortium equity in the terminal company in the 2015 acquisition announcement.",
+          "homeCountrySourceUrl": "https://www.cmport.com.hk/Touch/news/Detail.aspx?id=10010105"
+        }
+      ]
+    }
+  ]
+}

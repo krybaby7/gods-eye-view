@@ -1,0 +1,70 @@
+{
+  "notes": "Wikidata office items for cases where the country properties are missing, stale, or model a chair instead of the whole body. This table maps institutions only. All holders must qualify through their own dated P39 statements.",
+  "corrections": [
+    {
+      "id": "curated-smr-giovagnoli",
+      "name": "Gerardo Giovagnoli",
+      "country": "SMR",
+      "role": "head-of-state",
+      "office": "Captain Regent of San Marino",
+      "collective": "Captains Regent of San Marino",
+      "since": "2026-10-01",
+      "until": "2027-04-01",
+      "checkedOn": "2026-11-09",
+      "reviewed": false,
+      "sourceUrl": "https://www.reggenzadellarepubblica.sm/pub1/ReggenzaSM/en/Capitani_Reggenti/Capitani_Reggenti_In_Carica.html",
+      "reason": "The official Regency lists two current holders. Wikidata's dated P39 report returned only William Casali.",
+      "sourceGapUrl": "https://www.wikidata.org/wiki/Wikidata:WikiProject_Heads_of_state_and_government/Report:P39/Q2285706"
+    }
+  ],
+  "countries": {
+    "USA": {
+      "state": ["Q11696"],
+      "government": ["Q11696"],
+      "source": "https://www.whitehouse.gov/administration/"
+    },
+    "MEX": {
+      "state": ["Q628004"],
+      "government": ["Q628004"],
+      "source": "https://www.diputados.gob.mx/LeyesBiblio/pdf/CPEUM.pdf"
+    },
+    "GHA": {
+      "state": ["Q2672728"],
+      "government": ["Q2672728"],
+      "source": "https://presidency.gov.gh/ghanaians-expect-results-president-mahama-says-as-he-swears-in-ayariga-zanetor/"
+    },
+    "MMR": {
+      "state": ["Q887124"],
+      "government": ["Q887124"],
+      "source": "https://www.moi.gov.mm/sites/default/files/general-pdf/2020-06/Con%20%26%20Repub%20%28Myanm%20%26%20Eng%29%20Big-1.pdf"
+    },
+    "CHE": {
+      "state": ["Q11811941"],
+      "government": ["Q11811941"],
+      "collective": "Swiss Federal Council",
+      "staggered": true,
+      "source": "https://www.admin.ch/en/members-federal-council"
+    },
+    "AND": {
+      "state": ["Q19808845", "Q19808790"],
+      "collective": "Co-Princes of Andorra",
+      "source": "https://www.dfat.gov.au/geo/heads-of-government/andorra"
+    },
+    "BIH": {
+      "state": ["Q109646833", "Q109646836", "Q109646831"],
+      "collective": "Presidency of Bosnia and Herzegovina",
+      "source": "https://www.predsjednistvobih.ba/hron/default.aspx?id=18249&langTag=bs-BA"
+    },
+    "IRN": {
+      "state": ["Q332486"],
+      "source": "https://en.wikipedia.org/wiki/Politics_of_Iran"
+    },
+    "SMR": {
+      "state": ["Q258045"],
+      "government": [],
+      "collective": "Captains Regent of San Marino",
+      "source": "https://www.reggenzadellarepubblica.sm/pub1/ReggenzaSM/en/Capitani_Reggenti/Capitani_Reggenti_In_Carica.html",
+      "governmentSource": "https://www.gov.sm/pub2/GovSM/dam/jcr%3A96c3b62c-7286-4256-b982-8c44e3800238/Congresso%20di%20Stato.pdf"
+    }
+  }
+}

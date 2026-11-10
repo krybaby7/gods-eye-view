@@ -167,12 +167,27 @@ export function createWorldLayer({
     const canvas = viewer.scene.canvas;
     handler = new Cesium.ScreenSpaceEventHandler(canvas);
     handler.setInputAction(({ position }) => {
-      if (mode !== 'board' || !geometryReady || !isPointerFree()) return;
+      if (!geometryReady || !isPointerFree()) return;
       const id = pickAt(position);
       const hit = worldCardPick(id);
-      if (hit) return openCard(hit.type, hit.id);
-      const iso3 = countryAt(id);
+      if (
+        hit &&
+        (mode !== 'board' ||
+          !hit.countryFirst ||
+          (lens === 'ownership' && selected && hit.type === 'asset'))
+      )
+        return openCard(hit.type, hit.id);
+      if (mode !== 'board') return;
+      const iso3 = hit?.countryFirst
+        ? viewer.scene
+            .drillPick(position, undefined, 1, 1)
+            .map((picked) =>
+              countryAt(picking.resolvePickId?.(picked) ?? picked?.id),
+            )
+            .find(Boolean)
+        : countryAt(id);
       if (iso3 && (selected !== iso3 || card)) select(iso3);
+      else if (hit) openCard(hit.type, hit.id);
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
     handler.setInputAction(({ endPosition }) => {
       if (mode !== 'board' || !geometryReady || !isPointerFree()) {
@@ -312,6 +327,8 @@ export function createWorldLayer({
           viewer,
           signal: lifecycle.signal,
           requestRender,
+          getDetail: (country, lens, options) =>
+            source.getDetail(country, lens, options),
           getSnapshot: context,
           labelPoint: (iso3) => geometry?.labelPoint(iso3),
           fixtures: new URLSearchParams(globalThis.location?.search).has(

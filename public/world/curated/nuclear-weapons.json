@@ -1,0 +1,100 @@
+{
+  "publisher": "Federation of American Scientists",
+  "publication": "Status of World Nuclear Forces",
+  "notes": [
+    "Badge eligibility follows the countries identified by FAS as possessing nuclear weapons in its 2026 assessment. The assessment reflects the beginning of 2026.",
+    "The badge is separate from scoring. The rows record possession as assessed by FAS and carry no arsenal counts. A badge does not indicate public acknowledgment or treaty status."
+  ],
+  "rows": [
+    {
+      "countryCode": "CHN",
+      "country": "China",
+      "nuclearArmed": true,
+      "asOf": "early 2026",
+      "sourceUrl": "https://fas.org/initiative/status-world-nuclear-forces/",
+      "sourceLocator": "Status of World Nuclear Forces, 2026 — China entry",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "FRA",
+      "country": "France",
+      "nuclearArmed": true,
+      "asOf": "early 2026",
+      "sourceUrl": "https://fas.org/initiative/status-world-nuclear-forces/",
+      "sourceLocator": "Status of World Nuclear Forces, 2026 — France entry",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "IND",
+      "country": "India",
+      "nuclearArmed": true,
+      "asOf": "early 2026",
+      "sourceUrl": "https://fas.org/initiative/status-world-nuclear-forces/",
+      "sourceLocator": "Status of World Nuclear Forces, 2026 — India entry",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "ISR",
+      "country": "Israel",
+      "nuclearArmed": true,
+      "asOf": "early 2026",
+      "sourceUrl": "https://fas.org/initiative/status-world-nuclear-forces/",
+      "sourceLocator": "Status of World Nuclear Forces, 2026 — Israel entry",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "PAK",
+      "country": "Pakistan",
+      "nuclearArmed": true,
+      "asOf": "early 2026",
+      "sourceUrl": "https://fas.org/initiative/status-world-nuclear-forces/",
+      "sourceLocator": "Status of World Nuclear Forces, 2026 — Pakistan entry",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "PRK",
+      "country": "North Korea",
+      "nuclearArmed": true,
+      "asOf": "early 2026",
+      "sourceUrl": "https://fas.org/initiative/status-world-nuclear-forces/",
+      "sourceLocator": "Status of World Nuclear Forces, 2026 — North Korea entry",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "RUS",
+      "country": "Russia",
+      "nuclearArmed": true,
+      "asOf": "early 2026",
+      "sourceUrl": "https://fas.org/initiative/status-world-nuclear-forces/",
+      "sourceLocator": "Status of World Nuclear Forces, 2026 — Russia entry",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "GBR",
+      "country": "United Kingdom",
+      "nuclearArmed": true,
+      "asOf": "early 2026",
+      "sourceUrl": "https://fas.org/initiative/status-world-nuclear-forces/",
+      "sourceLocator": "Status of World Nuclear Forces, 2026 — United Kingdom entry",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    },
+    {
+      "countryCode": "USA",
+      "country": "United States",
+      "nuclearArmed": true,
+      "asOf": "early 2026",
+      "sourceUrl": "https://fas.org/initiative/status-world-nuclear-forces/",
+      "sourceLocator": "Status of World Nuclear Forces, 2026 — United States entry",
+      "checkedAt": "2026-11-09",
+      "reviewed": false
+    }
+  ]
+}

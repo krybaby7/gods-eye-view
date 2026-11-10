@@ -1,0 +1,298 @@
+{
+  "notes": [
+    "Starter set keyed by Wikidata QID. Country uses ISO 3166-1 alpha-3. For armed groups, country is a geographic association. It does not indicate state affiliation.",
+    "A null country is used for an organization with a regional or transnational scope. The country field describes jurisdiction for central banks and the state served for militaries.",
+    "Social links come from organization-published public account directories. Websites are the organizations' own public sites. The table stores link targets rather than feeds or posts."
+  ],
+  "organizations": {
+    "Q53536": {
+      "id": "Q53536",
+      "kind": "organization",
+      "name": "Federal Reserve System",
+      "role": "central-bank",
+      "country": "USA",
+      "accounts": {
+        "website": "https://www.federalreserve.gov/"
+      },
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q53536",
+      "sourceUrl": "https://www.federalreserve.gov/aboutthefed.htm",
+      "lastChecked": "2026-11-09",
+      "reviewed": false
+    },
+    "Q183231": {
+      "id": "Q183231",
+      "kind": "organization",
+      "name": "Bank of England",
+      "role": "central-bank",
+      "country": "GBR",
+      "accounts": {
+        "website": "https://www.bankofengland.co.uk/"
+      },
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q183231",
+      "sourceUrl": "https://www.bankofengland.co.uk/about",
+      "lastChecked": "2026-11-09",
+      "reviewed": false
+    },
+    "Q333101": {
+      "id": "Q333101",
+      "kind": "organization",
+      "name": "Bank of Japan",
+      "role": "central-bank",
+      "country": "JPN",
+      "accounts": {
+        "website": "https://www.boj.or.jp/en/"
+      },
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q333101",
+      "sourceUrl": "https://www.boj.or.jp/en/about/outline/index.htm",
+      "lastChecked": "2026-11-09",
+      "reviewed": false
+    },
+    "Q806703": {
+      "id": "Q806703",
+      "kind": "organization",
+      "name": "Bank of Canada",
+      "role": "central-bank",
+      "country": "CAN",
+      "accounts": {
+        "website": "https://www.bankofcanada.ca/",
+        "x": "https://twitter.com/bankofcanada",
+        "bluesky": "https://bsky.app/profile/bankofcanada.ca",
+        "youtube": "https://www.youtube.com/user/bankofcanadaofficial"
+      },
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q806703",
+      "sourceUrl": "https://www.bankofcanada.ca/about/",
+      "lastChecked": "2026-11-09",
+      "reviewed": false,
+      "accountSourceUrl": "https://www.bankofcanada.ca/about/contact-information/social-media/"
+    },
+    "Q1506724": {
+      "id": "Q1506724",
+      "kind": "organization",
+      "name": "Reserve Bank of Australia",
+      "role": "central-bank",
+      "country": "AUS",
+      "accounts": {
+        "website": "https://www.rba.gov.au/"
+      },
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q1506724",
+      "sourceUrl": "https://www.rba.gov.au/about-rba/",
+      "lastChecked": "2026-11-09",
+      "reviewed": false
+    },
+    "Q944085": {
+      "id": "Q944085",
+      "kind": "organization",
+      "name": "Reserve Bank of India",
+      "role": "central-bank",
+      "country": "IND",
+      "accounts": {
+        "website": "https://www.rbi.org.in/"
+      },
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q944085",
+      "sourceUrl": "https://www.rbi.org.in/Scripts/AboutusDisplay.aspx",
+      "lastChecked": "2026-11-09",
+      "reviewed": false
+    },
+    "Q8901": {
+      "id": "Q8901",
+      "kind": "organization",
+      "name": "European Central Bank",
+      "role": "central-bank",
+      "country": null,
+      "accounts": {
+        "website": "https://www.ecb.europa.eu/"
+      },
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q8901",
+      "sourceUrl": "https://www.ecb.europa.eu/ecb/all-about-us/html/index.en.html",
+      "lastChecked": "2026-11-09",
+      "reviewed": false,
+      "jurisdiction": "euro area"
+    },
+    "Q597394": {
+      "id": "Q597394",
+      "kind": "organization",
+      "name": "Swiss National Bank",
+      "role": "central-bank",
+      "country": "CHE",
+      "accounts": {
+        "website": "https://www.snb.ch/en/"
+      },
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q597394",
+      "sourceUrl": "https://www.snb.ch/en/the-snb/mandates-goals",
+      "lastChecked": "2026-11-09",
+      "reviewed": false
+    },
+    "Q56010": {
+      "id": "Q56010",
+      "kind": "organization",
+      "name": "Bundeswehr",
+      "role": "military",
+      "country": "DEU",
+      "accounts": {
+        "website": "https://www.bundeswehr.de/en/"
+      },
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q56010",
+      "sourceUrl": "https://www.bundeswehr.de/en/organization",
+      "lastChecked": "2026-11-09",
+      "reviewed": false
+    },
+    "Q644943": {
+      "id": "Q644943",
+      "kind": "organization",
+      "name": "Canadian Armed Forces",
+      "role": "military",
+      "country": "CAN",
+      "accounts": {},
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q644943",
+      "sourceUrl": "https://www.canada.ca/en/department-national-defence/corporate/mandate.html",
+      "lastChecked": "2026-11-09",
+      "reviewed": false
+    },
+    "Q625657": {
+      "id": "Q625657",
+      "kind": "organization",
+      "name": "Australian Defence Force",
+      "role": "military",
+      "country": "AUS",
+      "accounts": {},
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q625657",
+      "sourceUrl": "https://www.adfcareers.gov.au/the-adf",
+      "lastChecked": "2026-11-09",
+      "reviewed": false
+    },
+    "Q58967": {
+      "id": "Q58967",
+      "kind": "organization",
+      "name": "Israel Defense Forces",
+      "role": "military",
+      "country": "ISR",
+      "accounts": {
+        "website": "https://www.idf.il/en/"
+      },
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q58967",
+      "sourceUrl": "https://www.idf.il/en/",
+      "lastChecked": "2026-11-09",
+      "reviewed": false
+    },
+    "Q936105": {
+      "id": "Q936105",
+      "kind": "organization",
+      "name": "Armed Forces of Ukraine",
+      "role": "military",
+      "country": "UKR",
+      "accounts": {},
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q936105",
+      "sourceUrl": "https://mod.gov.ua/en/about-us/the-general-staff-of-the-armed-forces-of-ukraine",
+      "lastChecked": "2026-11-09",
+      "reviewed": false
+    },
+    "Q11211": {
+      "id": "Q11211",
+      "kind": "organization",
+      "name": "United States Armed Forces",
+      "role": "military",
+      "country": "USA",
+      "accounts": {},
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q11211",
+      "sourceUrl": "https://www.usa.gov/us-military",
+      "lastChecked": "2026-11-09",
+      "reviewed": false
+    },
+    "Q275482": {
+      "id": "Q275482",
+      "kind": "organization",
+      "name": "British Armed Forces",
+      "role": "military",
+      "country": "GBR",
+      "accounts": {},
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q275482",
+      "sourceUrl": "https://www.gov.uk/government/organisations/ministry-of-defence/about",
+      "lastChecked": "2026-11-09",
+      "reviewed": false
+    },
+    "Q41053": {
+      "id": "Q41053",
+      "kind": "organization",
+      "name": "Hezbollah",
+      "role": "armed-group",
+      "country": "LBN",
+      "accounts": {},
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q41053",
+      "sourceUrl": "https://www.gov.uk/government/publications/proscribed-terror-groups-or-organisations--2/proscribed-terrorist-groups-or-organisations-accessible-version",
+      "lastChecked": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "Hizballah"
+    },
+    "Q38799": {
+      "id": "Q38799",
+      "kind": "organization",
+      "name": "Hamas",
+      "role": "armed-group",
+      "country": "PSE",
+      "accounts": {},
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q38799",
+      "sourceUrl": "https://www.gov.uk/government/publications/proscribed-terror-groups-or-organisations--2/proscribed-terrorist-groups-or-organisations-accessible-version",
+      "lastChecked": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "Harakat al-Muqawamah al-Islamiyyah (Hamas)"
+    },
+    "Q3042087": {
+      "id": "Q3042087",
+      "kind": "organization",
+      "name": "Houthis (Ansar Allah)",
+      "role": "armed-group",
+      "country": "YEM",
+      "accounts": {},
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q3042087",
+      "sourceUrl": "https://documents.un.org/api/symbol/access?l=en&s=S%2F2026%2F44&t=pdf",
+      "lastChecked": "2026-11-09",
+      "reviewed": false,
+      "sourceLocator": "Section III.C, Arabian Peninsula, paragraph 74"
+    },
+    "Q2429253": {
+      "id": "Q2429253",
+      "kind": "organization",
+      "name": "Islamic State (ISIL / Da’esh)",
+      "role": "armed-group",
+      "country": null,
+      "accounts": {},
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q2429253",
+      "sourceUrl": "https://main.un.org/securitycouncil/en/sanctions/1267",
+      "lastChecked": "2026-11-09",
+      "reviewed": false,
+      "jurisdiction": "transnational"
+    },
+    "Q309998": {
+      "id": "Q309998",
+      "kind": "organization",
+      "name": "Al-Shabaab",
+      "role": "armed-group",
+      "country": "SOM",
+      "accounts": {},
+      "source": "wikidata",
+      "wikidataUrl": "https://www.wikidata.org/wiki/Q309998",
+      "sourceUrl": "https://main.un.org/securitycouncil/en/sanctions/2713",
+      "lastChecked": "2026-11-09",
+      "reviewed": false
+    }
+  }
+}
