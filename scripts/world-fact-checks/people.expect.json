@@ -278,7 +278,8 @@
       "roles": ["defence-minister"],
       "names": ["Cassiel Ato Baah Forson", "Cassiel Ato Forson"],
       "source": "https://mod.gov.gh/dr-cassiel-ato-forson-hands-over-to-kenneth-gilbert-adjei-at-defence-ministry/",
-      "checkedOn": "2026-11-10"
+      "checkedOn": "2026-11-10",
+      "key": "defence"
     },
     {
       "country": "NZL",

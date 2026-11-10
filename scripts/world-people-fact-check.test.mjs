@@ -52,6 +52,7 @@ test('People keeps 30 countries and accepts only verified name variants with dat
   ]) {
     assert.equal(checks.find((check) => check.id === id)?.pass, true, id);
   }
+  assert.equal(new Set(checks.map(({ id }) => id)).size, checks.length);
   const sample = checks.find(({ id }) => id === 'people-four-office-sample');
   assert.equal(sample.found.total, 120);
   assert.equal(sample.found.countries, 30);
