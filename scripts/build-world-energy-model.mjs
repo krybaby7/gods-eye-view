@@ -20,7 +20,7 @@ import {
   buildEnergyModel,
   commodity,
   distanceKm,
-  originDistanceLimit,
+  originDecayKm,
   maritimeRouter,
 } from './world-energy-model.mjs';
 
@@ -258,8 +258,10 @@ function neighboursAndPorts(ports, router) {
         (a, b) => ringAreaKm2(b[0]) - ringAreaKm2(a[0]),
       );
       const mainland =
-        largestFirst.find((part) =>
-          capitals.some(({ lat, lon }) => polygonsContain([part], lat, lon)),
+        largestFirst.find(
+          (part) =>
+            ringAreaKm2(part[0]) >= ringAreaKm2(largestFirst[0][0]) / 3 &&
+            capitals.some(({ lat, lon }) => polygonsContain([part], lat, lon)),
         ) ?? largestFirst[0];
       return { iso, polygons: parts, mainland };
     });
@@ -270,16 +272,25 @@ function neighboursAndPorts(ports, router) {
   );
   const pair = (a, b) => [a, b].sort().join('/');
   const commonVertices = new Map();
-  for (const { iso, mainland } of countries) {
-    if (!mainland) continue;
-    for (const point of mainland[0]) {
-      const key = point.join(',');
-      const other = owners.get(key);
-      if (other && other !== iso) {
-        sharedVertices.add(key);
+  for (const { iso, polygons } of countries) {
+    for (const [outer] of polygons) {
+      for (const point of outer) {
+        const key = point.join(',');
+        const countriesAtPoint = owners.get(key) ?? new Set();
+        countriesAtPoint.add(iso);
+        owners.set(key, countriesAtPoint);
+      }
+    }
+  }
+  for (const [key, countriesAtPoint] of owners) {
+    if (countriesAtPoint.size < 2) continue;
+    sharedVertices.add(key);
+    const atPoint = [...countriesAtPoint];
+    for (const [index, iso] of atPoint.entries()) {
+      for (const other of atPoint.slice(index + 1)) {
         const id = pair(iso, other);
         commonVertices.set(id, (commonVertices.get(id) ?? 0) + 1);
-      } else owners.set(key, iso);
+      }
     }
   }
   const fallback = new Map();
@@ -396,13 +407,27 @@ export function routesFor(network, ports, rows = []) {
   const { port, adjacent } = neighboursAndPorts(ports, router);
   const endpoints = new Map();
   for (const row of rows) {
-    const { iso, direction, product, port: name, coordinates, share } = row;
+    const {
+      iso,
+      direction,
+      product,
+      port: name,
+      coordinates,
+      share,
+      shareBasis,
+    } = row;
     const snapped = router(coordinates, coordinates);
     if (!snapped)
       throw new Error(`Energy port cannot resolve: ${iso}/${product}/${name}`);
     const key = [iso, direction, product].join('/');
     const group = endpoints.get(key) ?? [];
-    group.push({ name, coordinates, share, approximate: share == null });
+    group.push({
+      name,
+      coordinates,
+      share,
+      shareBasis,
+      approximate: share == null,
+    });
     endpoints.set(key, group);
   }
   function terminalOptions(iso, direction, item) {
@@ -416,14 +441,15 @@ export function routesFor(network, ports, rows = []) {
       const total = options.reduce((sum, { share }) => sum + share, 0);
       if (total > 1.000001)
         throw new Error(`Energy port shares exceed 100% for ${iso}/${item}`);
-      if (total < 0.999999)
-        options.push({ share: Number((1 - total).toFixed(6)) });
-      return options;
+      if (total < 1 - Number.EPSILON)
+        options.push({ share: Number((1 - total).toFixed(15)) });
+      return total > 1
+        ? options.map((option) => ({ ...option, share: option.share / total }))
+        : options;
     }
     return [{ ...group[0], share: 1 }];
   }
-  const cache = new Map();
-  return (from, to, item) => {
+  function mode(from, to, item) {
     // CPC and BTC cross a foreign land leg before maritime loading. Direct
     // Kazakh land routes to China and Russia retain their continental mode.
     const maritimeOrigin =
@@ -439,68 +465,212 @@ export function routesFor(network, ports, rows = []) {
         adjacent(from, to, item) &&
         (!maritimeOrigin || landlocked.has(to)) &&
         !maritimeDestination)
-    ) {
-      return { mode: 'land' };
-    }
+    )
+      return 'land';
     if (
       (!maritimeDestination && landlocked.has(to)) ||
       (!maritimeOrigin && landlocked.has(from))
-    ) {
-      return { mode: 'unknown' };
-    }
+    )
+      return 'unknown';
+    return 'sea';
+  }
+
+  function connection(origin, destination) {
+    const route =
+      origin.coordinates &&
+      destination.coordinates &&
+      router(origin.coordinates, destination.coordinates);
+    if (!route) return { mode: 'unknown' };
+    return {
+      ...route,
+      ports: [origin.name, destination.name],
+      approximate: origin.approximate || destination.approximate,
+    };
+  }
+
+  const cache = new Map();
+  function routeFor(from, to, item) {
     const key = [from, to, item].join('/');
     if (!cache.has(key)) {
-      const origins = terminalOptions(from, 'export', item);
-      const destinations = terminalOptions(to, 'import', item);
-      if (!origins.length || !destinations.length) {
-        cache.set(key, { mode: 'unknown' });
-        return cache.get(key);
+      const routeMode = mode(from, to, item);
+      if (routeMode !== 'sea') {
+        cache.set(key, { mode: routeMode });
+      } else {
+        const origins = terminalOptions(from, 'export', item);
+        const destinations = terminalOptions(to, 'import', item);
+        const routes = destinations.flatMap((destination) =>
+          origins.map((origin) => ({
+            ...connection(origin, destination),
+            share: origin.share * destination.share,
+          })),
+        );
+        cache.set(key, routes.length ? routes : { mode: 'unknown' });
       }
-      const routes = destinations.flatMap((destination) => {
-        if (!destination.coordinates)
-          return [{ mode: 'unknown', share: destination.share }];
-
-        const candidates = origins.flatMap((origin) => {
-          if (!origin.coordinates) return [];
-          const route = router(origin.coordinates, destination.coordinates);
-          return route ? [{ origin, route }] : [];
-        });
-        if (!candidates.length)
-          return [{ mode: 'unknown', share: destination.share }];
-        const shortest = Math.min(
-          ...candidates.map(({ route }) => route.distance),
-        );
-        const eligible = candidates.filter(
-          ({ route }) => route.distance <= originDistanceLimit * shortest,
-        );
-        const total = eligible.reduce(
-          (sum, { origin }) => sum + origin.share,
-          0,
-        );
-        // A sourced share can cover only part of a flow (e.g. CPC). Preserve
-        // that unknown remainder independently of the distance filter.
-        const unallocated = origins.reduce(
-          (sum, { coordinates, share }) => (coordinates ? sum : sum + share),
-          0,
-        );
-        const assigned = eligible.map(({ origin, route }) => ({
-          ...route,
-          share: (origin.share / total) * (1 - unallocated) * destination.share,
-          ports: [origin.name, destination.name],
-          approximate: origin.approximate || destination.approximate,
-        }));
-        if (unallocated > 0) {
-          assigned.push({
-            mode: 'unknown',
-            share: unallocated * destination.share,
-          });
-        }
-        return assigned;
-      });
-      cache.set(key, routes.length ? routes : { mode: 'unknown' });
     }
     return cache.get(key);
+  }
+
+  routeFor.fit = (flows) => {
+    const traffic = new Map();
+    for (const {
+      provider,
+      dependent,
+      item,
+      tonnes,
+      landShare = 0,
+      routeOriginAdjustment,
+    } of flows) {
+      for (const [from, share] of [
+        [provider, 1 - (routeOriginAdjustment?.share ?? 0)],
+        [routeOriginAdjustment?.origin, routeOriginAdjustment?.share ?? 0],
+      ]) {
+        if (!share || !tonnes || item === 'pipeline gas') continue;
+        const source = endpoints.get([from, 'export', item].join('/'));
+        if (!source?.some(({ share }) => share > 0)) continue;
+        const key = [from, item].join('/');
+        const group = traffic.get(key) ?? {
+          from,
+          item,
+          land: 0,
+          demands: new Map(),
+        };
+        const volume = tonnes * share;
+        const land =
+          mode(from, dependent, item) === 'land' ? volume : volume * landShare;
+        group.land += land;
+        if (volume > land)
+          group.demands.set(
+            dependent,
+            (group.demands.get(dependent) ?? 0) + volume - land,
+          );
+        traffic.set(key, group);
+      }
+    }
+    const fitted = new Map();
+    const audit = [];
+    for (const { from, item, land, demands } of traffic.values()) {
+      const origins = terminalOptions(from, 'export', item);
+      const source = endpoints.get([from, 'export', item].join('/'));
+      const allExports = source.some(
+        ({ shareBasis }) => shareBasis === 'all exports',
+      );
+      const columns = [];
+      let unresolved = 0;
+      for (const [to, tonnes] of demands) {
+        const options =
+          mode(from, to, item) === 'sea'
+            ? terminalOptions(to, 'import', item)
+            : [];
+        const routesForDestination = [];
+        fitted.set([from, to, item].join('/'), routesForDestination);
+        for (const destination of options.length ? options : [{ share: 1 }]) {
+          const routes = origins.map((origin) =>
+            connection(origin, destination),
+          );
+          if (routes.some(({ mode }) => mode === 'sea')) {
+            columns.push({ to, tonnes: tonnes * destination.share, routes });
+          } else {
+            unresolved += tonnes * destination.share;
+            routesForDestination.push({
+              mode: 'unknown',
+              share: destination.share,
+            });
+          }
+        }
+      }
+      const remaining = columns.reduce((sum, { tonnes }) => sum + tonnes, 0);
+      const outsideSea = allExports ? land + unresolved : 0;
+      const total = remaining + outsideSea;
+      const targets = origins.map(
+        ({ share, name }) => share * total - (!name ? outsideSea : 0),
+      );
+      if (targets.some((target) => target < 0))
+        throw new Error(
+          `Unroutable or land exports exceed the unallocated national share for ${from}/${item}`,
+        );
+
+      fitPortShares(columns, origins, targets);
+      const allocated = origins.map(() => 0);
+      for (const { to, routes, allocation } of columns) {
+        const options = fitted.get([from, to, item].join('/'));
+        for (const [index, route] of routes.entries()) {
+          const tonnes = allocation[index];
+          allocated[index] += tonnes;
+          if (tonnes > 0)
+            options.push({ ...route, share: tonnes / demands.get(to) });
+        }
+      }
+      for (const [index, { name, share }] of origins.entries()) {
+        if (!name) continue;
+        audit.push({
+          provider: from,
+          item,
+          port: name,
+          share,
+          basisTonnes: total,
+          targetTonnes: targets[index],
+          allocatedTonnes: allocated[index],
+        });
+      }
+      for (const { name, share } of source) {
+        if (share === 0)
+          audit.push({
+            provider: from,
+            item,
+            port: name,
+            share,
+            basisTonnes: total,
+            targetTonnes: 0,
+            allocatedTonnes: 0,
+          });
+      }
+    }
+    return {
+      routeFor: (from, to, item) =>
+        fitted.get([from, to, item].join('/')) ?? routeFor(from, to, item),
+      audit,
+    };
   };
+  routeFor.adjacent = adjacent;
+  return routeFor;
+}
+
+function fitPortShares(columns, origins, targets) {
+  for (const column of columns) {
+    const distances = column.routes.map(({ distance }) => distance ?? Infinity);
+    const shortest = Math.min(...distances);
+    column.allocation = targets.map((target, index) => {
+      if (target === 0) return 0;
+      if (!origins[index].name) return 1;
+      if (!Number.isFinite(distances[index])) return 0;
+      return Math.exp(-(distances[index] - shortest) / originDecayKm);
+    });
+  }
+  const sums = () =>
+    targets.map((_, index) =>
+      columns.reduce((sum, { allocation }) => sum + allocation[index], 0),
+    );
+  let totals = sums();
+  for (let iteration = 0; iteration < 10_000; iteration++) {
+    const scales = totals.map((total, index) =>
+      total ? targets[index] / total : 0,
+    );
+    for (const { allocation, tonnes } of columns) {
+      for (const [index, scale] of scales.entries()) allocation[index] *= scale;
+      const scale =
+        tonnes / allocation.reduce((sum, amount) => sum + amount, 0);
+      for (const index of allocation.keys()) allocation[index] *= scale;
+    }
+    totals = sums();
+    if (
+      totals.every(
+        (total, index) =>
+          Math.abs(total - targets[index]) <= targets[index] * 1e-8,
+      )
+    )
+      return;
+  }
+  throw new Error('Energy port fitting did not converge');
 }
 
 if (import.meta.main) {
@@ -570,9 +740,43 @@ if (import.meta.main) {
     originEvidence,
   );
   const references = (await readEnergyReference()).rows;
-  const model = buildEnergyModel(adjusted, { routeFor, references });
+  const allocation = routeFor.fit(adjusted);
+  const model = buildEnergyModel(adjusted, {
+    routeFor: allocation.routeFor,
+    references,
+  });
+  const borderPairs = [
+    'MYS/THA',
+    'ARE/OMN',
+    'ARE/SAU',
+    'DEU/DNK',
+    'CMR/GNQ',
+    'GAB/GNQ',
+  ];
+  const borderAudit = Object.fromEntries(
+    borderPairs.map((pair) => [
+      pair,
+      routeFor.adjacent(...pair.split('/'), 'refined products'),
+    ]),
+  );
+  const uaeSaudi = adjusted.find(
+    ({ provider, dependent, item }) =>
+      provider === 'ARE' && dependent === 'SAU' && item === 'refined products',
+  );
+  model.allocationAudit = {
+    ports: allocation.audit,
+    borders: borderAudit,
+    uaeSaudiRefinedProducts: uaeSaudi && {
+      tonnes: uaeSaudi.tonnes,
+      route: allocation.routeFor('ARE', 'SAU', 'refined products'),
+    },
+  };
   if (correction) {
-    const { calibration } = buildEnergyModel(flows, { routeFor, references });
+    const baseline = routeFor.fit(flows);
+    const { calibration } = buildEnergyModel(flows, {
+      routeFor: baseline.routeFor,
+      references,
+    });
     model.sourceOverride = {
       ...correction,
       note: originEvidence.note,

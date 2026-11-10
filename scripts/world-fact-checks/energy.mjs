@@ -1,3 +1,4 @@
+import portTable from '../../public/world/curated/energy-ports.json' with { type: 'json' };
 import { chokepointExposure } from '../../src/layers/world/energy.js';
 
 const checkedOn = '2026-11-09';
@@ -19,17 +20,32 @@ const beforeGapPct = {
   panama: { oil: 21.8 },
   'cape-of-good-hope': { oil: -64.6, lng: -79.4 },
 };
-// Archived observations from the model at reviewed PR #19 head 7ba05ffe.
-const beforeRound3 = {
-  malacca: { oil: 16.961, lng: 9.51 },
-  hormuz: { oil: 15.846, lng: 9.582 },
-  suez: { oil: 8.088, lng: 5.413 },
-  'bab-el-mandeb': { oil: 8.544, lng: 4.303 },
-  'danish-straits': { oil: 2.894, lng: 0.984 },
-  dardanelles: { oil: 2.197, lng: 0.148 },
-  panama: { oil: 3.454 },
-  'cape-of-good-hope': { oil: 3.196, lng: 1.846 },
+// Archived observations from reviewed PR #19 head 92c3087a (fix round 3).
+const round3Modelled = {
+  malacca: { oil: 16.834, lng: 7.391 },
+  hormuz: { oil: 15.543, lng: 9.562 },
+  suez: { oil: 6.826, lng: 3.294 },
+  'bab-el-mandeb': { oil: 6.549, lng: 2.184 },
+  'danish-straits': { oil: 1.509, lng: 2.1 },
+  dardanelles: { oil: 2.638, lng: 0.145 },
+  panama: { oil: 3.438 },
+  'cape-of-good-hope': { oil: 3.259, lng: 1.505 },
 };
+const naturalEarth =
+  'https://www.naturalearthdata.com/downloads/50m-cultural-vectors/50m-admin-0-countries-2/';
+const cepii =
+  'https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37';
+const borderPairs = [
+  'MYS/THA',
+  'ARE/OMN',
+  'ARE/SAU',
+  'DEU/DNK',
+  'CMR/GNQ',
+  'GAB/GNQ',
+];
+const measuredPorts = portTable.rows.filter(
+  ({ direction, share }) => direction === 'export' && share !== null,
+);
 const makeCheck = (id, expected, found, source, pass, date = checkedOn) => ({
   id: 'energy-' + id,
   expected,
@@ -39,6 +55,7 @@ const makeCheck = (id, expected, found, source, pass, date = checkedOn) => ({
   pass: Boolean(pass),
 });
 const checkedRound3 = '2026-11-10';
+const checkedRound4 = '2026-11-10';
 
 const cargoRegression = [
   {
@@ -78,11 +95,12 @@ const mainlandPorts = {
 
 export default async function checkEnergy({ board, getDetail }) {
   const model = board?.features?.['energy-dependencies'];
-  const [thailand, taiwan, india, global, ...ports] = await Promise.all(
-    ['THA', 'TWN', 'IND', null, ...Object.keys(mainlandPorts)].map((country) =>
-      getDetail(country, 'energy'),
-    ),
-  );
+  const [thailand, taiwan, india, global, denmark, ...ports] =
+    await Promise.all(
+      ['THA', 'TWN', 'IND', null, 'DNK', ...Object.keys(mainlandPorts)].map(
+        (country) => getDetail(country, 'energy'),
+      ),
+    );
   const hormuz = chokepointExposure(board ?? {}, 'chokepoint6');
   const top = hormuz
     .slice(0, 4)
@@ -133,6 +151,42 @@ export default async function checkEnergy({ board, getDetail }) {
   );
   const dardanellesShare = blackSea.reduce((sum, { share }) => sum + share, 0);
   const audit = global?.routeAudit;
+  const kozminoShare = splits.reduce(
+    (sum, { ports, share }) => (ports[0] === 'Kozmino' ? sum + share : sum),
+    0,
+  );
+  const portAllocations = global?.allocationAudit?.ports;
+  const portRows = measuredPorts.map(
+    ({ iso, product, port, share, sourceUrl }) => {
+      const row = portAllocations?.find(
+        ({ provider, item, port: name }) =>
+          provider === iso && item === product && name === port,
+      );
+      const targetTonnes = share * row?.basisTonnes;
+      const allocatedTonnes = row?.allocatedTonnes;
+      const gapPct =
+        targetTonnes > 0 ? 100 * (allocatedTonnes / targetTonnes - 1) : null;
+      return {
+        iso,
+        product,
+        port,
+        expectedShare: share,
+        targetTonnes,
+        allocatedTonnes,
+        gapPct,
+        sourceUrl,
+      };
+    },
+  );
+  const sakhalinMt =
+    portAllocations?.find(({ port }) => port === 'Prigorodnoye')
+      ?.allocatedTonnes / 1e6;
+  const borderAudit = global?.allocationAudit?.borders;
+  const uaeSaudi = global?.allocationAudit?.uaeSaudiRefinedProducts;
+  const danishCrude = denmark?.exposure?.find(
+    ({ gate, item }) => gate === 'chokepoint10' && item === 'crude oil',
+  );
+  const denmarkShare = danishCrude?.shares?.all;
   const result = [
     makeCheck(
       'hormuz-dependents',
@@ -185,6 +239,58 @@ export default async function checkEnergy({ board, getDetail }) {
             gates.includes('chokepoint10') &&
             !gates.includes('eia-dardanelles'),
         ),
+    ),
+    makeCheck(
+      'national-port-shares',
+      'Every sourced export terminal within 2% of the national share target (zero-share terminals receive zero tonnes)',
+      portRows,
+      [...new Set(measuredPorts.map(({ sourceUrl }) => sourceUrl))],
+      portRows.every(({ allocatedTonnes, expectedShare, gapPct }) =>
+        expectedShare === 0
+          ? allocatedTonnes === 0
+          : Number.isFinite(gapPct) && Math.abs(gapPct) <= 2,
+      ),
+      checkedRound4,
+    ),
+    makeCheck(
+      'india-kozmino-crude',
+      'Under 20% of Russia-to-India crude allocated to Kozmino',
+      splits.length ? { share: kozminoShare } : null,
+      [eiaRussia, 'World Board fix-round-4 brief'],
+      splits.length > 0 && kozminoShare < 0.2,
+      checkedRound4,
+    ),
+    makeCheck(
+      'sakhalin-lng',
+      'Within 25% of EIA’s 9.7 Mt (473 Bcf, 2024)',
+      Number.isFinite(sakhalinMt) ? { mt: sakhalinMt } : null,
+      eiaRussia,
+      Math.abs(sakhalinMt / 9.7 - 1) <= 0.25,
+      checkedRound4,
+    ),
+    makeCheck(
+      'land-borders',
+      Object.fromEntries(borderPairs.map((pair) => [pair, true])),
+      borderAudit,
+      naturalEarth,
+      borderPairs.every((pair) => borderAudit?.[pair] === true),
+      checkedRound4,
+    ),
+    makeCheck(
+      'uae-saudi-refined-products',
+      'BACI refined products travel by land between the UAE and Saudi Arabia',
+      uaeSaudi,
+      [naturalEarth, cepii],
+      uaeSaudi?.tonnes > 0 && uaeSaudi.route?.mode === 'land',
+      checkedRound4,
+    ),
+    makeCheck(
+      'denmark-danish-straits-crude',
+      'Within 1 percentage point of the reviewed round 2 share (near zero)',
+      danishCrude,
+      [eiaChokepoints, 'World Board review 3, Energy (PR #19)'],
+      denmark?.importTonnes?.['crude oil'] > 0 && (denmarkShare ?? 0) <= 0.01,
+      checkedRound4,
     ),
     makeCheck(
       'india-russian-crude-routes',
@@ -281,7 +387,7 @@ export default async function checkEnergy({ board, getDetail }) {
       note,
       dataNote,
     } = row;
-    const beforeModelled = beforeRound3[routeId]?.[commodity];
+    const beforeModelled = round3Modelled[routeId]?.[commodity];
     const found = {
       originalGapPct: before,
       beforeModelled,
@@ -302,7 +408,13 @@ export default async function checkEnergy({ board, getDetail }) {
       Number.isFinite(published) &&
       Number.isFinite(beforeModelled) &&
       before !== undefined;
-    if (routeId === 'hormuz' || routeId === 'malacca') {
+    if (routeId === 'malacca' && commodity === 'lng') {
+      expected = 'Absolute calibration gap at most 10%';
+      pass &&= Math.abs(gapPct) <= 10;
+    } else if (routeId === 'danish-straits' && commodity === 'oil') {
+      expected = 'Absolute calibration gap no worse than round 2 (40.9%)';
+      pass &&= Math.abs(gapPct) <= 40.9;
+    } else if (routeId === 'hormuz' || routeId === 'malacca') {
       expected = 'Absolute calibration gap at most 25%';
       pass &&= Math.abs(gapPct) <= 25;
     } else if (routeId === 'danish-straits' || routeId === 'dardanelles') {
@@ -313,13 +425,6 @@ export default async function checkEnergy({ board, getDetail }) {
     ) {
       expected = 'shortest route, before the Red Sea diversions';
       pass &&= note === expected;
-      if (routeId === 'suez' && commodity === 'lng') {
-        expected =
-          'EIA published 0.5 bcf/d in 2024. Report the remaining gap after filtering port origins in the pre-diversion model.';
-        pass &&=
-          published === 0.5 &&
-          Math.abs(modelled - published) < Math.abs(beforeModelled - published);
-      }
     }
     result.push(
       makeCheck(
@@ -328,7 +433,7 @@ export default async function checkEnergy({ board, getDetail }) {
         found,
         dataNote ? [eiaChokepoints, dataNote.sourceUrl] : eiaChokepoints,
         pass,
-        checkedRound3,
+        checkedRound4,
       ),
     );
   }

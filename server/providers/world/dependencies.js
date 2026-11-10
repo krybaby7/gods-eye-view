@@ -103,6 +103,7 @@ export function compactEnergyModel(model) {
     rows,
     pipelineGas,
     quantityAudit,
+    allocationAudit,
     ...summary
   } = model;
   const routeHighlights = rows
@@ -123,6 +124,7 @@ export function energyDetail(model, country) {
       calibration: model.calibration,
       routeAudit: model.routeAudit,
       quantityAudit: model.quantityAudit,
+      allocationAudit: model.allocationAudit,
     };
   return {
     ...selectedRoutes(
