@@ -53,6 +53,14 @@ After securing written IMF permission for automated extraction, set `GEV_WORLD_P
 
 Exposure shows monthly Brent, WTI and European natural gas from FRED in their source units. The structural route model uses representative ports and shortest maritime paths. Chokepoint cards show modelled volumes alongside the same-year EIA benchmarks and signed gaps. The source guide documents the route data’s ShareAlike licence and build inputs. [Data sources](../DATA_SOURCES.md)
 
+## Assets and ownership
+
+The Assets tab lists facilities by host country, sourced foreign holdings and separately documented military presence. Exact markers use source coordinates and cluster by host and type at globe zoom. A `?` marker at the host-country label indicates an unknown site. Dotted lines also indicate an unknown site. The Ownership lens uses grey dashes for documented military presence and colours hosts with sourced foreign holdings. Asset cards link coordinate evidence and identify owners, operators and legal jurisdiction separately.
+
+Country detail includes all historical WRI v1.3.0 power plants. Map markers show the non-nuclear WRI subset at 100 MW and above, along with Wikidata nuclear sites. The age of the WRI inventory and its unknown current status appear in the cards. For countries and territories that share a map shape, the detail preserves the publisher's country code. Wikidata supplies nuclear and launch facilities and company ownership or operator claims. A company claim uses its Wikidata country or the country of its headquarters and carries the underlying evidence. NGA operators come from a single matching Wikidata candidate or a hand-checked port authority citation. Scheduled large airports carry no inferred ownership. No asset source changes a score.
+
+The 101 military sites, 50 fabs, five port company attributions and nine FAS possession badges remain draft. Separate coordinate citations cover 58 bases and 20 fabs. A military sending country describes presence. Fab cards label company affiliation and documented title separately. The port attributions describe equity in named operators or concessions. The FAS badge displays separately from scores. GEM sources wait for the owner-supplied download and verified per-file licence.
+
 ## Fixture acceptance
 
 Run the fixture harness against the World Board development server on port 5183.

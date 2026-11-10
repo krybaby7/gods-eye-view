@@ -223,14 +223,29 @@ async function pickCountry(lon, lat, iso3) {
         C.Cartesian3.fromDegrees(lon, lat),
       );
       const canvas = scene.canvas.getBoundingClientRect();
-      const x = Math.round(position.x + canvas.left);
-      const y = Math.round(position.y + canvas.top);
-      const id = scene.pick(position, 1, 1)?.id;
-      if (
-        id?.startsWith?.('world:' + iso3 + ':') &&
-        document.elementFromPoint(x, y) === scene.canvas
-      )
-        return { x, y, id };
+      if (!position) return false;
+      // An asset or portrait at the country label can cover the nominal point.
+      for (const [dx, dy] of [
+        [0, 0],
+        [16, 0],
+        [-16, 0],
+        [0, 16],
+        [0, -16],
+        [24, 14],
+        [-24, 14],
+        [24, -14],
+        [-24, -14],
+      ]) {
+        const probe = new C.Cartesian2(position.x + dx, position.y + dy);
+        const x = Math.round(probe.x + canvas.left);
+        const y = Math.round(probe.y + canvas.top);
+        const id = scene.pick(probe, 1, 1)?.id;
+        if (
+          id?.startsWith?.('world:' + iso3 + ':') &&
+          document.elementFromPoint(x, y) === scene.canvas
+        )
+          return { x, y, id };
+      }
       scene.requestRender();
       return false;
     },

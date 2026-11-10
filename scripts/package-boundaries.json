@@ -376,7 +376,13 @@
       "public/world/curated/actor-office-seats.json",
       "server/providers/world/sources/wikimedia-commons.js",
       "server/providers/world/sources/youtube-rss.js",
-      "server/providers/common/rss.js"
+      "server/providers/common/rss.js",
+      "server/providers/world/assets.js",
+      "server/providers/world/sources/asset-common.js",
+      "server/providers/world/sources/nga-ports.js",
+      "server/providers/world/sources/ourairports.js",
+      "server/providers/world/sources/wikidata-assets.js",
+      "server/providers/world/sources/wri-power.js"
     ],
     "external": ["undici"]
   },
@@ -2431,7 +2437,12 @@
       "src/ui/worldActorCard.js",
       "src/ui/worldPeopleElements.js",
       "src/ui/worldPeopleTab.js",
-      "src/ui/styles/world-phase-5.css"
+      "src/ui/styles/world-phase-5.css",
+      "src/layers/world/assets.js",
+      "src/layers/world/assetOverlay.js",
+      "src/layers/world/phase-4.js",
+      "src/ui/styles/world-phase-4.css",
+      "src/ui/worldAssetPanels.js"
     ],
     "external": [
       "hls.js",
@@ -2994,7 +3005,12 @@
       "src/ui/worldActorCard.js",
       "src/ui/worldPeopleElements.js",
       "src/ui/worldPeopleTab.js",
-      "src/ui/styles/world-phase-5.css"
+      "src/ui/styles/world-phase-5.css",
+      "src/layers/world/assets.js",
+      "src/layers/world/assetOverlay.js",
+      "src/layers/world/phase-4.js",
+      "src/ui/styles/world-phase-4.css",
+      "src/ui/worldAssetPanels.js"
     ],
     "external": [
       "hls.js",

@@ -212,7 +212,12 @@ export const DATA_CREDITS = [
       '<a href="https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/" target="_blank" rel="noopener">U.S. EIA</a> · ' +
       '<a href="https://fred.stlouisfed.org/" target="_blank" rel="noopener">FRED (EIA and IMF)</a> · ' +
       '<a href="https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37" target="_blank" rel="noopener">CEPII BACI (Etalab 2.0)</a> · ' +
-      '<a href="https://github.com/eurostat/searoute" target="_blank" rel="noopener">Eurostat SeaRoute MARNET (EUPL-1.2, ShareAlike, outside app MIT licence)</a>',
+      '<a href="https://github.com/eurostat/searoute" target="_blank" rel="noopener">Eurostat SeaRoute MARNET (EUPL-1.2, ShareAlike, outside app MIT licence)</a> · ' +
+      '<a href="https://datasets.wri.org/datasets/global-power-plant-database" target="_blank" rel="noopener">WRI Global Power Plant Database</a> · ' +
+      '<a href="https://www.wikidata.org/" target="_blank" rel="noopener">Wikidata</a> · ' +
+      '<a href="https://msi.nga.mil/Publications/WPI" target="_blank" rel="noopener">NGA World Port Index</a> · ' +
+      '<a href="https://ourairports.com/data/" target="_blank" rel="noopener">OurAirports</a> · ' +
+      '<a href="https://fas.org/initiative/status-world-nuclear-forces/" target="_blank" rel="noopener">Federation of American Scientists</a> · curated government and company citations',
   },
   {
     key: 'world-board-relations',

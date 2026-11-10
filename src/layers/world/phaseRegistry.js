@@ -11,6 +11,13 @@ if (import.meta.env) {
 
 export function worldCardPick(id) {
   const match =
-    typeof id === 'string' && /^world-card:([a-z][a-z-]*):(.+)$/.exec(id);
-  return match ? { type: match[1], id: match[2] } : null;
+    typeof id === 'string' &&
+    /^world-(card|hint):([a-z][a-z-]*):(.+)$/.exec(id);
+  return match
+    ? {
+        type: match[2],
+        id: match[3],
+        ...(match[1] === 'hint' && { countryFirst: true }),
+      }
+    : null;
 }

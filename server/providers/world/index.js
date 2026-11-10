@@ -17,6 +17,7 @@ import { createWorldStore } from './store.js';
 import { createTurn } from './turn.js';
 import './dependencies.js';
 import './phase-3.js';
+import './assets.js';
 
 const PREFIX = '/api/world';
 const REFRESH = PREFIX + '/refresh';
