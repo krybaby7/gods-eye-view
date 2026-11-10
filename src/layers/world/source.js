@@ -57,24 +57,36 @@ export function createWorldSource({
     const key = params.toString();
     const cache = details;
     if (!cache.has(key)) {
-      const pending = request('/detail?' + key, 'GET', { signal }).then(
-        (payload) => {
-          if (
-            payload?.lens !== lens ||
-            payload.country !== (country ?? null) ||
-            !Object.hasOwn(payload, 'data')
-          ) {
-            throw new Error('Malformed World Board detail');
-          }
-          return payload.data;
-        },
-      );
+      const pending = request('/detail?' + key, 'GET').then((payload) => {
+        if (
+          payload?.lens !== lens ||
+          payload.country !== (country ?? null) ||
+          !Object.hasOwn(payload, 'data')
+        ) {
+          throw new Error('Malformed World Board detail');
+        }
+        return payload.data;
+      });
       cache.set(key, pending);
       pending.catch(() => cache.delete(key));
     }
-    const data = await cache.get(key);
-    signal?.throwIfAborted();
-    return data;
+    const pending = cache.get(key);
+    if (!signal) return pending;
+
+    // A caller can stop waiting without cancelling the shared request.
+    let abort;
+    const cancelled = new Promise((_, reject) => {
+      abort = () => reject(signal.reason);
+      signal.addEventListener('abort', abort, { once: true });
+    });
+    try {
+      signal.throwIfAborted();
+      const data = await Promise.race([pending, cancelled]);
+      signal.throwIfAborted();
+      return data;
+    } finally {
+      signal.removeEventListener('abort', abort);
+    }
   }
 
   return {
