@@ -119,11 +119,41 @@
       "checkedOn": "2026-11-10",
       "reviewed": false
     },
+    "IDN": {
+      "titles": {
+        "pres.": ["head-of-state", "head-of-government"]
+      },
+      "source": "https://setkab.go.id/en/president-prabowo-subianto-announces-red-and-white-cabinet-lineup/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
     "IRN": {
       "titles": {
-        "pres.": ["head-of-government"]
+        "pres.": ["head-of-government"],
+        "supreme leader": ["head-of-state"]
       },
       "source": "https://www.constituteproject.org/constitution/Iran_1989",
+      "checkedOn": "2026-11-10",
+      "reviewed": false,
+      "officeLabels": {
+        "pres.": "President of Iran",
+        "supreme leader": "Supreme Leader of Iran"
+      }
+    },
+    "KEN": {
+      "titles": {
+        "pres.": ["head-of-state", "head-of-government"]
+      },
+      "source": "https://www.president.go.ke/cabinet/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "KOR": {
+      "titles": {
+        "pres.": ["head-of-state", "head-of-government"],
+        "prime min.": []
+      },
+      "source": "https://www.korea.net/AboutKorea/OverviewofKorea",
       "checkedOn": "2026-11-10",
       "reviewed": false
     },
@@ -135,20 +165,19 @@
       "checkedOn": "2026-11-10",
       "reviewed": false
     },
+    "MMR": {
+      "titles": {
+        "president": ["head-of-state", "head-of-government"]
+      },
+      "source": "https://www.presoffministry.gov.mm/en/news/30984",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
     "PHL": {
       "titles": {
         "pres.": ["head-of-state", "head-of-government"]
       },
       "source": "https://lawphil.net/consti/cons1987.html",
-      "checkedOn": "2026-11-10",
-      "reviewed": false
-    },
-    "KOR": {
-      "titles": {
-        "pres.": ["head-of-state", "head-of-government"],
-        "prime min.": []
-      },
-      "source": "https://www.korea.net/AboutKorea/OverviewofKorea",
       "checkedOn": "2026-11-10",
       "reviewed": false
     },
@@ -165,6 +194,14 @@
         "sec. of state": ["foreign-minister"]
       },
       "source": "https://www.whitehouse.gov/administration/cabinet/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "ZAF": {
+      "titles": {
+        "pres.": ["head-of-state", "head-of-government"]
+      },
+      "source": "https://www.presidency.gov.za/press-statements-by-president-cyril-ramaphosa",
       "checkedOn": "2026-11-10",
       "reviewed": false
     }

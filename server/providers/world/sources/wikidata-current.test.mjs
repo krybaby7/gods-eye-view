@@ -499,3 +499,32 @@ test('ministry seat discovery gives explicit jurisdiction precedence over countr
     /\?seat wdt:P17 \?country\s*\.\s*FILTER NOT EXISTS \{ \?seat wdt:P1001 \[\] \}/,
   );
 });
+test('WDQS candidate branches do not nest UNION nodes', async () => {
+  const role = 'head-of-state';
+  let candidate;
+  await fetchObservations({
+    registry: registry('USA'),
+    now,
+    fetchImpl: async (_url, { body }) => {
+      if (roleOf(body) !== role) return reply([]);
+      const query = body.get('query');
+      if (query.includes('VALUES (?iso ?seat)')) {
+        candidate = query;
+        return reply([]);
+      }
+      return reply([row('USA', role, 'Q22686', { seat: item('Q11696') })]);
+    },
+  });
+  assert.ok(candidate);
+  let depth = 0;
+  for (const token of candidate.match(/\{|\}|\bUNION\b/g)) {
+    if (token === '{') depth++;
+    else if (token === '}') depth--;
+    else
+      assert.equal(depth, 1, 'candidate alternatives must be sibling groups');
+  }
+  assert.match(candidate, /pq:P580 \?candidateSince/);
+  assert.match(candidate, /pq:P1365/);
+  assert.match(candidate, /wikibase:PreferredRank/);
+  assert.match(candidate, /p:P1308/);
+});

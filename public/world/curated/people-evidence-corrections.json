@@ -1,5 +1,5 @@
 {
-  "notes": "Temporary official evidence where both broad directories have a demonstrated stale holder. Review after the listed expiry.",
+  "notes": "Temporary official evidence where the available directory evidence is missing or demonstrably stale. Review after the listed expiry.",
   "rows": [
     {
       "country": "JPN",
@@ -36,6 +36,30 @@
       "sourceUrl": "https://www.gob.mx/sre/articulos/sovereignty-and-national-interest-are-not-negotiable-limited-or-subordinated-foreign-secretary-roberto-velasco",
       "reviewed": false,
       "reason": "The October Senate record names Velasco as secretary. Wikidata returned his predecessor Juan Ramón de la Fuente in round 2."
+    },
+    {
+      "country": "GHA",
+      "role": "defence-minister",
+      "name": "Kenneth Gilbert Adjei",
+      "office": "Minister for Defence",
+      "evidenceDate": "2026-08-15",
+      "checkedOn": "2026-11-10",
+      "until": "2027-02-10",
+      "sourceUrl": "https://mod.gov.gh/dr-cassiel-ato-forson-hands-over-to-kenneth-gilbert-adjei-at-defence-ministry/",
+      "reviewed": false,
+      "reason": "The Defence Ministry reported a formal handover to Adjei. The older CIA country page still names the outgoing acting minister."
+    },
+    {
+      "country": "PHL",
+      "role": "foreign-minister",
+      "name": "Ma. Theresa P. Lazaro",
+      "office": "Secretary of Foreign Affairs",
+      "evidenceDate": "2026-10-21",
+      "checkedOn": "2026-11-10",
+      "until": "2027-02-10",
+      "sourceUrl": "https://sc.judiciary.gov.ph/sc-dfa-and-oca-partner-to-establish-repository-of-foreign-divorce-and-marriage-laws/",
+      "reviewed": false,
+      "reason": "The Supreme Court identifies Lazaro as Secretary of Foreign Affairs at an October 2026 official signing. The older CIA country page still names Enrique Manalo."
     }
   ]
 }

@@ -15,7 +15,7 @@ const ROLES = [
   'defence-minister',
 ];
 
-export const version = 5;
+export const version = 6;
 export const shouldCheck = (context) =>
   !(Date.parse(context.data?.retryAt) > +context.now) &&
   (context.rederive || actorSourceDue(context, 7 * 24));
@@ -127,20 +127,27 @@ function boundTuples(rows, role, codes, includePerson) {
 }
 
 function candidatesQuery(role, tuples) {
+  // Blazegraph raises ClassCastException for a UNION nested in an alternative
+  // of this optimizer-disabled query. Keep each qualification a sibling group.
   return `
     SELECT DISTINCT ?iso ?role ?seat ?person WHERE {
       hint:Query hint:optimizer "None" .
       BIND("${role}" AS ?role)
       VALUES (?iso ?seat) { ${tuples.join(' ')} }
       {
-        ?knownStatement ps:P39 ?seat .
-        {
-          ?knownStatement pq:P580 ?candidateSince .
-        } UNION {
-          FILTER NOT EXISTS { ?knownStatement pq:P580 [] }
-          { ?knownStatement pq:P1365 [] }
-          UNION { ?knownStatement wikibase:rank wikibase:PreferredRank }
-        }
+        ?knownStatement ps:P39 ?seat; pq:P580 ?candidateSince .
+        FILTER NOT EXISTS { ?knownStatement pq:P582 [] }
+        FILTER NOT EXISTS { ?knownStatement pq:P1366 [] }
+        ?person p:P39 ?knownStatement .
+      } UNION {
+        ?knownStatement ps:P39 ?seat; pq:P1365 [] .
+        FILTER NOT EXISTS { ?knownStatement pq:P580 [] }
+        FILTER NOT EXISTS { ?knownStatement pq:P582 [] }
+        FILTER NOT EXISTS { ?knownStatement pq:P1366 [] }
+        ?person p:P39 ?knownStatement .
+      } UNION {
+        ?knownStatement ps:P39 ?seat; wikibase:rank wikibase:PreferredRank .
+        FILTER NOT EXISTS { ?knownStatement pq:P580 [] }
         FILTER NOT EXISTS { ?knownStatement pq:P582 [] }
         FILTER NOT EXISTS { ?knownStatement pq:P1366 [] }
         ?person p:P39 ?knownStatement .

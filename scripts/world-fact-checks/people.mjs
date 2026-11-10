@@ -231,7 +231,7 @@ export default async function checkPeople({
     checkedOn: core.asOf,
     pass: countries.length === 30 && passed / sampleChecks.length >= 0.9,
   });
-  for (const { country, roles, names, source } of core.stale) {
+  for (const { country, roles, names, source, checkedOn, key } of core.stale) {
     const found = directory
       .filter(
         (actor) =>
@@ -241,13 +241,13 @@ export default async function checkPeople({
       )
       .map(({ name, role, asOf, source }) => ({ name, role, asOf, source }));
     checks.push({
-      id: `people-${country}-stale-officeholders`,
+      id: `people-${country}${key ? '-' + key : ''}-stale-officeholders`,
       expected: { excluded: names },
       found: board?.features?.wikidata
         ? found
         : { reason: 'People directory unavailable' },
       source,
-      checkedOn: core.asOf,
+      checkedOn: checkedOn ?? core.asOf,
       pass: board?.features?.wikidata ? found.length === 0 : null,
     });
   }
