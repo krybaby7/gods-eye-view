@@ -43,7 +43,7 @@ test('every tag in the downloaded OFAC and UK programme inventories is mapped or
     assert.ok(
       relations.every(
         ({ scope, dateChecked, sources }) =>
-          ['state', 'persons'].includes(scope) &&
+          ['state', 'persons', 'targeted'].includes(scope) &&
           dateChecked === '2026-11-06' &&
           sources[0].startsWith('https:'),
       ),

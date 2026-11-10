@@ -173,7 +173,14 @@
         "ukraine-russia-related-sanctions"
       ],
       [
-        ["SSIDES", "UKRAINE-EO13660"],
+        ["SSIDES"],
+        ["RUS"],
+        "targeted",
+        "Russia-related SSIDES designations",
+        "ukraine-russia-related-sanctions"
+      ],
+      [
+        ["UKRAINE-EO13660"],
         ["RUS"],
         "persons",
         "Russia-related designations under Ukraine sovereignty authorities",
@@ -231,7 +238,7 @@
         ]
       },
       "SSIDES": {
-        "detail": "The Ukraine/Russia-related regulation blocks designated persons, including for specified dealings with sanctioned persons. Its SDN tag is associated with Russia-related measures.",
+        "detail": "The Russia-related SSIDES tag covers designated individuals and entities, including state-linked entities. The listed actors are targeted under this tag.",
         "sources": [
           "https://ofac.treasury.gov/faqs/546",
           "https://ofac.treasury.gov/system/files/126/20220429_ukraine_regulations.pdf"

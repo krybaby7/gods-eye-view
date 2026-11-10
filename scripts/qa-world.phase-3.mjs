@@ -39,6 +39,9 @@ export const fixtureAdapters = {
             instrument: 'Fixture collective treaty',
           }),
           row('fixture-rival', 'rivalry', 'CHN'),
+          row('fixture-allied-rival', 'rivalry', 'GBR', {
+            sources: ['https://example.org/allied-rivalry'],
+          }),
           row('fixture-undated-diplomacy', 'diplomatic_relation', 'AUS'),
           row('fixture-dated-diplomacy', 'diplomatic_relation', 'JPN', {
             start: '1952-04',
@@ -169,6 +172,16 @@ export default async function phase3({
         await text('[data-world-relation="fixture-dated-diplomacy"]'),
         /Japan.*1952-04/,
       );
+      await page.click('[data-world-relation="fixture-collective"]');
+      await page.waitForSelector(
+        '.world-relation-card a[href="https://example.org/allied-rivalry"]',
+        wait,
+      );
+      assert.match(
+        await text('.world-relation-card'),
+        /Allies, with a documented rivalry/,
+      );
+      await page.click('#world-sheet-close');
       await shot('india-diplomacy');
       const hit = await page.waitForFunction(() => {
         const { scene } = window.__godsEyeView.viewer;
@@ -216,7 +229,7 @@ export default async function phase3({
         /at war through sanctions, ally, rival, partner and neutral.*past 90 days/s,
       );
       assert.equal(
-        await page.$eval('#world-card-content a', (node) => node.href),
+        await page.$eval('#world-card-content ul a', (node) => node.href),
         'https://example.org/relation-evidence',
       );
       await shot('india-relation-card');
