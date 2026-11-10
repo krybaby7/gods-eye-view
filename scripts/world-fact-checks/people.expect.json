@@ -75,11 +75,13 @@
         },
         "head-of-government": {
           "name": "Masoud Pezeshkian",
-          "office": "President of Iran"
+          "office": "President of Iran",
+          "aliases": ["Masud Pezeshkian"]
         },
         "foreign-minister": {
           "name": "Abbas Araghchi",
-          "source": "https://en.wikipedia.org/wiki/Minister_of_Foreign_Affairs_(Iran)"
+          "source": "https://en.wikipedia.org/wiki/Minister_of_Foreign_Affairs_(Iran)",
+          "aliases": ["Abbas Araqchi"]
         },
         "defence-minister": {
           "name": "Mehrdad Akhlaghi",
@@ -137,7 +139,7 @@
         },
         "head-of-government": {
           "name": "Xavier Espot Zamora",
-          "aliases": ["Xavier Espot"],
+          "aliases": ["Xavier Espot", "Xavier Espot"],
           "source": "https://www.govern.ad/ca/govern/el-cap-del-govern"
         },
         "foreign-minister": {

@@ -223,3 +223,137 @@ test('CIA handles federal presidents and cabinet secretaries without matching ju
     ],
   );
 });
+test('newer partial San Marino evidence survives a complete stale CIA pair', async () => {
+  const { mergeOfficeholders } = await import('../officeholders.js');
+  const wd = [
+    {
+      country: 'SMR',
+      role: 'head-of-state',
+      name: 'Gerardo Giovagnoli',
+      source: 'official',
+      since: '2026-10-01',
+      id: 'verified-Giovagnoli',
+    },
+  ];
+  const cia = ['Alessandro Cardelli', 'Mirko Dolcini'].map((name) => ({
+    country: 'SMR',
+    role: 'head-of-state',
+    source: 'cia-world-leaders',
+    asOf: '2021-03-11',
+    name,
+  }));
+  assert.deepEqual(
+    mergeOfficeholders(wd, cia, now).map(({ name }) => name),
+    ['Gerardo Giovagnoli'],
+  );
+});
+
+test('maps captured ministry titles and excludes the distinct defence personnel office', async () => {
+  const { parseCiaPage, resolveCiaPage } =
+    await import('./cia-world-leaders.js');
+  const examples = [
+    [
+      'AUS',
+      'Australia',
+      'Richard MARLES',
+      'Min. for Defense',
+      'defence-minister',
+    ],
+    ['AUS', 'Australia', 'Matt KEOGH', 'Min. for Defense Personnel', null],
+    [
+      'FRA',
+      'France',
+      'Catherine VAUTRIN',
+      'Min. of the Armies & Veterans',
+      'defence-minister',
+    ],
+    [
+      'KEN',
+      'Kenya',
+      'Musalia MUDAVADI',
+      'Cabinet Sec. for Foreign and Diaspora Affairs',
+      'foreign-minister',
+    ],
+    [
+      'KEN',
+      'Kenya',
+      'Soipan TUYA',
+      'Cabinet Sec. for Defense',
+      'defence-minister',
+    ],
+    [
+      'ZAF',
+      'South Africa',
+      'Ronald LAMOLA',
+      'Min. of Intl. Relations & Cooperation',
+      'foreign-minister',
+    ],
+    [
+      'SMR',
+      'San Marino',
+      'Luca BECCARI',
+      'State Sec. for Foreign Affairs',
+      'foreign-minister',
+    ],
+    [
+      'AUT',
+      'Austria',
+      'Beate MEINL-REISINGER',
+      'Min. for European & International Affairs',
+      'foreign-minister',
+    ],
+    [
+      'BIH',
+      'Bosnia and Herzegovina',
+      'Borjana KRIŠTO',
+      'Chmn., Council of Ministers',
+      'head-of-government',
+    ],
+    [
+      'BIH',
+      'Bosnia and Herzegovina',
+      'Željka CVIJANOVIĆ',
+      'Presidency Member (Serb)',
+      'head-of-state',
+    ],
+    ['AND', 'Andorra', 'Xavier ESPOT', 'Head of Govt.', 'head-of-government'],
+  ];
+  for (const [iso3, country, name, title, role] of examples) {
+    const actors = resolveCiaPage(
+      parseCiaPage(page(country, '2025-10-01', [{ name, title }]), 'fixture'),
+      { countries: [{ iso3, name: country }] },
+    );
+    assert.deepEqual(
+      actors.map((actor) => actor.role),
+      role ? [role] : [],
+      title,
+    );
+  }
+});
+test('an executive presidency maps both roles for cited constitutional systems', async () => {
+  const { parseCiaPage, resolveCiaPage } =
+    await import('./cia-world-leaders.js');
+  for (const [iso3, country, title] of [
+    ['IDN', 'Indonesia', 'Pres.'],
+    ['KEN', 'Kenya', 'Pres.'],
+    ['ZAF', 'South Africa', 'Pres.'],
+    ['MMR', 'Burma', 'President'],
+  ]) {
+    const actors = resolveCiaPage(
+      parseCiaPage(
+        page(country, '2026-10-13', [{ name: 'Sample EXECUTIVE', title }]),
+        'fixture',
+      ),
+      { countries: [{ iso3, name: country }] },
+    );
+    assert.deepEqual(
+      actors.map(({ role }) => role),
+      ['head-of-state', 'head-of-government'],
+      country,
+    );
+    assert.ok(
+      actors.every(({ draft }) => /^https:\/\//.test(draft)),
+      country,
+    );
+  }
+});

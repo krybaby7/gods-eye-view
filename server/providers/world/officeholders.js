@@ -109,10 +109,13 @@ export function mergeOfficeholders(
       // A chair or incomplete list cannot replace the collective office.
       const matching = (actor, candidates) =>
         candidates.find((candidate) => samePerson(actor, candidate));
+      const newestWikidata =
+        wd
+          .map(({ asOf, since }) => asOf ?? since ?? '')
+          .sort()
+          .at(-1) ?? '';
       const show =
-        cia.length === expectedSeats &&
-        (wd.length < expectedSeats ||
-          firstCia.asOf > (firstWd.asOf ?? firstWd.since ?? ''));
+        cia.length === expectedSeats && firstCia.asOf > newestWikidata;
       const primary = show ? cia : wd;
       const secondary = show ? wd : cia;
       const dispute =

@@ -49,7 +49,7 @@
       "foreign-minister": "Mauro Vieira",
       "defence-minister": {
         "name": "José Múcio Monteiro Filho",
-        "aliases": ["José Múcio"]
+        "aliases": ["José Múcio", "Jose Mucio Monterio"]
       }
     }
   },
@@ -114,7 +114,10 @@
         "name": "Emmanuel Macron",
         "source": "https://www.elysee.fr/en/emmanuel-macron"
       },
-      "head-of-government": "Sébastien Lecornu",
+      "head-of-government": {
+        "name": "Sébastien Lecornu",
+        "aliases": ["Sebastian Lecornu"]
+      },
       "foreign-minister": "Jean-Noël Barrot",
       "defence-minister": "Catherine Vautrin"
     }
@@ -142,11 +145,13 @@
     "roles": {
       "head-of-state": {
         "name": "Prabowo Subianto",
-        "source": "https://setkab.go.id/en/president-prabowo-subianto-announces-red-and-white-cabinet-lineup/"
+        "source": "https://setkab.go.id/en/president-prabowo-subianto-announces-red-and-white-cabinet-lineup/",
+        "aliases": ["Prabowo Subianto Djojohadikusumo"]
       },
       "head-of-government": {
         "name": "Prabowo Subianto",
-        "source": "https://setkab.go.id/en/president-prabowo-subianto-announces-red-and-white-cabinet-lineup/"
+        "source": "https://setkab.go.id/en/president-prabowo-subianto-announces-red-and-white-cabinet-lineup/",
+        "aliases": ["Prabowo Subianto Djojohadikusumo"]
       },
       "foreign-minister": "Sugiono",
       "defence-minister": "Sjafrie Sjamsoeddin"
@@ -160,7 +165,8 @@
     "roles": {
       "head-of-state": {
         "name": "Droupadi Murmu",
-        "source": "https://www.presidentofindia.gov.in/"
+        "source": "https://www.presidentofindia.gov.in/",
+        "aliases": ["Drupadi Murmu"]
       },
       "head-of-government": "Narendra Modi",
       "foreign-minister": "Subrahmanyam Jaishankar",
@@ -222,8 +228,14 @@
     "checkedOn": "2026-11-09",
     "source": "https://www.president.go.ke/cabinet/",
     "roles": {
-      "head-of-state": "William Ruto",
-      "head-of-government": "William Ruto",
+      "head-of-state": {
+        "name": "William Ruto",
+        "aliases": ["William Samoei Ruto"]
+      },
+      "head-of-government": {
+        "name": "William Ruto",
+        "aliases": ["William Samoei Ruto"]
+      },
       "foreign-minister": "Musalia Mudavadi",
       "defence-minister": "Soipan Tuya"
     }
@@ -304,11 +316,17 @@
         "name": "Vladimir Putin",
         "aliases": ["Vladimir Vladimirovich Putin"]
       },
-      "head-of-government": "Mikhail Mishustin",
-      "foreign-minister": "Sergey Lavrov",
+      "head-of-government": {
+        "name": "Mikhail Mishustin",
+        "aliases": ["Mikhail Vladimirovich Mishustin"]
+      },
+      "foreign-minister": {
+        "name": "Sergey Lavrov",
+        "aliases": ["Sergey Viktorovich Lavrov"]
+      },
       "defence-minister": {
         "name": "Andrey Belousov",
-        "aliases": ["Andrei Belousov"],
+        "aliases": ["Andrei Belousov", "Andrey Removich Belousov"],
         "source": "https://eng.mod.gov.cn/2025xb/N/T/16497845.html",
         "checkedOn": "2026-11-10"
       }
@@ -320,7 +338,10 @@
     "checkedOn": "2026-11-09",
     "source": "https://ww.spa.gov.sa/en/N2482667",
     "roles": {
-      "head-of-state": "Salman bin Abdulaziz Al Saud",
+      "head-of-state": {
+        "name": "Salman bin Abdulaziz Al Saud",
+        "aliases": ["Salman bin Abd al-Aziz Al Saud"]
+      },
       "head-of-government": {
         "name": "Mohammed bin Salman",
         "aliases": [
@@ -331,7 +352,7 @@
       "foreign-minister": {
         "name": "Faisal bin Farhan Al Saud",
         "source": "https://www.spa.gov.sa/en/N2508132",
-        "aliases": ["Faisal bin Farhan"]
+        "aliases": ["Faisal bin Farhan", "Faysal bin Farhan"]
       },
       "defence-minister": {
         "name": "Khalid bin Salman Al Saud",
@@ -360,11 +381,13 @@
     "roles": {
       "head-of-state": {
         "name": "Cyril Ramaphosa",
-        "source": "https://www.presidency.gov.za/press-statements-by-president-cyril-ramaphosa"
+        "source": "https://www.presidency.gov.za/press-statements-by-president-cyril-ramaphosa",
+        "aliases": ["Matamela Cyril Ramaphosa"]
       },
       "head-of-government": {
         "name": "Cyril Ramaphosa",
-        "source": "https://www.presidency.gov.za/press-statements-by-president-cyril-ramaphosa"
+        "source": "https://www.presidency.gov.za/press-statements-by-president-cyril-ramaphosa",
+        "aliases": ["Matamela Cyril Ramaphosa"]
       },
       "foreign-minister": "Ronald Lamola",
       "defence-minister": "Angie Motshekga"

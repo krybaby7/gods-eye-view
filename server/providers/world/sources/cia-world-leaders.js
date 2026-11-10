@@ -27,6 +27,9 @@ const titlePatterns = {
   'head-of-state': [
     /^(?:(?:(?:fed\.|federal) )?(?:pres\.|president)|king|queen|emperor|pope|sultan|emir|amir)$/,
     /^supreme leader\b/,
+    /^king\s*(?:&|and) prime min\.$/,
+    /^head of state \(co-prince\)$/,
+    /^presidency member\b/,
     /^co-prince\b/,
     /^captain(?:s)? regent\b/,
     /^member,? (?:of )?(?:the )?presidency\b/,
@@ -37,18 +40,24 @@ const titlePatterns = {
     /^premier(?:$|\s*[,&])/,
     /^(?:federal )?chancellor$/,
     /^(?:pres\.|president) of the (?:govt\.|government|council of ministers)(?:$|\s*[,&])/,
-    /^head of (?:the )?government$/,
+    /^head of (?:the )?(?:government|govt\.)$/,
+    /^(?:chair|chairman|chairwoman|chmn\.),? (?:of the )?council of ministers$/,
+    /^king\s*(?:&|and) prime min\.$/,
   ],
   'foreign-minister': [
+    /^(?:cabinet|state) sec\. (?:of|for) foreign(?: and diaspora)? affairs\b/,
+    /^(?:min\.|minister) (?:of|for) european (?:&|and) international affairs\b/,
     /^(?:min\.|minister|sec\.|secretary)(?: of| for|,)? (?:state (?:of |for )?)?(?:foreign|external) (?:affairs|relations)\b/,
     /^(?:foreign|external affairs) (?:min\.|minister)$/,
     /^(?:sec\.|secretary) of state for foreign(?: affairs\b|,|$)/,
     /^(?:min\.|minister) (?:of|for) (?:europe|european(?: affairs)?) (?:&|and) foreign affairs\b/,
-    /^(?:min\.|minister) (?:of|for) international relations (?:&|and) cooperation\b/,
+    /^(?:min\.|minister) (?:of|for) (?:international|intl\.) relations (?:&|and) cooperation\b/,
   ],
   'defence-minister': [
+    /^cabinet sec\. (?:of|for) (?:national )?defen[cs]e(?:$|\s*[,&])/,
+    /^(?:min\.|minister) (?:of|for) the armies(?:$|\s*[,&])/,
     /^(?:sec\.|secretary) of state for defen[cs]e(?:$|\s*[,&])/,
-    /^(?:min\.|minister|sec\.|secretary)(?: of| for|,)? (?:(?:national )?defen[cs]e(?! (?:production|industry))|the armed forces)\b/,
+    /^(?:min\.|minister|sec\.|secretary)(?: of| for|,)? (?:(?:national )?defen[cs]e(?! (?:production|industry|personnel))|the armed forces)\b/,
     /^(?:defen[cs]e|armed forces) (?:min\.|minister)$/,
   ],
 };
@@ -60,7 +69,11 @@ function mapTitle(country, title) {
     .replace(/\s+\((?:acting|interim)\)$/, '');
   const override = overrides.offices[country];
   if (Object.hasOwn(override?.titles ?? {}, clean)) {
-    return { roles: override.titles[clean], draft: override.source };
+    return {
+      roles: override.titles[clean],
+      office: override.officeLabels?.[clean],
+      draft: override.source,
+    };
   }
   return {
     roles: officeRoles.filter((role) =>
@@ -133,7 +146,7 @@ export function resolveCiaPage(page, registry) {
       /^(?:vacant|unknown|tbd|none|not appointed|n\/a|[-–—]+)$/i.test(label)
     )
       continue;
-    const { roles, draft: titleSource } = mapTitle(country, title);
+    const { roles, office, draft: titleSource } = mapTitle(country, title);
     const draft = titleSource ?? overrides.countries[country]?.source;
     for (const role of roles) {
       const id = 'cia-' + country.toLowerCase() + '-' + textKey(label);
@@ -143,7 +156,7 @@ export function resolveCiaPage(page, registry) {
         kind: 'person',
         country,
         role,
-        office: title,
+        office: office ?? title,
         acting,
         asOf: page.asOf,
         source: 'cia-world-leaders',
