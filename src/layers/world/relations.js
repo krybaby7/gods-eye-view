@@ -72,6 +72,22 @@ export function isDocumentedRivalry({ type, sources, hostilityOn }) {
   );
 }
 
+export const ALLIED_RIVALRY_CUE = 'Allies, with a documented rivalry';
+
+export function alliedRivalries(row, selected, relations) {
+  if (!row || row.end || !selected || !alliances.has(row.type)) return [];
+  return relationPeers(row, selected).flatMap((peer) => {
+    const sources = [
+      ...new Set(
+        relationsBetween(selected, peer, relations)
+          .filter(isDocumentedRivalry)
+          .flatMap((rivalry) => rivalry.sources),
+      ),
+    ];
+    return sources.length ? [{ peer, sources }] : [];
+  });
+}
+
 export function classifyDiplomacy(from, to, relations, now = Date.now()) {
   const rows = relationsBetween(from, to, relations);
   const today = dayStart(now);

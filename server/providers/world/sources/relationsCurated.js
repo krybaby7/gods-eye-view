@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import memberships from '../../../../public/world/curated/bloc-memberships.json' with { type: 'json' };
 import { makeRelation, relationResult } from '../relations.js';
 
-export const version = 3;
+export const version = 4;
 
 export function shouldCheck() {
   // Small checked-in tables can change between app releases.

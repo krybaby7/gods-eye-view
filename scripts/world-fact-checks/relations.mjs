@@ -1,4 +1,6 @@
 import {
+  ALLIED_RIVALRY_CUE,
+  alliedRivalries,
   classifyDiplomacy,
   currentRelations,
   isDocumentedRivalry,
@@ -6,7 +8,7 @@ import {
 } from '../../src/layers/world/relations.js';
 import expectations from './relations.expect.json' with { type: 'json' };
 
-const { checkedOn, round2 } = expectations;
+const { checkedOn, round3 } = expectations;
 const nato =
   'https://www.nato.int/en/about-us/organization/nato-member-countries';
 const ofac =
@@ -25,6 +27,7 @@ const nonrivals = {
   BRA: oas,
 };
 const sanctions = {
+  CUB: ['Cuba sanctions', 'CUBA', 'cuba-sanctions'],
   RUS: ['Russia sanctions', 'RUSSIA-EO14024', 'russia-related-sanctions'],
   IRN: ['Iran sanctions', 'IRAN', 'iran-sanctions'],
   PRK: ['North Korea sanctions', 'DPRK', 'north-korea-sanctions'],
@@ -78,25 +81,64 @@ export default async function checkRelations({ board, getDetail }) {
     citation,
   ] of expectations.rivalries) {
     const found = relationsBetween(from, to, rivalryRows);
+    const mapClass = classifyDiplomacy(from, to, rows, now);
+    const expectedClass = expectations.rivalryClasses[pairKey(from, to)];
     add(
       'rivalry-' + from + '-' + to,
-      { start, hostilityOn, reviewed: false },
-      { rows: found, mapClass: classifyDiplomacy(from, to, rows, now) },
-      [expectations.dataset, citation],
+      {
+        start,
+        hostilityOn,
+        reviewed: false,
+        ...(expectedClass && { mapClass: expectedClass }),
+      },
+      { rows: found, mapClass },
+      [expectations.dataset, citation].filter(Boolean),
       found.length === 1 &&
         found[0].start === start &&
-        found[0].hostilityOn === hostilityOn &&
+        (found[0].hostilityOn ?? null) === hostilityOn &&
         found[0].reviewed === false &&
+        found[0].detail?.includes('ongoing at 2020, per the dataset') &&
         found[0].sources?.includes(expectations.dataset) &&
-        found[0].sources.includes(citation),
+        (!citation || found[0].sources.includes(citation)) &&
+        (!expectedClass || mapClass === expectedClass),
     );
   }
+  for (const [from, to, reason, sources] of expectations.exclusions) {
+    const found = relationsBetween(from, to, rivalryRows);
+    add(
+      'rivalry-exclusion-' + from + '-' + to,
+      reason,
+      found,
+      [expectations.dataset, ...sources],
+      Boolean(board) && found.length === 0,
+    );
+  }
+  const natoRow = rows.find(({ id }) => id === 'rel_nato');
+  const greekCitation = expectations.rivalries
+    .find(([from, to]) => from === 'GRC' && to === 'TUR')
+    .at(-1);
+  const cues = ['GRC', 'TUR'].map((selected, index) =>
+    alliedRivalries(natoRow, selected, rows).find(
+      ({ peer }) => peer === ['TUR', 'GRC'][index],
+    ),
+  );
+  const greekClass = classifyDiplomacy('GRC', 'TUR', rows, now);
   add(
-    'armenia-azerbaijan-deescalation',
-    'The 2025 initialled peace agreement supersedes the 2023 evidence for an active strategic rivalry',
-    relationsBetween('ARM', 'AZE', rivalryRows),
-    expectations.deescalation,
-    Boolean(board) && !relationsBetween('ARM', 'AZE', rivalryRows).length,
+    'allied-rivalry-GRC-TUR',
+    { card: 'rel_nato', cue: ALLIED_RIVALRY_CUE, mapClass: 'ally' },
+    {
+      card: natoRow?.id,
+      cue: cues[0] ? ALLIED_RIVALRY_CUE : null,
+      mapClass: greekClass,
+      sources: cues[0]?.sources ?? [],
+    },
+    [nato, expectations.dataset, greekCitation],
+    greekClass === 'ally' &&
+      cues.every(
+        (cue) =>
+          cue?.sources.includes(expectations.dataset) &&
+          cue.sources.includes(greekCitation),
+      ),
   );
   const expectedRivalryPairs = expectations.rivalries
     .map(([a, b]) => pairKey(a, b))
@@ -105,8 +147,8 @@ export default async function checkRelations({ board, getDetail }) {
     'rivalry-list',
     {
       configured: expectedRivalryPairs,
-      round2Configured: round2.configuredRivalries,
-      round2Painted: round2.paintedRivals,
+      round3Configured: round3.configuredRivalries,
+      round3Painted: round3.paintedRivals,
     },
     {
       configured: rivalryRows.length,
@@ -125,6 +167,12 @@ export default async function checkRelations({ board, getDetail }) {
       .map(({ from, to }) => pairKey(from, to))
       .sort()
       .join() === expectedRivalryPairs.join() &&
+      (snapshot.countryIndex ?? []).length > 0 &&
+      rivalryRows.every(({ from, to }) =>
+        [from, to].every((iso3) =>
+          snapshot.countryIndex.some((country) => country.iso3 === iso3),
+        ),
+      ) &&
       hostileRuptures.length === expectations.ruptures.length &&
       expectations.ruptures.every(([a, b, date, citation]) =>
         relationsBetween(a, b, hostileRuptures).some(
@@ -135,7 +183,7 @@ export default async function checkRelations({ board, getDetail }) {
   );
   const usaClasses = {
     ...Object.fromEntries(
-      Object.keys(round2.usaClasses).map((key) => [key, 0]),
+      Object.keys(round3.usaClasses).map((key) => [key, 0]),
     ),
     unknown: 0,
   };
@@ -156,12 +204,28 @@ export default async function checkRelations({ board, getDetail }) {
     .at(-1);
   add(
     'usa-rivals',
-    { countries: ['CHN'], round2Classes: round2.usaClasses },
-    { classes: usaClasses, rivals },
-    chinaRival,
+    {
+      countries: ['CHN'],
+      round3Classes: round3.usaClasses,
+      masked: { CUB: 'sanctions', IRN: 'sanctions', RUS: 'sanctions' },
+    },
+    {
+      classes: usaClasses,
+      rivals,
+      masked: Object.fromEntries(
+        ['CUB', 'IRN', 'RUS'].map((iso3) => [
+          iso3,
+          classifyDiplomacy('USA', iso3, rows, now),
+        ]),
+      ),
+    },
+    [expectations.dataset, chinaRival, ofac],
     rivals.length === 1 &&
       rivals[0].country === 'CHN' &&
-      rivals[0].sources.includes(chinaRival),
+      rivals[0].sources.includes(chinaRival) &&
+      ['CUB', 'IRN', 'RUS'].every(
+        (iso3) => classifyDiplomacy('USA', iso3, rows, now) === 'sanctions',
+      ),
   );
   const rio = rows.find(({ id }) => id === 'rel_rio');
   const rioParties = (rio?.participants ?? []).filter(

@@ -47,3 +47,38 @@ test('Rio Treaty evidence leaves Venezuela inactive with every other party', asy
   assert.equal(row?.pass, true);
   assert.deepEqual(row.found.allies, []);
 });
+
+test('the three required rivalry pairs are measured with their source rows', async () => {
+  const { fetchObservations } =
+    await import('../server/providers/world/sources/relationsCurated.js');
+  const { data } = await fetchObservations({});
+  const rows = await checkRelations({
+    board: { features: { 'relations-curated': data } },
+    getDetail: async () => null,
+  });
+  for (const id of [
+    'relations-rivalry-CHN-IND',
+    'relations-rivalry-GUY-VEN',
+    'relations-rivalry-ISR-SYR',
+  ]) {
+    const check = rows.find((row) => row.id === id);
+    assert.equal(check?.pass, true, id);
+    assert.equal(check.found.mapClass, 'rival', id);
+  }
+});
+
+test('Greece has a sourced rivalry cue in the NATO relation card facts', async () => {
+  const { fetchObservations } =
+    await import('../server/providers/world/sources/relationsCurated.js');
+  const { data } = await fetchObservations({});
+  const rows = await checkRelations({
+    board: { features: { 'relations-curated': data } },
+    getDetail: async () => null,
+  });
+  const cue = rows.find(({ id }) => id === 'relations-allied-rivalry-GRC-TUR');
+  assert.equal(cue?.pass, true);
+  assert.equal(cue.found.mapClass, 'ally');
+  assert.ok(
+    cue.found.sources.some((url) => url.startsWith('https://www.mfa.gr/')),
+  );
+});

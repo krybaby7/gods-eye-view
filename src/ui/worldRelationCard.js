@@ -1,4 +1,6 @@
 import {
+  ALLIED_RIVALRY_CUE,
+  alliedRivalries,
   currentRelations,
   DIPLOMACY_RULES,
 } from '../layers/world/relations.js';
@@ -10,10 +12,21 @@ function text(document, tag, value, className) {
   return node;
 }
 
+function sourceLink(document, source) {
+  const url = URL.parse(source);
+  if (url?.protocol !== 'https:') return null;
+  const link = text(document, 'a', url.hostname);
+  link.href = url.href;
+  link.rel = 'noopener noreferrer';
+  link.target = '_blank';
+  return link;
+}
+
 function relationCard({ document, snapshot, id }) {
   const card = document.createElement('article');
   card.className = 'world-relation-card';
-  const row = currentRelations(snapshot).find((entry) => entry.id === id);
+  const rows = currentRelations(snapshot);
+  const row = rows.find((entry) => entry.id === id);
   if (!row) {
     card.textContent = 'This relation is unavailable in the current turn.';
     return card;
@@ -43,6 +56,23 @@ function relationCard({ document, snapshot, id }) {
     text(document, 'p', parties),
     text(document, 'p', row.detail),
   );
+  for (const { peer, sources } of alliedRivalries(
+    row,
+    snapshot.selected,
+    rows,
+  )) {
+    const cue = text(
+      document,
+      'p',
+      ALLIED_RIVALRY_CUE + ' · ' + (names.get(peer) ?? peer),
+      'world-detail',
+    );
+    for (const source of sources) {
+      const link = sourceLink(document, source);
+      if (link) cue.append(' · ', link);
+    }
+    card.append(cue);
+  }
   for (const value of [
     row.conditions,
     row.reference,
@@ -59,6 +89,9 @@ function relationCard({ document, snapshot, id }) {
       ? 'UN voting closeness: ' + (row.agreement * 100).toFixed(1) + '%'
       : null,
     row.scope === 'persons' ? 'Sanctions on persons in ' + side('to') : null,
+    row.scope === 'targeted'
+      ? 'Targeted sanctions on individuals and entities'
+      : null,
     ...(row.events ?? []).map(
       ({ id, date }) => 'UCDP event ' + id + ' · ' + date,
     ),
@@ -69,13 +102,9 @@ function relationCard({ document, snapshot, id }) {
   }
   const list = document.createElement('ul');
   for (const source of row.sources ?? []) {
-    const url = URL.parse(source);
-    if (url?.protocol !== 'https:') continue;
+    const link = sourceLink(document, source);
+    if (!link) continue;
     const item = document.createElement('li');
-    const link = text(document, 'a', url.hostname);
-    link.href = url.href;
-    link.rel = 'noopener noreferrer';
-    link.target = '_blank';
     item.append(link);
     list.append(item);
   }

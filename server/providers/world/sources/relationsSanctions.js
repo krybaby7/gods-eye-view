@@ -266,7 +266,7 @@ export async function programmeRelations(kind, content, dateChecked = null) {
 function adapter(kind, name) {
   const { estimatedBytes, url } = lists[kind];
   return {
-    version: 3,
+    version: 4,
     estimatedBytes,
     downloadUrls: () => [url],
     shouldCheck(context) {
@@ -285,13 +285,14 @@ function adapter(kind, name) {
       rederive,
     }) {
       try {
-        const { path, lastModified } = await downloadWorldFile(url, {
+        const immutable = Boolean(rederive || !data);
+        const { path, lastModified, reused } = await downloadWorldFile(url, {
           fetchImpl,
           cacheDirectory,
           onProgress,
           signal,
           maxBytes: MAX_BYTES,
-          immutable: Boolean(rederive || !data),
+          immutable,
           ...(kind === 'uk' && { format: 'zip' }),
         });
         const content =
@@ -329,6 +330,7 @@ function adapter(kind, name) {
         );
         return {
           ...result,
+          ...(immutable && reused && { checkedRelease: false }),
           data: {
             ...result.data,
             coverage,

@@ -333,7 +333,7 @@ test('exact UK and OFAC tags preserve targeted versus state scope and citations'
       .sort(),
     [
       ['BELARUS-EO14038', 'BLR', 'persons'],
-      ['SSIDES', 'RUS', 'persons'],
+      ['SSIDES', 'RUS', 'targeted'],
       ['UKRAINE-EO13660', 'RUS', 'persons'],
     ],
   );
@@ -367,4 +367,27 @@ test('UN covers QD, SO and TA committee programmes without creating country sanc
       ['TA', 'persons'],
     ],
   );
+});
+
+test('only cached re-derivations leave the sanctions release check unstamped', async (t) => {
+  const cacheDirectory = await sanctionsCache(t);
+  const initial = await ofacSanctions.fetchObservations({
+    cacheDirectory,
+    rederive: true,
+    fetchImpl: async () => new Response(ofacCsv, { headers: { etag: '"v1"' } }),
+  });
+  assert.notEqual(initial.checkedRelease, false);
+  const cached = await ofacSanctions.fetchObservations({
+    cacheDirectory,
+    data: initial.data,
+    rederive: true,
+    fetchImpl: async () => assert.fail('Re-derive used the network'),
+  });
+  assert.equal(cached.checkedRelease, false);
+  const checked = await ofacSanctions.fetchObservations({
+    cacheDirectory,
+    data: cached.data,
+    fetchImpl: async () => new Response(null, { status: 304 }),
+  });
+  assert.notEqual(checked.checkedRelease, false);
 });
