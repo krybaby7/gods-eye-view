@@ -70,8 +70,14 @@ test('progress polls recover with backoff and load the board only for new data a
     await setImmediate();
     assert.equal(pollCount, index + 1);
     assert.equal(reads, 1);
+    if (index === 0) {
+      assert.equal(reported.progress, null);
+      assert.equal(reported.loading, false);
+      assert.equal(reported.error, 'Temporary failure');
+    }
   }
   assert.deepEqual(layer.getSnapshot().progress, progress(2));
+  assert.equal(layer.getSnapshot().error, null);
   t.mock.timers.tick(1000);
   await setImmediate();
   assert.equal(reads, 2);

@@ -98,15 +98,29 @@ function releasesIn(html) {
   ).filter(Boolean);
 }
 
-async function cachedReleases(sourceVersion, cacheDirectory) {
+export function cachedDownloadUrls(sourceVersion) {
   const versions = /^UCDP Candidate (.+)$/.exec(sourceVersion ?? '')?.[1];
   if (!versions) return [];
+  const files = versions.split(' + ');
+  if (
+    files.some(
+      (version) => !/^\d{2}\.(?:0\.\d{1,2}|\d{2}\.\d{2}\.\d{2})$/.test(version),
+    )
+  )
+    return [];
+  return files.map((version) =>
+    ['csv', 'zip'].map(
+      (extension) =>
+        `${DOWNLOADS}GEDEvent_v${version.replaceAll('.', '_')}.${extension}`,
+    ),
+  );
+}
+
+async function cachedReleases(sourceVersion, cacheDirectory) {
   const releases = [];
-  for (const version of versions.split(' + ')) {
-    if (!/^\d{2}\.(?:0\.\d{1,2}|\d{2}\.\d{2}\.\d{2})$/.test(version)) return [];
+  for (const urls of cachedDownloadUrls(sourceVersion)) {
     let cached;
-    for (const extension of ['csv', 'zip']) {
-      const url = `${DOWNLOADS}GEDEvent_v${version.replaceAll('.', '_')}.${extension}`;
+    for (const url of urls) {
       if (await hasWorldDownload(url, cacheDirectory)) {
         [cached] = releasesIn(`href="${url}"`);
         break;
@@ -209,21 +223,24 @@ export async function fetchObservations({
   signal,
   data,
   rederive,
+  lastCheckedAt,
 }) {
   const indicator = registry.indicators.find(({ source }) => source === 'ucdp');
   if (!populationsFor(observations, String(now.getUTCFullYear())).size)
     throw new Error('World Bank population is unavailable for UCDP Candidate');
-  let available = rederive
-    ? await cachedReleases(
-        data?.sourceVersion ??
-          observations.find(
-            (item) =>
-              item.indicator === indicator.id && item.period === data?.period,
-          )?.sourceVersion,
-        cacheDirectory,
-      )
-    : [];
-  if (!available.length) {
+  const cached =
+    rederive && !shouldCheck({ lastCheckedAt, now })
+      ? await cachedReleases(
+          data?.sourceVersion ??
+            observations.find(
+              (item) =>
+                item.indicator === indicator.id && item.period === data?.period,
+            )?.sourceVersion,
+          cacheDirectory,
+        )
+      : [];
+  let available = cached;
+  if (!cached.length) {
     const catalogues = await Promise.all(
       [CATALOG, HISTORY].map((url) =>
         fetchResponseWithDeadline(fetchImpl, url, {
@@ -345,6 +362,7 @@ export async function fetchObservations({
       );
     }),
     data: { period, deathsByIso3, sourceVersion },
+    ...(cached.length && { checkedRelease: false }),
     detail: `UCDP Candidate public bulk files, ${firstPeriod} through ${period}. Zero reported deaths require a country record in a selected release. ${missing} countries lacked coverage, a usable population, or a fatality count.`,
   };
 }
