@@ -1,0 +1,95 @@
+body:has([data-world-lens='diplomacy'][aria-pressed='true'])
+  #world-legend
+  .world-legend-ramp {
+  display: none;
+}
+
+body:has([data-world-lens='diplomacy'][aria-pressed='true'])
+  #world-legend
+  #world-legend-stops {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 0.35rem 0.6rem;
+  margin-block: 0.4rem;
+}
+
+body:has([data-world-lens='diplomacy'][aria-pressed='true'])
+  #world-legend
+  #world-legend-stops
+  span::before {
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-inline-end: 0.3rem;
+  border-radius: 2px;
+  background: var(--diplomacy-swatch);
+  content: '';
+}
+
+body:has([data-world-lens='diplomacy'][aria-pressed='true'])
+  #world-legend-stops
+  span:nth-child(1) {
+  --diplomacy-swatch: rgb(219 71 79);
+}
+body:has([data-world-lens='diplomacy'][aria-pressed='true'])
+  #world-legend-stops
+  span:nth-child(2) {
+  --diplomacy-swatch: rgb(232 147 63);
+}
+body:has([data-world-lens='diplomacy'][aria-pressed='true'])
+  #world-legend-stops
+  span:nth-child(3) {
+  --diplomacy-swatch: rgb(61 161 234);
+}
+body:has([data-world-lens='diplomacy'][aria-pressed='true'])
+  #world-legend-stops
+  span:nth-child(4) {
+  --diplomacy-swatch: rgb(178 94 197);
+}
+body:has([data-world-lens='diplomacy'][aria-pressed='true'])
+  #world-legend-stops
+  span:nth-child(5) {
+  --diplomacy-swatch: rgb(62 175 151);
+}
+body:has([data-world-lens='diplomacy'][aria-pressed='true'])
+  #world-legend-stops
+  span:nth-child(6) {
+  --diplomacy-swatch: rgb(148 159 175);
+}
+
+.world-relations section + section {
+  margin-block-start: 0.85rem;
+}
+.world-relations ul,
+.world-relation-card ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.world-relations li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-block: 0.15rem;
+}
+.world-relations button {
+  padding: 0.3rem 0.45rem;
+  text-align: start;
+  border: 1px solid rgb(122 163 183 / 45%);
+  border-radius: 4px;
+  color: inherit;
+  background: rgb(16 35 49 / 70%);
+  cursor: pointer;
+}
+.world-relations button:hover,
+.world-relations button:focus-visible {
+  border-color: #9bf0ff;
+}
+.world-relation-peers {
+  display: block;
+  margin: 0.2rem 0 0;
+  overflow-wrap: anywhere;
+}
+.world-relation-card a {
+  color: #a2e9fc;
+}

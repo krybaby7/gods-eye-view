@@ -349,7 +349,17 @@
       "server/providers/world/sources/zip.js",
       "server/providers/common/http.js",
       "src/localRequestGate.mjs",
-      "src/sources/httpBody.js"
+      "src/sources/httpBody.js",
+      "server/providers/world/phase-3.js",
+      "server/providers/world/relations.js",
+      "server/providers/world/sources/relationsCurated.js",
+      "public/world/curated/bloc-memberships.json",
+      "public/world/curated/sanctions-programmes.json",
+      "server/providers/world/sources/relationsUcdp.js",
+      "server/providers/world/sources/relationsVoting.js",
+      "server/providers/world/sources/relationsWikidata.js",
+      "server/providers/world/sources/relationsSanctions.js",
+      "server/providers/world/sources/ukSanctionsOdt.js"
     ],
     "external": ["undici"]
   },
@@ -2348,7 +2358,6 @@
       "src/data/cameraArrival.js",
       "src/layers/alpr/floors.js",
       "src/data/militaryNames.js",
-      "src/sources/requestDeadline.js",
       "src/data/local_data/osm_military_names/names.json",
       "src/layers/installations/namedMarkers.js",
       "src/data/infrastructureOverlayEntry.js",
@@ -2393,7 +2402,12 @@
       "src/ui/worldEnergyPanels.js",
       "src/ui/worldPanelModel.js",
       "src/ui/searchesPanel.js",
-      "src/ui/searchesPanelModel.js"
+      "src/ui/searchesPanelModel.js",
+      "src/layers/world/phase-3.js",
+      "src/ui/styles/world-phase-3.css",
+      "src/layers/world/relations.js",
+      "src/ui/worldRelationsTab.js",
+      "src/ui/worldRelationCard.js"
     ],
     "external": [
       "hls.js",
@@ -2916,7 +2930,6 @@
       "src/data/cameraArrival.js",
       "src/layers/alpr/floors.js",
       "src/data/militaryNames.js",
-      "src/sources/requestDeadline.js",
       "src/data/local_data/osm_military_names/names.json",
       "src/layers/installations/namedMarkers.js",
       "src/data/infrastructureOverlayEntry.js",
@@ -2945,7 +2958,12 @@
       "src/layers/world/lensRegistry.js",
       "src/layers/world/phaseRegistry.js",
       "src/layers/world/model.js",
-      "src/ui/worldEnergyPanels.js"
+      "src/ui/worldEnergyPanels.js",
+      "src/layers/world/phase-3.js",
+      "src/ui/styles/world-phase-3.css",
+      "src/layers/world/relations.js",
+      "src/ui/worldRelationsTab.js",
+      "src/ui/worldRelationCard.js"
     ],
     "external": [
       "hls.js",
