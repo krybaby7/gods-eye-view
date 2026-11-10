@@ -67,8 +67,10 @@ export async function readCuratedAssets() {
       source: 'curated-assets',
       licence: 'Curated facts with company citations',
       reviewed: false,
-      lastVerified: '2026-11-09',
-      owners: curatedOwners(row, 'investor'),
+      owners: curatedOwners(row, 'investor').map((owner) => ({
+        countryLabel: 'Controlling group’s jurisdiction',
+        ...owner,
+      })),
       capacity: null,
       canInterrupt: [],
     })),
@@ -142,6 +144,14 @@ function assetMarkers(id, data) {
           })),
       }),
     })),
+    ...(id === 'wikidata-assets' && {
+      portAttribution: {
+        matched: data.portOperators?.length ?? 0,
+        verified: (data.portOperators ?? []).filter(({ owners }) =>
+          owners?.some(({ verified, country }) => verified && country),
+        ).length,
+      },
+    }),
     ...(data.nuclearBadges && { nuclearBadges: data.nuclearBadges }),
   };
 }
@@ -157,11 +167,10 @@ registerWorldFeatureView('assets', {
             (features[id]?.rows ?? []).filter(
               (row) =>
                 row.locatedIn === country ||
-                (row.status !== 'closed' &&
-                  (row.sendingCountry === country ||
-                    row.owners?.some(
-                      (owner) => owner.verified && owner.country === country,
-                    ))),
+                (row.status !== 'closed' && row.sendingCountry === country) ||
+                row.owners?.some(
+                  (owner) => owner.verified && owner.country === country,
+                ),
             ),
           )
         : [],

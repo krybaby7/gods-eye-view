@@ -170,7 +170,12 @@ export function createWorldLayer({
       if (!geometryReady || !isPointerFree()) return;
       const id = pickAt(position);
       const hit = worldCardPick(id);
-      if (hit && (mode !== 'board' || !hit.countryFirst))
+      if (
+        hit &&
+        (mode !== 'board' ||
+          !hit.countryFirst ||
+          (lens === 'ownership' && selected && hit.type === 'asset'))
+      )
         return openCard(hit.type, hit.id);
       if (mode !== 'board') return;
       const iso3 = hit?.countryFirst
@@ -182,7 +187,7 @@ export function createWorldLayer({
             .find(Boolean)
         : countryAt(id);
       if (iso3 && (selected !== iso3 || card)) select(iso3);
-      else if (hit && !iso3) openCard(hit.type, hit.id);
+      else if (hit) openCard(hit.type, hit.id);
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
     handler.setInputAction(({ endPosition }) => {
       if (mode !== 'board' || !geometryReady || !isPointerFree()) {

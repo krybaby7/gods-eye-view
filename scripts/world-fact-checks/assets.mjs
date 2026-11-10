@@ -72,7 +72,10 @@ async function countEvidence({ id, source, load, found, checkedOn, basis }) {
           : error.message,
       source,
       checkedOn,
-      pass: false,
+      pass: error.code === 'ENOENT' ? null : false,
+      ...(error.code === 'ENOENT' && {
+        reason: 'Local publisher evidence file is unavailable.',
+      }),
     };
   }
 }
@@ -160,9 +163,50 @@ export default async function assets({ board, getDetail }) {
       found:
         'No separate publisher aggregate found for this exact filter and snapshot.',
       source: airportPage,
-      pass: false,
+      pass: null,
+      reason:
+        'OurAirports publishes the CSV without an independent publisher aggregate for scheduled large airports by ISO country.',
     },
   ]);
+  const wikidataAssets = board?.features?.['wikidata-assets'];
+  const wikidata = wikidataAssets?.rows;
+  const ports = wikidataAssets?.portAttribution;
+  const query = board?.turn?.sources?.find(
+    ({ id }) => id === 'wikidata-assets',
+  );
+  const verified = (role) =>
+    (wikidata ?? []).filter(({ owners }) =>
+      owners?.some(
+        (owner) => owner.verified && owner.country && owner.role === role,
+      ),
+    ).length;
+  const withVerifiedOwner = verified('owner');
+  const withVerifiedOperator = verified('operator');
+  rows.push({
+    id: 'assets-wikidata-owner-query',
+    expected:
+      'A fresh Wikidata facility query with verified P127 owner or P137 operator country attributions.',
+    found: {
+      facilities: wikidata?.length ?? 0,
+      withVerifiedOwner,
+      withVerifiedOperator,
+      withEither: (wikidata ?? []).filter(({ owners }) =>
+        owners?.some(({ verified, country }) => verified && country),
+      ).length,
+      portMatches: ports?.matched,
+      portsWithVerifiedAttribution: ports?.verified,
+      status: query?.status,
+      batches: query?.detail,
+    },
+    source: 'https://query.wikidata.org/',
+    pass:
+      Array.isArray(wikidata) && query?.checked
+        ? withVerifiedOwner + withVerifiedOperator + (ports?.verified ?? 0) > 0
+        : null,
+    ...(!(Array.isArray(wikidata) && query?.checked) && {
+      reason: 'No Wikidata asset check was recorded for this turn.',
+    }),
+  });
   if (board?.features?.['curated-assets']) {
     for (const [country, label, pattern, sourceId, source] of named) {
       const detail = await getDetail(country, 'assets');
@@ -183,7 +227,7 @@ export default async function assets({ board, getDetail }) {
     for (const country of ['CHN', 'USA']) {
       const detail = await getDetail(country, 'assets');
       const foreign = (detail?.rows ?? []).filter(
-        (row) => row.locatedIn !== country && row.status !== 'closed',
+        (row) => row.locatedIn !== country,
       );
       const ownership = foreign.flatMap((row) => {
         const owner = row.owners?.find(
@@ -197,6 +241,7 @@ export default async function assets({ board, getDetail }) {
                 name: row.name,
                 host: row.locatedIn,
                 role: owner.role,
+                status: row.status ?? 'unknown',
                 actor: owner.actor,
                 evidence: owner.sourceUrl,
               },
@@ -204,7 +249,10 @@ export default async function assets({ board, getDetail }) {
           : [];
       });
       const presence = foreign.filter(
-        (row) => row.sendingCountry === country && row.sourceUrl,
+        (row) =>
+          row.sendingCountry === country &&
+          row.status === 'operating' &&
+          row.sourceUrl,
       );
       const required =
         country === 'CHN'

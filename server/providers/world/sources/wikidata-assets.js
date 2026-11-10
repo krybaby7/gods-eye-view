@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import {
   assetCountryResolver,
   assetRow,
@@ -7,9 +8,19 @@ import {
 import { createWdqsClient } from './wdqs.js';
 
 const source = 'wikidata-assets';
+const history = JSON.parse(
+  readFileSync(
+    new URL(
+      '../../../../public/world/curated/asset-history.json',
+      import.meta.url,
+    ),
+    'utf8',
+  ),
+);
 const BATCH_SIZE = 40;
-const hammaguirClosure =
-  'https://www.servicehistorique.sga.defense.gouv.fr/sites/default/files/notices_files/SHDGR_REP_1H_1091_A_4881_T1.pdf';
+// Increment when the upstream query changes. Adapter versions cover local derivation.
+const QUERY_VERSION = 1;
+const QUERY_BUDGET_MS = 120_000;
 const portCandidates = [
   'Port of Rotterdam',
   'Port of Singapore',
@@ -22,14 +33,15 @@ const portCandidates = [
   'Port of Piraeus',
 ];
 const selectors = [
-  ['nuclear_plant', '?item wdt:P31 wd:Q134447.'],
-  ['spaceport', '?item wdt:P31 wd:Q194188.'],
+  // Fetch the nine named ports before the larger country partitions.
   [
     'port',
     'VALUES ?portName { ' +
       portCandidates.map((name) => JSON.stringify(name) + '@en').join(' ') +
       ' } ?item rdfs:label ?portName; wdt:P137 ?portOperator.',
   ],
+  ['nuclear_plant', '?item wdt:P31 wd:Q134447.'],
+  ['spaceport', '?item wdt:P31 wd:Q194188.'],
 ];
 
 function assetQuery(kind, selector, codes) {
@@ -97,15 +109,30 @@ function facilityName(name) {
 }
 
 function assetHistory(row) {
-  if (!/\bhammaguir\b/i.test(row.name)) return row;
+  const words = row.name?.toLowerCase().split(/\W+/);
+  const match = history.rows.find(
+    ({ source, type, nameToken }) =>
+      row.source === source && row.type === type && words?.includes(nameToken),
+  );
+  if (!match) return row;
+  const {
+    locatedIn,
+    status,
+    statusAsOf,
+    statusDetail,
+    sourceUrl,
+    lastVerified,
+    reviewed,
+  } = match;
   return {
     ...row,
-    locatedIn: 'DZA',
-    status: 'closed',
-    statusAsOf: '1967-07-01',
-    statusDetail:
-      'The French military site was evacuated in 1967 under the Évian Accords.',
-    statusSourceUrl: hammaguirClosure,
+    locatedIn,
+    status,
+    statusAsOf,
+    statusDetail,
+    statusSourceUrl: sourceUrl,
+    lastVerified,
+    reviewed,
   };
 }
 
@@ -144,7 +171,11 @@ function companyAttributions(items, role, country, sourceUrl) {
         country: ownerCountry,
         share: null,
         role,
-        countryLabel: homeCountrySourceUrl ? "Owner's home country" : null,
+        countryLabel: homeCountrySourceUrl
+          ? role === 'operator'
+            ? 'Operator’s home country'
+            : 'Owner’s home country'
+          : null,
         homeCountrySourceUrl,
         sourceUrl:
           reference ??
@@ -245,25 +276,35 @@ export function parseWikidataAssets(payload, { country, now }) {
   return { rows, portOperators };
 }
 
-export const wikidataAssets = createAssetAdapter(
-  async ({ registry, now, fetchImpl, data: previous, rederive }) => {
+function needsQuery(data) {
+  return data?.queryVersion !== QUERY_VERSION || data.queryProgress != null;
+}
+
+const adapter = createAssetAdapter(
+  async ({
+    registry,
+    now,
+    fetchImpl,
+    data: previous,
+    rederive,
+    lastCheckedAt,
+  }) => {
     const country = await assetCountryResolver(registry);
-    if (rederive && previous?.rows) {
-      const data = previous.bindings
-        ? parseWikidataAssets(
-            { results: { bindings: previous.bindings } },
-            { country, now },
-          )
-        : {
-            rows: previous.rows
-              .filter((row) => facilityName(row.name))
-              .map(assetHistory),
-            portOperators: previous.portOperators ?? [],
-          };
+    if (
+      rederive &&
+      previous?.bindings &&
+      !needsQuery(previous) &&
+      !adapter.shouldCheck({ now, lastCheckedAt, data: previous })
+    ) {
+      const data = parseWikidataAssets(
+        { results: { bindings: previous.bindings } },
+        { country, now: new Date(previous.queriedAt) },
+      );
       return {
         data: { ...previous, ...data },
         count: data.rows.length,
         unit: 'facility',
+        checkedRelease: false,
         detail: 'Rebuilt from cached Wikidata records.',
       };
     }
@@ -285,15 +326,21 @@ export const wikidataAssets = createAssetAdapter(
         kind,
         selector,
         hosts,
+        keys: (hosts ?? ['operators']).map((host) => kind + ':' + host),
       })),
     );
-    const query = createWdqsClient(fetchImpl, now);
-    const bindings = [];
-    const completed = new Set();
+    const progress =
+      previous?.queryProgress?.version === QUERY_VERSION
+        ? previous.queryProgress
+        : null;
+    const signal = AbortSignal.timeout(QUERY_BUDGET_MS);
+    const query = createWdqsClient(fetchImpl, now, signal);
+    const bindings = [...(progress?.bindings ?? [])];
+    const completed = new Set(progress?.completed);
     const errors = [];
-    let succeeded = 0;
     let retryAt;
-    for (const { kind, selector, hosts } of batches) {
+    for (const { kind, selector, hosts, keys } of batches) {
+      if (keys.every((key) => completed.has(key))) continue;
       try {
         const rows = await query(assetQuery(kind, selector, hosts));
         for (const row of rows) {
@@ -303,44 +350,67 @@ export const wikidataAssets = createAssetAdapter(
           )
             bindings.push(row);
         }
-        for (const host of hosts ?? ['operators'])
-          completed.add(kind + ':' + host);
-        succeeded += 1;
+        for (const key of keys) completed.add(key);
       } catch (error) {
-        errors.push(error.cause?.code ?? error.message);
+        errors.push(
+          signal.aborted
+            ? 'Query budget exhausted'
+            : (error.cause?.code ?? error.message),
+        );
         retryAt = error.retryAt;
-        if (retryAt) break;
+        if (retryAt || signal.aborted) break;
       }
     }
     const data = parseWikidataAssets(
       { results: { bindings } },
       { country, now },
     );
+    const succeeded = batches.filter(({ keys }) =>
+      keys.every((key) => completed.has(key)),
+    ).length;
     const detail = `${succeeded} of ${batches.length} Wikidata asset batches completed.`;
     const error = errors.length
       ? detail + ' ' + [...new Set(errors)].join('; ')
       : undefined;
-    if (!data.rows.length && !data.portOperators.length) {
+    if (!error && !data.rows.length && !data.portOperators.length) {
       return {
-        ...(retryAt && { data: { ...previous, retryAt } }),
-        error:
-          error ?? 'Wikidata returned no located facilities or port operators',
+        data: previous && { ...previous, queryProgress: undefined },
+        error: 'Wikidata returned no located facilities or port operators',
         detail,
       };
     }
     if (error) {
       const newIds = new Set(data.rows.map(({ id }) => id));
       data.rows.push(
-        ...(previous?.rows ?? []).filter(
-          ({ id, type, locatedIn }) =>
-            !newIds.has(id) && !completed.has(type + ':' + locatedIn),
-        ),
+        ...(previous?.rows ?? [])
+          .filter(
+            ({ id, type, locatedIn }) =>
+              !newIds.has(id) && !completed.has(type + ':' + locatedIn),
+          )
+          .map(assetHistory),
       );
       if (!completed.has('port:operators'))
         data.portOperators = previous?.portOperators ?? [];
     }
     return {
-      data: { ...data, retryAt, ...(!error && { bindings }) },
+      data: {
+        ...data,
+        ...(error
+          ? {
+              queryVersion: previous?.queryVersion,
+              retryAt,
+              queryProgress: {
+                version: QUERY_VERSION,
+                completed: [...completed],
+                bindings,
+              },
+            }
+          : {
+              queryVersion: QUERY_VERSION,
+              queriedAt: now.toISOString(),
+              bindings,
+            }),
+      },
       count: data.rows.length,
       unit: 'facility',
       detail,
@@ -350,3 +420,12 @@ export const wikidataAssets = createAssetAdapter(
   14,
   { requestHost: 'query.wikidata.org' },
 );
+
+export const wikidataAssets = {
+  ...adapter,
+  shouldCheck(context) {
+    const { data, now } = context;
+    if (Date.parse(data?.retryAt) > +now) return false;
+    return needsQuery(data) || adapter.shouldCheck(context);
+  },
+};
