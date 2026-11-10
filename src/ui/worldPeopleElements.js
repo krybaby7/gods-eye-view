@@ -129,7 +129,9 @@ export function roleEvidence(document, role) {
       continue;
     const label = peopleSources[evidence.source] ?? evidence.source;
     text.append(
-      ' · ' + evidence.name + ' per ',
+      evidence.agrees
+        ? ' · also confirmed by '
+        : ' · ' + evidence.name + ' per ',
       externalLink(document, evidence.sourceUrl, label) ?? label,
       ', ' + (evidence.asOf ?? 'date not recorded'),
     );

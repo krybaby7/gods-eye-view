@@ -153,11 +153,42 @@ test('role evidence displays date, source, stale cue and the competing holder', 
       source: 'wikidata',
       asOf: '2024-04-03',
     },
+    otherEvidence: [
+      {
+        name: 'Selected Holder',
+        source: 'official',
+        asOf: '2024-04-04',
+        agrees: true,
+      },
+      {
+        name: 'Other Holder',
+        source: 'wikidata',
+        asOf: '2024-04-03',
+        agrees: false,
+      },
+    ],
   });
   assert.match(element.values.join(''), /as of 2025-07-20 · CIA World Leaders/);
   assert.match(element.values.join(''), /may be out of date/);
   assert.match(
     element.values.join(''),
-    /sources disagree: Other Holder per Wikidata, 2024-04-03/,
+    /sources disagree: Other Holder per Wikidata, 2024-04-03 · also confirmed by Official office source, 2024-04-04/,
   );
+  const agreed = roleEvidence(document, {
+    asOf: '2026-11-09',
+    source: 'official',
+    otherEvidence: [
+      {
+        name: 'Selected Holder',
+        source: 'wikidata',
+        asOf: '2025-10-21',
+        agrees: true,
+      },
+    ],
+  });
+  assert.match(
+    agreed.values.join(''),
+    /also confirmed by Wikidata, 2025-10-21/,
+  );
+  assert.doesNotMatch(agreed.values.join(''), /sources disagree/);
 });

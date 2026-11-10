@@ -162,19 +162,18 @@ export function mergeOfficeholders(
       const officialMatch = [...wd, ...undated].find((candidate) =>
         samePerson(candidate, officialChoice),
       );
-      const other = [ciaChoice, wdChoice].find(
-        (actor) => actor && !samePerson(actor, officialChoice),
-      );
+      const selected = withIdentity(officialChoice, officialMatch);
+      const otherEvidence = [ciaChoice, wdChoice]
+        .filter(Boolean)
+        .map((actor) => ({
+          ...provenance(actor),
+          agrees: samePerson(actor, selected),
+        }));
       return [
         withEvidence(
-          {
-            ...withIdentity(officialChoice, officialMatch),
-            otherEvidence: [ciaChoice, wdChoice]
-              .filter(Boolean)
-              .map(provenance),
-          },
+          { ...selected, otherEvidence },
           ageCutoff,
-          other,
+          otherEvidence.find(({ agrees }) => !agrees),
         ),
       ];
     }

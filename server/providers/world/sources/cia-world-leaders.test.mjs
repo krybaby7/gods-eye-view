@@ -403,3 +403,42 @@ test('verified Philippine and Ghana appointments supersede captured older CIA ev
     ),
   );
 });
+test('official role records distinguish agreeing provenance from a competing holder', async () => {
+  const { mergeOfficeholders } = await import('../officeholders.js');
+  const role = 'foreign-minister';
+  const wd = wikidata('JPN', 'Toshimitsu Motegi', 'Q1655453', '2025-10-21');
+  const cia = {
+    id: 'cia-jpn-iwaya',
+    country: 'JPN',
+    role,
+    name: 'Iwaya Takeshi',
+    source: 'cia-world-leaders',
+    asOf: '2025-05-23',
+  };
+  const official = {
+    id: 'official-jpn-foreign-minister',
+    country: 'JPN',
+    role,
+    name: 'Motegi Toshimitsu',
+    source: 'official',
+    asOf: '2026-11-09',
+  };
+  const [mixed] = mergeOfficeholders([wd], [cia], now, [], [official]);
+  assert.equal(mixed.disagreement.name, 'Iwaya Takeshi');
+  assert.deepEqual(
+    mixed.otherEvidence.map(({ name, agrees }) => [name, agrees]),
+    [
+      ['Iwaya Takeshi', false],
+      ['Toshimitsu Motegi', true],
+    ],
+  );
+  const [agrees] = mergeOfficeholders(
+    [wd],
+    [{ ...cia, name: 'Motegi Toshimitsu' }],
+    now,
+    [],
+    [official],
+  );
+  assert.equal(agrees.disagreement, undefined);
+  assert.ok(agrees.otherEvidence.every(({ agrees }) => agrees));
+});
