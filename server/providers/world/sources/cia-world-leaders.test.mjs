@@ -3,6 +3,21 @@ import test from 'node:test';
 
 const now = new Date('2026-11-10T09:00:00Z');
 
+test('prefers the plain title over a separately numbered ministry', async () => {
+  const { mergeOfficeholders } = await import('../officeholders.js');
+  const leaders = [
+    { title: 'Min. of Foreign Affairs II', name: 'Second Minister' },
+    { title: 'Min. of Foreign Affairs', name: 'Plain Minister' },
+  ];
+  const cia = await actorsOf(
+    page('Argentina', '2026-08-06', leaders),
+    'argentina',
+  );
+  const [actor] = mergeOfficeholders([], cia, now);
+  assert.equal(actor.name, 'Plain Minister');
+  assert.equal(actor.ambiguity, undefined);
+});
+
 test('uses the listing order of plain titles even when a candidate has an earlier compound title', async () => {
   const { mergeOfficeholders } = await import('../officeholders.js');
   const leaders = [

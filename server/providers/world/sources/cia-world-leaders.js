@@ -88,7 +88,9 @@ function mapTitle(country, title) {
 // A comma directly after the office abbreviation is formatting, not an
 // additional portfolio (e.g. "Chmn., Council of Ministers").
 function isPlainTitle(title) {
-  return !/(?:,|&|\band\b)/.test(title.replace(/^(\S+),/, '$1'));
+  return !/(?:,|&|\band\b|\s(?:[ivx]+|\d+)$)/.test(
+    title.replace(/^(\S+),/, '$1'),
+  );
 }
 
 export function parseCiaPage(json, slug) {
