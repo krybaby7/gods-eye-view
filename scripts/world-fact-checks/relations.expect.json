@@ -1,0 +1,387 @@
+{
+  "checkedOn": "2026-11-10",
+  "dataset": "https://www.kentarosakuwa.info/data.html",
+  "rivalries": [
+    [
+      "COL",
+      "VEN",
+      "1831",
+      "2025-06-04",
+      "https://www.cancilleria.gov.co/sala-de-prensa/noticias/la-canciller-laura-sarabia-dialoga-con-familiares-de-colombianos-sometidos-presuntas-detenciones-arbitrarias-en-venezuela"
+    ],
+    ["BOL", "CHL", "1836", null, null],
+    ["JOR", "SYR", "1946", null, null],
+    [
+      "IND",
+      "PAK",
+      "1947",
+      "2025-05-15",
+      "https://india.un.org/en/294361-un-chief-welcomes-india-pakistan-ceasefire"
+    ],
+    [
+      "AFG",
+      "PAK",
+      "1947",
+      "2026-03-17",
+      "https://unama.unmissions.org/en/press-releases/unama-statement-airstrike-medical-facility-kabul"
+    ],
+    [
+      "KOR",
+      "PRK",
+      "1948",
+      "2024-12-18",
+      "https://digitallibrary.un.org/record/4070650"
+    ],
+    [
+      "ISR",
+      "SYR",
+      "1948",
+      "2025-07-17",
+      "https://dppa.un.org/en/speeches-and-statements/asg-khiari-warns-security-council-of-escalating-violence-in-syria"
+    ],
+    [
+      "EGY",
+      "ISR",
+      "1948",
+      "2026-02-19",
+      "https://sis.gov.eg/en/media-center/news/egypt-seeks-stable-middle-east-supports-establishment-of-palestinian-statehood/"
+    ],
+    [
+      "CHN",
+      "IND",
+      "1948",
+      "2023-11-07",
+      "https://www.mea.gov.in/Images/CPV/RTI-03-05-03-2023.pdf"
+    ],
+    ["IRQ", "ISR", "1948", null, null],
+    [
+      "CHN",
+      "TWN",
+      "1949",
+      "2025-04-02",
+      "https://www.mnd.gov.tw/en/publication/112"
+    ],
+    [
+      "GRC",
+      "TUR",
+      "1955",
+      "2025-07-26",
+      "https://www.mfa.gr/en/minister-of-foreign-affairs-george-gerapetritis-interview-with-ta-nea-newspaper-and-journalist-dionysis-nasopoulos-26-07-2025/"
+    ],
+    [
+      "CUB",
+      "USA",
+      "1959",
+      "2025-06-30",
+      "https://www.whitehouse.gov/presidential-actions/2025/06/national-security-presidential-memorandum-nspm-5/"
+    ],
+    [
+      "IRQ",
+      "KWT",
+      "1961",
+      "2026-02-21",
+      "https://e.gov.kw/sites/kgoarabic/Pages/ApplicationPages/NewsDetail.aspx?nid=64409110"
+    ],
+    [
+      "DZA",
+      "MAR",
+      "1962",
+      "2025-03-27",
+      "https://www.mfa.gov.dz/announcements/press-statement-of-the-ministry-of-foreign-affairs-morocco27032025"
+    ],
+    [
+      "CYP",
+      "TUR",
+      "1964",
+      "2025-11-30",
+      "https://unficyp.unmissions.org/sites/default/files/2026-01/SG_report_UNFICY_2026.pdf"
+    ],
+    [
+      "MYS",
+      "SGP",
+      "1965",
+      null,
+      "https://www.mfa.gov.sg/newsroom/press-statements-transcripts-and-photos/pq-jan-2025-written-07-jan-2025/"
+    ],
+    ["ETH", "SDN", "1965", null, null],
+    [
+      "ARG",
+      "GBR",
+      "1965",
+      "2026-06-24",
+      "https://www.gov.uk/government/speeches/the-falkland-islands-lord-collins-oas-statement-june-2026"
+    ],
+    [
+      "GUY",
+      "VEN",
+      "1966",
+      "2025-05-01",
+      "https://icj-web.leman.un-icc.cloud/sites/default/files/case-related/171/171-20250502-sum-01-00-en.pdf"
+    ],
+    [
+      "ARE",
+      "IRN",
+      "1971",
+      "2026-08-31",
+      "https://www.mofa.gov.ae/en/MediaHub/News/2026/8/31/UAE-iran"
+    ],
+    [
+      "GAB",
+      "GNQ",
+      "1972",
+      null,
+      "https://api.icj-cij.org/sites/default/files/case-related/179/179-20250519-jud-01-00-en.pdf"
+    ],
+    ["IRN", "SAU", "1979", "2026-03-22", "https://spa.gov.sa/en/N2543729"],
+    [
+      "IRN",
+      "ISR",
+      "1979",
+      "2025-06-13",
+      "https://dppa.un.org/en/speeches-and-statements/usg-dicarlo-urges-both-israel-and-iran-to-exercise-maximum-restraint"
+    ],
+    ["EGY", "IRN", "1979", null, null],
+    [
+      "IRN",
+      "USA",
+      "1982",
+      "2025-06-22",
+      "https://dppa.un.org/en/speeches-and-statements/asg-jenca-warns-security-council-of-dangerous-escalation-after-us"
+    ],
+    [
+      "EGY",
+      "SDN",
+      "1991",
+      "2024-01-15",
+      "https://digitallibrary.un.org/record/4034541/files/S_2024_63-EN.pdf"
+    ],
+    ["BIH", "HRV", "1992", null, null],
+    [
+      "BIH",
+      "SRB",
+      "1992",
+      null,
+      "https://www.un.org/en/about-us/member-states/yugoslavia"
+    ],
+    ["ERI", "SDN", "1993", null, null],
+    [
+      "QAT",
+      "SAU",
+      "1995",
+      null,
+      "https://www.gco.gov.qa/en/media-centre/in-focus/gcc-crisis/"
+    ],
+    ["COD", "UGA", "1996", null, null],
+    [
+      "COD",
+      "RWA",
+      "1996",
+      "2025-02-21",
+      "https://digitallibrary.un.org/record/4076897?ln=en&v=pdf"
+    ],
+    [
+      "CHN",
+      "USA",
+      "1996",
+      "2024-12-18",
+      "https://media.defense.gov/2024/Dec/18/2003615520/-1/-1/0/MILITARY-AND-%09SECURITY-DEVELOPMENTS-INVOLVING-THE-PEOPLES-REPUBLIC-OF-CHINA-2024.PDF"
+    ],
+    [
+      "CHN",
+      "JPN",
+      "1996",
+      "2025-05-03",
+      "https://www.mofa.go.jp/press/release/pressite_000001_01228.html"
+    ],
+    ["RWA", "UGA", "1999", null, null],
+    [
+      "CAF",
+      "TCD",
+      "2003",
+      null,
+      "https://documents.un.org/doc/undoc/gen/n25/120/95/pdf/n2512095.pdf"
+    ],
+    [
+      "KHM",
+      "THA",
+      "2006",
+      "2026-04-07",
+      "https://cambodia.un.org/en/313222-socio-economic-impact-assessment-cambodia%E2%80%93thailand-border-conflict"
+    ],
+    [
+      "RUS",
+      "USA",
+      "2007",
+      "2023-03-16",
+      "https://www.usafe.af.mil/News/Press-Releases/Display/Article/3331012/camera-footage-release-from-us-air-force-mq-9-interaction-with-russian-su-27-in/"
+    ],
+    [
+      "KOS",
+      "SRB",
+      "2008",
+      "2023-09-24",
+      "https://www.eeas.europa.eu/eeas/kosovo-statement-high-representative-josep-borrell-attack-against-kosovo-police_en"
+    ],
+    [
+      "SDN",
+      "SSD",
+      "2011",
+      "2025-11-05",
+      "https://peacekeeping.un.org/en/news/sudan-war-and-political-uncertainty-block-progress-on-abyei-peace-talks"
+    ],
+    [
+      "EGY",
+      "ETH",
+      "2011",
+      "2025-09-09",
+      "https://documents.un.org/doc/undoc/gen/n25/238/27/pdf/n2523827.pdf"
+    ],
+    [
+      "SAU",
+      "SYR",
+      "2011",
+      null,
+      "https://mofa.gov.qa/en/latest-articles/statements/qatar--syria-issue-joint-statement"
+    ],
+    ["SYR", "TUR", "2011", null, null],
+    [
+      "ARE",
+      "QAT",
+      "2011",
+      null,
+      "https://www.mofa.gov.ae/en/mediahub/news/2023/6/19/19-6-2023-uae-qatar"
+    ],
+    [
+      "IRN",
+      "YEM",
+      "2011",
+      "2025-07-24",
+      "https://documents.un.org/api/symbol/access?l=en&s=S%2F2025%2F485&t=pdf"
+    ],
+    ["IRN", "TUR", "2011", null, null],
+    [
+      "EGY",
+      "TUR",
+      "2013",
+      null,
+      "https://www.mfa.gov.tr/no_-164_-turkiye-misir--ortak--aciklamasi.en.mfa"
+    ],
+    [
+      "EGY",
+      "QAT",
+      "2013",
+      null,
+      "https://www.gco.gov.qa/en/media-centre/in-focus/gcc-crisis/"
+    ],
+    ["KEN", "SOM", "2013", null, null],
+    [
+      "SAU",
+      "TUR",
+      "2013",
+      null,
+      "https://www.mfa.gov.tr/turkiye-suudi-arabistan-siyasi-iliskileri.tr.mfa"
+    ],
+    ["RUS", "UKR", "2014", "2026-11-09", "https://dppa.un.org/en/node/137309"],
+    [
+      "BHR",
+      "QAT",
+      "2014",
+      null,
+      "https://mofa.gov.qa/en/qatar/latest-articles/latest-news/details/1444/07/22/qatari-bahraini-follow-up-committee-holds-first-meeting-in-riyadh"
+    ],
+    [
+      "BDI",
+      "RWA",
+      "2015",
+      "2024-04-04",
+      "https://www.mae.gov.bi/en/the-diplomatic-relations-between-burundi-and-rwanda-on-the-decline/"
+    ]
+  ],
+  "ruptures": [
+    ["RUS", "UKR", "2026-11-09", "https://dppa.un.org/en/node/137309"],
+    [
+      "IRN",
+      "USA",
+      "2025-06-22",
+      "https://dppa.un.org/en/speeches-and-statements/asg-jenca-warns-security-council-of-dangerous-escalation-after-us"
+    ],
+    [
+      "GEO",
+      "RUS",
+      "2026-08-07",
+      "https://www.eeas.europa.eu/eeas/georgia-statement-spokesperson-marking-18-years-outbreak-war-between-russia-and-georgia_en"
+    ]
+  ],
+  "sanctions": [
+    [
+      "GBR",
+      "IRN",
+      "Iran",
+      "state",
+      "https://www.gov.uk/government/publications/iran-sanctions-guidance/iran-sanctions-guidance"
+    ],
+    ["USA", "RUS", "SSIDES", "targeted", "https://ofac.treasury.gov/faqs/546"],
+    [
+      "USA",
+      "RUS",
+      "UKRAINE-EO13660",
+      "persons",
+      "https://ofac.treasury.gov/system/files/126/20220429_ukraine_regulations.pdf"
+    ],
+    [
+      "USA",
+      "BLR",
+      "BELARUS-EO14038",
+      "persons",
+      "https://ofac.treasury.gov/recent-actions/20260326"
+    ],
+    [
+      "GBR",
+      "SYR",
+      "Syria",
+      "state",
+      "https://www.gov.uk/government/publications/supporting-syrias-future-guidance-for-businesses-and-aid-organisations/supporting-a-secure-and-prosperous-future-for-syria-guidance-for-businesses-and-ngos"
+    ]
+  ],
+  "un": {
+    "QD": "https://main.un.org/securitycouncil/en/sanctions/1267",
+    "SO": "https://main.un.org/securitycouncil/en/sanctions/2713",
+    "TA": "https://main.un.org/securitycouncil/en/sanctions/1988/materials"
+  },
+  "exclusions": [
+    [
+      "ARM",
+      "AZE",
+      "The 2026 trilateral statement by Armenia, Azerbaijan and the United States says the 2025 process ended decades of conflict and records stability along the border and tangible normalization steps.",
+      [
+        "https://www.mfa.am/en/interviews-articles-and-comments/2026/08/10/Joint_statement/14060"
+      ]
+    ],
+    [
+      "QAT",
+      "SYR",
+      "Qatar explicitly dates its break to opposition to the former Syrian regime. After the regime fell, Qatar reopened its embassy and the two governments jointly announced reconstruction support and direct cooperation.",
+      [
+        "https://mofa.gov.qa/en/latest-articles/statements/qatar--syria-issue-joint-statement",
+        "https://mofa.gov.qa/en/qatar/latest-articles/latest-news/details/2024/12/15/qatar-announces-resumption-of-embassy-operations-in-syria-from-tuesday"
+      ]
+    ]
+  ],
+  "rivalryClasses": {
+    "CHNâ€“IND": "rival",
+    "GUYâ€“VEN": "rival",
+    "ISRâ€“SYR": "rival"
+  },
+  "round3": {
+    "configuredRivalries": 7,
+    "paintedRivals": 7,
+    "usaClasses": {
+      "ally": 51,
+      "at-war": 0,
+      "neutral": 122,
+      "partner": 1,
+      "rival": 1,
+      "sanctions": 6
+    }
+  }
+}

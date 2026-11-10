@@ -1,0 +1,923 @@
+[
+  {
+    "id": "rel_rivalry_col_ven",
+    "type": "rivalry",
+    "from": "COL",
+    "to": "VEN",
+    "directed": false,
+    "start": "1831",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Colombia opened diplomatic work on what its foreign ministry described as suspected arbitrary detention of Colombians in Venezuela.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.cancilleria.gov.co/sala-de-prensa/noticias/la-canciller-laura-sarabia-dialoga-con-familiares-de-colombianos-sometidos-presuntas-detenciones-arbitrarias-en-venezuela"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-06-04",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_bol_chl",
+    "type": "rivalry",
+    "from": "BOL",
+    "to": "CHL",
+    "directed": false,
+    "start": "1836",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset.",
+    "sources": ["https://www.kentarosakuwa.info/data.html"],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_jor_syr",
+    "type": "rivalry",
+    "from": "SYR",
+    "to": "JOR",
+    "directed": false,
+    "start": "1946",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset.",
+    "sources": ["https://www.kentarosakuwa.info/data.html"],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_india_pakistan",
+    "type": "rivalry",
+    "from": "IND",
+    "to": "PAK",
+    "directed": false,
+    "start": "1947",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The United Nations welcomed a ceasefire following May 2025 hostilities and noted the longstanding Kashmir dispute.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://india.un.org/en/294361-un-chief-welcomes-india-pakistan-ceasefire"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-05-15",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_afg_pak",
+    "type": "rivalry",
+    "from": "AFG",
+    "to": "PAK",
+    "directed": false,
+    "start": "1947",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. UNAMA attributed a March 2026 Kabul airstrike and other cross-border hostilities to Pakistani and Afghan forces.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://unama.unmissions.org/en/press-releases/unama-statement-airstrike-medical-facility-kabul"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2026-03-17",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_koreas",
+    "type": "rivalry",
+    "from": "PRK",
+    "to": "KOR",
+    "directed": false,
+    "start": "1948",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. South Korea told the UN Security Council that North Korea had declared it a hostile state and cut cross-border road and rail links.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://digitallibrary.un.org/record/4070650"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2024-12-18",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_isr_syr",
+    "type": "rivalry",
+    "from": "SYR",
+    "to": "ISR",
+    "directed": false,
+    "start": "1948",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The UN briefed the Security Council on Israeli strikes targeting Syrian government forces and official buildings in July 2025.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://dppa.un.org/en/speeches-and-statements/asg-khiari-warns-security-council-of-escalating-violence-in-syria"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-07-17",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_egy_isr",
+    "type": "rivalry",
+    "from": "EGY",
+    "to": "ISR",
+    "directed": false,
+    "start": "1948",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Egypt told the Security Council it opposed Israeli measures it said would displace Palestinians and pressed for unobstructed operations at Rafah.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://sis.gov.eg/en/media-center/news/egypt-seeks-stable-middle-east-supports-establishment-of-palestinian-statehood/"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2026-02-19",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_chn_ind",
+    "type": "rivalry",
+    "from": "CHN",
+    "to": "IND",
+    "directed": false,
+    "start": "1948",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. India’s foreign ministry accused China of continuing to occupy territory in Ladakh. A 2024 patrol agreement covered disengagement at the friction points from 2020.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.mea.gov.in/Images/CPV/RTI-03-05-03-2023.pdf",
+      "https://www.mea.gov.in/lok-sabha.htm?dtl/39008/QUESTION_NO_843_INDOCHINA_AGREEMENT_ON_BORDERRELATED_ISSUES"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2023-11-07",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_irq_isr",
+    "type": "rivalry",
+    "from": "IRQ",
+    "to": "ISR",
+    "directed": false,
+    "start": "1948",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset.",
+    "sources": ["https://www.kentarosakuwa.info/data.html"],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_chn_twn",
+    "type": "rivalry",
+    "from": "CHN",
+    "to": "TWN",
+    "directed": false,
+    "start": "1949",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Taiwan documented coercive Chinese live-fire drills around the Taiwan Strait in April 2025. China confirmed the exercise.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.mnd.gov.tw/en/publication/112",
+      "https://eng.mod.gov.cn/xb/News_213114/TopStories/16378460.html"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-04-02",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_greece_turkiye",
+    "type": "rivalry",
+    "from": "GRC",
+    "to": "TUR",
+    "directed": false,
+    "start": "1955",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Greece’s foreign minister described Türkiye’s standing threat of war over an extension of territorial waters alongside ongoing bilateral contacts. NATO ally takes precedence on the map.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.mfa.gr/en/minister-of-foreign-affairs-george-gerapetritis-interview-with-ta-nea-newspaper-and-journalist-dionysis-nasopoulos-26-07-2025/"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-07-26",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_cub_usa",
+    "type": "rivalry",
+    "from": "USA",
+    "to": "CUB",
+    "directed": false,
+    "start": "1959",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. A U.S. presidential memorandum renewed pressure on Cuba, backed the trade embargo and directed restrictions on financial transactions with military-controlled entities.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.whitehouse.gov/presidential-actions/2025/06/national-security-presidential-memorandum-nspm-5/"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-06-30",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_irq_kwt",
+    "type": "rivalry",
+    "from": "IRQ",
+    "to": "KWT",
+    "directed": false,
+    "start": "1961",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Kuwait summoned Iraq’s acting envoy to deliver a formal protest over Iraqi maritime coordinates deposited with the UN.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://e.gov.kw/sites/kgoarabic/Pages/ApplicationPages/NewsDetail.aspx?nid=64409110"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2026-02-21",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_algeria_morocco",
+    "type": "rivalry",
+    "from": "DZA",
+    "to": "MAR",
+    "directed": false,
+    "start": "1962",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Algeria declared Morocco’s vice-consul in Oran persona non grata and ordered his departure in March 2025.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.mfa.gov.dz/announcements/press-statement-of-the-ministry-of-foreign-affairs-morocco27032025"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-03-27",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_cyp_tur",
+    "type": "rivalry",
+    "from": "CYP",
+    "to": "TUR",
+    "directed": false,
+    "start": "1964",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. UNFICYP counted military violations by the Republic of Cyprus National Guard and Turkish and Turkish Cypriot forces in the year ending November 2025.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://unficyp.unmissions.org/sites/default/files/2026-01/SG_report_UNFICY_2026.pdf"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-11-30",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_mys_sgp",
+    "type": "rivalry",
+    "from": "MYS",
+    "to": "SGP",
+    "directed": false,
+    "start": "1965",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Singapore reports that maritime delimitation around Pedra Branca, Middle Rocks and South Ledge remains with the joint technical committee.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.mfa.gov.sg/newsroom/press-statements-transcripts-and-photos/pq-jan-2025-written-07-jan-2025/"
+    ],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_eth_sdn",
+    "type": "rivalry",
+    "from": "ETH",
+    "to": "SDN",
+    "directed": false,
+    "start": "1965",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset.",
+    "sources": ["https://www.kentarosakuwa.info/data.html"],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_arg_gbr",
+    "type": "rivalry",
+    "from": "ARG",
+    "to": "GBR",
+    "directed": false,
+    "start": "1965",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The United Kingdom rejected Argentina’s sovereignty claim over the Falkland Islands at the OAS and reiterated its position on hydrocarbon development.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.gov.uk/government/speeches/the-falkland-islands-lord-collins-oas-statement-june-2026"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2026-06-24",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_guy_ven",
+    "type": "rivalry",
+    "from": "VEN",
+    "to": "GUY",
+    "directed": false,
+    "start": "1966",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The International Court of Justice ordered Venezuela to refrain from conducting or preparing elections in the disputed Essequibo territory administered by Guyana.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://icj-web.leman.un-icc.cloud/sites/default/files/case-related/171/171-20250502-sum-01-00-en.pdf"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-05-01",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_are_irn",
+    "type": "rivalry",
+    "from": "IRN",
+    "to": "ARE",
+    "directed": false,
+    "start": "1971",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The UAE said it intercepted an Iranian drone over its territorial waters and condemned the incursion as a violation of its sovereignty.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.mofa.gov.ae/en/MediaHub/News/2026/8/31/UAE-iran"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2026-08-31",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_gab_gnq",
+    "type": "rivalry",
+    "from": "GNQ",
+    "to": "GAB",
+    "directed": false,
+    "start": "1972",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The 2025 ICJ judgment identified the legal titles for the border and islands. The parties signed a 2026 engagement agreement to implement it, while final delimitation remains a separate step.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://api.icj-cij.org/sites/default/files/case-related/179/179-20250519-jud-01-00-en.pdf",
+      "https://www.au.int/en/pressrelease/auc-chairperson-welcomes-signing-joint-engagement-agreement-between-republic"
+    ],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_irn_sau",
+    "type": "rivalry",
+    "from": "IRN",
+    "to": "SAU",
+    "directed": false,
+    "start": "1979",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Saudi Arabia expelled Iran’s military attaché and other diplomatic staff, citing Iranian attacks against the kingdom after their 2023 restoration of relations.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://spa.gov.sa/en/N2543729",
+      "https://www.mfa.gov.cn/eng/wjb/zzjg_663340/xybfs_663590/xwlb_663592/202303/t20230311_11039241.html"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2026-03-22",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_iran_israel",
+    "type": "rivalry",
+    "from": "IRN",
+    "to": "ISR",
+    "directed": false,
+    "start": "1979",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The UN Security Council was briefed on Israeli airstrikes across Iran and Iranian drone launches toward Israel.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://dppa.un.org/en/speeches-and-statements/usg-dicarlo-urges-both-israel-and-iran-to-exercise-maximum-restraint"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-06-13",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_egy_irn",
+    "type": "rivalry",
+    "from": "IRN",
+    "to": "EGY",
+    "directed": false,
+    "start": "1979",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset.",
+    "sources": ["https://www.kentarosakuwa.info/data.html"],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_irn_usa",
+    "type": "rivalry",
+    "from": "IRN",
+    "to": "USA",
+    "directed": false,
+    "start": "1982",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The UN briefed the Security Council on United States strikes on Iranian nuclear facilities.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://dppa.un.org/en/speeches-and-statements/asg-jenca-warns-security-council-of-dangerous-escalation-after-us"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-06-22",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_egy_sdn",
+    "type": "rivalry",
+    "from": "SDN",
+    "to": "EGY",
+    "directed": false,
+    "start": "1991",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Egypt reaffirmed its claim to the Hala’ib Triangle in a letter replying to Sudan at the Security Council.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://digitallibrary.un.org/record/4034541/files/S_2024_63-EN.pdf"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2024-01-15",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_bih_hrv",
+    "type": "rivalry",
+    "from": "HRV",
+    "to": "BIH",
+    "directed": false,
+    "start": "1992",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset.",
+    "sources": ["https://www.kentarosakuwa.info/data.html"],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_bih_srb",
+    "type": "rivalry",
+    "from": "SRB",
+    "to": "BIH",
+    "directed": false,
+    "start": "1992",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The dataset’s 1992 Yugoslavia entry maps to Serbia. The UN records the Federal Republic of Yugoslavia’s renaming and Serbia’s continuation of the state union’s membership in 2006.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.un.org/en/about-us/member-states/yugoslavia"
+    ],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_eri_sdn",
+    "type": "rivalry",
+    "from": "ERI",
+    "to": "SDN",
+    "directed": false,
+    "start": "1993",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset.",
+    "sources": ["https://www.kentarosakuwa.info/data.html"],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_qat_sau",
+    "type": "rivalry",
+    "from": "QAT",
+    "to": "SAU",
+    "directed": false,
+    "start": "1995",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The Al-Ula Declaration ended the 2017 Gulf crisis. The dataset dates this wider rivalry to 1995.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.gco.gov.qa/en/media-centre/in-focus/gcc-crisis/"
+    ],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_cod_uga",
+    "type": "rivalry",
+    "from": "COD",
+    "to": "UGA",
+    "directed": false,
+    "start": "1996",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset.",
+    "sources": ["https://www.kentarosakuwa.info/data.html"],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_cod_rwa",
+    "type": "rivalry",
+    "from": "COD",
+    "to": "RWA",
+    "directed": false,
+    "start": "1996",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The Security Council called for Rwandan troops to withdraw from the Democratic Republic of the Congo and end support for the M23 offensive.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://digitallibrary.un.org/record/4076897?ln=en&v=pdf"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-02-21",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_usa_china",
+    "type": "rivalry",
+    "from": "USA",
+    "to": "CHN",
+    "directed": false,
+    "start": "1996",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The U.S. Defense Department documented coercive and risky interceptions of U.S. aircraft by Chinese forces, with a reduction after late 2023.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://media.defense.gov/2024/Dec/18/2003615520/-1/-1/0/MILITARY-AND-%09SECURITY-DEVELOPMENTS-INVOLVING-THE-PEOPLES-REPUBLIC-OF-CHINA-2024.PDF"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2024-12-18",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_china_japan",
+    "type": "rivalry",
+    "from": "CHN",
+    "to": "JPN",
+    "directed": false,
+    "start": "1996",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Japan lodged a protest after a helicopter from a China Coast Guard vessel entered airspace over the disputed Senkaku Islands.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.mofa.go.jp/press/release/pressite_000001_01228.html"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-05-03",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_rwa_uga",
+    "type": "rivalry",
+    "from": "UGA",
+    "to": "RWA",
+    "directed": false,
+    "start": "1999",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset.",
+    "sources": ["https://www.kentarosakuwa.info/data.html"],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_caf_tcd",
+    "type": "rivalry",
+    "from": "CAF",
+    "to": "TCD",
+    "directed": false,
+    "start": "2003",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The UN Panel of Experts described cross-border armed groups and increased patrols. It also noted a 2024 bilateral cooperation agreement.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://documents.un.org/doc/undoc/gen/n25/120/95/pdf/n2512095.pdf"
+    ],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_khm_tha",
+    "type": "rivalry",
+    "from": "KHM",
+    "to": "THA",
+    "directed": false,
+    "start": "2006",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The UN assessment records armed hostilities along the Cambodia–Thailand border in July and December 2025.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://cambodia.un.org/en/313222-socio-economic-impact-assessment-cambodia%E2%80%93thailand-border-conflict"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2026-04-07",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_rus_usa",
+    "type": "rivalry",
+    "from": "USA",
+    "to": "RUS",
+    "directed": false,
+    "start": "2007",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The U.S. Air Force released footage of a Russian fighter intercepting a U.S. drone over the Black Sea. The Pentagon reported the jet struck the drone.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.usafe.af.mil/News/Press-Releases/Display/Article/3331012/camera-footage-release-from-us-air-force-mq-9-interaction-with-russian-su-27-in/",
+      "https://www.defense.gov/News/Speeches/Speech/Article/3329644/opening-remarks-by-secretary-of-defense-lloyd-j-austin-iii-at-the-tenth-ukraine/"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2023-03-16",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_kos_srb",
+    "type": "rivalry",
+    "from": "KOS",
+    "to": "SRB",
+    "directed": false,
+    "start": "2008",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The EU reported an armed gang attacked Kosovo police at Banjska and later urged Kosovo and Serbia to avoid escalating.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.eeas.europa.eu/eeas/kosovo-statement-high-representative-josep-borrell-attack-against-kosovo-police_en",
+      "https://www.eeas.europa.eu/eeas/kosovoserbia-speech-high-representativevice-president-borrell-ep-plenary_en"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2023-09-24",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_sdn_ssd",
+    "type": "rivalry",
+    "from": "SSD",
+    "to": "SDN",
+    "directed": false,
+    "start": "2011",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The UN briefed the Security Council on the stalled talks over the disputed Abyei border area.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://peacekeeping.un.org/en/news/sudan-war-and-political-uncertainty-block-progress-on-abyei-peace-talks"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-11-05",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_egy_eth",
+    "type": "rivalry",
+    "from": "EGY",
+    "to": "ETH",
+    "directed": false,
+    "start": "2011",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Egypt protested Ethiopia’s operation of the Grand Ethiopian Renaissance Dam in a letter to the Security Council and sought a binding filling and operation agreement.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://documents.un.org/doc/undoc/gen/n25/238/27/pdf/n2523827.pdf"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-09-09",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_sau_syr",
+    "type": "rivalry",
+    "from": "SAU",
+    "to": "SYR",
+    "directed": false,
+    "start": "2011",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The Saudi and Qatari governments worked with the new Syrian government on reconstruction support in 2025.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://mofa.gov.qa/en/latest-articles/statements/qatar--syria-issue-joint-statement"
+    ],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_syr_tur",
+    "type": "rivalry",
+    "from": "SYR",
+    "to": "TUR",
+    "directed": false,
+    "start": "2011",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset.",
+    "sources": ["https://www.kentarosakuwa.info/data.html"],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_are_qat",
+    "type": "rivalry",
+    "from": "QAT",
+    "to": "ARE",
+    "directed": false,
+    "start": "2011",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Al-Ula was followed by a 2023 restoration of diplomatic representation. The dataset dates this wider rivalry to 2011.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.mofa.gov.ae/en/mediahub/news/2023/6/19/19-6-2023-uae-qatar"
+    ],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_irn_yem",
+    "type": "rivalry",
+    "from": "IRN",
+    "to": "YEM",
+    "directed": false,
+    "start": "2011",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Yemen told the Security Council it had seized a shipment of Iranian arms that it said was bound for the Houthis.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://documents.un.org/api/symbol/access?l=en&s=S%2F2025%2F485&t=pdf"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2025-07-24",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_irn_tur",
+    "type": "rivalry",
+    "from": "IRN",
+    "to": "TUR",
+    "directed": false,
+    "start": "2011",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset.",
+    "sources": ["https://www.kentarosakuwa.info/data.html"],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_egy_tur",
+    "type": "rivalry",
+    "from": "EGY",
+    "to": "TUR",
+    "directed": false,
+    "start": "2013",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Türkiye and Egypt restored ambassador-level ties in 2023 and signed a cooperation declaration in 2024.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.mfa.gov.tr/no_-164_-turkiye-misir--ortak--aciklamasi.en.mfa",
+      "https://www.iletisim.gov.tr/English/haberler/detay/turkiye-and-egypt-sign-joint-declaration-on-cooperation"
+    ],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_egy_qat",
+    "type": "rivalry",
+    "from": "EGY",
+    "to": "QAT",
+    "directed": false,
+    "start": "2013",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The Al-Ula Declaration ended the 2017 Gulf crisis. The dataset dates this rivalry to 2013.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.gco.gov.qa/en/media-centre/in-focus/gcc-crisis/"
+    ],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_ken_som",
+    "type": "rivalry",
+    "from": "KEN",
+    "to": "SOM",
+    "directed": false,
+    "start": "2013",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset.",
+    "sources": ["https://www.kentarosakuwa.info/data.html"],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_sau_tur",
+    "type": "rivalry",
+    "from": "SAU",
+    "to": "TUR",
+    "directed": false,
+    "start": "2013",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Türkiye reports signing five cooperation agreements with Saudi Arabia in 2023.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.mfa.gov.tr/turkiye-suudi-arabistan-siyasi-iliskileri.tr.mfa"
+    ],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_rus_ukr",
+    "type": "rivalry",
+    "from": "RUS",
+    "to": "UKR",
+    "directed": false,
+    "start": "2014",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The UN briefed the Security Council on continuing Russian attacks in Ukraine.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://dppa.un.org/en/node/137309"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2026-11-09",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_bhr_qat",
+    "type": "rivalry",
+    "from": "BHR",
+    "to": "QAT",
+    "directed": false,
+    "start": "2014",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Al-Ula ended the Gulf crisis. The bilateral committee still reported pending issues in 2023.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://mofa.gov.qa/en/qatar/latest-articles/latest-news/details/1444/07/22/qatari-bahraini-follow-up-committee-holds-first-meeting-in-riyadh",
+      "https://www.gco.gov.qa/en/media-centre/in-focus/gcc-crisis/"
+    ],
+    "evidence": "strategic-rivalry-dataset",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  },
+  {
+    "id": "rel_rivalry_bdi_rwa",
+    "type": "rivalry",
+    "from": "BDI",
+    "to": "RWA",
+    "directed": false,
+    "start": "2015",
+    "end": null,
+    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Burundi accused Rwanda of supporting RED-Tabara and documented its closure of the common border.",
+    "sources": [
+      "https://www.kentarosakuwa.info/data.html",
+      "https://www.mae.gov.bi/en/the-diplomatic-relations-between-burundi-and-rwanda-on-the-decline/"
+    ],
+    "evidence": "strategic-rivalry-and-current-hostility",
+    "hostilityOn": "2024-04-04",
+    "dateChecked": "2026-11-10",
+    "reviewed": false
+  }
+]
