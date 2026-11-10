@@ -3,7 +3,7 @@
   "reviewed": false,
   "notes": [
     "Draft model inputs. Coordinates are approximate sea-access anchors in longitude/latitude order and require network resolution testing.",
-    "Published country-level seaborne shares are applied to the model’s seaborne trade with each partner as a modelling assumption, except where an explicit country or destination split supersedes them. A null share identifies representative terminal evidence without a compatible measured allocation. A source period can differ from the model year and is identified on the row."
+    "Published country-level seaborne shares are renormalised for each destination over origins with a sea route within 1.5 times the shortest. This distance limit is draft. A separately unsourced share remains unresolved. A null share identifies representative terminal evidence without a compatible measured allocation. A source period can differ from the model year and is identified on the row."
   ],
   "rows": [
     {
@@ -2506,8 +2506,9 @@
       "otherSources": [
         "https://www.eia.gov/todayinenergy/detail.php?id=64544"
       ],
-      "checkedAt": "2026-11-09",
+      "checkedAt": "2026-11-10",
       "reviewed": false,
+      "label": "China’s reported Malaysian crude treated as Iranian (EIA)",
       "note": "EIA Figure 8 estimates Iran supplied 11% of Chinese crude oil and condensate in 2024. EIA identifies Iranian crude relabeling as a material source of China’s declared Malaysia imports. Use that rounded share against the screened HS 2709 China total, subtract already-declared Iran tonnes, then cap at the screened Malaysia flow. This allocates routing only; it preserves the declared supplier, original BACI quantity and model import denominators. No attribution is made outside this product, trade pair and year. The available Malaysia bucket may be smaller than the EIA-implied misattribution, and the source provides no parcel-level match."
     }
   ],

@@ -49,7 +49,7 @@ const eia = {
 };
 
 const dependencies = {
-  version: 3,
+  version: 4,
   shouldCheck: ({ data, rederive }) =>
     rederive || data?.mode !== 'modelled' || !data.energyExposure,
   async fetchObservations() {
@@ -102,6 +102,7 @@ export function compactEnergyModel(model) {
     routePorts,
     rows,
     pipelineGas,
+    quantityAudit,
     ...summary
   } = model;
   const routeHighlights = rows
@@ -118,7 +119,11 @@ export function energyDetail(model, country) {
   if (model.mode === 'modelled' && !model.energyExposure)
     return { rebuildRequired: true };
   if (!country)
-    return { calibration: model.calibration, routeAudit: model.routeAudit };
+    return {
+      calibration: model.calibration,
+      routeAudit: model.routeAudit,
+      quantityAudit: model.quantityAudit,
+    };
   return {
     ...selectedRoutes(
       model,

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { setImmediate } from 'node:timers/promises';
 import test from 'node:test';
 import { createWorldSource } from './source.js';
 
@@ -79,6 +80,48 @@ test('an in-flight detail response cannot refill an invalidated cache', async ()
   const current = source.getDetail('IND', 'assets');
   release(reply('current'));
   assert.equal(await current, 'current');
+});
+
+test('each detail caller can abort while another caller receives the shared result', async () => {
+  let release;
+  let requests = 0;
+  const source = createWorldSource({
+    fetchImpl: (_url, { signal }) => {
+      requests++;
+      return new Promise((resolve, reject) => {
+        release = resolve;
+        signal?.addEventListener('abort', () => reject(signal.reason), {
+          once: true,
+        });
+      });
+    },
+  });
+  const first = new AbortController();
+  const second = new AbortController();
+  const getDetail = (signal) => source.getDetail('IND', 'assets', { signal });
+  const firstResult = getDetail(first.signal).catch((error) => error);
+  const secondResult = getDetail(second.signal).catch((error) => error);
+  const activeResult = getDetail().catch((error) => error);
+  first.abort(new Error('First caller left'));
+  second.abort(new Error('Second caller left'));
+
+  const pending = Symbol('pending');
+  await setImmediate();
+  const beforeResponse = await Promise.all([
+    Promise.race([firstResult, pending]),
+    Promise.race([secondResult, pending]),
+    Promise.race([activeResult, pending]),
+  ]);
+  release(Response.json({ country: 'IND', lens: 'assets', data: [1] }));
+
+  assert.deepEqual(beforeResponse, [
+    first.signal.reason,
+    second.signal.reason,
+    pending,
+  ]);
+  assert.deepEqual(await activeResult, [1]);
+  assert.deepEqual(await getDetail(), [1]);
+  assert.equal(requests, 1);
 });
 
 test('source surfaces an HTTP error and rejects an invalid snapshot', async () => {

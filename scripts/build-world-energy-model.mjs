@@ -9,12 +9,18 @@ import path from 'node:path';
 import { zipEntryChunks } from '../server/providers/world/sources/zip.js';
 import { csvRows } from '../server/providers/world/sources/csv.js';
 import { readEnergyReference } from '../server/providers/world/dependencies.js';
-import { decodeRing, polygonsContain } from '../src/data/adminBoundaries.js';
+import {
+  decodeRing,
+  polygonsContain,
+  ringAreaKm2,
+} from '../src/data/adminBoundaries.js';
+import worldGazetteer from '../public/news/theaters/world.json' with { type: 'json' };
 import shapes from '../src/data/local_data/natural_earth/countries.json' with { type: 'json' };
 import {
   buildEnergyModel,
   commodity,
   distanceKm,
+  originDistanceLimit,
   maritimeRouter,
 } from './world-energy-model.mjs';
 
@@ -45,27 +51,39 @@ export function baciCountryIso(code, iso) {
 }
 
 export function screenBaciQuantities(rows) {
-  const prices = new Map();
-  for (const { code, value, tonnes } of rows) {
-    if (!Number.isFinite(tonnes) || tonnes <= 0) continue;
-    const samples = prices.get(code) ?? [];
-    samples.push(value / tonnes);
-    prices.set(code, samples);
-  }
-  const medians = new Map(
-    [...prices].map(([code, samples]) => {
-      samples.sort((a, b) => a - b);
-      const middle = Math.floor(samples.length / 2);
-      return [
-        code,
-        (samples[middle] + samples[Math.floor((samples.length - 1) / 2)]) / 2,
-      ];
-    }),
+  const declared = rows.filter(
+    ({ tonnes }) => Number.isFinite(tonnes) && tonnes > 0,
   );
+  const medians = new Map();
+  for (const [code, group] of Map.groupBy(declared, ({ code }) => code)) {
+    const samples = group.map(({ value, tonnes }) => ({
+      price: value / tonnes,
+      tonnes,
+    }));
+    samples.sort((a, b) => a.price - b.price);
+    const half = samples.reduce((sum, { tonnes }) => sum + tonnes, 0) / 2;
+    let cumulative = 0;
+    for (const { price, tonnes } of samples) {
+      cumulative += tonnes;
+      if (cumulative < half) continue;
+      medians.set(code, price);
+      break;
+    }
+  }
+
   return rows.map((row) => {
     const median = medians.get(row.code);
-    const price = row.value / row.tonnes;
-    if (median > 0 && (price < median / 3 || price > median * 3)) {
+    if (!(median > 0))
+      throw new Error('No positive BACI median price for HS ' + row.code);
+    if (!Number.isFinite(row.tonnes)) {
+      return {
+        ...row,
+        tonnes: row.value / median,
+        declaredTonnes: null,
+        quantityEstimated: true,
+      };
+    }
+    if (row.tonnes > 0 && row.value / row.tonnes < median / 3) {
       return {
         ...row,
         tonnes: row.value / median,
@@ -82,21 +100,20 @@ export function applyBaciOriginOverride(flows, evidence) {
     ({ dependent, item }) => dependent === 'CHN' && item === 'crude oil',
   );
   const malaysia = imports.find(({ provider }) => provider === 'MYS');
-  const total = imports.reduce((sum, flow) => sum + flow.reportedTonnes, 0);
-  const iran =
-    imports.find(({ provider }) => provider === 'IRN')?.reportedTonnes ?? 0;
-  if (!malaysia?.reportedTonnes) return { adjusted: flows, correction: null };
+  const total = imports.reduce((sum, flow) => sum + flow.tonnes, 0);
+  const iran = imports.find(({ provider }) => provider === 'IRN')?.tonnes ?? 0;
+  if (!malaysia?.tonnes) return { adjusted: flows, correction: null };
   const reroutedTonnes = Math.min(
-    malaysia.reportedTonnes,
+    malaysia.tonnes,
     Math.max(0, evidence.share * total - iran),
   );
   if (!reroutedTonnes) return { adjusted: flows, correction: null };
   const routeOriginAdjustment = {
     id: evidence.id,
     origin: 'IRN',
-    share: reroutedTonnes / malaysia.reportedTonnes,
+    share: reroutedTonnes / malaysia.tonnes,
     reroutedTonnes,
-    screenedTonnes: malaysia.reportedTonnes,
+    screenedTonnes: malaysia.tonnes,
     baciDeclaredTonnes: malaysia.baciDeclaredTonnes,
     sourceUrl: evidence.sourceUrl,
   };
@@ -153,34 +170,60 @@ async function baciFlows(archive) {
     energyRows.push({ provider, dependent, item, code, value, tonnes });
   }
   const totals = new Map();
-  let quantitiesReestimated = 0;
+  const byCode = {};
+  const cargoes = [];
+  const cargoIds = new Set([
+    'IDN/CHN/270119',
+    'MEX/USA/271000',
+    'ARE/THA/270900',
+  ]);
   for (const row of screenBaciQuantities(energyRows)) {
-    const { provider, dependent, item, value, tonnes, quantityReestimated } =
-      row;
-    if (quantityReestimated) quantitiesReestimated++;
+    const {
+      provider,
+      dependent,
+      item,
+      code,
+      tonnes,
+      declaredTonnes = tonnes,
+      quantityEstimated,
+      quantityReestimated,
+    } = row;
+    const stats = (byCode[code] ??= {
+      declaredTonnes: 0,
+      modelTonnes: 0,
+      estimated: 0,
+      reestimated: 0,
+    });
+    stats.declaredTonnes += declaredTonnes ?? 0;
+    stats.modelTonnes += tonnes;
+    if (quantityEstimated) stats.estimated++;
+    if (quantityReestimated) stats.reestimated++;
+    if (cargoIds.has([provider, dependent, code].join('/'))) {
+      cargoes.push({
+        provider,
+        dependent,
+        code,
+        tonnes,
+        declaredTonnes,
+        quantityReestimated: Boolean(quantityReestimated),
+      });
+    }
     const key = [provider, dependent, item].join('/');
     const record = totals.get(key) ?? {
       provider,
       dependent,
       item,
       tonnes: 0,
-      reportedTonnes: 0,
       baciDeclaredTonnes: 0,
-      value: 0,
     };
-    record.value += value;
-    const declaredTonnes = quantityReestimated ? row.declaredTonnes : tonnes;
-    if (Number.isFinite(declaredTonnes) && declaredTonnes >= 0)
-      record.baciDeclaredTonnes += declaredTonnes;
+    record.baciDeclaredTonnes += declaredTonnes ?? 0;
+    if (quantityEstimated) record.quantityEstimated = true;
     if (quantityReestimated) record.quantityReestimated = true;
-    const reported = Number.isFinite(tonnes) && tonnes >= 0;
-    if (reported) record.reportedTonnes += tonnes;
-    record.tonnes =
-      record.tonnes !== null && reported ? record.tonnes + tonnes : null;
+    record.tonnes += tonnes;
     totals.set(key, record);
   }
   if (!totals.size) throw new Error('No 2024 BACI energy trade found.');
-  return { flows: [...totals.values()], quantitiesReestimated };
+  return { flows: [...totals.values()], quantityAudit: { byCode, cargoes } };
 }
 
 const landlocked = new Set(
@@ -200,35 +243,34 @@ const maritimeBorderTrade = new Set([
   'IRQ/SAU/crude oil',
 ]);
 
-function ringArea(ring) {
-  return Math.abs(
-    ring.reduce((area, [x, y], i) => {
-      const [lastX, lastY] = ring.at(i - 1);
-      return area + lastX * y - x * lastY;
-    }, 0),
-  );
-}
+const capitals = worldGazetteer.gazetteer.filter(
+  ({ precision, prompt }) => precision === 'city' && prompt,
+);
 
 function neighboursAndPorts(ports, router) {
   const countries = shapes.features
     .filter(({ iso }) => /^[A-Z]{3}$/.test(iso))
-    .map(({ iso, d, polygons }) => ({
-      iso,
-      polygons: polygons.map((poly) =>
+    .map(({ iso, d, polygons }) => {
+      const parts = polygons.map((poly) =>
         poly.map((ring) => decodeRing(ring, d ?? shapes.meta.decimals)),
-      ),
-    }));
+      );
+      const largestFirst = parts.toSorted(
+        (a, b) => ringAreaKm2(b[0]) - ringAreaKm2(a[0]),
+      );
+      const mainland =
+        largestFirst.find((part) =>
+          capitals.some(({ lat, lon }) => polygonsContain([part], lat, lon)),
+        ) ?? largestFirst[0];
+      return { iso, polygons: parts, mainland };
+    });
   const owners = new Map();
   const sharedVertices = new Set();
-  const polygonsByCountry = new Map(
-    countries.map(({ iso, polygons }) => [iso, polygons]),
+  const mainlandByCountry = new Map(
+    countries.map(({ iso, mainland }) => [iso, mainland]),
   );
   const pair = (a, b) => [a, b].sort().join('/');
   const commonVertices = new Map();
-  for (const { iso, polygons } of countries) {
-    const [mainland] = [...polygons].sort(
-      (a, b) => ringArea(b[0]) - ringArea(a[0]),
-    );
+  for (const { iso, mainland } of countries) {
     if (!mainland) continue;
     for (const point of mainland[0]) {
       const key = point.join(',');
@@ -248,29 +290,59 @@ function neighboursAndPorts(ports, router) {
     const snapped = router(coordinates, coordinates);
     if (!snapped) continue;
     const [lon, lat] = coordinates;
-    let iso = countries.find(({ polygons }) =>
-      polygonsContain(polygons, lat, lon),
-    )?.iso;
-    if (!iso) {
-      let nearest = 45;
+    let owner;
+    let part;
+    for (const country of countries) {
+      part = country.polygons.find((polygon) =>
+        polygonsContain([polygon], lat, lon),
+      );
+      if (!part) continue;
+      owner = country;
+      break;
+    }
+    if (!owner) {
+      // Packed boundaries simplify the coast by up to 0.02 degrees. Allow
+      // nearby port anchors at docks, while rejecting distant offshore points.
+      let nearest = 3;
+      const lonScale = Math.cos((lat * Math.PI) / 180);
       for (const country of countries) {
         if (landlocked.has(country.iso)) continue;
-        for (const [outer] of country.polygons) {
-          for (const point of outer) {
+        for (const polygon of country.polygons) {
+          const [outer] = polygon;
+          for (let i = 0; i < outer.length; i++) {
+            const [ax, ay] = outer[i];
+            const [bx, by] = outer.at(i - 1);
             if (
-              Math.abs(point[1] - lat) > 0.45 ||
-              Math.abs(point[0] - lon) > 2.3
+              lat < Math.min(ay, by) - 0.03 ||
+              lat > Math.max(ay, by) + 0.03 ||
+              lon < Math.min(ax, bx) - 0.03 / lonScale ||
+              lon > Math.max(ax, bx) + 0.03 / lonScale
             )
               continue;
+            const dx = (bx - ax) * lonScale;
+            const dy = by - ay;
+            const length = dx ** 2 + dy ** 2;
+            const fraction = length
+              ? Math.max(
+                  0,
+                  Math.min(
+                    1,
+                    ((lon - ax) * lonScale * dx + (lat - ay) * dy) / length,
+                  ),
+                )
+              : 0;
+            const point = [ax + fraction * (bx - ax), ay + fraction * dy];
             const distance = distanceKm(point, coordinates);
             if (distance >= nearest) continue;
             nearest = distance;
-            iso = country.iso;
+            owner = country;
+            part = polygon;
           }
         }
       }
     }
-    if (!iso) continue;
+    if (!owner || part !== owner.mainland) continue;
+    const { iso } = owner;
     const distance = distanceKm(coordinates, snapped.coordinates[0]);
     if (distance >= (fallback.get(iso)?.distance ?? Infinity)) continue;
     fallback.set(iso, {
@@ -288,11 +360,9 @@ function neighboursAndPorts(ports, router) {
       const named = fallback.get(iso);
       if (named || direction !== 'import') return named;
       if (!networkFallbacks.has(iso)) {
-        const coast = polygonsByCountry
-          .get(iso)
-          ?.flatMap(([outer]) =>
-            outer.filter((point) => !sharedVertices.has(point.join(','))),
-          );
+        const coast = mainlandByCountry
+          .get(iso)?.[0]
+          .filter((point) => !sharedVertices.has(point.join(',')));
         const coordinates = coast && router.nearestNetworkPort(coast);
         networkFallbacks.set(
           iso,
@@ -382,23 +452,51 @@ export function routesFor(network, ports, rows = []) {
     if (!cache.has(key)) {
       const origins = terminalOptions(from, 'export', item);
       const destinations = terminalOptions(to, 'import', item);
-      const routes = origins.flatMap((origin) =>
-        destinations.map((destination) => {
-          const share = origin.share * destination.share;
-          const route =
-            origin.coordinates && destination.coordinates
-              ? router(origin.coordinates, destination.coordinates)
-              : null;
-          return route
-            ? {
-                ...route,
-                share,
-                ports: [origin.name, destination.name],
-                approximate: origin.approximate || destination.approximate,
-              }
-            : { mode: 'unknown', share };
-        }),
-      );
+      if (!origins.length || !destinations.length) {
+        cache.set(key, { mode: 'unknown' });
+        return cache.get(key);
+      }
+      const routes = destinations.flatMap((destination) => {
+        if (!destination.coordinates)
+          return [{ mode: 'unknown', share: destination.share }];
+
+        const candidates = origins.flatMap((origin) => {
+          if (!origin.coordinates) return [];
+          const route = router(origin.coordinates, destination.coordinates);
+          return route ? [{ origin, route }] : [];
+        });
+        if (!candidates.length)
+          return [{ mode: 'unknown', share: destination.share }];
+        const shortest = Math.min(
+          ...candidates.map(({ route }) => route.distance),
+        );
+        const eligible = candidates.filter(
+          ({ route }) => route.distance <= originDistanceLimit * shortest,
+        );
+        const total = eligible.reduce(
+          (sum, { origin }) => sum + origin.share,
+          0,
+        );
+        // A sourced share can cover only part of a flow (e.g. CPC). Preserve
+        // that unknown remainder independently of the distance filter.
+        const unallocated = origins.reduce(
+          (sum, { coordinates, share }) => (coordinates ? sum : sum + share),
+          0,
+        );
+        const assigned = eligible.map(({ origin, route }) => ({
+          ...route,
+          share: (origin.share / total) * (1 - unallocated) * destination.share,
+          ports: [origin.name, destination.name],
+          approximate: origin.approximate || destination.approximate,
+        }));
+        if (unallocated > 0) {
+          assigned.push({
+            mode: 'unknown',
+            share: unallocated * destination.share,
+          });
+        }
+        return assigned;
+      });
       cache.set(key, routes.length ? routes : { mode: 'unknown' });
     }
     return cache.get(key);
@@ -445,7 +543,7 @@ if (import.meta.main) {
   );
   if (values['verify-ports']) process.exit(0);
   const started = performance.now();
-  const { flows, quantitiesReestimated } = await baciFlows(archive);
+  const { flows, quantityAudit } = await baciFlows(archive);
   console.log(
     'BACI energy country-pair product rows',
     flows.length,
@@ -462,13 +560,14 @@ if (import.meta.main) {
     const observed = landTransfers.get(
       [flow.provider, flow.dependent, flow.item].join('/'),
     );
-    if (observed > 0 && flow.reportedTonnes > 0) {
-      flow.landShare = Math.min(1, observed / flow.reportedTonnes);
+    if (observed > 0 && flow.tonnes > 0) {
+      flow.landShare = Math.min(1, observed / flow.tonnes);
     }
   }
+  const originEvidence = portTable.sourceOverrides[0];
   const { adjusted, correction } = applyBaciOriginOverride(
     flows,
-    portTable.sourceOverrides[0],
+    originEvidence,
   );
   const references = (await readEnergyReference()).rows;
   const model = buildEnergyModel(adjusted, { routeFor, references });
@@ -476,9 +575,26 @@ if (import.meta.main) {
     const { calibration } = buildEnergyModel(flows, { routeFor, references });
     model.sourceOverride = {
       ...correction,
-      note: portTable.sourceOverrides[0].note,
+      note: originEvidence.note,
     };
     model.calibrationWithoutOriginCorrection = calibration;
+  }
+  for (const row of model.calibration) {
+    if (row.commodity !== 'oil') continue;
+    if (correction && ['hormuz', 'malacca'].includes(row.routeId)) {
+      row.dataNote = {
+        text: originEvidence.label,
+        sourceUrl: correction.sourceUrl,
+      };
+    }
+    if (row.routeId === 'dardanelles') {
+      const crudeMt = model.importTonnes.TUR['crude oil'] / 1e6;
+      row.dataNote = {
+        text: `BACI holds about ${crudeMt.toFixed(1)} Mt of Türkiye’s crude imports; Türkiye reports about 30 Mt`,
+        sourceUrl:
+          'https://www.mapeg.gov.tr/Uploads/Dosyalar/MAPEG2024YiliIdareFaaliyetRaporu27.02.2025.pdf',
+      };
+    }
   }
   model.portTableReviewed = [
     ...portTable.rows,
@@ -486,7 +602,17 @@ if (import.meta.main) {
     ...portTable.sourceOverrides,
     ...portTable.landTransfers,
   ].every(({ reviewed }) => reviewed);
-  model.coverage.quantitiesReestimated = quantitiesReestimated;
+  model.quantityAudit = quantityAudit;
+  for (const [field, stat] of [
+    ['quantitiesEstimated', 'estimated'],
+    ['quantitiesReestimated', 'reestimated'],
+  ]) {
+    model.coverage[field] = Object.values(quantityAudit.byCode).reduce(
+      (sum, code) => sum + code[stat],
+      0,
+    );
+  }
+  console.log('BACI HS6 quantity audit', JSON.stringify(quantityAudit));
   const json = JSON.stringify(model);
   await writeFile(
     new URL('public/world/curated/energy-dependencies.json', root),

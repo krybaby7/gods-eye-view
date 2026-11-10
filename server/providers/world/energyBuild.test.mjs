@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import energyModel from '../../../public/world/curated/energy-dependencies.json' with { type: 'json' };
 
 test('opening a legacy board with the old energy model keeps obsolete detail off the wire', async () => {
   const { compactEnergyModel, energyDetail } =
@@ -122,24 +123,28 @@ test('dependency shares distinguish seaborne, land and unresolved volume', () =>
   assert.equal(result.calibration.length, 1);
 });
 
-test('missing BACI tonnage switches the entire import group to declared trade value', () => {
+test('missing BACI tonnage is estimated without switching shares to trade value', async () => {
+  const { screenBaciQuantities } =
+    await import('../../../scripts/build-world-energy-model.mjs');
   const result = buildEnergyModel(
-    [
+    screenBaciQuantities([
       {
         provider: 'QAT',
         dependent: 'IND',
         item: 'lng',
+        code: '271111',
         tonnes: null,
-        value: 25,
+        value: 30,
       },
       {
         provider: 'AUS',
         dependent: 'IND',
         item: 'lng',
+        code: '271111',
         tonnes: 1_000,
-        value: 75,
+        value: 120,
       },
-    ],
+    ]),
     {
       routeFor: (provider) => ({
         mode: 'sea',
@@ -150,26 +155,62 @@ test('missing BACI tonnage switches the entire import group to declared trade va
     },
   );
   assert.deepEqual(result.exposure.IND[0].shares, {
-    seaborne: 0.25,
-    all: 0.25,
+    seaborne: 0.2,
+    all: 0.2,
   });
-  assert.equal(result.exposure.IND[0].denominators.unit, 'thousand USD/year');
+  assert.equal(result.exposure.IND[0].denominators.unit, 'tonnes/year');
+  assert.equal(
+    result.rows.find(({ provider }) => provider === 'QAT').quantityEstimated,
+    true,
+  );
 });
 
-test('BACI quantity screening uses the median price for the full HS code and maps Taiwan', async () => {
+test('BACI screening weights each HS median by tonnes and corrects only cheap outliers', async () => {
   const build = await import('../../../scripts/build-world-energy-model.mjs');
   assert.equal(build.baciCountryIso('490', 'S19'), 'TWN');
   const rows = [
-    { code: '270900', value: 600, tonnes: 1 },
-    { code: '270900', value: 1200, tonnes: 2 },
-    { code: '270900', value: 900, tonnes: 9 },
-    { code: '271012', value: 150, tonnes: 1 },
-    { code: '271012', value: 300, tonnes: 2 },
+    { code: '270900', value: 6_000, tonnes: 10_000 },
+    { code: '270900', value: 100, tonnes: 1_000 },
+    { code: '270900', value: 10, tonnes: 1 },
+    { code: '270900', value: 10, tonnes: 1 },
+    { code: '270900', value: 20, tonnes: 100 },
+    { code: '271012', value: 150, tonnes: 1_000 },
+    { code: '271012', value: 300, tonnes: 2_000 },
   ];
   const screened = build.screenBaciQuantities(rows);
-  assert.equal(screened[2].tonnes, 1.5);
-  assert.equal(screened[2].quantityReestimated, true);
-  assert.equal(screened[3].tonnes, 1);
+  assert.equal(screened[0].tonnes, 10_000);
+  assert.equal(screened[1].tonnes, 100 / 0.6);
+  assert.equal(screened[1].quantityReestimated, true);
+  assert.equal(screened[2].tonnes, 1);
+  assert.equal(screened[4].tonnes, 100);
+  assert.equal(screened[5].tonnes, 1_000);
+});
+
+test('cached BACI cargo regressions retain real cargoes and correct the Thai crude outlier', () => {
+  const { quantityAudit } = energyModel;
+  const find = (provider, dependent, code) =>
+    quantityAudit.cargoes.find(
+      (row) =>
+        row.provider === provider &&
+        row.dependent === dependent &&
+        row.code === code,
+    );
+  const coal = find('IDN', 'CHN', '270119');
+  const refined = find('MEX', 'USA', '271000');
+  const crude = find('ARE', 'THA', '270900');
+  assert.equal((coal.declaredTonnes / 1e6).toFixed(1), '49.6');
+  assert.equal(coal.tonnes, coal.declaredTonnes);
+  assert.equal((refined.declaredTonnes / 1e6).toFixed(1), '10.7');
+  assert.equal(refined.tonnes, refined.declaredTonnes);
+  assert.equal((crude.declaredTonnes / 1e6).toFixed(1), '151.7');
+  assert.ok(crude.tonnes > 24e6 && crude.tonnes < 27e6);
+  assert.equal(crude.quantityReestimated, true);
+  assert.equal(energyModel.coverage.quantitiesEstimated, 189);
+  assert.ok(
+    Object.values(energyModel.exposure)
+      .flat()
+      .every(({ denominators }) => denominators.unit === 'tonnes/year'),
+  );
 });
 
 test('routing excludes Arctic and Kiel shortcut edges', () => {
@@ -281,6 +322,7 @@ test('energy port resolution rejects missing routes and respects transit and mai
   assert.equal(route('FRA', 'BRA', 'crude oil').mode, 'unknown');
   assert.equal(route('MYS', 'IDN', 'crude oil').mode, 'unknown');
   assert.equal(route('FRA', 'DEU', 'crude oil').mode, 'land');
+  assert.equal(route('MYS', 'THA', 'crude oil').mode, 'land');
   assert.throws(
     () =>
       routesFor({ features: [line([origin, terminal])] }, ports, [
@@ -446,4 +488,202 @@ test('coastal imports can use the nearest ocean network node without a gazetteer
   assert.equal(ocean.approximate, true);
   assert.match(ocean.ports[1], /approximate network port/i);
   assert.deepEqual(ocean.coordinates.at(-1), nearBanjul);
+});
+
+test('fallback ports choose the capital landmass and skip ports on overseas polygons', async () => {
+  const { routesFor } =
+    await import('../../../scripts/build-world-energy-model.mjs');
+  const nearPortugal = [-9.1333, 38.7];
+  const azores = [-25.67, 37.73];
+  const origin = [-17.8, 14.5];
+  const routes = routesFor(
+    {
+      features: [
+        {
+          geometry: {
+            type: 'LineString',
+            coordinates: [origin, azores, [-9.2, 38.7]],
+          },
+          properties: {},
+        },
+      ],
+    },
+    {
+      features: [
+        {
+          geometry: { coordinates: azores },
+          properties: { name: 'Ponta Delgada' },
+        },
+        {
+          geometry: { coordinates: nearPortugal },
+          properties: { name: 'Lisbon' },
+        },
+      ],
+    },
+    [
+      {
+        iso: 'SEN',
+        direction: 'export',
+        product: 'lng',
+        port: 'Dakar',
+        coordinates: origin,
+        share: null,
+      },
+    ],
+  );
+  assert.deepEqual(routes('SEN', 'PRT', 'lng')[0].ports, ['Dakar', 'Lisbon']);
+});
+
+test('multiport origins beyond the draft 1.5 limit are removed independently per destination', async () => {
+  const { routesFor } =
+    await import('../../../scripts/build-world-energy-model.mjs');
+  const coords = [
+    [-5, 45],
+    [-2, 45],
+    [0, 45],
+    [3, 45],
+    [5, 45],
+  ];
+  const rows = [
+    ['RUS', 'export', 'West terminal', coords[0], 0.2],
+    ['FRA', 'import', 'West destination', coords[1], null],
+    ['RUS', 'export', 'Centre terminal', coords[2], 0.3],
+    ['JPN', 'import', 'East destination', coords[3], null],
+    ['RUS', 'export', 'East terminal', coords[4], 0.5],
+  ].map(([iso, direction, port, coordinates, share]) => ({
+    iso,
+    direction,
+    port,
+    coordinates,
+    share,
+    product: 'lng',
+  }));
+  const routes = routesFor(
+    {
+      features: [
+        {
+          geometry: { type: 'LineString', coordinates: coords },
+          properties: {},
+        },
+      ],
+    },
+    { features: [] },
+    rows,
+  );
+  const origins = (to) =>
+    routes('RUS', to, 'lng').map(({ ports, share }) => [
+      ports[0],
+      Number(share.toFixed(6)),
+    ]);
+  assert.deepEqual(origins('FRA'), [
+    ['West terminal', 0.4],
+    ['Centre terminal', 0.6],
+  ]);
+  assert.deepEqual(origins('JPN'), [
+    ['Centre terminal', 0.375],
+    ['East terminal', 0.625],
+  ]);
+});
+
+test('fallback rejects named island ports even when the island is absent from the boundary pack', async () => {
+  const { routesFor } =
+    await import('../../../scripts/build-world-energy-model.mjs');
+  const thursdayIsland = [142.218964, -10.585556];
+  const broome = [122.209187, -18.0025];
+  const origin = [150, -25];
+  const routes = routesFor(
+    {
+      features: [
+        {
+          geometry: {
+            type: 'LineString',
+            coordinates: [origin, thursdayIsland, [122.2, -18.2]],
+          },
+          properties: {},
+        },
+      ],
+    },
+    {
+      features: [
+        {
+          geometry: { coordinates: thursdayIsland },
+          properties: { name: 'Thursday Island' },
+        },
+        { geometry: { coordinates: broome }, properties: { name: 'Broome' } },
+      ],
+    },
+    [
+      {
+        iso: 'NZL',
+        direction: 'export',
+        product: 'lng',
+        port: 'Source terminal',
+        coordinates: origin,
+        share: null,
+      },
+    ],
+  );
+  assert.deepEqual(routes('NZL', 'AUS', 'lng')[0].ports, [
+    'Source terminal',
+    'Broome',
+  ]);
+});
+
+test('the rebuilt calibration carries source notes through the board and detail API', async () => {
+  const { compactEnergyModel, energyDetail } =
+    await import('./dependencies.js');
+  for (const calibration of [
+    compactEnergyModel(energyModel).calibration,
+    energyDetail(energyModel, null).calibration,
+  ]) {
+    for (const routeId of ['hormuz', 'malacca']) {
+      const row = calibration.find(
+        (entry) => entry.routeId === routeId && entry.commodity === 'oil',
+      );
+      assert.match(
+        row.dataNote.text,
+        /China’s reported Malaysian crude treated as Iranian/,
+      );
+      assert.match(row.dataNote.sourceUrl, /^https:\/\/www\.eia\.gov\//);
+    }
+    const row = calibration.find(
+      (entry) => entry.routeId === 'dardanelles' && entry.commodity === 'oil',
+    );
+    assert.match(row.dataNote.text, /4\.8 Mt.*30 Mt/);
+  }
+});
+
+test('trivial-exporter fact compares each top-ten dependent with the whole gate total in PJ', async () => {
+  const { default: checkEnergy } =
+    await import('../../../scripts/world-fact-checks/energy.mjs');
+  const gate = 'chokepoint6';
+  const transit = (value) => [
+    {
+      gate,
+      item: 'lng',
+      shares: { all: 0.5, seaborne: 0.5 },
+      volume: { value, unit: 'PJ/year' },
+    },
+  ];
+  const board = {
+    features: {
+      'energy-dependencies': {
+        mode: 'modelled',
+        minorImporterFloor: 10,
+        energyImports: { CHN: 20_000, SAU: 50, GMB: 8 },
+        energyExposure: {
+          CHN: transit(10_000),
+          SAU: transit(25),
+          GMB: transit(4),
+        },
+      },
+    },
+  };
+  const facts = await checkEnergy({ board, getDetail: async () => ({}) });
+  const fact = facts.find(({ id }) => id === 'energy-trivial-exporter-imports');
+  assert.equal(fact.pass, false);
+  assert.deepEqual(
+    fact.found.trivial.map(({ country, gateTotal }) => [country, gateTotal]),
+    [['SAU', 10_029]],
+  );
 });
