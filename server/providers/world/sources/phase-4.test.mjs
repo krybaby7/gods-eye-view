@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -219,7 +220,10 @@ test('Hammaguir is a closed site in Algeria with a closure citation', () => {
   assert.equal(site.locatedIn, 'DZA');
   assert.equal(site.status, 'closed');
   assert.equal(site.statusAsOf, '1967-07-01');
-  assert.match(site.statusSourceUrl, /servicehistorique/);
+  assert.equal(
+    site.statusSourceUrl,
+    'https://www.esa.int/esapub/hsr/HSR_37.pdf',
+  );
   assert.equal(site.reviewed, false);
 });
 
@@ -484,6 +488,19 @@ test('legacy Wikidata cache runs the owner query and resumes only unfinished bat
     ['asset_wd-Q100'],
   );
   assert.equal(complete.data.rows[0].owners[0].verified, true);
+  const queryFingerprint = createHash('sha256')
+    .update(JSON.stringify(first.map((query) => query.replace(/\r\n/g, '\n'))))
+    .digest('hex');
+  // Keep the existing version fingerprints. Add an entry after incrementing
+  // QUERY_VERSION whenever the emitted SPARQL changes.
+  const queryFingerprints = {
+    1: '0343166ed647e96c1d4e34d7c414bca2b22b3438669ee72baf32298a9bc69a67',
+  };
+  assert.equal(
+    queryFingerprint,
+    queryFingerprints[complete.data.queryVersion],
+    'Wikidata asset SPARQL changed. Bump QUERY_VERSION and pin the new fingerprint.',
+  );
   assert.equal(
     wikidataAssets.shouldCheck({
       now: later,
@@ -564,6 +581,8 @@ test('curated port dates are read from the cited rows', async () => {
     assert.equal(row.lastVerified, original.lastVerified);
     assert.equal(row.reviewed, false);
   }
+  const kumport = source.rows.find(({ id }) => id === 'asset_kumport-terminal');
+  assert.match(kumport.owners[0].basis, /2015 acquisition announcement/);
 });
 
 test('reads the DOE WPI mirror geometry and rejects truncated feature layers', () => {
@@ -645,9 +664,66 @@ test('WRI and OurAirports rederive corrected counts from legacy download files w
       rederive: true,
       fetchImpl: () => assert.fail('Legacy input is already cached'),
     });
-    assert.deepEqual(rebuilt, first);
+    assert.deepEqual(
+      rebuilt,
+      id === 'ourairports' ? { ...first, checkedRelease: false } : first,
+    );
     assert.equal(rebuilt.data.rows[0].locatedIn, country);
+    if (id === 'ourairports') {
+      const downloaded = await adapter.fetchObservations({
+        ...context,
+        cacheDirectory: join(cacheDirectory, 'missing'),
+        rederive: true,
+      });
+      assert.deepEqual(downloaded, first);
+    }
   }
+});
+
+test('NGA cached rederivation leaves the release unchecked', async (t) => {
+  const cacheDirectory = await mkdtemp(join(tmpdir(), 'gev-nga-cache-'));
+  t.after(() => rm(cacheDirectory, { recursive: true, force: true }));
+  const registry = await loadWorldRegistry();
+  const adapter = worldAdapters['nga-ports'];
+  const context = {
+    registry,
+    now,
+    cacheDirectory,
+    fetchImpl(url) {
+      if (!url.includes('/query?'))
+        return Response.json({
+          layers: [{ id: 91, name: 'World Port Index' }],
+        });
+      return Response.json({
+        features: [
+          {
+            attributes: {
+              wpinumber: 8210,
+              main_port_name: 'Baltimore',
+              wpi_cc: 'United States',
+              harbor_size_code: 'L',
+            },
+            geometry: { x: -76.6, y: 39.3 },
+          },
+        ],
+      });
+    },
+  };
+  const first = await adapter.fetchObservations(context);
+  const rebuilt = await adapter.fetchObservations({
+    ...context,
+    data: first.data,
+    rederive: true,
+    fetchImpl: () => assert.fail('NGA input is already cached'),
+  });
+  assert.deepEqual(rebuilt, { ...first, checkedRelease: false });
+  const downloaded = await adapter.fetchObservations({
+    ...context,
+    cacheDirectory: join(cacheDirectory, 'missing'),
+    data: first.data,
+    rederive: true,
+  });
+  assert.deepEqual(downloaded, first);
 });
 
 test('a manual refresh reloads asset reviews even with a cached hand table', () => {
@@ -660,6 +736,21 @@ test('a manual refresh reloads asset reviews even with a cached hand table', () 
 test('asset facts separate airport measurements and report verified Wikidata owner coverage', async () => {
   const board = {
     features: {
+      ourairports: {
+        countsBySourceCountry: {
+          AE: 7,
+          CL: 8,
+          FI: 10,
+          GB: 17,
+          HK: 1,
+          IS: 2,
+          MT: 1,
+          NZ: 4,
+          RW: 1,
+          SG: 1,
+          US: 200,
+        },
+      },
       'wikidata-assets': {
         rows: [
           { owners: [{ verified: true, country: 'CHN', role: 'owner' }] },
@@ -681,12 +772,23 @@ test('asset facts separate airport measurements and report verified Wikidata own
   };
   const facts = await checkAssets({ board });
   const row = (id) => facts.find((fact) => fact.id === id);
-  assert.equal(row('assets-counts-ourairports').pass, null);
-  assert.match(row('assets-counts-ourairports').reason, /publisher aggregate/);
+  const airportSample = row('assets-counts-ourairports');
+  assert.equal(airportSample.pass, true);
+  assert.equal(airportSample.expected.rows, 52);
+  assert.equal(airportSample.expected.countryCodesCompared, 11);
+  assert.deepEqual(airportSample.found.differences, []);
   assert.ok(row('assets-airport-cache-diagnostic'));
   const coverage = row('assets-wikidata-owner-query');
   assert.equal(coverage.pass, true);
   assert.equal(coverage.found.facilities, 3);
   assert.equal(coverage.found.withVerifiedOwner, 1);
   assert.equal(coverage.found.withVerifiedOperator, 1);
+  board.features.ourairports.countsBySourceCountry.AD = 1;
+  const mismatched = (await checkAssets({ board })).find(
+    ({ id }) => id === airportSample.id,
+  );
+  assert.equal(mismatched.pass, false);
+  assert.deepEqual(mismatched.found.differences, [
+    { code: 'AD', publisher: 0, board: 1 },
+  ]);
 });

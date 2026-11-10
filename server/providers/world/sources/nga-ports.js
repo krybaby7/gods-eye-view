@@ -210,7 +210,7 @@ export const ngaPorts = createAssetAdapter(
             read: readResponseJsonCapped,
           }),
         );
-    const { parsed: rows } = await downloadWorldFile(queryUrl(layer), {
+    const { parsed: rows, reused } = await downloadWorldFile(queryUrl(layer), {
       fetchImpl,
       cacheDirectory,
       onProgress,
@@ -234,6 +234,7 @@ export const ngaPorts = createAssetAdapter(
       data: { rows, layer },
       count: rows.length,
       unit: 'large harbor',
+      ...(cachedLayer && reused && { checkedRelease: false }),
       detail:
         'NGA World Port Index via the public U.S. Department of Energy mirror.',
     };

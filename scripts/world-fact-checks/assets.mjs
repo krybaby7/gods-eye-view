@@ -1,10 +1,6 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { csvRows } from '../../server/providers/world/sources/csv.js';
-import { airportCsvUrl } from '../../server/providers/world/sources/ourairports.js';
-
-const airportPage = 'https://ourairports.com/data/';
 
 function cacheFile(url) {
   return resolve(
@@ -13,23 +9,14 @@ function cacheFile(url) {
   );
 }
 
-function airportCacheCounts(csv) {
-  const rows = csvRows(csv);
-  const header = rows.next().value;
-  const [code, type, scheduled] = [
-    'iso_country',
-    'type',
-    'scheduled_service',
-  ].map((name) => header?.indexOf(name) ?? -1);
-  if ([code, type, scheduled].includes(-1))
-    throw new Error('Required airport CSV columns missing');
-  const counts = {};
-  for (const row of rows) {
-    if (row[type] !== 'large_airport' || row[scheduled] !== 'yes') continue;
-    const country = row[code] || '(missing)';
-    counts[country] = (counts[country] ?? 0) + 1;
-  }
-  return counts;
+async function retainedAirportCounts(reference) {
+  const csv = await readFile(cacheFile(reference.source));
+  if (createHash('sha256').update(csv).digest('hex') !== reference.sha256)
+    throw Object.assign(
+      new Error('Cached CSV differs from the independently counted snapshot.'),
+      { code: 'AIRPORT_REFERENCE_MISMATCH' },
+    );
+  return reference.counts;
 }
 
 async function countEvidence({ id, source, load, found, checkedOn, basis }) {
@@ -55,7 +42,7 @@ async function countEvidence({ id, source, load, found, checkedOn, basis }) {
       },
       found: {
         rows: total(found),
-        publisherCountryCodes: Object.keys(found).length,
+        publisherCountryCodes: Object.values(found).filter(Boolean).length,
         differences,
       },
       source,
@@ -63,19 +50,20 @@ async function countEvidence({ id, source, load, found, checkedOn, basis }) {
       pass: differences.length === 0,
     };
   } catch (error) {
+    const reason =
+      error.code === 'ENOENT'
+        ? 'Local publisher evidence file is unavailable. Set GEV_WORLD_FACT_ASSET_CACHE to the warm downloads directory.'
+        : error.code === 'AIRPORT_REFERENCE_MISMATCH'
+          ? error.message
+          : null;
     return {
       id,
       expected: basis,
-      found:
-        error.code === 'ENOENT'
-          ? 'Cached publisher file missing. Set GEV_WORLD_FACT_ASSET_CACHE to the warm downloads directory.'
-          : error.message,
+      found: error.message,
       source,
       checkedOn,
-      pass: error.code === 'ENOENT' ? null : false,
-      ...(error.code === 'ENOENT' && {
-        reason: 'Local publisher evidence file is unavailable.',
-      }),
+      pass: reason ? null : false,
+      ...(reason && { reason }),
     };
   }
 }
@@ -131,14 +119,22 @@ const ownershipSources = {
 };
 
 export default async function assets({ board, getDetail }) {
-  const wriSummary = JSON.parse(
-    await readFile(
-      new URL('./fixtures/wri-country-counts.json', import.meta.url),
-      'utf8',
+  const [wriSummary, airports] = await Promise.all(
+    ['wri-country-counts', 'ourairports-country-counts'].map(async (name) =>
+      JSON.parse(
+        await readFile(
+          new URL('./fixtures/' + name + '.json', import.meta.url),
+          'utf8',
+        ),
+      ),
     ),
   );
   const airportCounts =
     board?.features?.ourairports?.countsBySourceCountry ?? {};
+  const listing = airports.publisherListings;
+  const sample = Object.fromEntries(
+    Object.keys(listing.counts).map((code) => [code, airportCounts[code] ?? 0]),
+  );
   const rows = await Promise.all([
     countEvidence({
       id: 'assets-counts-wri-power',
@@ -150,23 +146,22 @@ export default async function assets({ board, getDetail }) {
     }),
     countEvidence({
       id: 'assets-airport-cache-diagnostic',
-      source: airportPage,
-      load: async () =>
-        airportCacheCounts(await readFile(cacheFile(airportCsvUrl), 'utf8')),
+      source: airports.retainedCsv.source,
+      load: () => retainedAirportCounts(airports.retainedCsv),
       found: airportCounts,
-      basis: 'Diagnostic recount of the adapter input file only',
+      checkedOn: airports.checkedOn,
+      basis:
+        'Worldwide ingest diagnostic from an independent Python CSV recount of the pinned publisher input snapshot',
     }),
-    {
+    countEvidence({
       id: 'assets-counts-ourairports',
-      expected:
-        'Separate publisher counts of scheduled large airports by ISO country',
-      found:
-        'No separate publisher aggregate found for this exact filter and snapshot.',
-      source: airportPage,
-      pass: null,
-      reason:
-        'OurAirports publishes the CSV without an independent publisher aggregate for scheduled large airports by ISO country.',
-    },
+      source: listing.source,
+      load: () => listing.counts,
+      found: sample,
+      checkedOn: airports.checkedOn,
+      basis:
+        'Large-airport markers in complete publisher listings filtered to airline destinations for 11 country or territory codes',
+    }),
   ]);
   const wikidataAssets = board?.features?.['wikidata-assets'];
   const wikidata = wikidataAssets?.rows;
