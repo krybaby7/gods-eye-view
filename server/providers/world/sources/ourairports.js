@@ -72,7 +72,7 @@ export const ourAirports = createAssetAdapter(
     signal,
   }) => {
     const country = await assetCountryResolver(registry);
-    const { parsed: rows } = await downloadWorldFile(airportCsvUrl, {
+    const { parsed: rows, reused } = await downloadWorldFile(airportCsvUrl, {
       fetchImpl,
       cacheDirectory,
       onProgress,
@@ -93,7 +93,12 @@ export const ourAirports = createAssetAdapter(
         return airports;
       },
     });
-    return { data: { rows }, count: rows.length, unit: 'airport' };
+    return {
+      data: { rows },
+      count: rows.length,
+      unit: 'airport',
+      ...(rederive && reused && { checkedRelease: false }),
+    };
   },
   7,
   { estimatedBytes: 13_000_000, downloadUrls: () => [airportCsvUrl] },

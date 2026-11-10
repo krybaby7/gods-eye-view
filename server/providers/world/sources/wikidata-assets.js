@@ -18,7 +18,8 @@ const history = JSON.parse(
   ),
 );
 const BATCH_SIZE = 40;
-// Increment when the upstream query changes. Adapter versions cover local derivation.
+// When the upstream query changes, bump this and pin the new digest in phase-4.test.mjs.
+// Adapter versions cover local derivation.
 const QUERY_VERSION = 1;
 const QUERY_BUDGET_MS = 120_000;
 const portCandidates = [
@@ -418,7 +419,7 @@ const adapter = createAssetAdapter(
     };
   },
   14,
-  { requestHost: 'query.wikidata.org' },
+  { requestHost: 'query.wikidata.org', version: 3 },
 );
 
 export const wikidataAssets = {
