@@ -1,5 +1,4 @@
 const source = 'https://github.com/krybaby7/gods-eye-view/pull/17';
-const checkedOn = '2026-11-09';
 const measured = (value) => Number.isFinite(value) && value >= 0;
 
 export default async function checkFoundation({
@@ -8,6 +7,7 @@ export default async function checkFoundation({
   measure,
   trace,
   traceReason,
+  checkedOn,
 }) {
   const compressed = await measure('/api/world', 'gzip');
   const progress = await measure('/api/world/progress');
