@@ -76,14 +76,62 @@ export function conditionFlag(sourceId, fields) {
   };
 }
 
-function expired(flag, now) {
+function evidenceExpiry(flag) {
   const days = rules[flag.sourceId]?.[2];
-  if (days === undefined) return false;
   const date = /^\d{4}$/.test(flag.date) ? flag.date + '-12-31' : flag.date;
-  const until = flag.expiresAt
+  return flag.expiresAt
     ? Date.parse(flag.expiresAt)
     : Date.parse(date) + days * DAY;
-  return Number.isFinite(until) && +now > until;
+}
+
+function expired(flag, now) {
+  return +now > evidenceExpiry(flag);
+}
+
+function showFlag(flag, now) {
+  if (flag.status === 'cleared') return true;
+  const since =
+    flag.status === 'no-recent-data'
+      ? Date.parse(flag.statusAt)
+      : evidenceExpiry(flag);
+  const days = rules[flag.sourceId]?.[2];
+  return !(+now > since + days * DAY);
+}
+
+function flagChange(flag, action) {
+  return {
+    iso3: flag.iso3,
+    text: (action === 'set' ? 'Flag set · ' : 'Flag cleared · ') + flag.label,
+    kind: 'condition-flag',
+    action,
+  };
+}
+
+export function activeConditionFlags(features, now) {
+  return Object.values(features).flatMap((data) =>
+    (data?.flags ?? [])
+      .filter((flag) => !expired(flag, now))
+      .map(({ id, iso3, label }) => ({ id, iso3, label })),
+  );
+}
+
+export function netConditionChanges(before, after, features) {
+  const oldIds = new Set(before.map(({ id }) => id));
+  const newIds = new Set(after.map(({ id }) => id));
+  const cleared = new Set(
+    Object.values(features)
+      .flatMap((data) => data?.inactiveFlags ?? [])
+      .filter(({ status }) => status === 'cleared')
+      .map(({ id }) => id),
+  );
+  return [
+    ...after
+      .filter(({ id }) => !oldIds.has(id))
+      .map((flag) => flagChange(flag, 'set')),
+    ...before
+      .filter(({ id }) => !newIds.has(id) && cleared.has(id))
+      .map((flag) => flagChange(flag, 'cleared')),
+  ];
 }
 
 export function liveFeatureView(sourceId, data, health, now, compact = false) {
@@ -97,20 +145,22 @@ export function liveFeatureView(sourceId, data, health, now, compact = false) {
     ...extra,
     ...clock,
     ...(health?.error && { error: health.error }),
-    flags: [...flags, ...inactiveFlags].map((flag) => ({
-      rule: rules[sourceId]?.[0],
-      evidence: rules[sourceId]?.[1],
-      ruleReviewed: false,
-      ...flag,
-      ...clock,
-      status:
-        flag.status ??
-        (expired(flag, now)
-          ? 'no-recent-data'
-          : health?.staleSince
-            ? 'stale'
-            : 'active'),
-    })),
+    flags: [...flags, ...inactiveFlags]
+      .filter((flag) => showFlag(flag, now))
+      .map((flag) => ({
+        rule: rules[sourceId]?.[0],
+        evidence: rules[sourceId]?.[1],
+        ruleReviewed: false,
+        ...flag,
+        ...clock,
+        status:
+          flag.status ??
+          (expired(flag, now)
+            ? 'no-recent-data'
+            : health?.staleSince
+              ? 'stale'
+              : 'active'),
+      })),
   };
 }
 
@@ -124,12 +174,7 @@ export function conditionResult(flags, previous, now, extra = {}) {
   const events = [];
   const reportTime = now.toISOString();
   function transition(flag, action) {
-    changes.push({
-      iso3: flag.iso3,
-      text: (action === 'set' ? 'Flag set · ' : 'Flag cleared · ') + flag.label,
-      kind: 'condition-flag',
-      action,
-    });
+    changes.push(flagChange(flag, action));
     events.push({
       id: 'ev_' + flag.id + ':' + action + ':' + reportTime,
       type: 'condition-flag',
@@ -149,14 +194,32 @@ export function conditionResult(flags, previous, now, extra = {}) {
   }
   for (const [id, flag] of after) if (!before.has(id)) transition(flag, 'set');
   const inactive = new Map(
-    (previous?.inactiveFlags ?? []).map((flag) => [flag.id, flag]),
+    (previous?.inactiveFlags ?? [])
+      .filter((flag) => showFlag(flag, now))
+      .map((flag) => [flag.id, flag]),
   );
+  for (const [id, flag] of inactive) {
+    if (
+      !after.has(id) &&
+      flag.status === 'no-recent-data' &&
+      !expired(flag, now) &&
+      covered?.(flag)
+    ) {
+      transition(flag, 'cleared');
+      inactive.set(id, { ...flag, status: 'cleared', statusAt: reportTime });
+    }
+  }
   for (const [id, flag] of before) {
     if (after.has(id)) continue;
+    if (!showFlag(flag, now)) continue;
     const recent = !expired(flag, now) && (covered?.(flag) ?? true);
     const status = recent ? 'cleared' : 'no-recent-data';
     if (recent) transition(flag, 'cleared');
-    inactive.set(id, { ...flag, status, statusAt: reportTime });
+    const statusAt =
+      !recent && expired(flag, now)
+        ? new Date(evidenceExpiry(flag)).toISOString()
+        : reportTime;
+    inactive.set(id, { ...flag, status, statusAt });
   }
   for (const id of after.keys()) inactive.delete(id);
   return {

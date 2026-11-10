@@ -76,6 +76,19 @@ test('failed pulls show the last good time and aging flags show no recent data',
   const next = conditionResult([], first.data, later);
   assert.deepEqual(next.changes, []);
   assert.equal(next.data.inactiveFlags[0].status, 'no-recent-data');
+  const beyondRetention = new Date('2026-11-16T00:00:00Z');
+  assert.deepEqual(
+    liveFeatureView('live-gdelt', first.data, health, beyondRetention).flags,
+    [],
+  );
+  assert.deepEqual(
+    liveFeatureView('live-gdelt', next.data, health, beyondRetention).flags,
+    [],
+  );
+  assert.deepEqual(
+    conditionResult([], next.data, beyondRetention).data.inactiveFlags,
+    [],
+  );
 });
 
 test('FX uses the inverse USD quote and ignores stale and incomplete windows', () => {

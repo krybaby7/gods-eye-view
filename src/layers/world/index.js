@@ -222,11 +222,11 @@ export function createWorldLayer({
   }
 
   async function load(method, parent, sourceId) {
-    if (!lifecycle || !source) return;
+    if (!lifecycle || !source) return false;
     if (pending) {
       const manual = method === 'refresh' && sourceId == null;
       const canQueue = progress?.kind === 'live' && !progress.queued;
-      if (!manual || ((loading || progress) && !canQueue)) return;
+      if (!manual || ((loading || progress) && !canQueue)) return false;
       // Manual Refresh can replace a final read or queue behind a live tick.
       pending.abort();
     }
@@ -243,9 +243,11 @@ export function createWorldLayer({
     }
     let nextDelay = POLL_MS;
     let retry = false;
+    let accepted = false;
     try {
       if (method !== 'getSnapshot') {
         const status = await source[method]({ signal, sourceId });
+        accepted = status.accepted === true;
         signal.throwIfAborted();
         progress = status.refresh;
         error = status.error ?? null;
@@ -255,7 +257,7 @@ export function createWorldLayer({
             : progress && status.revision === snapshot.revision
         ) {
           pollDelay = POLL_MS;
-          return;
+          return accepted;
         }
         if (method === 'getProgress') notify();
       }
@@ -300,6 +302,7 @@ export function createWorldLayer({
         }
       }
     }
+    return accepted;
   }
 
   return {
