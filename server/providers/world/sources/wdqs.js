@@ -51,6 +51,7 @@ export function createWdqsClient(fetchImpl, now = new Date(), budget) {
       const error = new Error(
         'HTTP ' + response.status + ' from ' + new URL(url).hostname,
       );
+      error.status = response.status;
       if (response.status === 429 || response.status >= 500) {
         const retry = response.headers.get('Retry-After')?.trim() ?? '';
         const received = +now + Math.floor(performance.now() - started);
@@ -58,11 +59,13 @@ export function createWdqsClient(fetchImpl, now = new Date(), budget) {
           ? received + Number(retry) * 1000
           : Date.parse(retry);
         if (Number.isFinite(requested) && Math.abs(requested) <= 8.64e15) {
+          error.retryAfterMs = Math.max(requested - received, 1000);
           error.retryAt = new Date(
             Math.max(requested, received + 1000),
           ).toISOString();
         } else if (response.status === 429) {
-          error.retryAt = new Date(received + 3_600_000).toISOString();
+          error.retryAfterMs = 3_600_000;
+          error.retryAt = new Date(received + error.retryAfterMs).toISOString();
         }
       }
       await response.body?.cancel();

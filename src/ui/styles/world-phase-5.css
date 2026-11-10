@@ -13,6 +13,16 @@
   text-transform: uppercase;
 }
 
+.world-person-evidence {
+  overflow-wrap: anywhere;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.world-person-evidence a {
+  color: #a8ecff;
+}
+
 .world-people-government,
 .world-people-section {
   margin-block: 8px;

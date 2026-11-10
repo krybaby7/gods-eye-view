@@ -1,7 +1,7 @@
 import { setTimeout as wait } from 'node:timers/promises';
 import { parseFeedEntries } from '../../common/rss.js';
 import { readResponseTextCapped } from '../../../../src/sources/httpBody.js';
-import { fetchActorSource, safeHttps } from './actor-fetch.js';
+import { fetchActorSource, safeHttps, wikidataPeople } from './actor-fetch.js';
 
 const FETCH_BUDGET = 18;
 const TIMEOUT = 6000;
@@ -20,7 +20,7 @@ export function publicAccounts(features, platform, origin, pattern) {
   // organization table additionally records the first-party account listing.
   return [
     ...new Set(
-      [...(features.wikidata?.actors ?? []), ...organizations].flatMap(
+      [...wikidataPeople(features), ...organizations].flatMap(
         (actor) => actor.accounts?.[platform] ?? [],
       ),
     ),

@@ -32,7 +32,8 @@
         },
         "foreign-minister": {
           "name": "Roberto Velasco Álvarez",
-          "source": "https://www.gob.mx/sre/estructuras/juan-ramon-de-la-fuente"
+          "source": "https://www.gob.mx/sre/en/estructuras/secretary-of-foreign-affairs",
+          "checkedOn": "2026-11-10"
         },
         "defence-minister": {
           "name": "Ricardo Trevilla Trejo",
@@ -82,7 +83,8 @@
         },
         "defence-minister": {
           "name": "Mehrdad Akhlaghi",
-          "source": "https://en.wikipedia.org/wiki/Ministry_of_Defence_and_Armed_Forces_Logistics_(Iran)"
+          "source": "https://en.wikipedia.org/wiki/Ministry_of_Defence_and_Armed_Forces_Logistics_(Iran)",
+          "aliases": ["Mehrdad Akhlaghi-Ketabachi"]
         }
       }
     },
@@ -199,7 +201,7 @@
     {
       "country": "MMR",
       "roles": ["foreign-minister"],
-      "names": ["Aung San Suu Kyi"],
+      "names": ["Aung San Suu Kyi", "Zin Mar Aung"],
       "source": "https://www.mofa.gov.mm/en/myanmar-delegation-led-by-union-minister-for-foreign-affairs-attends-the-4th-minsk-international-conference-on-eurasian-security/"
     },
     {
@@ -219,7 +221,54 @@
       "roles": ["head-of-state", "head-of-government"],
       "names": ["Nana Akufo-Addo", "Nana Addo Dankwa Akufo-Addo"],
       "source": "https://presidency.gov.gh/ghanaians-expect-results-president-mahama-says-as-he-swears-in-ayariga-zanetor/"
+    },
+    {
+      "country": "ARG",
+      "roles": ["foreign-minister"],
+      "names": ["Gerardo Werthein"],
+      "source": "https://www.cancilleria.gob.ar/"
+    },
+    {
+      "country": "IDN",
+      "roles": ["foreign-minister"],
+      "names": ["Arrmanatha Nasir"],
+      "source": "https://setkab.go.id/en/cabinet-profile/"
+    },
+    {
+      "country": "KEN",
+      "roles": ["defence-minister"],
+      "names": ["Aden Bare Duale", "Aden Duale"],
+      "source": "https://www.president.go.ke/cabinet/"
+    },
+    {
+      "country": "KOR",
+      "roles": ["foreign-minister"],
+      "names": ["Park Jin"],
+      "source": "https://www.mofa.go.kr/eng/wpge/m_24811/contents.do"
+    },
+    {
+      "country": "PHL",
+      "roles": ["foreign-minister"],
+      "names": ["Enrique Manalo"],
+      "source": "https://pco.gov.ph/news_releases/asean-foreign-ministers-express-concern-over-evolving-situation-in-the-middle-east/"
+    },
+    {
+      "country": "ZAF",
+      "roles": ["defence-minister", "foreign-minister"],
+      "names": ["Naledi Pandor", "Thandi Modise"],
+      "source": "https://www.parliament.gov.za/ministers"
+    },
+    {
+      "country": "MEX",
+      "roles": ["foreign-minister"],
+      "names": ["Juan Ramón de la Fuente"],
+      "source": "https://www.gob.mx/sre/en/estructuras/secretary-of-foreign-affairs"
+    },
+    {
+      "country": "JPN",
+      "roles": ["defence-minister"],
+      "names": ["Gen Nakatani", "Nakatani Gen"],
+      "source": "https://www.mod.go.jp/en/article/2026/10/2f87c33ad8344908ba5bc80f7f184caa6607e590.html"
     }
-  ],
-  "coverageSource": "https://www.un.org/en/about-us/member-states"
+  ]
 }

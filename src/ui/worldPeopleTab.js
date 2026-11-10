@@ -11,6 +11,7 @@ import {
   node,
   portraitCredit,
   portraitImage,
+  roleEvidence,
 } from './worldPeopleElements.js';
 
 const leadership = ['head-of-state', 'head-of-government'];
@@ -42,7 +43,7 @@ export function renderPeopleHeader({
       'p',
       'world-people-government',
       (Array.isArray(government) ? government.join(' · ') : government) ||
-        'Government type unavailable',
+        'Government type not recorded',
     ),
   );
   const grid = node(document, 'div', 'world-people-leaders');
@@ -53,7 +54,13 @@ export function renderPeopleHeader({
     state.length === executive.length &&
     state.every((person) =>
       executive.some(
-        ({ id, office }) => id === person.id && office === person.office,
+        ({ id, office, asOf, source, disagreement }) =>
+          id === person.id &&
+          office === person.office &&
+          asOf === person.asOf &&
+          source === person.source &&
+          !disagreement &&
+          !person.disagreement,
       ),
     );
   const groups = shared
@@ -89,6 +96,8 @@ export function renderPeopleHeader({
       if (actor.acting)
         identity.append(node(document, 'span', 'world-person-role', 'Acting'));
       group.append(identity);
+      const evidence = roleEvidence(document, actor);
+      if (evidence) group.append(evidence);
       if (portrait) group.append(portraitCredit(document, actor.image));
     }
     grid.append(group);
@@ -100,20 +109,17 @@ export function renderPeopleHeader({
 function actorRow(document, actor, country, openCard) {
   const row = node(document, 'li', 'world-person-row');
   row.append(actorButton(document, actor, openCard));
-  row.append(
-    node(
-      document,
-      'span',
-      'world-person-role',
-      [
-        ...new Set(
-          actor.offices
-            .filter((entry) => entry.country === country)
-            .map(({ role }) => officeText(role)),
-        ),
-      ].join(' · '),
-    ),
-  );
+  for (const office of actor.offices.filter(
+    (entry) => entry.country === country,
+  )) {
+    row.append(
+      node(document, 'span', 'world-person-role', officeText(office.role)),
+    );
+    if (actor.kind !== 'organization') {
+      const evidence = roleEvidence(document, office);
+      if (evidence) row.append(evidence);
+    }
+  }
   if (actor.kind === 'organization' && !actor.reviewed) {
     row.append(
       node(

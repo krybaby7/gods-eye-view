@@ -241,7 +241,7 @@ test('merges completed batches and keeps the cached role for a long Retry-After'
       });
     },
   });
-  assert.equal(calls, 7);
+  assert.equal(calls, 5);
   assert.match(result.error, /HTTP 503/);
   assert.deepEqual(
     result.data.actors.map(({ id }) => id),

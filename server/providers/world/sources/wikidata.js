@@ -15,9 +15,10 @@ const ROLES = [
   'defence-minister',
 ];
 
-export const version = 4;
+export const version = 5;
 export const shouldCheck = (context) =>
-  context.rederive || actorSourceDue(context, 7 * 24);
+  !(Date.parse(context.data?.retryAt) > +context.now) &&
+  (context.rederive || actorSourceDue(context, 7 * 24));
 export const requestHost = 'query.wikidata.org';
 
 function countryCodes(registry) {
@@ -132,7 +133,14 @@ function candidatesQuery(role, tuples) {
       BIND("${role}" AS ?role)
       VALUES (?iso ?seat) { ${tuples.join(' ')} }
       {
-        ?knownStatement ps:P39 ?seat; pq:P580 ?candidateSince .
+        ?knownStatement ps:P39 ?seat .
+        {
+          ?knownStatement pq:P580 ?candidateSince .
+        } UNION {
+          FILTER NOT EXISTS { ?knownStatement pq:P580 [] }
+          { ?knownStatement pq:P1365 [] }
+          UNION { ?knownStatement wikibase:rank wikibase:PreferredRank }
+        }
         FILTER NOT EXISTS { ?knownStatement pq:P582 [] }
         FILTER NOT EXISTS { ?knownStatement pq:P1366 [] }
         ?person p:P39 ?knownStatement .
@@ -140,6 +148,7 @@ function candidatesQuery(role, tuples) {
         ?seat p:P1308 ?nomination .
         ?nomination ps:P1308 ?person .
         FILTER NOT EXISTS { ?nomination pq:P582 [] }
+        FILTER NOT EXISTS { ?nomination pq:P1366 [] }
       }
     }`;
 }
@@ -155,11 +164,16 @@ function verificationQuery(role, tuples) {
           hint:SubQuery hint:optimizer "None" .
           VALUES (?iso ?seat ?person) { ${tuples.join(' ')} }
           ?person p:P39 ?statement .
-          ?statement ps:P39 ?office; pq:P580 ?since; wikibase:rank ?rank .
+          ?statement ps:P39 ?office; wikibase:rank ?rank .
+          OPTIONAL { ?statement pq:P580 ?since . }
           FILTER(?office = ?seat || EXISTS { ?office wdt:P279 ?seat . })
           ?person wdt:P31 wd:Q5 .
           FILTER(?rank != wikibase:DeprecatedRank)
-          FILTER(?since <= NOW())
+          FILTER(!BOUND(?since) || ?since <= NOW())
+          FILTER(!BOUND(?since) || ${role.startsWith('head-of-') ? '?iso = "CHE" || ' : ''}NOT EXISTS {
+            ?laterStatement ps:P39 ?seat; pq:P580 ?laterStart; wikibase:rank ?laterRank .
+            FILTER(?laterRank != wikibase:DeprecatedRank && ?laterStart > ?since && ?laterStart <= NOW())
+          })
           FILTER NOT EXISTS { ?statement pq:P582 [] }
           FILTER NOT EXISTS { ?statement pq:P1366 [] }
           OPTIONAL { ?statement pq:P5102 ?nature . }
@@ -256,7 +270,7 @@ function chooseActor(rows, now) {
     country: row.iso,
     office:
       !conflictingOffice && office && !/^Q\d+$/.test(office) ? office : null,
-    since: row.since.slice(0, 10),
+    since: row.since?.slice(0, 10) || null,
     acting: rows.some(
       ({ nature, officeLabel }) =>
         /\/Q(?:4676846|20012923)$/.test(nature ?? '') ||
@@ -274,6 +288,7 @@ function chooseActor(rows, now) {
 function normalizeDirectory(bindings, registry, now) {
   const allowed = countryCodes(registry);
   const claims = new Map();
+  const undatedClaims = new Map();
   const governmentClaims = new Map();
   for (const binding of bindings) {
     const row = Object.fromEntries(
@@ -290,11 +305,17 @@ function normalizeDirectory(bindings, registry, now) {
       !ROLES.includes(row.role) ||
       !/^https?:\/\/www\.wikidata\.org\/entity\/Q\d+$/.test(row.person) ||
       row.rank?.endsWith('#DeprecatedRank') ||
-      !(Date.parse(row.since) <= +now) ||
+      (row.since && !(Date.parse(row.since) <= +now)) ||
       row.end ||
       row.replacedBy
     )
       continue;
+    if (!row.since) {
+      const key = [row.iso, row.role, row.person].join(':');
+      if (!undatedClaims.has(key)) undatedClaims.set(key, []);
+      undatedClaims.get(key).push(row);
+      continue;
+    }
     const state = row.role === 'head-of-state';
     const seats = officeSeats.countries[row.iso];
     const separateSeats = state && seats?.state?.length > 1;
@@ -374,7 +395,16 @@ function normalizeDirectory(bindings, registry, now) {
       });
     }
   }
-  return { actors, governments };
+  const dated = new Set(
+    actors.map(({ country, role, id }) => country + ':' + role + ':' + id),
+  );
+  const undatedActors = [...undatedClaims.values()]
+    .map((rows) => chooseActor(rows, now))
+    .filter(
+      (actor) =>
+        actor && !dated.has(actor.country + ':' + actor.role + ':' + actor.id),
+    );
+  return { actors, undatedActors, governments };
 }
 
 export async function fetchObservations({
@@ -399,33 +429,41 @@ export async function fetchObservations({
   const bindings = [];
   const completed = new Set();
   const errors = [];
-  let succeeded = 0;
-  let consecutiveTimeouts = 0;
+  let consecutiveStrikes = 0;
+  let retryAt;
   const recovery = [];
   let recoveryCalls = 0;
   let recoveredSlices = 0;
 
   function stopped() {
-    return budget.aborted || consecutiveTimeouts >= 3;
+    return budget.aborted || consecutiveStrikes >= 3 || Boolean(retryAt);
   }
 
   async function attempt(sparql) {
     try {
       const rows = await query(sparql);
-      consecutiveTimeouts = 0;
+      consecutiveStrikes = 0;
       return { rows };
     } catch (failure) {
-      consecutiveTimeouts = timedOut(failure) ? consecutiveTimeouts + 1 : 0;
+      consecutiveStrikes =
+        timedOut(failure) || failure.status === 429
+          ? consecutiveStrikes + 1
+          : 0;
       return { failure };
     }
   }
 
   async function attemptWithRetry(sparql) {
     let result = await attempt(sparql);
-    const retryDelay =
-      Date.parse(result.failure?.retryAt) -
-      (+now + performance.now() - started);
-    if (retryDelay > 0 && retryDelay <= MAX_RETRY_MS && !stopped()) {
+    const delayFor = (failure) =>
+      Date.parse(failure?.retryAt) - (+now + performance.now() - started);
+    const retryDelay = delayFor(result.failure);
+    if (
+      retryDelay > 0 &&
+      retryDelay <= MAX_RETRY_MS &&
+      result.failure.retryAfterMs <= MAX_RETRY_MS &&
+      !stopped()
+    ) {
       try {
         await wait(Math.ceil(retryDelay), null, { signal: budget });
       } catch {
@@ -433,6 +471,11 @@ export async function fetchObservations({
       }
       result = await attempt(sparql);
     }
+    if (
+      result.failure?.retryAfterMs > MAX_RETRY_MS ||
+      delayFor(result.failure) > MAX_RETRY_MS
+    )
+      retryAt = result.failure.retryAt;
     return result;
   }
 
@@ -469,8 +512,8 @@ export async function fetchObservations({
 
   for (const [role, batch] of batches) {
     const failure = await loadBatch(role, batch);
-    if (!failure) succeeded += 1;
-    else if (
+    if (!failure) continue;
+    if (
       !failure.retryAt &&
       batch.length > 1 &&
       (timedOut(failure) ||
@@ -504,8 +547,8 @@ export async function fetchObservations({
         recoveredSlices += 1;
       }
     }
-    if (recovered === 2) succeeded += 1;
-    else errors.push(...(failures.length ? failures : [describe(failure)]));
+    if (recovered !== 2)
+      errors.push(...(failures.length ? failures : [describe(failure)]));
   }
   // WDQS reports an item's QID when it has no English label. Resolve the
   // title of the English Wikipedia article linked on that exact item.
@@ -522,10 +565,6 @@ export async function fetchObservations({
     const { rows: entities, failure } = await attemptWithRetry(ids);
     if (failure) {
       errors.push(describe(failure));
-      for (const id of ids) {
-        for (const row of missingLabels.get(id))
-          completed.delete(row.iso.value + ':' + row.role.value);
-      }
       continue;
     }
     for (const id of ids) {
@@ -535,6 +574,22 @@ export async function fetchObservations({
         row.personLabel = { value: title };
     }
   }
+  for (const [id, rows] of missingLabels) {
+    if (!rows.some((row) => row.personLabel.value === id)) continue;
+    for (const row of rows)
+      completed.delete(row.iso.value + ':' + row.role.value);
+  }
+  if (
+    unlabeled.some((id) =>
+      missingLabels.get(id).some((row) => row.personLabel.value === id),
+    )
+  )
+    errors.push(
+      'Unresolved Wikidata sitelinks left the affected roles incomplete.',
+    );
+  const succeeded = batches.filter(([role, batch]) =>
+    batch.every((code) => completed.has(code + ':' + role)),
+  ).length;
   const directory = normalizeDirectory(bindings, registry, now);
   const detail =
     `${succeeded} of ${total} Wikidata batches completed.` +
@@ -545,7 +600,9 @@ export async function fetchObservations({
     errors.push(
       budget.aborted
         ? 'The four-minute Wikidata budget expired.'
-        : 'Skipped remaining Wikidata batches after three consecutive timeouts.',
+        : retryAt
+          ? 'Skipped remaining Wikidata batches because Retry-After exceeded 60 seconds.'
+          : 'Skipped remaining Wikidata batches after three consecutive timeouts or rate limits.',
     );
   }
   const error = errors.length
@@ -561,8 +618,11 @@ export async function fetchObservations({
         typeof acting === 'boolean' && Boolean(since) && source === 'wikidata',
     );
   if (
-    (stopped() && data && (!rederive || verifiedCache)) ||
-    (!directory.actors.length && !Object.keys(directory.governments).length)
+    (!completed.size || !errors.length) &&
+    !retryAt &&
+    !directory.actors.length &&
+    !directory.undatedActors.length &&
+    !Object.keys(directory.governments).length
   ) {
     return {
       error:
@@ -572,16 +632,24 @@ export async function fetchObservations({
     };
   }
   if (errors.length && (!rederive || verifiedCache)) {
-    directory.actors.push(
-      ...(data?.actors ?? []).filter(
+    for (const key of ['actors', 'undatedActors']) {
+      const pending = (data?.[key] ?? []).filter(
         ({ country, role }) => !completed.has(country + ':' + role),
-      ),
-    );
-    directory.actors.sort(
-      (a, b) =>
-        a.country.localeCompare(b.country) ||
-        ROLES.indexOf(a.role) - ROLES.indexOf(b.role),
-    );
+      );
+      const preserved = new Set(
+        pending.map(({ country, role }) => country + ':' + role),
+      );
+      directory[key] = [
+        ...directory[key].filter(
+          ({ country, role }) => !preserved.has(country + ':' + role),
+        ),
+        ...pending,
+      ].sort(
+        (a, b) =>
+          a.country?.localeCompare(b.country) ||
+          ROLES.indexOf(a.role) - ROLES.indexOf(b.role),
+      );
+    }
     directory.governments = {
       ...Object.fromEntries(
         Object.entries(data?.governments ?? {}).filter(
@@ -596,6 +664,13 @@ export async function fetchObservations({
       ...directory,
       method: 'person-p39',
       retrievedAt: now.toISOString(),
+      retryAt,
+      completion: {
+        completed: succeeded,
+        total,
+        completedRoles: completed.size,
+        recoveredSlices,
+      },
     },
     count: directory.actors.length,
     unit: 'role',

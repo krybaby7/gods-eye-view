@@ -184,6 +184,18 @@
     "marks": []
   },
   {
+    "id": "cia-world-leaders",
+    "name": "CIA World Leaders",
+    "access": "Keyless public country-page JSON",
+    "attribution": "Central Intelligence Agency, World Leaders",
+    "url": "https://www.cia.gov/resources/world-leaders/",
+    "licence": "US government public domain unless copyright is indicated",
+    "licenceUrl": "https://www.cia.gov/site-policies/#copyright-notice",
+    "licenceCheckedOn": "2026-11-10",
+    "releaseRhythm": "Directory and country pages checked at most weekly on World Board Refresh",
+    "marks": []
+  },
+  {
     "id": "wikimedia-commons",
     "name": "Wikimedia Commons portraits",
     "access": "Keyless MediaWiki imageinfo API",

@@ -41,3 +41,12 @@ export function safeHttps(value) {
   }
   return null;
 }
+
+// Undated identities are only eligible for display when a dated source
+// independently selects them. Their verified media can already be loaded.
+export function wikidataPeople(features) {
+  return [
+    ...(features.wikidata?.actors ?? []),
+    ...(features.wikidata?.undatedActors ?? []),
+  ];
+}

@@ -78,3 +78,61 @@ export function accountLinks(document, accounts) {
   }
   return links;
 }
+
+const peopleSources = {
+  wikidata: 'Wikidata',
+  'cia-world-leaders': 'CIA World Leaders',
+  official: 'Official office source',
+};
+
+export function roleEvidence(document, role) {
+  const {
+    asOf,
+    since,
+    source,
+    sourceUrl,
+    stale,
+    disagreement,
+    otherEvidence,
+    draft,
+    reviewed,
+  } = role;
+  const date = asOf ?? since;
+  if (!date && !source) return null;
+  const text = node(document, 'div', 'world-person-role world-person-evidence');
+  const sourceName = peopleSources[source] ?? source ?? 'Source not recorded';
+  text.append(
+    (date ? 'as of ' + date : 'Date not recorded') + ' · ',
+    externalLink(document, sourceUrl, sourceName) ?? sourceName,
+  );
+  if (stale) text.append(' · may be out of date');
+  if (draft || reviewed === false) {
+    text.append(
+      ' · ',
+      externalLink(document, draft, 'Draft, not yet reviewed') ??
+        'Draft, not yet reviewed',
+    );
+  }
+  if (disagreement) {
+    const label = peopleSources[disagreement.source] ?? disagreement.source;
+    text.append(
+      ' · sources disagree: ' + disagreement.name + ' per ',
+      externalLink(document, disagreement.sourceUrl, label) ?? label,
+      ', ' + (disagreement.asOf ?? 'date not recorded'),
+    );
+  }
+  for (const evidence of otherEvidence ?? []) {
+    if (
+      evidence.name === disagreement?.name &&
+      evidence.source === disagreement?.source
+    )
+      continue;
+    const label = peopleSources[evidence.source] ?? evidence.source;
+    text.append(
+      ' · ' + evidence.name + ' per ',
+      externalLink(document, evidence.sourceUrl, label) ?? label,
+      ', ' + (evidence.asOf ?? 'date not recorded'),
+    );
+  }
+  return text;
+}

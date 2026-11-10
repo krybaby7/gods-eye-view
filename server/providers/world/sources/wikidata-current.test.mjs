@@ -212,7 +212,7 @@ test('preserves a prior partial person-statement directory on rederive timeout',
     },
   });
   assert.match(result.error, /three consecutive timeouts/);
-  assert.equal(result.data, undefined);
+  assert.deepEqual(result.data?.governments.IND, ['Republic']);
 });
 
 test('stops after three consecutive timeouts and preserves the last directory', async () => {
@@ -262,7 +262,7 @@ test('adds the independently verified missing co-regent for the published term o
   );
 });
 
-test('a long Retry-After skips only its batch and a short one is retried', async () => {
+test('long Retry-After stops remaining Wikidata batches and keeps completed rows', async () => {
   const calls = [];
   const { data, error } = await fetchObservations({
     registry: registry('IND'),
@@ -270,21 +270,150 @@ test('a long Retry-After skips only its batch and a short one is retried', async
     fetchImpl: async (_url, { body }) => {
       const role = roleOf(body);
       calls.push(role);
-      if (calls.length < 3)
-        return new Response(null, {
-          status: 503,
-          headers: { 'Retry-After': calls.length === 1 ? '120' : '0' },
-        });
-      return reply(role === 'head-of-state' ? [row('IND', role, 'Q10')] : []);
+      if (role === 'government')
+        return reply([
+          binding({
+            iso: 'IND',
+            role,
+            government: item('Q2'),
+            governmentLabel: 'Republic',
+          }),
+        ]);
+      return new Response(null, {
+        status: 503,
+        headers: { 'Retry-After': '120' },
+      });
     },
   });
-  assert.deepEqual(calls.slice(0, 3), [
-    'government',
-    'head-of-state',
-    'head-of-state',
-  ]);
-  assert.equal(data.actors[0].id, 'Q10');
-  assert.match(error, /HTTP 503/);
+  assert.deepEqual(calls, ['government', 'head-of-state']);
+  assert.deepEqual(data?.governments.IND, ['Republic']);
+  assert.match(error, /Retry-After/);
+});
+
+test('429 counts towards the same three-strike stop as timeouts', async () => {
+  let calls = 0;
+  const { error } = await fetchObservations({
+    registry: registry('IND'),
+    now,
+    fetchImpl: async () => {
+      calls++;
+      if (calls === 2)
+        return new Response(null, {
+          status: 429,
+          headers: { 'Retry-After': '0' },
+        });
+      throw new DOMException('Deadline', 'TimeoutError');
+    },
+  });
+  assert.equal(calls, 3);
+  assert.match(error, /three consecutive/);
+});
+
+test('a skipped sitelink lookup keeps the previous person for that role', async () => {
+  const prior = {
+    ...Object.fromEntries(
+      Object.entries(row('IND', 'head-of-state', 'Q10')).map(([key, cell]) => [
+        key,
+        cell.value,
+      ]),
+    ),
+    id: 'Q10',
+    country: 'IND',
+    source: 'wikidata',
+    since: '2026-01-01',
+    acting: false,
+    name: 'Prior label',
+  };
+  const result = await fetchObservations({
+    registry: registry('IND'),
+    now,
+    data: { actors: [prior], method: 'person-p39' },
+    fetchImpl: async (_url, { body }) => {
+      assert.ok(body, 'the sitelink request is skipped');
+      const role = roleOf(body);
+      if (role === 'head-of-state')
+        return reply([row('IND', role, 'Q10', { personLabel: 'Q10' })]);
+      if (role === 'government') return reply([]);
+      throw new DOMException('Deadline', 'TimeoutError');
+    },
+  });
+  assert.equal(result.data?.actors[0].name, 'Prior label');
+  assert.match(result.detail, /1 of 5 Wikidata batches completed/);
+});
+
+test('Argentina and Bangladesh undated successors are verified but need CIA to settle the role', async () => {
+  const role = 'foreign-minister';
+  const { mergeOfficeholders } = await import('../officeholders.js');
+  const rows = [
+    row('ARG', role, 'Q21', {
+      since: '2024-01-01',
+      personLabel: 'Gerardo Werthein',
+    }),
+    row('ARG', role, 'Q22', { since: undefined, personLabel: 'Pablo Quirno' }),
+    row('BGD', role, 'Q31', {
+      since: '2024-01-01',
+      personLabel: 'Touhid Hossain',
+      end: '2026-02-01',
+    }),
+    row('BGD', role, 'Q32', {
+      since: undefined,
+      personLabel: 'Khalilur Rahman',
+    }),
+    row('BGD', role, 'Q33', {
+      since: '2024-01-01',
+      personLabel: 'Replaced holder',
+      replacedBy: item('Q32'),
+    }),
+  ];
+  let verification;
+  const { data } = await fetchObservations({
+    registry: registry('ARG', 'BGD'),
+    now,
+    fetchImpl: async (_url, { body }) => {
+      if (roleOf(body) !== role) return reply([]);
+      if (body.get('query').includes('?person p:P39 ?statement'))
+        verification = body.get('query');
+      return reply(rows);
+    },
+  });
+  assert.match(verification, /OPTIONAL\s*\{ \?statement pq:P580 \?since/);
+  assert.match(verification, /pq:P582/);
+  assert.match(verification, /pq:P1366/);
+  assert.match(verification, /\?laterStart > \?since/);
+  assert.deepEqual(
+    data.actors.map(({ id }) => id),
+    ['Q21'],
+  );
+  assert.deepEqual(
+    data.undatedActors.map(({ id }) => id),
+    ['Q22', 'Q32'],
+  );
+  assert.deepEqual(
+    mergeOfficeholders(data.actors, [], now, data.undatedActors),
+    [],
+  );
+  const cia = [
+    {
+      country: 'ARG',
+      role,
+      name: 'Pablo Quirno',
+      asOf: '2025-10-29',
+      source: 'cia-world-leaders',
+    },
+    {
+      country: 'BGD',
+      role,
+      name: 'Khalilur Rahman',
+      asOf: '2026-08-31',
+      source: 'cia-world-leaders',
+    },
+  ];
+  assert.deepEqual(
+    mergeOfficeholders(data.actors, cia, now, data.undatedActors).map(
+      ({ id }) => id,
+    ),
+    ['Q22', 'Q32'],
+  );
 });
 
 test('resolves office candidates separately and verifies only literal person/seat pairs', async () => {

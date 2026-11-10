@@ -6,6 +6,7 @@ import {
   platformNames,
   portraitCredit,
   portraitImage,
+  roleEvidence,
 } from './worldPeopleElements.js';
 
 const X_PROFILE = /^https:\/\/x\.com\/(\w{1,15})\/?$/i;
@@ -74,14 +75,8 @@ function actorCard({ document, snapshot, id }) {
   }
   card.dataset.worldActor = id;
   card.append(node(document, 'h3', 'world-actor-name', actor.name));
-  for (const {
-    role,
-    office,
-    since,
-    country,
-    acting,
-    collective,
-  } of actor.offices) {
+  for (const record of actor.offices) {
+    const { role, office, since, country, acting, collective } = record;
     const description = [
       actorRoles[role] ?? role,
       country,
@@ -93,8 +88,11 @@ function actorCard({ document, snapshot, id }) {
       .filter(Boolean)
       .join(' · ');
     card.append(node(document, 'p', 'world-person-role', description));
+    const evidence =
+      actor.kind === 'organization' ? null : roleEvidence(document, record);
+    if (evidence) card.append(evidence);
   }
-  if (actor.reviewed === false) {
+  if (actor.kind === 'organization' && actor.reviewed === false) {
     const geographic =
       actor.role === 'armed-group'
         ? ' Country refers to geographic activity.'
@@ -160,7 +158,9 @@ function actorCard({ document, snapshot, id }) {
     actor.sourceUrl,
     actor.kind === 'organization'
       ? 'Organization source'
-      : 'Official office source',
+      : actor.source === 'cia-world-leaders'
+        ? 'CIA World Leaders'
+        : 'Official office source',
   );
   if (wikidata) source.append(wikidata);
   if (organization) source.append(wikidata ? ' · ' : '', organization);

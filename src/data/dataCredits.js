@@ -239,6 +239,7 @@ export const DATA_CREDITS = [
     html:
       'World Board People: ' +
       '<a href="https://www.wikidata.org/" target="_blank" rel="noopener">Wikidata</a> · ' +
+      '<a href="https://www.cia.gov/resources/world-leaders/" target="_blank" rel="noopener">CIA World Leaders</a> (US government public domain) · ' +
       '<a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a> (per-photo attribution) · ' +
       '<a href="https://bsky.app/" target="_blank" rel="noopener">Bluesky</a> · ' +
       '<a href="https://www.youtube.com/" target="_blank" rel="noopener">YouTube</a> · ' +
