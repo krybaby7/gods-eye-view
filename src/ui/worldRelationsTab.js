@@ -1,6 +1,7 @@
 import {
   classifyDiplomacy,
   currentRelations,
+  isDocumentedRivalry,
   relationPeers,
 } from '../layers/world/relations.js';
 
@@ -79,6 +80,8 @@ function relationsTab({ document, snapshot, sheetModel, openCard }) {
         ')'
       );
     }
+    if (row.type === 'diplomatic_relation')
+      return other + ' · ' + (row.start ?? 'Undated');
     if (row.membershipStatus === 'suspended')
       return other + ' · participation suspended';
     if (row.type === 'sanctions' && row.scope === 'persons') {
@@ -121,9 +124,7 @@ function relationsTab({ document, snapshot, sheetModel, openCard }) {
       'Rivals',
       [...rivals].flatMap((id) => {
         const candidates = rows.filter(
-          (row) =>
-            counterpart(row) === id &&
-            ['rivalry', 'diplomatic_rupture'].includes(row.type),
+          (row) => counterpart(row) === id && isDocumentedRivalry(row),
         );
         return candidates.slice(0, 1);
       }),

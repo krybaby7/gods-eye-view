@@ -80,9 +80,19 @@ test('UN counts committee prefixes from permanent references in both sections', 
     mappedRecords: 2,
     programmes: 2,
     mappedProgrammes: 1,
-    thematicProgrammes: 0,
-    unmapped: ['QD'],
-    unmappedProgrammes: 1,
+    thematicProgrammes: 1,
+    thematicDetails: [
+      {
+        programmeId: 'QD',
+        programme: 'ISIL (Da’esh), Al-Qaida and associates',
+        scope: 'persons',
+        sources: ['https://main.un.org/securitycouncil/en/sanctions/1267'],
+        dateChecked: null,
+        reviewed: false,
+      },
+    ],
+    unmapped: [],
+    unmappedProgrammes: 0,
   });
   assert.deepEqual(
     result.relations.map(
@@ -284,4 +294,77 @@ test('legacy catalogue state is refreshed immediately and failures never replace
   });
   assert.match(migrated.error, /HTTP 503/);
   assert.deepEqual(migrated.data, { relations: [], format: 'unavailable' });
+});
+test('exact UK and OFAC tags preserve targeted versus state scope and citations', async () => {
+  const uk = await programmeRelations(
+    'uk',
+    [
+      Buffer.from(
+        ukOdt([
+          ['THE IRAN (SANCTIONS) REGULATIONS 2023', ['IRN001']],
+          ['THE SYRIA (SANCTIONS) (EU EXIT) REGULATIONS 2019', ['SYR001']],
+        ]),
+      ),
+    ],
+    '2026-11-10',
+  );
+  assert.deepEqual(
+    uk.relations.map(({ to, scope }) => [to, scope]),
+    [
+      ['IRN', 'state'],
+      ['SYR', 'state'],
+    ],
+  );
+  assert.match(uk.relations[0].detail, /interception and monitoring services/);
+  assert.match(uk.relations[1].detail, /2025/);
+  const ofac = await programmeRelations(
+    'ofac',
+    ['SSIDES', 'UKRAINE-EO13660', 'BELARUS-EO14038']
+      .map(
+        (tag, index) =>
+          `${index + 1},fixture,Entity,${tag},-0-,-0-,-0-,-0-,-0-,-0-,-0-,-0-`,
+      )
+      .join('\n'),
+    '2026-11-10',
+  );
+  assert.deepEqual(
+    ofac.relations
+      .map(({ programmeId, to, scope }) => [programmeId, to, scope])
+      .sort(),
+    [
+      ['BELARUS-EO14038', 'BLR', 'persons'],
+      ['SSIDES', 'RUS', 'persons'],
+      ['UKRAINE-EO13660', 'RUS', 'persons'],
+    ],
+  );
+  assert.ok(
+    ofac.relations
+      .find(({ programmeId }) => programmeId === 'BELARUS-EO14038')
+      .sources.includes('https://ofac.treasury.gov/recent-actions/20260326'),
+  );
+});
+
+test('UN covers QD, SO and TA committee programmes without creating country sanctions', async () => {
+  const result = await programmeRelations(
+    'un',
+    `<CONSOLIDATED_LIST>${['QDi.1', 'SOe.1', 'TAi.1']
+      .map(
+        (reference) =>
+          `<INDIVIDUAL><REFERENCE_NUMBER>${reference}</REFERENCE_NUMBER></INDIVIDUAL>`,
+      )
+      .join('')}</CONSOLIDATED_LIST>`,
+  );
+  assert.deepEqual(result.relations, []);
+  assert.deepEqual(result.coverage.unmapped, []);
+  assert.deepEqual(
+    result.coverage.thematicDetails.map(({ programmeId, scope }) => [
+      programmeId,
+      scope,
+    ]),
+    [
+      ['QD', 'persons'],
+      ['SO', 'persons'],
+      ['TA', 'persons'],
+    ],
+  );
 });

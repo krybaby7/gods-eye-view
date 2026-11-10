@@ -1,0 +1,119 @@
+{
+  "checkedOn": "2026-11-10",
+  "dataset": "https://www.kentarosakuwa.info/data.html",
+  "rivalries": [
+    [
+      "CHN",
+      "USA",
+      "1996",
+      "2024-12-18",
+      "https://media.defense.gov/2024/Dec/18/2003615520/-1/-1/0/MILITARY-AND-%09SECURITY-DEVELOPMENTS-INVOLVING-THE-PEOPLES-REPUBLIC-OF-CHINA-2024.PDF"
+    ],
+    [
+      "IRN",
+      "ISR",
+      "1979",
+      "2025-06-13",
+      "https://dppa.un.org/en/speeches-and-statements/usg-dicarlo-urges-both-israel-and-iran-to-exercise-maximum-restraint"
+    ],
+    [
+      "KOR",
+      "PRK",
+      "1948",
+      "2024-12-18",
+      "https://digitallibrary.un.org/record/4070650"
+    ],
+    [
+      "IND",
+      "PAK",
+      "1947",
+      "2025-05-15",
+      "https://india.un.org/en/294361-un-chief-welcomes-india-pakistan-ceasefire"
+    ],
+    [
+      "DZA",
+      "MAR",
+      "1962",
+      "2025-03-27",
+      "https://www.mfa.gov.dz/announcements/press-statement-of-the-ministry-of-foreign-affairs-morocco27032025"
+    ],
+    [
+      "GRC",
+      "TUR",
+      "1955",
+      "2025-07-26",
+      "https://www.mfa.gr/en/minister-of-foreign-affairs-george-gerapetritis-interview-with-ta-nea-newspaper-and-journalist-dionysis-nasopoulos-26-07-2025/"
+    ],
+    [
+      "CHN",
+      "JPN",
+      "1996",
+      "2025-05-03",
+      "https://www.mofa.go.jp/press/release/pressite_000001_01228.html"
+    ]
+  ],
+  "deescalation": "https://www.mfa.am/en/interviews-articles-and-comments/2026/08/10/Joint_statement/14060",
+  "ruptures": [
+    ["RUS", "UKR", "2026-11-09", "https://dppa.un.org/en/node/137309"],
+    [
+      "IRN",
+      "USA",
+      "2025-06-22",
+      "https://dppa.un.org/en/speeches-and-statements/asg-jenca-warns-security-council-of-dangerous-escalation-after-us"
+    ],
+    [
+      "GEO",
+      "RUS",
+      "2026-08-07",
+      "https://www.eeas.europa.eu/eeas/georgia-statement-spokesperson-marking-18-years-outbreak-war-between-russia-and-georgia_en"
+    ]
+  ],
+  "sanctions": [
+    [
+      "GBR",
+      "IRN",
+      "Iran",
+      "state",
+      "https://www.gov.uk/government/publications/iran-sanctions-guidance/iran-sanctions-guidance"
+    ],
+    ["USA", "RUS", "SSIDES", "persons", "https://ofac.treasury.gov/faqs/546"],
+    [
+      "USA",
+      "RUS",
+      "UKRAINE-EO13660",
+      "persons",
+      "https://ofac.treasury.gov/system/files/126/20220429_ukraine_regulations.pdf"
+    ],
+    [
+      "USA",
+      "BLR",
+      "BELARUS-EO14038",
+      "persons",
+      "https://ofac.treasury.gov/recent-actions/20260326"
+    ],
+    [
+      "GBR",
+      "SYR",
+      "Syria",
+      "state",
+      "https://www.gov.uk/government/publications/supporting-syrias-future-guidance-for-businesses-and-aid-organisations/supporting-a-secure-and-prosperous-future-for-syria-guidance-for-businesses-and-ngos"
+    ]
+  ],
+  "un": {
+    "QD": "https://main.un.org/securitycouncil/en/sanctions/1267",
+    "SO": "https://main.un.org/securitycouncil/en/sanctions/2713",
+    "TA": "https://main.un.org/securitycouncil/en/sanctions/1988/materials"
+  },
+  "round2": {
+    "configuredRivalries": 1,
+    "paintedRivals": 2,
+    "usaClasses": {
+      "ally": 51,
+      "at-war": 0,
+      "neutral": 122,
+      "partner": 1,
+      "rival": 1,
+      "sanctions": 6
+    }
+  }
+}

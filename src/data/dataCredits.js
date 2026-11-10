@@ -228,6 +228,7 @@ export const DATA_CREDITS = [
       '<a href="https://www.wikidata.org/wiki/Property:P463" target="_blank" rel="noopener">Wikidata bloc memberships</a> · ' +
       '<a href="https://www.wikidata.org/wiki/Property:P530" target="_blank" rel="noopener">Wikidata diplomatic links</a> · ' +
       '<a href="https://www.wikidata.org/wiki/Property:P1336" target="_blank" rel="noopener">Wikidata territorial seeds</a> · ' +
+      '<a href="https://www.kentarosakuwa.info/data.html" target="_blank" rel="noopener">Thompson, Sakuwa and Suhas, Strategic Rivalries Data (1816–2020)</a> · ' +
       '<a href="https://main.un.org/securitycouncil/en/content/un-sc-consolidated-list" target="_blank" rel="noopener">UN Security Council</a> · ' +
       '<a href="https://www.gov.uk/government/publications/the-uk-sanctions-list" target="_blank" rel="noopener">UK FCDO</a> · ' +
       '<a href="https://ofac.treasury.gov/sanctions-list-service" target="_blank" rel="noopener">US Treasury OFAC</a>. ' +

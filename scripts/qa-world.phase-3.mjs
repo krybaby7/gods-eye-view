@@ -39,6 +39,10 @@ export const fixtureAdapters = {
             instrument: 'Fixture collective treaty',
           }),
           row('fixture-rival', 'rivalry', 'CHN'),
+          row('fixture-undated-diplomacy', 'diplomatic_relation', 'AUS'),
+          row('fixture-dated-diplomacy', 'diplomatic_relation', 'JPN', {
+            start: '1952-04',
+          }),
           row('fixture-bloc', 'bloc_membership', 'SCO'),
           row('fixture-sanctions-out', 'sanctions', 'PRK', {
             directed: true,
@@ -156,6 +160,14 @@ export default async function phase3({
       assert.match(
         await text('[data-world-relation="fixture-collective"]'),
         /Fixture collective treaty.*United Kingdom.*Australia/s,
+      );
+      assert.match(
+        await text('[data-world-relation="fixture-undated-diplomacy"]'),
+        /Australia.*Undated/i,
+      );
+      assert.match(
+        await text('[data-world-relation="fixture-dated-diplomacy"]'),
+        /Japan.*1952-04/,
       );
       await shot('india-diplomacy');
       const hit = await page.waitForFunction(() => {

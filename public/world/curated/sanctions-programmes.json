@@ -1,5 +1,5 @@
 {
-  "checkedOn": "2026-11-09",
+  "checkedOn": "2026-11-10",
   "scopeNotes": "State covers legal measures aimed at a government or economic sector. Persons covers designation regimes aimed at specified individuals or groups, even where associated goods also have export controls. Occupied-territory programmes never imply sanctions on the recognized sovereign.",
   "ofac": {
     "source": "https://ofac.treasury.gov/specially-designated-nationals-list-sdn-list/program-tag-definitions-for-ofac-sanctions-lists",
@@ -31,10 +31,17 @@
         "balkans-related-sanctions"
       ],
       [
-        ["BELARUS", "BELARUS-EO14038"],
+        ["BELARUS"],
         ["BLR"],
         "persons",
         "Belarus sanctions",
+        "belarus-sanctions"
+      ],
+      [
+        ["BELARUS-EO14038"],
+        ["BLR"],
+        "persons",
+        "Belarus designated persons sanctions under Executive Order 14038",
         "belarus-sanctions"
       ],
       [["BURMA-EO14014"], ["MMR"], "state", "Burma sanctions", "burma"],
@@ -167,9 +174,9 @@
       ],
       [
         ["SSIDES", "UKRAINE-EO13660"],
-        ["UKR"],
+        ["RUS"],
         "persons",
-        "Ukraine sovereignty-related designated persons sanctions",
+        "Russia-related designations under Ukraine sovereignty authorities",
         "ukraine-russia-related-sanctions"
       ],
       [
@@ -214,7 +221,29 @@
         "Yemen sanctions",
         "yemen-related-sanctions"
       ]
-    ]
+    ],
+    "scopeEvidence": {
+      "BELARUS-EO14038": {
+        "detail": "The SDN tag applies to designated individuals and entities. OFAC rescinded the separate finance-ministry and development-bank debt directive in March 2026.",
+        "sources": [
+          "https://ofac.treasury.gov/faqs/916",
+          "https://ofac.treasury.gov/recent-actions/20260326"
+        ]
+      },
+      "SSIDES": {
+        "detail": "The Ukraine/Russia-related regulation blocks designated persons, including for specified dealings with sanctioned persons. Its SDN tag is associated with Russia-related measures.",
+        "sources": [
+          "https://ofac.treasury.gov/faqs/546",
+          "https://ofac.treasury.gov/system/files/126/20220429_ukraine_regulations.pdf"
+        ]
+      },
+      "UKRAINE-EO13660": {
+        "detail": "The Ukraine/Russia-related regulation blocks designated persons undermining Ukraine’s sovereignty, stability or territorial integrity.",
+        "sources": [
+          "https://ofac.treasury.gov/system/files/126/20220429_ukraine_regulations.pdf"
+        ]
+      }
+    }
   },
   "uk": {
     "source": "https://www.gov.uk/government/collections/uk-sanctions-regimes-under-the-sanctions-act",
@@ -318,6 +347,43 @@
         "(EU Exit) Regulations 2019"
       ],
       ["Yemen", "YEM", "yemen", "persons", "(EU Exit) Regulations 2020"]
-    ]
+    ],
+    "scopeEvidence": {
+      "Iran": {
+        "detail": "Alongside targeted designations, the 2023 regulations prohibit supplying interception and monitoring services to the Government of Iran and restrict strategic goods and technology supplied to Iran.",
+        "sources": [
+          "https://www.gov.uk/government/publications/iran-sanctions-guidance/iran-sanctions-guidance"
+        ]
+      },
+      "Syria": {
+        "detail": "After the 2025 easing and further 2026 changes, designation measures coexist with narrow state-facing controls on government interception and monitoring services and imports of military goods.",
+        "sources": [
+          "https://www.gov.uk/government/publications/supporting-syrias-future-guidance-for-businesses-and-aid-organisations/supporting-a-secure-and-prosperous-future-for-syria-guidance-for-businesses-and-ngos"
+        ]
+      }
+    }
+  },
+  "reviewed": false,
+  "un": {
+    "thematic": ["QD", "SO", "TA"],
+    "scopeEvidence": {
+      "QD": {
+        "programme": "ISIL (Da’esh), Al-Qaida and associates",
+        "scope": "persons",
+        "sources": ["https://main.un.org/securitycouncil/en/sanctions/1267"]
+      },
+      "SO": {
+        "programme": "Al-Shabaab and designated associates",
+        "scope": "persons",
+        "sources": ["https://main.un.org/securitycouncil/en/sanctions/2713"]
+      },
+      "TA": {
+        "programme": "Taliban-associated individuals and entities",
+        "scope": "persons",
+        "sources": [
+          "https://main.un.org/securitycouncil/en/sanctions/1988/materials"
+        ]
+      }
+    }
   }
 }

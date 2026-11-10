@@ -35,3 +35,15 @@ test('the war fact rejects a stale event included with current evidence', async 
     false,
   );
 });
+test('Rio Treaty evidence leaves Venezuela inactive with every other party', async () => {
+  const { fetchObservations } =
+    await import('../server/providers/world/sources/relationsCurated.js');
+  const { data } = await fetchObservations({});
+  const rows = await checkRelations({
+    board: { features: { 'relations-curated': data } },
+    getDetail: async () => null,
+  });
+  const row = rows.find(({ id }) => id === 'relations-venezuela-rio-treaty');
+  assert.equal(row?.pass, true);
+  assert.deepEqual(row.found.allies, []);
+});
