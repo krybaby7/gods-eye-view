@@ -9,6 +9,33 @@ const now = new Date('2026-11-09T00:00:00Z');
 const registry = { countries: [{ iso3: 'IND', name: 'India' }] };
 const context = { now, registry };
 
+test('optional UCDP waits for country coverage in the completed month before clearing', async () => {
+  const adapter = optionalLiveSources({
+    candidate: {
+      endpoint: 'https://api.ucdp.uu.se/candidate',
+      token: 'fixture-token',
+    },
+  })['live-ucdp-token'];
+  const load = (now, date, best, data) =>
+    adapter.fetchObservations({
+      ...context,
+      now: new Date(now),
+      data,
+      fetchImpl: () =>
+        Response.json({
+          Result: [{ id: 1, country: 'India', date_start: date, best }],
+        }),
+    });
+  const flagged = await load('2026-11-30', '2026-10-10', 25);
+  assert.equal(flagged.data.flags.length, 1);
+  const unpublished = await load('2026-12-01', '2026-10-10', 25, flagged.data);
+  assert.deepEqual(unpublished.changes, []);
+  assert.equal(unpublished.data.inactiveFlags[0].status, 'no-recent-data');
+  const published = await load('2026-12-10', '2026-11-10', 1, unpublished.data);
+  assert.equal(published.changes[0].action, 'cleared');
+  assert.equal(published.data.inactiveFlags[0].status, 'cleared');
+});
+
 test('all optional feeds are dormant with default configuration', () => {
   const adapters = optionalLiveSources();
   assert.equal(Object.keys(adapters).length, 4);

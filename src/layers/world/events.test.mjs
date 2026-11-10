@@ -63,6 +63,7 @@ test('timed feeds defer while a turn is busy and advance without a new turn', as
     retryMs: 5,
     refresh: async (id) => {
       seen.push(id);
+      return true;
     },
   });
   await clock.step();
@@ -127,6 +128,7 @@ test('a skipped scoped check backs off and lets the next overdue feed run', asyn
     retryMs: 5,
     refresh: async (id) => {
       seen.push(id);
+      return true;
     },
   });
   for (let i = 0; i < 2; i += 1) await clock.step();
@@ -135,6 +137,32 @@ test('a skipped scoped check backs off and lets the next overdue feed run', asyn
   assert.equal(clock.pending().at, 200);
   await clock.step();
   assert.deepEqual(seen, ['first', 'second', 'first']);
+  dispose();
+});
+
+test('two nearby feeds retain rejected ticks without blocking one another', async () => {
+  const clock = timerHarness();
+  const snapshot = { progress: null, turn: { number: 2 } };
+  const calls = [];
+  let rejectFirst = true;
+  const dispose = startLiveTimers({
+    ...clock,
+    snapshot: () => snapshot,
+    feeds: { first: 100, second: 102 },
+    retryMs: 5,
+    refresh: async (id) => {
+      calls.push([id, clock.clock()]);
+      if (id !== 'first' || !rejectFirst) return true;
+      rejectFirst = false;
+      return false;
+    },
+  });
+  for (let i = 0; i < 3; i++) await clock.step();
+  assert.deepEqual(calls, [
+    ['first', 100],
+    ['second', 105],
+    ['first', 110],
+  ]);
   dispose();
 });
 

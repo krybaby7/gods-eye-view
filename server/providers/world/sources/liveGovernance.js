@@ -152,18 +152,12 @@ export function gdeltBatch(tsv, date, now, countries) {
       )
     )
       continue;
-    // CAMEO date, actors, action and location form a conservative event key.
-    // Incomplete identities are omitted rather than counted as independent events.
-    const actor1 = (row[5] || row[6]).trim().toUpperCase();
-    const actor2 = (row[15] || row[16]).trim().toUpperCase();
-    const action = (row[27] || row[26]).trim();
-    const location =
-      row[58]?.trim() ||
-      [row[52], row[53], row[54], row[56], row[57]]
-        .map((part) => part.trim().toUpperCase())
-        .join('|');
-    if (!actor1 || !actor2 || !action || !row[52] || !row[53]) continue;
-    const eventKey = [eventDate, actor1, actor2, action, location].join('|');
+    const actor1 = (row[5] || row[6]).trim();
+    const actor2 = (row[15] || row[16]).trim();
+    if (!actor1 || (root !== '14' && !actor2) || !row[52]) continue;
+    // Collapse variations in actor, subcode and local geography into one
+    // report group per country, calendar day, root code and ADM1.
+    const eventKey = [eventDate, root, row[54].trim().toUpperCase()].join('|');
     const source = URL.parse(row[60]);
     if (
       !source ||
@@ -312,7 +306,7 @@ async function fetchGdeltBatch(
 }
 
 export const gdelt = {
-  version: 3,
+  version: 4,
   live: true,
   shouldCheck: (context) => due(context, BATCH),
   async fetchObservations({
@@ -323,24 +317,6 @@ export const gdelt = {
     currentTime = () => now,
     rederive,
   }) {
-    if (
-      rederive &&
-      data?.batches &&
-      !data.batches.every(
-        ({ events }) =>
-          Array.isArray(events) && events.every((event) => event.length >= 6),
-      )
-    ) {
-      return {
-        ...conditionResult([], data, now, {
-          batches: [],
-          covered: () => false,
-          detail:
-            'Old samples had no event identity keys. Waiting for a fresh sample.',
-        }),
-        cached: true,
-      };
-    }
     const manifest = await download(fetchImpl, GDELT_MANIFEST, 'text', 20_000);
     const sampledAt = currentTime();
     const entry = manifest.match(
@@ -360,7 +336,8 @@ export const gdelt = {
         'GDELT event manifest timestamp outside the sampling window',
       );
     }
-    const batches = (data?.batches ?? []).filter(({ date }) =>
+    // The old cached identities lack reliable ADM1 codes and cannot be regrouped.
+    const batches = (rederive ? [] : (data?.batches ?? [])).filter(({ date }) =>
       inGdeltWindow(gdeltTime(date), sampledAt),
     );
     const first = latest > +sampledAt ? latest - BATCH : latest;

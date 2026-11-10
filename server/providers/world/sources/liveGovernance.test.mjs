@@ -63,6 +63,7 @@ test('GDELT requires five unique events from three domains in 72 hours', () => {
       28: root,
       52: 'India',
       53: fips,
+      54: fips + id,
       60: 'https://' + domain + '/article/' + article,
     });
     return fields.join('\t');
@@ -176,15 +177,17 @@ test('GDELT does not count five articles about one coded event as five events', 
     Object.assign(f, {
       0: String(100 + i),
       1: '20261109',
-      5: 'GOV',
+      5: 'GOV' + i,
       6: 'GOVERNMENT',
       12: 'MIL',
       15: 'OPP',
       16: 'OPPOSITION',
-      26: '190',
+      26: '19' + i,
       28: '19',
       52: 'London',
       53: 'UK',
+      54: 'UKH9',
+      58: String(500 + i),
       56: '51.5',
       57: '-0.1',
       60: `https://news${i}.example/story`,
@@ -196,6 +199,38 @@ test('GDELT does not count five articles about one coded event as five events', 
   ]);
   assert.equal(batch.events.length, 5);
   assert.deepEqual(gdeltFlags([batch], now), []);
+});
+
+test('GDELT counts protests without a second actor across five ADM1 areas', () => {
+  const rows = Array.from({ length: 5 }, (_, i) => {
+    const fields = Array(61).fill('');
+    Object.assign(fields, {
+      0: String(300 + i),
+      1: '20261109',
+      5: 'PROTESTERS',
+      26: '140',
+      28: '14',
+      52: 'India',
+      53: 'IN',
+      54: 'IN' + i,
+      60: `https://source${i % 3}.example/protest-${i}`,
+    });
+    return fields.join('\t');
+  });
+  const batch = gdeltBatch(
+    rows.join('\n'),
+    '2026-11-09T00:00:00.000Z',
+    now,
+    countries,
+  );
+  assert.deepEqual(
+    gdeltFlags([batch], now).map(({ iso3, slot, eventCount }) => [
+      iso3,
+      slot,
+      eventCount,
+    ]),
+    [['IND', 'C6', 5]],
+  );
 });
 
 test('GDELT fight codes require a coded armed actor for the conflict slot', () => {
@@ -211,6 +246,7 @@ test('GDELT fight codes require a coded armed actor for the conflict slot', () =
       28: '19',
       52: 'London',
       53: i < 5 ? 'UK' : 'CA',
+      54: String(i),
       60: `https://source${i % 3}.example/story-${i}`,
     });
     return fields.join('\t');

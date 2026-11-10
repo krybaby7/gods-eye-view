@@ -64,7 +64,11 @@ function optional(enabled, interval, read) {
     async fetchObservations(context) {
       if (!enabled)
         throw new Error('Optional feed requires explicit configuration');
-      return conditionResult(await read(context), context.data, context.now);
+      const result = await read(context);
+      const { flags, covered } = Array.isArray(result)
+        ? { flags: result }
+        : result;
+      return conditionResult(flags, context.data, context.now, { covered });
     },
   };
 }
@@ -228,6 +232,8 @@ function candidateFlags(rows, now, countries) {
       !row.id ||
       ids.has(row.id) ||
       !date?.startsWith(month) ||
+      row.best == null ||
+      !String(row.best).trim() ||
       !Number.isSafeInteger(deaths) ||
       deaths < 0
     )
@@ -235,7 +241,7 @@ function candidateFlags(rows, now, countries) {
     ids.add(row.id);
     totals.set(iso3, (totals.get(iso3) ?? 0) + deaths);
   }
-  return [...totals].flatMap(([iso3, deaths]) =>
+  const flags = [...totals].flatMap(([iso3, deaths]) =>
     deaths >= DRAFT_CANDIDATE_THRESHOLD
       ? [
           conditionFlag('live-ucdp-token', {
@@ -255,6 +261,7 @@ function candidateFlags(rows, now, countries) {
         ]
       : [],
   );
+  return { flags, covered: ({ iso3 }) => totals.has(iso3) };
 }
 
 export function optionalLiveSources(config = {}) {

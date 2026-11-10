@@ -72,6 +72,7 @@ export function startLiveTimers({
   const next = new Map(
     Object.entries(feeds).map(([id, interval]) => [id, clock() + interval]),
   );
+  const retryAt = new Map();
   let handle;
   let stopped = false;
   function stop() {
@@ -86,14 +87,22 @@ export function startLiveTimers({
     if (stopped) return;
     const current = snapshot();
     if (!current?.turn || current.progress) return schedule(retryMs);
-    const [id, at] = [...next].sort((a, b) => a[1] - b[1])[0];
+    const [id, at] = [...next]
+      .map(([id, at]) => [id, Math.max(at, retryAt.get(id) ?? 0)])
+      .sort((a, b) => a[1] - b[1])[0];
     const delay = at - clock();
     if (delay > 0) return schedule(delay);
-    next.set(id, clock() + feeds[id]);
+    let accepted = false;
     try {
-      await refresh(id);
+      accepted = await refresh(id);
     } catch {
-      // Keep the feed's normal cadence after a transport failure.
+      // Retry unconfirmed requests without holding up other due feeds.
+    }
+    if (accepted) {
+      next.set(id, clock() + feeds[id]);
+      retryAt.delete(id);
+    } else {
+      retryAt.set(id, clock() + retryMs);
     }
     schedule(retryMs);
   }

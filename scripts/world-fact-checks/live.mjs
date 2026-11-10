@@ -2,6 +2,10 @@ import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import {
+  conditionFlag,
+  conditionResult,
+} from '../../server/providers/world/conditionEvents.js';
 import { createWorldService } from '../../server/providers/world/index.js';
 import { loadWorldRegistry } from '../../server/providers/world/registry.js';
 import { unhcr } from '../../server/providers/world/sources/liveDisplacement.js';
@@ -143,6 +147,74 @@ async function controlledUnhcr(clock, yearAvailable) {
   return { period: result.data.period, requested };
 }
 
+async function controlledCadenceAndFlaps() {
+  const sourceId = 'live-gdelt';
+  const interval = 15 * 60_000;
+  const start = Date.parse('2026-11-09T00:00:00Z');
+  let clock = start;
+  let active = false;
+  let calls = 0;
+  let live;
+  let state = { board: null, turns: [], observations: [], lastCheckedAt: {} };
+  const flag = conditionFlag(sourceId, {
+    iso3: 'IND',
+    slot: 'C6',
+    date: new Date(start).toISOString(),
+    label: 'Controlled protest reports',
+    source: gdeltSource,
+  });
+  const service = createWorldService({
+    now: () => new Date(clock),
+    loadRegistry: async () => ({
+      countries: [],
+      indicators: [],
+      sources: [{ id: sourceId }],
+    }),
+    store: {
+      read: async () => state,
+      write: async (next) => {
+        state = next;
+      },
+      writeLive: async (next) => {
+        live = next;
+      },
+    },
+    adapters: {
+      [sourceId]: {
+        live: true,
+        shouldCheck: gdelt.shouldCheck,
+        fetchObservations({ now, data }) {
+          calls++;
+          clock += 3000;
+          return conditionResult(active ? [flag] : [], data, now);
+        },
+      },
+    },
+  });
+  await service.refreshStatus();
+  await service.whenIdle();
+  const baselineCalls = calls;
+  for (let tick = 1; tick <= 8; tick++) {
+    clock = start + interval * tick;
+    active = tick === 6 || tick === 8;
+    await service.refresh(sourceId, { compact: true });
+    await service.whenIdle();
+  }
+  const { lastCheckedAt, lastGoodAt } = live.sources[sourceId];
+  const tickCalls = calls - baselineCalls;
+  await service.refreshStatus();
+  await service.whenIdle();
+  return {
+    tickCalls,
+    lastCheckedAt,
+    lastGoodAt,
+    changes: state.turns
+      .at(-1)
+      .changes.filter(({ kind }) => kind === 'condition-flag')
+      .map(({ action }) => action),
+  };
+}
+
 async function replayGdelt(directory) {
   const [manifest, archive, registry] = await Promise.all([
     readFile(join(directory, 'phase6-gdelt-manifest.txt'), 'utf8'),
@@ -172,14 +244,14 @@ async function replayGdelt(directory) {
 }
 
 export default async function live({ board }) {
-  const [proof, march, november] = await Promise.all([
+  const [proof, march, november, cadence] = await Promise.all([
     controlledLive(),
     controlledUnhcr('2026-03-15T08:00:00Z', 2024),
     controlledUnhcr('2026-11-09T08:00:00Z', 2025),
+    controlledCadenceAndFlaps(),
   ]);
   const recorded = process.env.GEV_WORLD_GDELT_EVIDENCE_DIR;
   const current = board?.features?.['live-gdelt'];
-  const replay = recorded ? await replayGdelt(recorded) : null;
   const evaluate = (observed, clock, basis) => {
     const allFlags = [
       ...(observed?.flags ?? []),
@@ -267,14 +339,39 @@ export default async function live({ board }) {
       pass: Boolean(fresh && valid && quietValid),
     };
   };
-  const apiProof = evaluate(current, new Date(), 'World Board API');
-  const replayProof =
-    replay &&
-    evaluate(
-      { ...replay, lastGoodAt: replay.clock },
-      replay.clock,
-      'Offline recorded publisher replay',
-    );
+  const apiProof = current?.sampledFiles
+    ? evaluate(current, new Date(), 'World Board API')
+    : {
+        pass: null,
+        reason: 'The World Board API has no GDELT sample.',
+        found: null,
+      };
+  let replayProof;
+  if (recorded) {
+    try {
+      const replay = await replayGdelt(recorded);
+      replayProof = evaluate(
+        { ...replay, lastGoodAt: replay.clock },
+        replay.clock,
+        'Offline recorded publisher replay',
+      );
+    } catch (error) {
+      replayProof =
+        error.code === 'ENOENT'
+          ? {
+              pass: null,
+              reason: `Local GDELT evidence file not found: ${error.path}`,
+              found: null,
+            }
+          : { pass: false, found: error.message };
+    }
+  } else {
+    replayProof = {
+      pass: null,
+      reason: 'GEV_WORLD_GDELT_EVIDENCE_DIR is unset.',
+      found: null,
+    };
+  }
   const boardUnhcr = board?.features?.['live-unhcr'];
   const date = new Date().toISOString().slice(0, 10);
   return [
@@ -285,17 +382,39 @@ export default async function live({ board }) {
       ...apiProof,
       source: gdeltSource,
     },
-    ...(replayProof
-      ? [
-          {
-            id: 'live-gdelt-recorded-replay',
-            expected:
-              'Recorded sample and qualifying flags within 72 hours of its archive timestamp.',
-            ...replayProof,
-            source: gdeltSource,
-          },
-        ]
-      : []),
+    {
+      id: 'live-gdelt-recorded-replay',
+      expected:
+        'Recorded sample and qualifying flags within 72 hours of its archive timestamp.',
+      ...replayProof,
+      source: gdeltSource,
+    },
+    {
+      id: 'live-tick-cadence',
+      expected:
+        'Eight 15-minute ticks fetch eight times despite three seconds of simulated download time each.',
+      found: {
+        basis: 'Method fixture with fixed clock and simulated download',
+        fetches: cadence.tickCalls,
+        lastCheckedAt: cadence.lastCheckedAt,
+        lastGoodAt: cadence.lastGoodAt,
+      },
+      source: 'server/providers/world/index.js',
+      pass:
+        cadence.tickCalls === 8 &&
+        Date.parse(cadence.lastGoodAt) - Date.parse(cadence.lastCheckedAt) ===
+          3000,
+    },
+    {
+      id: 'live-net-flag-changes',
+      expected: 'Set, clear and set again between turns yields one net set.',
+      found: {
+        basis: 'Method fixture with controlled flag transitions',
+        changes: cadence.changes,
+      },
+      source: 'server/providers/world/index.js',
+      pass: cadence.changes.length === 1 && cadence.changes[0] === 'set',
+    },
     {
       id: 'live-ticks-no-turn',
       expected:
