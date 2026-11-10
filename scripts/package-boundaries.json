@@ -348,6 +348,7 @@
       "server/providers/world/turn.js",
       "server/providers/world/sources/common.js",
       "server/providers/world/sources/download.js",
+      "server/providers/world/sources/legacyDownloads.js",
       "server/providers/world/sources/transport.js",
       "server/providers/world/sources/csv.js",
       "server/providers/world/sources/imf.js",
