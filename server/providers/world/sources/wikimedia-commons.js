@@ -1,6 +1,11 @@
 import { readResponseJsonCapped } from '../../../../src/sources/httpBody.js';
 import { feedFieldText } from '../../common/rss.js';
-import { actorSourceDue, fetchActorSource, safeHttps } from './actor-fetch.js';
+import {
+  actorSourceDue,
+  fetchActorSource,
+  safeHttps,
+  wikidataPeople,
+} from './actor-fetch.js';
 
 const ENDPOINT = 'https://commons.wikimedia.org/w/api.php';
 const BATCH_SIZE = 35;
@@ -56,8 +61,8 @@ function portraitAt(info) {
 }
 
 export async function fetchObservations({ fetchImpl, features, now, data }) {
-  const actors = features.wikidata?.actors;
-  if (!actors) return { count: 0, unit: 'portrait' };
+  const actors = wikidataPeople(features);
+  if (!features.wikidata) return { count: 0, unit: 'portrait' };
   const files = [
     ...new Set(
       actors

@@ -130,3 +130,34 @@ test('a shared officeholder preserves each country and role in their card', asyn
     ],
   );
 });
+test('role evidence displays date, source, stale cue and the competing holder', async () => {
+  const { roleEvidence } = await import('../../ui/worldPeopleElements.js');
+  const document = {
+    createElement() {
+      return {
+        values: [],
+        append(...values) {
+          this.values.push(
+            ...values.map((value) => value.textContent ?? value),
+          );
+        },
+      };
+    },
+  };
+  const element = roleEvidence(document, {
+    asOf: '2025-07-20',
+    source: 'cia-world-leaders',
+    stale: true,
+    disagreement: {
+      name: 'Other Holder',
+      source: 'wikidata',
+      asOf: '2024-04-03',
+    },
+  });
+  assert.match(element.values.join(''), /as of 2025-07-20 · CIA World Leaders/);
+  assert.match(element.values.join(''), /may be out of date/);
+  assert.match(
+    element.values.join(''),
+    /sources disagree: Other Holder per Wikidata, 2024-04-03/,
+  );
+});

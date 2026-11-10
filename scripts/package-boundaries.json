@@ -329,6 +329,9 @@
     "modules": [
       "server/providers/world/index.js",
       "server/providers/world/actors.js",
+      "server/providers/world/officeholders.js",
+      "server/providers/world/personIdentity.js",
+      "server/providers/world/sources/cia-world-leaders.js",
       "server/providers/world/sources/actor-feeds.js",
       "server/providers/world/sources/actor-fetch.js",
       "server/providers/world/sources/actor-organizations.js",
@@ -337,6 +340,8 @@
       "server/providers/world/sources/wdqs.js",
       "server/providers/world/sources/wikidata.js",
       "public/world/curated/actor-office-seats.json",
+      "public/world/curated/cia-office-overrides.json",
+      "public/world/curated/people-evidence-corrections.json",
       "server/providers/world/sources/wikimedia-commons.js",
       "server/providers/world/sources/youtube-rss.js",
       "server/providers/common/rss.js",

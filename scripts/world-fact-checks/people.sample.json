@@ -11,7 +11,10 @@
         "name": "Pablo Quirno",
         "source": "https://www.cancilleria.gob.ar/"
       },
-      "defence-minister": "Carlos Alberto Presti"
+      "defence-minister": {
+        "name": "Carlos Alberto Presti",
+        "aliases": ["Carlos Presti"]
+      }
     }
   },
   {
@@ -44,7 +47,10 @@
         "source": "https://www.gov.br/planalto/pt-br/conheca-a-presidencia/biografia-do-presidente"
       },
       "foreign-minister": "Mauro Vieira",
-      "defence-minister": "José Múcio Monteiro Filho"
+      "defence-minister": {
+        "name": "José Múcio Monteiro Filho",
+        "aliases": ["José Múcio"]
+      }
     }
   },
   {
@@ -59,7 +65,10 @@
       },
       "head-of-government": "Mark Carney",
       "foreign-minister": "Anita Anand",
-      "defence-minister": "David J. McGuinty"
+      "defence-minister": {
+        "name": "David J. McGuinty",
+        "aliases": ["David McGuinty"]
+      }
     }
   },
   {
@@ -155,7 +164,10 @@
       },
       "head-of-government": "Narendra Modi",
       "foreign-minister": "Subrahmanyam Jaishankar",
-      "defence-minister": "Raj Nath Singh"
+      "defence-minister": {
+        "name": "Raj Nath Singh",
+        "aliases": ["Rajnath Singh"]
+      }
     }
   },
   {
@@ -186,14 +198,21 @@
         "name": "Naruhito",
         "source": "https://www.kunaicho.go.jp/en/learn/about/history/history01.html"
       },
-      "head-of-government": "Sanae Takaichi",
+      "head-of-government": {
+        "name": "Sanae Takaichi",
+        "aliases": ["Takaichi Sanae"]
+      },
       "foreign-minister": {
         "name": "Toshimitsu Motegi",
-        "source": "https://www.mofa.go.jp/press/release/pressite_000001_02811.html"
+        "source": "https://www.mofa.go.jp/erp/erp_1/gb/pageite_000001_00001.html",
+        "aliases": ["Motegi Toshimitsu"],
+        "checkedOn": "2026-11-10"
       },
       "defence-minister": {
         "name": "Shinjirō Koizumi",
-        "source": "https://www.mod.go.jp/en/article/2026/10/212ecc2780a95638203ca40c460b07f5d9eb0b9e.html"
+        "source": "https://www.mod.go.jp/en/article/2026/10/2f87c33ad8344908ba5bc80f7f184caa6607e590.html",
+        "aliases": ["Koizumi Shinjiro"],
+        "checkedOn": "2026-11-10"
       }
     }
   },
@@ -227,7 +246,9 @@
       },
       "defence-minister": {
         "name": "Ahn Gyu-Back",
-        "source": "https://www.korea.net/NewsFocus/policies/view?articleId=292248"
+        "source": "https://mnd.go.kr/mndEN/353/subview.do",
+        "aliases": ["Ahn Gyu Baek"],
+        "checkedOn": "2026-11-10"
       }
     }
   },
@@ -255,44 +276,67 @@
     "checkedOn": "2026-11-09",
     "source": "https://pco.gov.ph/presidential-speech/speech-by-president-ferdinand-r-marcos-jr-at-the-68th-philippine-army-pa-change-of-command-ceremony/",
     "roles": {
-      "head-of-state": "Ferdinand Marcos Jr.",
-      "head-of-government": "Ferdinand Marcos Jr.",
+      "head-of-state": {
+        "name": "Ferdinand Marcos Jr.",
+        "aliases": ["Bongbong Marcos", "Ferdinand Romualdez Marcos Jr."]
+      },
+      "head-of-government": {
+        "name": "Ferdinand Marcos Jr.",
+        "aliases": ["Bongbong Marcos", "Ferdinand Romualdez Marcos Jr."]
+      },
       "foreign-minister": {
         "name": "Ma. Theresa Lazaro",
         "source": "https://pco.gov.ph/news_releases/asean-foreign-ministers-express-concern-over-evolving-situation-in-the-middle-east/"
       },
-      "defence-minister": "Gilberto Teodoro Jr."
+      "defence-minister": {
+        "name": "Gilberto Teodoro Jr.",
+        "aliases": ["Gilbert Teodoro", "Gilberto C. Teodoro Jr."]
+      }
     }
   },
   {
     "country": "RUS",
     "asOf": "2026-11-09",
     "checkedOn": "2026-11-09",
-    "source": "https://www.cia.gov/resources/world-leaders/foreign-governments/russia/",
-    "sourceNote": "The government cabinet directory did not return usable data. CIA World Leaders fallback.",
+    "source": "https://www.dfat.gov.au/geo/heads-of-government/russia",
     "roles": {
-      "head-of-state": "Vladimir Putin",
+      "head-of-state": {
+        "name": "Vladimir Putin",
+        "aliases": ["Vladimir Vladimirovich Putin"]
+      },
       "head-of-government": "Mikhail Mishustin",
       "foreign-minister": "Sergey Lavrov",
-      "defence-minister": "Andrey Belousov"
+      "defence-minister": {
+        "name": "Andrey Belousov",
+        "aliases": ["Andrei Belousov"],
+        "source": "https://eng.mod.gov.cn/2025xb/N/T/16497845.html",
+        "checkedOn": "2026-11-10"
+      }
     }
   },
   {
     "country": "SAU",
     "asOf": "2026-11-09",
     "checkedOn": "2026-11-09",
-    "source": "https://www.cia.gov/resources/world-leaders/foreign-governments/saudi-arabia/",
-    "sourceNote": "The government cabinet directory returned HTTP 403. CIA World Leaders fallback for the king and prime minister.",
+    "source": "https://ww.spa.gov.sa/en/N2482667",
     "roles": {
       "head-of-state": "Salman bin Abdulaziz Al Saud",
-      "head-of-government": "Mohammed bin Salman",
+      "head-of-government": {
+        "name": "Mohammed bin Salman",
+        "aliases": [
+          "Mohammed bin Salman Al Saud",
+          "Mohammed bin Salman bin Abdulaziz Al Saud"
+        ]
+      },
       "foreign-minister": {
         "name": "Faisal bin Farhan Al Saud",
-        "source": "https://www.spa.gov.sa/en/N2508132"
+        "source": "https://www.spa.gov.sa/en/N2508132",
+        "aliases": ["Faisal bin Farhan"]
       },
       "defence-minister": {
         "name": "Khalid bin Salman Al Saud",
-        "source": "https://saudipedia.com/en/khalid-bin-salman-bin-abdulaziz"
+        "source": "https://saudipedia.com/en/khalid-bin-salman-bin-abdulaziz",
+        "aliases": ["Khalid bin Salman bin Abdulaziz Al Saud"]
       }
     }
   },

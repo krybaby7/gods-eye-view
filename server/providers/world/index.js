@@ -456,11 +456,12 @@ export function createWorldService({
     if (!compact) return features;
     if (summaryFor !== features) {
       summary = { ...features };
-      for (const { summary: project } of featureViews.values()) {
+      for (const { summary: project, combine } of featureViews.values()) {
         for (const [id, summarize] of Object.entries(project ?? {})) {
           if (Object.hasOwn(features, id))
             summary[id] = summarize(features[id]);
         }
+        combine?.({ summary, features, registry, now: now() });
       }
       summaryFor = features;
     }
@@ -514,8 +515,13 @@ export function createWorldService({
       country,
       lens,
       data:
-        project({ country, board, features: boardFeatures(false), registry }) ??
-        null,
+        project({
+          country,
+          board,
+          features: boardFeatures(false),
+          registry,
+          now: now(),
+        }) ?? null,
     };
   }
 

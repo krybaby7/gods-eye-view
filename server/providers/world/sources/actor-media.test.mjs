@@ -279,3 +279,33 @@ test('YouTube retries a timed-out request once with a fresh short deadline and p
     context.data.feeds[channel].posts,
   );
 });
+test('an undated Wikidata identity can supply a portrait and public account if CIA selects that person', async () => {
+  const { fetchObservations } = await import('./wikimedia-commons.js');
+  const { publicAccounts } = await import('./actor-feeds.js');
+  const profile = 'https://bsky.app/profile/person.example';
+  const features = {
+    wikidata: {
+      undatedActors: [
+        { imageFile: 'Free.jpg', accounts: { bluesky: profile } },
+      ],
+    },
+  };
+  const { data } = await fetchObservations({
+    now,
+    features,
+    fetchImpl: async () =>
+      json({
+        query: { pages: [portrait('Free.jpg', 'CC BY 4.0', thumb, 'Example')] },
+      }),
+  });
+  assert.equal(data?.portraits['Free.jpg']?.thumbnail, thumb);
+  assert.deepEqual(
+    publicAccounts(
+      features,
+      'bluesky',
+      'https://bsky.app',
+      /^\/profile\/(.+)$/,
+    ),
+    [{ account: profile, key: 'person.example' }],
+  );
+});

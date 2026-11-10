@@ -1,0 +1,166 @@
+{
+  "notes": "CIA office-title and country-label crosswalk. Title keys are case-insensitive. An empty role list excludes an office that cannot stand for the complete collective.",
+  "countries": {
+    "BHS": {
+      "country": "Bahamas, The",
+      "source": "https://www.cia.gov/resources/world-leaders/foreign-governments/bahamas-the/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "COD": {
+      "country": "Congo, Democratic Republic of the",
+      "source": "https://www.cia.gov/resources/world-leaders/foreign-governments/congo-democratic-republic-of-the/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "COG": {
+      "country": "Congo, Republic of the",
+      "source": "https://www.cia.gov/resources/world-leaders/foreign-governments/congo-republic-of-the/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "CIV": {
+      "country": "Cote d'Ivoire",
+      "source": "https://www.cia.gov/resources/world-leaders/foreign-governments/cote-divoire/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "FSM": {
+      "country": "Micronesia, Federated States of",
+      "source": "https://www.cia.gov/resources/world-leaders/foreign-governments/micronesia-federated-states-of/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "GMB": {
+      "country": "Gambia, The",
+      "source": "https://www.cia.gov/resources/world-leaders/foreign-governments/gambia-the/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "KOR": {
+      "country": "Korea, South",
+      "source": "https://www.cia.gov/resources/world-leaders/foreign-governments/korea-south/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "MMR": {
+      "country": "Burma",
+      "source": "https://www.cia.gov/resources/world-leaders/foreign-governments/burma/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "PRK": {
+      "country": "Korea, North",
+      "source": "https://www.cia.gov/resources/world-leaders/foreign-governments/korea-north/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "SRB": {
+      "country": "Serbia",
+      "source": "https://www.cia.gov/resources/world-leaders/foreign-governments/serbia/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "TLS": {
+      "country": "Timor-Leste",
+      "source": "https://www.cia.gov/resources/world-leaders/foreign-governments/timor-leste/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "TZA": {
+      "country": "Tanzania",
+      "source": "https://www.cia.gov/resources/world-leaders/foreign-governments/tanzania/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "VAT": {
+      "country": "Holy See (Vatican City)",
+      "source": "https://www.cia.gov/resources/world-leaders/foreign-governments/holy-see-vatican-city/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    }
+  },
+  "offices": {
+    "ARG": {
+      "titles": {
+        "pres.": ["head-of-state", "head-of-government"]
+      },
+      "source": "https://servicios.infoleg.gob.ar/infolegInternet/anexos/0-4999/804/norma.htm",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "BRA": {
+      "titles": {
+        "pres.": ["head-of-state", "head-of-government"]
+      },
+      "source": "https://www.planalto.gov.br/ccivil_03/constituicao/constituicao.htm",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "CHE": {
+      "titles": {
+        "pres.": []
+      },
+      "source": "https://www.admin.ch/en/members-federal-council",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "GHA": {
+      "titles": {
+        "pres.": ["head-of-state", "head-of-government"]
+      },
+      "source": "https://judicial.gov.gh/index.php/the-executive",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "IRN": {
+      "titles": {
+        "pres.": ["head-of-government"]
+      },
+      "source": "https://www.constituteproject.org/constitution/Iran_1989",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "MEX": {
+      "titles": {
+        "pres.": ["head-of-state", "head-of-government"]
+      },
+      "source": "https://www.diputados.gob.mx/LeyesBiblio/pdf/CPEUM.pdf",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "PHL": {
+      "titles": {
+        "pres.": ["head-of-state", "head-of-government"]
+      },
+      "source": "https://www.officialgazette.gov.ph/constitutions/1987-constitution/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "KOR": {
+      "titles": {
+        "pres.": ["head-of-state", "head-of-government"],
+        "prime min.": []
+      },
+      "source": "https://www.korea.net/AboutKorea/OverviewofKorea",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "TUR": {
+      "titles": {
+        "pres.": ["head-of-state", "head-of-government"]
+      },
+      "source": "https://www.anayasa.gov.tr/media/7258/anayasa_eng.pdf",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    },
+    "USA": {
+      "titles": {
+        "sec. of state": ["foreign-minister"]
+      },
+      "source": "https://www.whitehouse.gov/administration/cabinet/",
+      "checkedOn": "2026-11-10",
+      "reviewed": false
+    }
+  }
+}

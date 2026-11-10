@@ -3,6 +3,8 @@ import {
   registerWorldSources,
 } from './refreshRegistry.js';
 import * as wikidata from './sources/wikidata.js';
+import * as cia from './sources/cia-world-leaders.js';
+import { mergeOfficeholders, officialOfficeEvidence } from './officeholders.js';
 import * as commons from './sources/wikimedia-commons.js';
 import * as bluesky from './sources/bluesky.js';
 import * as youtube from './sources/youtube-rss.js';
@@ -12,6 +14,7 @@ import * as organizations from './sources/actor-organizations.js';
 registerWorldSources(
   {
     wikidata,
+    'cia-world-leaders': cia,
     'wikimedia-commons': commons,
     bluesky,
     'youtube-rss': youtube,
@@ -38,6 +41,14 @@ const summaryActor = ({
   collective,
   reviewed,
   until,
+  since,
+  asOf,
+  source,
+  sourceUrl,
+  stale,
+  disagreement,
+  otherEvidence,
+  draft,
 }) => ({
   id,
   kind,
@@ -50,16 +61,37 @@ const summaryActor = ({
   collective,
   reviewed,
   until,
+  since,
+  asOf,
+  source,
+  sourceUrl,
+  stale,
+  disagreement,
+  otherEvidence,
+  draft,
 });
+
+function peopleDirectory(features, registry, now) {
+  const wikidata = features.wikidata;
+  if (!registry) return wikidata;
+  const pages = Object.values(features['cia-world-leaders']?.pages ?? {});
+  const official = officialOfficeEvidence(registry, now);
+  if (!wikidata && !pages.length && !official.length) return undefined;
+  const active = (actor) => !actor.until || Date.parse(actor.until) > +now;
+  const actors = mergeOfficeholders(
+    (wikidata?.actors ?? []).filter(active),
+    pages.flatMap((page) => cia.resolveCiaPage(page, registry)),
+    now,
+    wikidata?.undatedActors,
+    official,
+  );
+  return { actors, governments: wikidata?.governments ?? {} };
+}
 
 const socialFeeds = { bluesky: 'bluesky', 'youtube-rss': 'youtube' };
 
 registerWorldFeatureView('people', {
   summary: {
-    wikidata: ({ actors, governments }) => ({
-      actors: (actors ?? []).map(summaryActor),
-      governments,
-    }),
     'actor-organizations': ({ organizations }) => ({
       organizations: Object.fromEntries(
         Object.entries(organizations ?? {}).map(([id, actor]) => [
@@ -72,8 +104,17 @@ registerWorldFeatureView('people', {
     'youtube-rss': () => undefined,
     'government-rss': () => undefined,
   },
-  detail({ country, features }) {
-    const people = features.wikidata?.actors ?? [];
+  combine({ summary, features, registry, now }) {
+    const directory = peopleDirectory(features, registry, now);
+    if (directory)
+      summary.wikidata = {
+        actors: directory.actors.map(summaryActor),
+        governments: directory.governments,
+      };
+    delete summary['cia-world-leaders'];
+  },
+  detail({ country, features, registry, now }) {
+    const people = peopleDirectory(features, registry, now)?.actors ?? [];
     const ids = new Set(
       people.filter((actor) => actor.country === country).map(({ id }) => id),
     );
