@@ -1,0 +1,2619 @@
+{
+  "asOf": "2024",
+  "reviewed": false,
+  "notes": [
+    "Draft model inputs. Coordinates are approximate sea-access anchors in longitude/latitude order and require network resolution testing.",
+    "Measured national export shares and routed destination tonnes are balanced by iterative proportional fitting. The draft seed is an exponential decay with an e-folding distance of 1,000 km along the maritime network. The seaborne basis excludes land and wholly unresolved destination volumes. An all-exports basis reserves known land and unresolved destinations against any unallocated share. Any remaining unsourced origin share stays unresolved. A null share identifies representative terminal evidence without a compatible measured allocation. A source period can differ from the model year and is identified on the row."
+  ],
+  "rows": [
+    {
+      "iso": "SAU",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Ras Tanura",
+      "coordinates": [
+        50.18,
+        26.65
+      ],
+      "sourceUrl": "https://ent.news/2025/1/787.pdf#page=4",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.859,
+      "period": "2024",
+      "shareBasis": "seaborne",
+      "note": "MEES analysis of Kpler tanker data. Routing anchor for all terminals on this coast. Excludes the Neutral Zone."
+    },
+    {
+      "iso": "SAU",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Yanbu",
+      "coordinates": [
+        38.03,
+        23.93
+      ],
+      "sourceUrl": "https://ent.news/2025/1/787.pdf#page=4",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.141,
+      "period": "2024",
+      "shareBasis": "seaborne",
+      "note": "MEES analysis of Kpler tanker data. Routing anchor for all terminals on this coast. Excludes the Neutral Zone."
+    },
+    {
+      "iso": "ARE",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Zirku Island",
+      "coordinates": [
+        53.07,
+        24.88
+      ],
+      "sourceUrl": "https://www.hyqfocus.com/resource/report/1777447465261/report.pdf#page=1",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.6424766977363516,
+      "period": "2025",
+      "shareBasis": "seaborne proxy",
+      "note": "Banchero Costa analysis of LSEG tracking, grouping all Gulf or all Gulf-of-Oman terminals. Calendar 2025 observed shares serve as a draft proxy for 2024. JOGMEC corroborates the coast split. MEES/Kpler reports Fujairah loaded 1.06m b/d of Murban alone in 2024.",
+      "otherSources": [
+        "https://journal.jogmec.go.jp/oilgas/info-reports/info-reports_02137.html",
+        "https://ent.news/2025/1/787.pdf#page=2"
+      ]
+    },
+    {
+      "iso": "ARE",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Fujairah",
+      "coordinates": [
+        56.38,
+        25.17
+      ],
+      "sourceUrl": "https://www.hyqfocus.com/resource/report/1777447465261/report.pdf#page=1",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.35752330226364853,
+      "period": "2025",
+      "shareBasis": "seaborne proxy",
+      "note": "Banchero Costa analysis of LSEG tracking, grouping all Gulf or all Gulf-of-Oman terminals. Calendar 2025 observed shares serve as a draft proxy for 2024. JOGMEC corroborates the coast split. MEES/Kpler reports Fujairah loaded 1.06m b/d of Murban alone in 2024.",
+      "otherSources": [
+        "https://journal.jogmec.go.jp/oilgas/info-reports/info-reports_02137.html",
+        "https://ent.news/2025/1/787.pdf#page=2"
+      ]
+    },
+    {
+      "iso": "IRQ",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Al Basrah Oil Terminal",
+      "coordinates": [
+        48.81,
+        29.68
+      ],
+      "sourceUrl": "https://www.eia.gov/international/analysis/country/IRQ",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 1,
+      "period": "2024",
+      "shareBasis": "seaborne",
+      "note": "EIA places all 2024 Iraqi seaborne crude in the southern Gulf terminals, represented by Al Basrah. Ceyhan was inactive throughout 2024 following the March 2023 pipeline closure."
+    },
+    {
+      "iso": "IRQ",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Ceyhan",
+      "coordinates": [
+        35.93,
+        36.86
+      ],
+      "sourceUrl": "https://www.eia.gov/international/analysis/country/IRQ",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0,
+      "period": "2024",
+      "shareBasis": "seaborne",
+      "note": "EIA places all 2024 Iraqi seaborne crude in the southern Gulf terminals, represented by Al Basrah. Ceyhan was inactive throughout 2024 following the March 2023 pipeline closure."
+    },
+    {
+      "iso": "KAZ",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "CPC Marine Terminal",
+      "coordinates": [
+        37.65,
+        44.66
+      ],
+      "sourceUrl": "https://ar2024.kmg.kz/en/strategic-report/strategy/market-overview",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.81,
+      "period": "2024",
+      "shareBasis": "all exports",
+      "note": "55.7 of 68.6 million tonnes reported via CPC. The terminal lies in Russia and includes separate Russian-origin shipments. The other 19% includes distinct export corridors and has no single modelled port here.",
+      "otherSources": [
+        "https://www.cpc.ru/en/press/releases/2025/pages/20250114.aspx"
+      ]
+    },
+    {
+      "iso": "AZE",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Ceyhan",
+      "coordinates": [
+        35.93,
+        36.86
+      ],
+      "sourceUrl": "https://www.bp.com/content/dam/bp/country-sites/en_ge/georgia/home/pressreleases/3Q%202024%20results%20eng.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "note": "Main export anchor via BTC pipeline. Operator total includes other Caspian suppliers.",
+      "share": null
+    },
+    {
+      "iso": "RUS",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Primorsk",
+      "coordinates": [
+        28.72,
+        60.35
+      ],
+      "sourceUrl": "https://view.argusmedia.com/rs/584-BUW-606/images/CRU-Sample-Report-Argus-Eurasia-Energy-%282025-02-06%29.pdf#page=13",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.2477168237915181,
+      "period": "2024",
+      "shareBasis": "observed seaborne proxy",
+      "note": "Russian-origin crude and condensate loadings, excluding Kazakh transit and land routes. Kozmino represents all measured Pacific ports, including the separately published Sakhalin subtotal. Murmansk represents Arctic shipments including Sabetta condensate and Dudinka. Excludes Caspian-only floating storage movements and unallocated residual."
+    },
+    {
+      "iso": "RUS",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Ust-Luga",
+      "coordinates": [
+        28.42,
+        59.67
+      ],
+      "sourceUrl": "https://view.argusmedia.com/rs/584-BUW-606/images/CRU-Sample-Report-Argus-Eurasia-Energy-%282025-02-06%29.pdf#page=13",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.17605541981530506,
+      "period": "2024",
+      "shareBasis": "observed seaborne proxy",
+      "note": "Russian-origin crude and condensate loadings, excluding Kazakh transit and land routes. Kozmino represents all measured Pacific ports, including the separately published Sakhalin subtotal. Murmansk represents Arctic shipments including Sabetta condensate and Dudinka. Excludes Caspian-only floating storage movements and unallocated residual."
+    },
+    {
+      "iso": "RUS",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Novorossiysk",
+      "coordinates": [
+        37.84,
+        44.74
+      ],
+      "sourceUrl": "https://view.argusmedia.com/rs/584-BUW-606/images/CRU-Sample-Report-Argus-Eurasia-Energy-%282025-02-06%29.pdf#page=13",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.11997800441045584,
+      "period": "2024",
+      "shareBasis": "observed seaborne proxy",
+      "note": "Russian-origin crude and condensate loadings, excluding Kazakh transit and land routes. Kozmino represents all measured Pacific ports, including the separately published Sakhalin subtotal. Murmansk represents Arctic shipments including Sabetta condensate and Dudinka. Excludes Caspian-only floating storage movements and unallocated residual."
+    },
+    {
+      "iso": "RUS",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "CPC Marine Terminal",
+      "coordinates": [
+        37.65,
+        44.66
+      ],
+      "sourceUrl": "https://view.argusmedia.com/rs/584-BUW-606/images/CRU-Sample-Report-Argus-Eurasia-Energy-%282025-02-06%29.pdf#page=13",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.04140046145386312,
+      "period": "2024",
+      "shareBasis": "observed seaborne proxy",
+      "note": "Russian-origin crude and condensate loadings, excluding Kazakh transit and land routes. Kozmino represents all measured Pacific ports, including the separately published Sakhalin subtotal. Murmansk represents Arctic shipments including Sabetta condensate and Dudinka. Excludes Caspian-only floating storage movements and unallocated residual."
+    },
+    {
+      "iso": "RUS",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Kozmino",
+      "coordinates": [
+        132.9,
+        42.72
+      ],
+      "sourceUrl": "https://view.argusmedia.com/rs/584-BUW-606/images/CRU-Sample-Report-Argus-Eurasia-Energy-%282025-02-06%29.pdf#page=13",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.3225131661744114,
+      "period": "2024",
+      "shareBasis": "observed seaborne proxy",
+      "note": "Russian-origin crude and condensate loadings, excluding Kazakh transit and land routes. Kozmino represents all measured Pacific ports, including the separately published Sakhalin subtotal. Murmansk represents Arctic shipments including Sabetta condensate and Dudinka. Excludes Caspian-only floating storage movements and unallocated residual."
+    },
+    {
+      "iso": "RUS",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Murmansk",
+      "coordinates": [
+        33.04,
+        69.0
+      ],
+      "sourceUrl": "https://view.argusmedia.com/rs/584-BUW-606/images/CRU-Sample-Report-Argus-Eurasia-Energy-%282025-02-06%29.pdf#page=13",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.09233612435444645,
+      "period": "2024",
+      "shareBasis": "observed seaborne proxy",
+      "note": "Russian-origin crude and condensate loadings, excluding Kazakh transit and land routes. Kozmino represents all measured Pacific ports, including the separately published Sakhalin subtotal. Murmansk represents Arctic shipments including Sabetta condensate and Dudinka. Excludes Caspian-only floating storage movements and unallocated residual."
+    },
+    {
+      "iso": "RUS",
+      "direction": "export",
+      "product": "lng",
+      "port": "Sabetta",
+      "coordinates": [
+        72.08,
+        71.28
+      ],
+      "sourceUrl": "https://www.eia.gov/international/content/analysis/countries_long/russia/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.6322784810126583,
+      "period": "2024",
+      "shareBasis": "seaborne",
+      "note": "EIA table 13 exports in Bcf. Sabetta includes 10 Bcf from nearby Arctic LNG 2. Portovaya includes Kaliningrad FSRU as grouped by EIA. Use a westbound sea corridor for Arctic model routes."
+    },
+    {
+      "iso": "RUS",
+      "direction": "export",
+      "product": "lng",
+      "port": "Prigorodnoye",
+      "coordinates": [
+        142.91,
+        46.63
+      ],
+      "sourceUrl": "https://www.eia.gov/international/content/analysis/countries_long/russia/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.2993670886075949,
+      "period": "2024",
+      "shareBasis": "seaborne",
+      "note": "EIA table 13 exports in Bcf. Sabetta includes 10 Bcf from nearby Arctic LNG 2. Portovaya includes Kaliningrad FSRU as grouped by EIA. Use a westbound sea corridor for Arctic model routes."
+    },
+    {
+      "iso": "RUS",
+      "direction": "export",
+      "product": "lng",
+      "port": "Vysotsk",
+      "coordinates": [
+        28.58,
+        60.63
+      ],
+      "sourceUrl": "https://www.eia.gov/international/content/analysis/countries_long/russia/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.024050632911392405,
+      "period": "2024",
+      "shareBasis": "seaborne",
+      "note": "EIA table 13 exports in Bcf. Sabetta includes 10 Bcf from nearby Arctic LNG 2. Portovaya includes Kaliningrad FSRU as grouped by EIA. Use a westbound sea corridor for Arctic model routes."
+    },
+    {
+      "iso": "RUS",
+      "direction": "export",
+      "product": "lng",
+      "port": "Portovaya",
+      "coordinates": [
+        28.11,
+        60.54
+      ],
+      "sourceUrl": "https://www.eia.gov/international/content/analysis/countries_long/russia/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.04430379746835443,
+      "period": "2024",
+      "shareBasis": "seaborne",
+      "note": "EIA table 13 exports in Bcf. Sabetta includes 10 Bcf from nearby Arctic LNG 2. Portovaya includes Kaliningrad FSRU as grouped by EIA. Use a westbound sea corridor for Arctic model routes."
+    },
+    {
+      "iso": "CAN",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Westridge Marine Terminal",
+      "coordinates": [
+        -122.95,
+        49.29
+      ],
+      "sourceUrl": "https://cer-rec.gc.ca/en/data-analysis/energy-markets/market-snapshots/2025/market-snapshot-oil-pipeline-throughputs-for-2024-and-the-first-half-of-2025-remain-high.html",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "note": "Pacific representative terminal. The Trans Mountain expansion entered service in May 2024. Canadian crude moving by pipe to the US is a distinct mode.",
+      "share": null
+    },
+    {
+      "iso": "IRN",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Kharg Island",
+      "coordinates": [
+        50.33,
+        29.24
+      ],
+      "sourceUrl": "https://www.eia.gov/international/analysis/country/IRN/background",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "note": "EIA identifies Kharg as the main loading point. Jask recorded small late-2024 shipments and no compatible annual share was verified.",
+      "share": null
+    },
+    {
+      "iso": "KWT",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Mina Al Ahmadi",
+      "coordinates": [
+        48.16,
+        29.07
+      ],
+      "sourceUrl": "https://www.kpc.com.kw/uploads/SustainabiltyReport/KPC%20Sustainability%20Report%202022-2023.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "note": "KPC lists onshore and offshore refinery export facilities. Representative Gulf anchor.",
+      "share": null
+    },
+    {
+      "iso": "KWT",
+      "direction": "import",
+      "product": "lng",
+      "port": "Al Zour",
+      "coordinates": [
+        48.4,
+        28.74
+      ],
+      "sourceUrl": "https://www.eia.gov/international/analysis/country/KWT",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null
+    },
+    {
+      "iso": "THA",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Si Racha SBM",
+      "coordinates": [
+        100.8,
+        13.1
+      ],
+      "sourceUrl": "https://investor.thaioilgroup.com/storage/download/shareholders-meeting/egm02-2025/20251110-top-egm02-2025-enc-04-en.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "note": "Operator identifies offshore single buoy mooring for crude imports.",
+      "share": null
+    },
+    {
+      "iso": "USA",
+      "direction": "export",
+      "product": "lng",
+      "port": "Sabine Pass LNG",
+      "coordinates": [
+        -93.87,
+        29.75
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "AUS",
+      "direction": "export",
+      "product": "lng",
+      "port": "Gorgon LNG",
+      "coordinates": [
+        115.45,
+        -20.82
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "IDN",
+      "direction": "export",
+      "product": "lng",
+      "port": "Bontang LNG",
+      "coordinates": [
+        117.48,
+        0.12
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "ARE",
+      "direction": "export",
+      "product": "lng",
+      "port": "Das Island LNG",
+      "coordinates": [
+        52.88,
+        25.16
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "MYS",
+      "direction": "export",
+      "product": "lng",
+      "port": "Bintulu LNG",
+      "coordinates": [
+        113.04,
+        3.27
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "QAT",
+      "direction": "export",
+      "product": "lng",
+      "port": "Ras Laffan LNG",
+      "coordinates": [
+        51.6,
+        25.92
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "NOR",
+      "direction": "export",
+      "product": "lng",
+      "port": "Hammerfest LNG",
+      "coordinates": [
+        23.6,
+        70.69
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "NGA",
+      "direction": "export",
+      "product": "lng",
+      "port": "Bonny Island LNG",
+      "coordinates": [
+        7.15,
+        4.42
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "OMN",
+      "direction": "export",
+      "product": "lng",
+      "port": "Qalhat LNG",
+      "coordinates": [
+        59.4,
+        22.65
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "AGO",
+      "direction": "export",
+      "product": "lng",
+      "port": "Soyo LNG",
+      "coordinates": [
+        12.33,
+        -6.12
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "MEX",
+      "direction": "export",
+      "product": "lng",
+      "port": "Altamira Fast LNG",
+      "coordinates": [
+        -97.72,
+        22.52
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "DZA",
+      "direction": "export",
+      "product": "lng",
+      "port": "Arzew LNG",
+      "coordinates": [
+        -0.27,
+        35.82
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "MOZ",
+      "direction": "export",
+      "product": "lng",
+      "port": "Coral South FLNG",
+      "coordinates": [
+        41.2,
+        -10.98
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "PNG",
+      "direction": "export",
+      "product": "lng",
+      "port": "PNG LNG",
+      "coordinates": [
+        146.98,
+        -9.31
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "EGY",
+      "direction": "export",
+      "product": "lng",
+      "port": "Idku LNG",
+      "coordinates": [
+        30.25,
+        31.31
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "PER",
+      "direction": "export",
+      "product": "lng",
+      "port": "Pampa Melchorita LNG",
+      "coordinates": [
+        -76.54,
+        -13.25
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "TTO",
+      "direction": "export",
+      "product": "lng",
+      "port": "Point Fortin LNG",
+      "coordinates": [
+        -61.7,
+        10.18
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 1. Representative liquefaction port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "CHN",
+      "direction": "import",
+      "product": "lng",
+      "port": "Ningbo LNG",
+      "coordinates": [
+        122.0,
+        29.9
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "IND",
+      "direction": "import",
+      "product": "lng",
+      "port": "Dahej LNG",
+      "coordinates": [
+        72.54,
+        21.69
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "USA",
+      "direction": "import",
+      "product": "lng",
+      "port": "Everett LNG",
+      "coordinates": [
+        -71.04,
+        42.39
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "JPN",
+      "direction": "import",
+      "product": "lng",
+      "port": "Negishi LNG",
+      "coordinates": [
+        139.66,
+        35.41
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "KOR",
+      "direction": "import",
+      "product": "lng",
+      "port": "Pyeongtaek LNG",
+      "coordinates": [
+        126.77,
+        36.95
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "NLD",
+      "direction": "import",
+      "product": "lng",
+      "port": "Gate Rotterdam LNG",
+      "coordinates": [
+        4.07,
+        51.96
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "TWN",
+      "direction": "import",
+      "product": "lng",
+      "port": "Yung-An LNG",
+      "coordinates": [
+        120.19,
+        22.81
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "SGP",
+      "direction": "import",
+      "product": "lng",
+      "port": "Jurong Island LNG",
+      "coordinates": [
+        103.68,
+        1.25
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "DEU",
+      "direction": "import",
+      "product": "lng",
+      "port": "Wilhelmshaven LNG",
+      "coordinates": [
+        8.14,
+        53.64
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "FRA",
+      "direction": "import",
+      "product": "lng",
+      "port": "Dunkirk LNG",
+      "coordinates": [
+        2.19,
+        51.04
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "MYS",
+      "direction": "import",
+      "product": "lng",
+      "port": "Pengerang LNG",
+      "coordinates": [
+        104.1,
+        1.31
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "ITA",
+      "direction": "import",
+      "product": "lng",
+      "port": "Adriatic LNG",
+      "coordinates": [
+        12.58,
+        45.1
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "ESP",
+      "direction": "import",
+      "product": "lng",
+      "port": "Barcelona LNG",
+      "coordinates": [
+        2.17,
+        41.33
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "GBR",
+      "direction": "import",
+      "product": "lng",
+      "port": "South Hook LNG",
+      "coordinates": [
+        -5.1,
+        51.71
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "THA",
+      "direction": "import",
+      "product": "lng",
+      "port": "Map Ta Phut LNG",
+      "coordinates": [
+        101.14,
+        12.64
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "TUR",
+      "direction": "import",
+      "product": "lng",
+      "port": "Dortyol LNG",
+      "coordinates": [
+        36.18,
+        36.85
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.5847774003895959,
+      "note": "Dortyol represents all receiving terminals outside the Dardanelles. Residual after the Marmara estimate. IGU Appendix 5 confirms terminal operation.",
+      "period": "2024",
+      "shareBasis": "seaborne proxy",
+      "otherSources": [
+        "https://www.trade.gov/knowledge-product/turkey-oil-and-gas-equipment-lng-and-lng-terminals-upstream-downstream"
+      ]
+    },
+    {
+      "iso": "BEL",
+      "direction": "import",
+      "product": "lng",
+      "port": "Zeebrugge LNG",
+      "coordinates": [
+        3.21,
+        51.37
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "IDN",
+      "direction": "import",
+      "product": "lng",
+      "port": "West Java LNG",
+      "coordinates": [
+        106.87,
+        -6.04
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "PHL",
+      "direction": "import",
+      "product": "lng",
+      "port": "Batangas LNG",
+      "coordinates": [
+        121.0,
+        13.7
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "CAN",
+      "direction": "import",
+      "product": "lng",
+      "port": "Saint John LNG",
+      "coordinates": [
+        -66.0,
+        45.21
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "BRA",
+      "direction": "import",
+      "product": "lng",
+      "port": "Guanabara Bay LNG",
+      "coordinates": [
+        -43.13,
+        -22.82
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "POL",
+      "direction": "import",
+      "product": "lng",
+      "port": "Swinoujscie LNG",
+      "coordinates": [
+        14.29,
+        53.92
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "VNM",
+      "direction": "import",
+      "product": "lng",
+      "port": "Thi Vai LNG",
+      "coordinates": [
+        107.02,
+        10.5
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "MEX",
+      "direction": "import",
+      "product": "lng",
+      "port": "Altamira LNG",
+      "coordinates": [
+        -97.85,
+        22.49
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "PAK",
+      "direction": "import",
+      "product": "lng",
+      "port": "Port Qasim LNG",
+      "coordinates": [
+        67.29,
+        24.78
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "GRC",
+      "direction": "import",
+      "product": "lng",
+      "port": "Revithoussa LNG",
+      "coordinates": [
+        23.41,
+        37.96
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "PAN",
+      "direction": "import",
+      "product": "lng",
+      "port": "Costa Norte LNG",
+      "coordinates": [
+        -79.87,
+        9.38
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "SWE",
+      "direction": "import",
+      "product": "lng",
+      "port": "Nynashamn LNG",
+      "coordinates": [
+        17.98,
+        58.91
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "HKG",
+      "direction": "import",
+      "product": "lng",
+      "port": "Hong Kong Offshore LNG",
+      "coordinates": [
+        114.0,
+        22.19
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "CHL",
+      "direction": "import",
+      "product": "lng",
+      "port": "Quintero LNG",
+      "coordinates": [
+        -71.51,
+        -32.79
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "BGD",
+      "direction": "import",
+      "product": "lng",
+      "port": "Moheshkhali LNG",
+      "coordinates": [
+        91.86,
+        21.54
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "EGY",
+      "direction": "import",
+      "product": "lng",
+      "port": "Ain Sokhna LNG",
+      "coordinates": [
+        32.37,
+        29.65
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "ARE",
+      "direction": "import",
+      "product": "lng",
+      "port": "Jebel Ali LNG",
+      "coordinates": [
+        55.06,
+        25.0
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "PRT",
+      "direction": "import",
+      "product": "lng",
+      "port": "Sines LNG",
+      "coordinates": [
+        -8.85,
+        37.94
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "FIN",
+      "direction": "import",
+      "product": "lng",
+      "port": "Inkoo LNG",
+      "coordinates": [
+        23.98,
+        60.0
+      ],
+      "sourceUrl": "https://www.datocms-assets.com/146580/1751026179-igu-world-lng-report-2025-hr_dp_c.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "IGU World LNG Report 2025, Appendix 5. Representative regasification port active at year-end 2024. No throughput split assumed."
+    },
+    {
+      "iso": "USA",
+      "direction": "export",
+      "product": "coal",
+      "port": "Lambert's Point",
+      "coordinates": [
+        -76.33,
+        36.87
+      ],
+      "sourceUrl": "https://www.gem.wiki/Coal_terminals",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative export terminal. No throughput split assumed."
+    },
+    {
+      "iso": "AUS",
+      "direction": "export",
+      "product": "coal",
+      "port": "Newcastle Kooragang",
+      "coordinates": [
+        151.76,
+        -32.87
+      ],
+      "sourceUrl": "https://www.gem.wiki/Coal_terminals",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative export terminal. No throughput split assumed."
+    },
+    {
+      "iso": "RUS",
+      "direction": "export",
+      "product": "coal",
+      "port": "Vostochny Coal Terminal",
+      "coordinates": [
+        133.05,
+        42.75
+      ],
+      "sourceUrl": "https://www.gem.wiki/Wrangel_Bay_%28Coal_Exports%29",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative export terminal. No throughput split assumed."
+    },
+    {
+      "iso": "IDN",
+      "direction": "export",
+      "product": "coal",
+      "port": "Tanjung Bara",
+      "coordinates": [
+        117.6,
+        0.53
+      ],
+      "sourceUrl": "https://www.gem.wiki/Coal_terminals",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative export terminal. No throughput split assumed."
+    },
+    {
+      "iso": "CAN",
+      "direction": "export",
+      "product": "coal",
+      "port": "Westshore Terminals",
+      "coordinates": [
+        -123.16,
+        49.02
+      ],
+      "sourceUrl": "https://www.gem.wiki/Coal_terminals",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative export terminal. No throughput split assumed."
+    },
+    {
+      "iso": "COL",
+      "direction": "export",
+      "product": "coal",
+      "port": "Puerto Bolivar",
+      "coordinates": [
+        -71.99,
+        12.25
+      ],
+      "sourceUrl": "https://www.gem.wiki/Coal_terminals",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative export terminal. No throughput split assumed."
+    },
+    {
+      "iso": "ZAF",
+      "direction": "export",
+      "product": "coal",
+      "port": "Richards Bay Coal Terminal",
+      "coordinates": [
+        32.08,
+        -28.82
+      ],
+      "sourceUrl": "https://www.gem.wiki/Coal_terminals",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative export terminal. No throughput split assumed."
+    },
+    {
+      "iso": "MOZ",
+      "direction": "export",
+      "product": "coal",
+      "port": "Nacala-a-Velha",
+      "coordinates": [
+        40.66,
+        -14.51
+      ],
+      "sourceUrl": "https://www.gem.wiki/Nacala_Coal_Terminal",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative export terminal. No throughput split assumed."
+    },
+    {
+      "iso": "CHN",
+      "direction": "import",
+      "product": "coal",
+      "port": "Ningbo Coal Port",
+      "coordinates": [
+        121.87,
+        29.93
+      ],
+      "sourceUrl": "https://www.gem.wiki/Coal_terminals",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative import terminal. No throughput split assumed."
+    },
+    {
+      "iso": "IND",
+      "direction": "import",
+      "product": "coal",
+      "port": "Mundra Coal Terminal",
+      "coordinates": [
+        69.7,
+        22.72
+      ],
+      "sourceUrl": "https://www.gem.wiki/Mundra_West_Basin_Coal_Terminal",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative import terminal. No throughput split assumed."
+    },
+    {
+      "iso": "JPN",
+      "direction": "import",
+      "product": "coal",
+      "port": "Hekinan Coal Terminal",
+      "coordinates": [
+        136.95,
+        34.82
+      ],
+      "sourceUrl": "https://www.gem.wiki/Hekinan_power_station",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative import terminal. No throughput split assumed."
+    },
+    {
+      "iso": "KOR",
+      "direction": "import",
+      "product": "coal",
+      "port": "Dangjin Coal Terminal",
+      "coordinates": [
+        126.52,
+        37.05
+      ],
+      "sourceUrl": "https://www.gem.wiki/Dangjin_Thermal_Power_Plant_Coal_Terminal",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative import terminal. No throughput split assumed."
+    },
+    {
+      "iso": "NLD",
+      "direction": "import",
+      "product": "coal",
+      "port": "Rotterdam EMO",
+      "coordinates": [
+        4.04,
+        51.96
+      ],
+      "sourceUrl": "https://www.gem.wiki/HES_Rotterdam_Coal_Terminal",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative import terminal. No throughput split assumed."
+    },
+    {
+      "iso": "TWN",
+      "direction": "import",
+      "product": "coal",
+      "port": "Taichung Coal Terminal",
+      "coordinates": [
+        120.5,
+        24.27
+      ],
+      "sourceUrl": "https://www.gem.wiki/Taichung_Port",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative import terminal. No throughput split assumed."
+    },
+    {
+      "iso": "TUR",
+      "direction": "import",
+      "product": "coal",
+      "port": "Zonguldak TTK",
+      "coordinates": [
+        31.79,
+        41.46
+      ],
+      "sourceUrl": "https://www.gem.wiki/Coal_terminals",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative import terminal. No throughput split assumed."
+    },
+    {
+      "iso": "USA",
+      "direction": "import",
+      "product": "coal",
+      "port": "Baltimore Chesapeake Bulk Stevedores",
+      "coordinates": [
+        -76.56,
+        39.23
+      ],
+      "sourceUrl": "https://www.gem.wiki/Coal_terminals",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Global Energy Monitor coal terminal directory. Representative import terminal. No throughput split assumed."
+    },
+    {
+      "iso": "USA",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Corpus Christi",
+      "coordinates": [
+        -97.4,
+        27.82
+      ],
+      "sourceUrl": "https://portofcc.com/wp-content/uploads/Executive_Cargo_Report_2024_12.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "USA",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Corpus Christi",
+      "coordinates": [
+        -97.4,
+        27.82
+      ],
+      "sourceUrl": "https://portofcc.com/wp-content/uploads/Executive_Cargo_Report_2024_12.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "USA",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Corpus Christi",
+      "coordinates": [
+        -97.4,
+        27.82
+      ],
+      "sourceUrl": "https://portofcc.com/wp-content/uploads/Executive_Cargo_Report_2024_12.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "USA",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Corpus Christi",
+      "coordinates": [
+        -97.4,
+        27.82
+      ],
+      "sourceUrl": "https://portofcc.com/wp-content/uploads/Executive_Cargo_Report_2024_12.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "IND",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Sikka",
+      "coordinates": [
+        69.79,
+        22.47
+      ],
+      "sourceUrl": "https://www.ril.com/sites/default/files/2022-12/IAR_07082022.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "IND",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Sikka",
+      "coordinates": [
+        69.79,
+        22.47
+      ],
+      "sourceUrl": "https://www.ril.com/sites/default/files/2022-12/IAR_07082022.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "TWN",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Kaohsiung Dalinpu",
+      "coordinates": [
+        120.31,
+        22.52
+      ],
+      "sourceUrl": "https://www.cpc.com.tw/en/cp.aspx?n=2610",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "TWN",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Kaohsiung",
+      "coordinates": [
+        120.27,
+        22.55
+      ],
+      "sourceUrl": "https://www.cpc.com.tw/en/cp.aspx?n=2610",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "NLD",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Rotterdam",
+      "coordinates": [
+        4.04,
+        51.96
+      ],
+      "sourceUrl": "https://www.reporting.portofrotterdam.com/jaarverslag-2025/overige-informatie/83-kerncijfers",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "NLD",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Rotterdam",
+      "coordinates": [
+        4.04,
+        51.96
+      ],
+      "sourceUrl": "https://www.reporting.portofrotterdam.com/jaarverslag-2025/overige-informatie/83-kerncijfers",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "NLD",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Rotterdam",
+      "coordinates": [
+        4.04,
+        51.96
+      ],
+      "sourceUrl": "https://www.reporting.portofrotterdam.com/jaarverslag-2025/overige-informatie/83-kerncijfers",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "NLD",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Rotterdam",
+      "coordinates": [
+        4.04,
+        51.96
+      ],
+      "sourceUrl": "https://www.reporting.portofrotterdam.com/jaarverslag-2025/overige-informatie/83-kerncijfers",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "NLD",
+      "direction": "export",
+      "product": "coal",
+      "port": "Rotterdam",
+      "coordinates": [
+        4.04,
+        51.96
+      ],
+      "sourceUrl": "https://www.reporting.portofrotterdam.com/jaarverslag-2025/overige-informatie/83-kerncijfers",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "SAU",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Ras Tanura",
+      "coordinates": [
+        50.18,
+        26.65
+      ],
+      "sourceUrl": "https://www.aramco.com/-/media/downloads/working-with-us/ports-and-terminals-2025-update/3a-ras-tanura-terminal.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "ARE",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Fujairah",
+      "coordinates": [
+        56.38,
+        25.17
+      ],
+      "sourceUrl": "https://www.spglobal.com/energy/en/news-research/latest-news/crude-oil/010125-fujairah-data-oil-product-stocks-cap-record-second-annual-drop",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "ARE",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Fujairah",
+      "coordinates": [
+        56.38,
+        25.17
+      ],
+      "sourceUrl": "https://www.spglobal.com/energy/en/news-research/latest-news/crude-oil/010125-fujairah-data-oil-product-stocks-cap-record-second-annual-drop",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "KOR",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Ulsan",
+      "coordinates": [
+        129.44,
+        35.46
+      ],
+      "sourceUrl": "https://www.upa.or.kr/eng/contents.do?mid=0203000000",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "KOR",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Ulsan",
+      "coordinates": [
+        129.39,
+        35.47
+      ],
+      "sourceUrl": "https://www.upa.or.kr/eng/contents.do?mid=0203000000",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "KOR",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Ulsan",
+      "coordinates": [
+        129.39,
+        35.47
+      ],
+      "sourceUrl": "https://www.upa.or.kr/eng/contents.do?mid=0203000000",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "JPN",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Chiba",
+      "coordinates": [
+        140.02,
+        35.59
+      ],
+      "sourceUrl": "https://www.idemitsu.com/en/business/factory/chiba/process/index.html",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "SGP",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Pulau Bukom",
+      "coordinates": [
+        103.77,
+        1.23
+      ],
+      "sourceUrl": "https://www.mpa.gov.sg/docs/mpalibraries/mpa-documents-files/hydrographic/spi-2024_1-oct-2024.pdf?sfvrsn=e9d7957e_1",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "SGP",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Pulau Bukom",
+      "coordinates": [
+        103.77,
+        1.23
+      ],
+      "sourceUrl": "https://www.mpa.gov.sg/docs/mpalibraries/mpa-documents-files/hydrographic/spi-2024_1-oct-2024.pdf?sfvrsn=e9d7957e_1",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "SGP",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Pulau Bukom",
+      "coordinates": [
+        103.77,
+        1.23
+      ],
+      "sourceUrl": "https://www.mpa.gov.sg/docs/mpalibraries/mpa-documents-files/hydrographic/spi-2024_1-oct-2024.pdf?sfvrsn=e9d7957e_1",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "NGA",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Bonny Oil Terminal",
+      "coordinates": [
+        7.15,
+        4.44
+      ],
+      "sourceUrl": "https://www.eia.gov/international/analysis/country/nga",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "GUY",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Stabroek FPSOs",
+      "coordinates": [
+        -56.9,
+        8.14
+      ],
+      "sourceUrl": "https://corporate.exxonmobil.com/locations/guyana/operations/guyana-project-overview",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "BRA",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Angra dos Reis TEBIG",
+      "coordinates": [
+        -44.37,
+        -23.07
+      ],
+      "sourceUrl": "https://petrobras.com.br/pt/quem-somos/logistica",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "LBY",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Es Sider",
+      "coordinates": [
+        18.38,
+        30.64
+      ],
+      "sourceUrl": "https://www.eia.gov/finance/markets/reports_presentations/2018/cohen.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "OMN",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Mina Al Fahal",
+      "coordinates": [
+        58.5,
+        23.66
+      ],
+      "sourceUrl": "https://www.eia.gov/international/content/analysis/special_topics/SHIP_Act/SHIP-Act.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "QAT",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Mesaieed",
+      "coordinates": [
+        51.59,
+        24.96
+      ],
+      "sourceUrl": "https://www.eia.gov/international/analysis/countries/qat",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "BRA",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Sao Sebastiao TEBAR",
+      "coordinates": [
+        -45.4,
+        -23.81
+      ],
+      "sourceUrl": "https://transpetro.com.br/lumis/portal/file/fileDownload.jsp?fileId=4028908D999BE41A019C58E3D4877031",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "BRA",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Sao Sebastiao TEBAR",
+      "coordinates": [
+        -45.4,
+        -23.81
+      ],
+      "sourceUrl": "https://transpetro.com.br/transpetro-institucional/nossas-atividades/dutos-e-terminais/terminais-aquaviarios/sao-sebastiao-sp.htm",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "BRA",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Sao Sebastiao TEBAR",
+      "coordinates": [
+        -45.4,
+        -23.81
+      ],
+      "sourceUrl": "https://transpetro.com.br/transpetro-institucional/nossas-atividades/dutos-e-terminais/terminais-aquaviarios/sao-sebastiao-sp.htm",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "CHN",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Zhoushan",
+      "coordinates": [
+        122.25,
+        30.13
+      ],
+      "sourceUrl": "https://www.ezhejiang.gov.cn/2020-12/09/c_570803.htm",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "CHN",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Zhoushan",
+      "coordinates": [
+        122.25,
+        30.13
+      ],
+      "sourceUrl": "https://www.ezhejiang.gov.cn/zhoushan/2021-02/20/c_590345.htm",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "GBR",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Forth Hound Point",
+      "coordinates": [
+        -3.36,
+        56.0
+      ],
+      "sourceUrl": "https://www.gov.uk/government/statistics/port-freight-annual-statistics-2024/port-freight-annual-statistics-2024-cargo-information",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "BEL",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Antwerp",
+      "coordinates": [
+        4.36,
+        51.34
+      ],
+      "sourceUrl": "https://newsroom.portofantwerpbruges.com/en/press-releases/annual-figures-for-port-of-antwerp-bruges-show-growth-despite-challenging-times",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "BEL",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Antwerp",
+      "coordinates": [
+        4.36,
+        51.34
+      ],
+      "sourceUrl": "https://newsroom.portofantwerpbruges.com/en/press-releases/annual-figures-for-port-of-antwerp-bruges-show-growth-despite-challenging-times",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "ECU",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Balao Terminal",
+      "coordinates": [
+        -79.7,
+        1.03
+      ],
+      "sourceUrl": "https://www.acreditacion.gob.ec/como-se-inspecciona-la-transferencia-de-hidrocarburos-a-un-buque-el-proceso/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "DEU",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Hamburg",
+      "coordinates": [
+        9.93,
+        53.52
+      ],
+      "sourceUrl": "https://www.hafen-hamburg.de/en/portofhamburg/terminals/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "DEU",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Hamburg",
+      "coordinates": [
+        9.93,
+        53.52
+      ],
+      "sourceUrl": "https://www.hafen-hamburg.de/en/portofhamburg/terminals/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "DEU",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Wilhelmshaven",
+      "coordinates": [
+        8.16,
+        53.61
+      ],
+      "sourceUrl": "https://www.bundeswirtschaftsministerium.de/Redaktion/EN/Artikel/Energy/petroleum-transport-storage-and-refining.html",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "ITA",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Sarroch",
+      "coordinates": [
+        9.02,
+        39.1
+      ],
+      "sourceUrl": "https://www.sarlux.saras.it/en/water/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "ITA",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Sarroch",
+      "coordinates": [
+        9.02,
+        39.1
+      ],
+      "sourceUrl": "https://www.sarlux.saras.it/en/water/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "ITA",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Sarroch",
+      "coordinates": [
+        9.02,
+        39.1
+      ],
+      "sourceUrl": "https://www.sarlux.saras.it/en/refining/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "VEN",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Jose Terminal",
+      "coordinates": [
+        -64.85,
+        10.13
+      ],
+      "sourceUrl": "https://www.eia.gov/international/content/analysis/countries_long/Venezuela/pdf/venezuela_2024.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "GRC",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Aspropyrgos",
+      "coordinates": [
+        23.58,
+        38.01
+      ],
+      "sourceUrl": "https://www.helleniqenergy.gr/sites/default/files/2023-04/etisia-oik-ekthesi-2009-en.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "GRC",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Pachi Megara",
+      "coordinates": [
+        23.37,
+        37.97
+      ],
+      "sourceUrl": "https://www.helleniqenergy.gr/sites/default/files/2023-04/etisia-oik-ekthesi-2009-en.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "ESP",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Tarragona",
+      "coordinates": [
+        1.23,
+        41.09
+      ],
+      "sourceUrl": "https://www.porttarragona.cat/files/docs/Port/Memories/Tecnica/MEMORIA_ANUAL_2022.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "ESP",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Tarragona",
+      "coordinates": [
+        1.23,
+        41.09
+      ],
+      "sourceUrl": "https://www.porttarragona.cat/files/docs/Port/Memories/Tecnica/MEMORIA_ANUAL_2022.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "ESP",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Tarragona",
+      "coordinates": [
+        1.23,
+        41.09
+      ],
+      "sourceUrl": "https://www.porttarragona.cat/en/services-business/business/statistics",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "TUR",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Aliaga",
+      "coordinates": [
+        26.96,
+        38.82
+      ],
+      "sourceUrl": "https://www.socar.com.tr/activity-fields/socar-storage",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "TUR",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Aliaga",
+      "coordinates": [
+        26.96,
+        38.82
+      ],
+      "sourceUrl": "https://www.socar.com.tr/activity-fields/socar-storage",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "AUS",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Melbourne",
+      "coordinates": [
+        144.88,
+        -37.84
+      ],
+      "sourceUrl": "https://www.portofmelbourne.com/wp-content/uploads/PoM-CY25-Trade-in-Review-Report-FINAL.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "MAR",
+      "direction": "import",
+      "product": "coal",
+      "port": "Jorf Lasfar",
+      "coordinates": [
+        -8.63,
+        33.12
+      ],
+      "sourceUrl": "https://www.anp.org.ma/fra/TarificationPortuaire/Tarification_2024.old.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "ZAF",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Durban offshore SBM",
+      "coordinates": [
+        31.08,
+        -29.99
+      ],
+      "sourceUrl": "https://www.transnetnationalportsauthority.net/OurPorts/Durban/Documents/%28TNPA%29%20Durban%20Brochure.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "ZAF",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Durban Island View",
+      "coordinates": [
+        31.03,
+        -29.92
+      ],
+      "sourceUrl": "https://www.transnetnationalportsauthority.net/OurPorts/Durban/Documents/%28TNPA%29%20Durban%20Brochure.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "NGA",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Lagos Apapa",
+      "coordinates": [
+        3.36,
+        6.44
+      ],
+      "sourceUrl": "https://nigerianports.gov.ng/lagos-port/jetties-tank-farms/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "NOR",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Mongstad",
+      "coordinates": [
+        5.04,
+        60.81
+      ],
+      "sourceUrl": "https://www.equinor.com/energy/mongstad",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "NOR",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Mongstad",
+      "coordinates": [
+        5.04,
+        60.81
+      ],
+      "sourceUrl": "https://www.equinor.com/energy/mongstad",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "POL",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Gdansk Naftoport",
+      "coordinates": [
+        18.72,
+        54.41
+      ],
+      "sourceUrl": "https://www.portgdansk.pl/en/events/liquid-fuels-contribute-to-record-breaking-cargo-handling-at-the-port-of-gdansk/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "POL",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Gdansk Naftoport",
+      "coordinates": [
+        18.72,
+        54.41
+      ],
+      "sourceUrl": "https://www.portgdansk.pl/en/events/liquid-fuels-contribute-to-record-breaking-cargo-handling-at-the-port-of-gdansk/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "KWT",
+      "direction": "export",
+      "product": "crude oil",
+      "port": "Mina Al Ahmadi",
+      "coordinates": [
+        48.18,
+        29.07
+      ],
+      "sourceUrl": "https://www.kockw.com/sites/EN/Other%20Publications/Historical/Progress%20and%20Prosperity.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative operating terminal or port area. No national throughput split assumed."
+    },
+    {
+      "iso": "AUT",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Trieste Marine Terminal",
+      "coordinates": [
+        13.76,
+        45.62
+      ],
+      "sourceUrl": "https://www.omv.com/en/company/our-strength/our-progress",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "The Adriatic seaborne leg unloads at Trieste, then TAL/AWP pipes deliver crude to Schwechat, Austria."
+    },
+    {
+      "iso": "RUS",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Primorsk",
+      "coordinates": [
+        28.72,
+        60.35
+      ],
+      "sourceUrl": "https://www.reuters.com/business/energy/russias-2024-seaborne-oil-product-exports-hit-by-headwinds-including-drone-2025-01-17/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.5449907643592224,
+      "period": "2024",
+      "shareBasis": "observed seaborne proxy",
+      "note": "Reuters original reporting and port calculations, 17 January 2025. This anchor represents the region’s combined reported export loadings. The source’s petroleum-products category is an approximation for HS 2710.",
+      "otherSources": [
+        "https://uk.finance.yahoo.com/news/exclusive-russias-2024-seaborne-oil-110741040.html"
+      ]
+    },
+    {
+      "iso": "RUS",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Novorossiysk",
+      "coordinates": [
+        37.84,
+        44.74
+      ],
+      "sourceUrl": "https://www.reuters.com/business/energy/russias-2024-seaborne-oil-product-exports-hit-by-headwinds-including-drone-2025-01-17/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.37602251737180054,
+      "period": "2024",
+      "shareBasis": "observed seaborne proxy",
+      "note": "Reuters original reporting and port calculations, 17 January 2025. This anchor represents the region’s combined reported export loadings. The source’s petroleum-products category is an approximation for HS 2710.",
+      "otherSources": [
+        "https://uk.finance.yahoo.com/news/exclusive-russias-2024-seaborne-oil-110741040.html"
+      ]
+    },
+    {
+      "iso": "RUS",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Nakhodka",
+      "coordinates": [
+        132.9,
+        42.79
+      ],
+      "sourceUrl": "https://www.reuters.com/business/energy/russias-2024-seaborne-oil-product-exports-hit-by-headwinds-including-drone-2025-01-17/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.07010291142580702,
+      "period": "2024",
+      "shareBasis": "observed seaborne proxy",
+      "note": "Reuters original reporting and port calculations, 17 January 2025. This anchor represents the region’s combined reported export loadings. The source’s petroleum-products category is an approximation for HS 2710.",
+      "otherSources": [
+        "https://uk.finance.yahoo.com/news/exclusive-russias-2024-seaborne-oil-110741040.html"
+      ]
+    },
+    {
+      "iso": "RUS",
+      "direction": "export",
+      "product": "refined products",
+      "port": "Murmansk",
+      "coordinates": [
+        33.04,
+        69.0
+      ],
+      "sourceUrl": "https://www.reuters.com/business/energy/russias-2024-seaborne-oil-product-exports-hit-by-headwinds-including-drone-2025-01-17/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.008883806843170024,
+      "period": "2024",
+      "shareBasis": "observed seaborne proxy",
+      "note": "Reuters original reporting and port calculations, 17 January 2025. This anchor represents the region’s combined reported export loadings. The source’s petroleum-products category is an approximation for HS 2710.",
+      "otherSources": [
+        "https://uk.finance.yahoo.com/news/exclusive-russias-2024-seaborne-oil-110741040.html"
+      ]
+    },
+    {
+      "iso": "TUR",
+      "direction": "import",
+      "product": "lng",
+      "port": "Marmara Ereglisi LNG",
+      "coordinates": [
+        27.97,
+        40.97
+      ],
+      "sourceUrl": "https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": 0.4152225996104041,
+      "period": "2024",
+      "shareBasis": "seaborne proxy",
+      "note": "EIA Dardanelles LNG 0.5 Bcf/d, attributable to Marmara, divided by ITA’s estimated national LNG imports (24% of 52 bcm). Published input rounding makes the derived 41.5% approximate. Apply to the BACI partner weights without rescaling their lower total.",
+      "otherSources": [
+        "https://www.trade.gov/knowledge-product/turkey-oil-and-gas-equipment-lng-and-lng-terminals-upstream-downstream"
+      ]
+    },
+    {
+      "iso": "TUR",
+      "direction": "import",
+      "product": "crude oil",
+      "port": "Aliaga STAR",
+      "coordinates": [
+        26.96,
+        38.82
+      ],
+      "sourceUrl": "https://www.socar.com.tr/activity-fields/star-refinery",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "share": null,
+      "note": "Representative receiving area for the coastal STAR refinery in Aliaga. Annual national share is unavailable."
+    }
+  ],
+  "coverageExceptions": [
+    {
+      "iso": "MNG",
+      "direction": "export",
+      "product": "coal",
+      "mode": "land",
+      "sourceUrl": "https://med.gov.mn/uploads/users/3962/files/M24-06EN.pdf",
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "note": "Mongolia is landlocked. Coal leaves via road and rail border crossings including Gashuunsukhait, Shivehuren and Khangi."
+    }
+  ],
+  "sourceOverrides": [
+    {
+      "id": "china-iran-crude-origin",
+      "provider": "MYS",
+      "dependent": "CHN",
+      "product": "crude oil",
+      "routeOrigin": "IRN",
+      "share": 0.11,
+      "period": "2024",
+      "sourceUrl": "https://www.eia.gov/international/content/analysis/countries_long/China/pdf/China-2025.pdf#page=16",
+      "otherSources": [
+        "https://www.eia.gov/todayinenergy/detail.php?id=64544"
+      ],
+      "checkedAt": "2026-11-10",
+      "reviewed": false,
+      "label": "China’s reported Malaysian crude treated as Iranian (EIA)",
+      "note": "EIA Figure 8 estimates Iran supplied 11% of Chinese crude oil and condensate in 2024. EIA identifies Iranian crude relabeling as a material source of China’s declared Malaysia imports. Use that rounded share against the screened HS 2709 China total, subtract already-declared Iran tonnes, then cap at the screened Malaysia flow. This allocates routing only; it preserves the declared supplier, original BACI quantity and model import denominators. No attribution is made outside this product, trade pair and year. The available Malaysia bucket may be smaller than the EIA-implied misattribution, and the source provides no parcel-level match."
+    }
+  ],
+  "landTransfers": [
+    {
+      "provider": "RUS",
+      "dependent": "CHN",
+      "product": "crude oil",
+      "tonnes": 40000000,
+      "period": "2024",
+      "sourceUrl": "https://view.argusmedia.com/rs/584-BUW-606/images/CRU-Sample-Report-Argus-Eurasia-Energy-%282025-02-06%29.pdf#page=13",
+      "otherSources": [
+        "https://www.eia.gov/international/content/analysis/countries_long/russia/"
+      ],
+      "checkedAt": "2026-11-09",
+      "reviewed": false,
+      "note": "Argus reports 40 Mt via Transneft to China in 2024, separately from Kozmino loadings. EIA identifies the Skovorodino–Mohe branch of ESPO as a land pipeline. Assign observed tonnes to land, capped by screened bilateral tonnes. Apply the draft national seaborne port split to the remainder."
+    }
+  ],
+  "coverage": {
+    "rankingMethod": "Total screened 2024 BACI HS22 tonnes across HS 2709, HS 2710, HS 2701 and HS 271111. Pipeline gas is a separate land category. Country totals include re-exports and may differ from published national energy balances.",
+    "topExporters": [
+      "USA",
+      "AUS",
+      "RUS",
+      "IDN",
+      "SAU",
+      "CAN",
+      "ARE",
+      "IRQ",
+      "MYS",
+      "QAT",
+      "BRA",
+      "NLD",
+      "NOR",
+      "COL",
+      "NGA",
+      "IND",
+      "KWT",
+      "KAZ",
+      "MNG",
+      "OMN",
+      "SGP",
+      "ZAF",
+      "KOR",
+      "AGO",
+      "MEX",
+      "CHN",
+      "GBR",
+      "LBY",
+      "DZA",
+      "BEL",
+      "GUY",
+      "ECU",
+      "DEU",
+      "ITA",
+      "AZE",
+      "VEN",
+      "MOZ",
+      "GRC",
+      "ESP",
+      "TUR"
+    ],
+    "topImporters": [
+      "CHN",
+      "IND",
+      "USA",
+      "JPN",
+      "KOR",
+      "NLD",
+      "TWN",
+      "SGP",
+      "DEU",
+      "FRA",
+      "MYS",
+      "ITA",
+      "ESP",
+      "GBR",
+      "THA",
+      "TUR",
+      "BEL",
+      "IDN",
+      "PHL",
+      "CAN",
+      "AUS",
+      "BRA",
+      "POL",
+      "VNM",
+      "MEX",
+      "PAK",
+      "GRC",
+      "ZAF",
+      "PAN",
+      "SWE",
+      "HKG",
+      "CHL",
+      "MAR",
+      "BGD",
+      "EGY",
+      "ARE",
+      "PRT",
+      "FIN",
+      "AUT",
+      "NGA"
+    ],
+    "limit": "At least one sourced energy route per ranked direction. Many country/product pairs and terminal throughput distributions are still unavailable and use approximate network ports. This table does not assign unsupported split percentages."
+  }
+}
