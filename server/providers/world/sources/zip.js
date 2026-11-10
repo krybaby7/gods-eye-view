@@ -2,6 +2,12 @@ import { open } from 'node:fs/promises';
 import { addAbortSignal, pipeline, Readable } from 'node:stream';
 import { crc32, createInflateRaw } from 'node:zlib';
 
+function integrityError(message, cause) {
+  return Object.assign(new Error(message, { cause }), {
+    code: 'ZIP_INTEGRITY',
+  });
+}
+
 function findZipEnd(zip) {
   const minimum = Math.max(0, zip.length - 22 - 0xffff);
   for (let i = zip.length - 22; i >= minimum; i -= 1) {
@@ -11,7 +17,7 @@ function findZipEnd(zip) {
     )
       return i;
   }
-  throw new Error('ZIP end of directory not found');
+  throw integrityError('ZIP end of directory not found');
 }
 
 async function findZipEntry(read, length, matchesName) {
@@ -21,19 +27,17 @@ async function findZipEntry(read, length, matchesName) {
   const end = length - tailSize + tailEnd;
   const directory = tail.readUInt32LE(tailEnd + 16);
   const entries = tail.readUInt16LE(tailEnd + 10);
-  if (
-    tail.readUInt32LE(tailEnd + 4) !== 0 ||
-    directory + tail.readUInt32LE(tailEnd + 12) !== end
-  ) {
+  if (tail.readUInt32LE(tailEnd + 4) !== 0 || directory === 0xffffffff)
     throw new Error('Unsupported ZIP directory');
-  }
+  if (directory + tail.readUInt32LE(tailEnd + 12) !== end)
+    throw integrityError('Invalid ZIP directory size');
 
   let cursor = directory;
   for (let index = 0; index < entries; index += 1) {
-    if (cursor + 46 > end) throw new Error('Invalid ZIP directory entry');
+    if (cursor + 46 > end) throw integrityError('Invalid ZIP directory entry');
     const header = await read(cursor, 46);
     if (header.readUInt32LE(0) !== 0x02014b50) {
-      throw new Error('Invalid ZIP directory entry');
+      throw integrityError('Invalid ZIP directory entry');
     }
     const nameSize = header.readUInt16LE(28);
     const next =
@@ -42,24 +46,25 @@ async function findZipEntry(read, length, matchesName) {
       nameSize +
       header.readUInt16LE(30) +
       header.readUInt16LE(32);
-    if (next > end) throw new Error('Invalid ZIP directory entry length');
+    if (next > end) throw integrityError('Invalid ZIP directory entry length');
     const name = await read(cursor + 46, nameSize);
     if (matchesName(name.toString('utf8'))) {
       const offset = header.readUInt32LE(42);
       const compressedSize = header.readUInt32LE(20);
-      if (offset + 30 > directory) throw new Error('Invalid ZIP entry header');
+      if (offset === 0xffffffff || compressedSize === 0xffffffff)
+        throw new Error('Unsupported ZIP entry');
+      if (offset + 30 > directory)
+        throw integrityError('Invalid ZIP entry header');
       const local = await read(offset, 30);
       if (local.readUInt32LE(0) !== 0x04034b50) {
-        throw new Error('Invalid ZIP entry header');
+        throw integrityError('Invalid ZIP entry header');
       }
       const start =
         offset + 30 + local.readUInt16LE(26) + local.readUInt16LE(28);
-      if (
-        start + compressedSize > directory ||
-        (header.readUInt16LE(8) & 1) !== 0
-      ) {
+      if (start + compressedSize > directory)
+        throw integrityError('Invalid ZIP entry length');
+      if ((header.readUInt16LE(8) & 1) !== 0)
         throw new Error('Unsupported ZIP entry');
-      }
       return {
         start,
         compressedSize,
@@ -70,6 +75,7 @@ async function findZipEntry(read, length, matchesName) {
     }
     cursor = next;
   }
+  if (cursor !== end) throw integrityError('Invalid ZIP directory size');
   throw new Error('CSV file missing from ZIP');
 }
 
@@ -83,7 +89,7 @@ async function readFileRange(file, position, length) {
       length - offset,
       position + offset,
     );
-    if (!bytesRead) throw new Error('Unexpected end of ZIP');
+    if (!bytesRead) throw integrityError('Unexpected end of ZIP');
     offset += bytesRead;
   }
   return buffer;
@@ -115,14 +121,18 @@ async function* expandEntry(read, entry, maxBytes, signal) {
   try {
     for await (const chunk of contents.iterator({ destroyOnReturn: false })) {
       size += chunk.length;
-      if (size > entry.size || size > maxBytes)
-        throw new Error('Expanded ZIP CSV exceeds size limit');
+      if (size > entry.size)
+        throw integrityError('Expanded ZIP CSV exceeds declared size');
       checksum = crc32(chunk, checksum);
       yield chunk;
     }
     if (size !== entry.size || checksum !== entry.checksum) {
-      throw new Error('ZIP CSV failed integrity check');
+      throw integrityError('ZIP CSV failed integrity check');
     }
+  } catch (error) {
+    if (error.code === 'Z_DATA_ERROR' || error.code === 'Z_BUF_ERROR')
+      throw integrityError('ZIP CSV failed decompression', error);
+    throw error;
   } finally {
     contents.destroy();
     stream.destroy();

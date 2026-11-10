@@ -7,6 +7,7 @@ import {
   releaseDue,
   sourceCountries,
 } from './common.js';
+import { fetchOnDispatch } from './transport.js';
 
 export const version = 1;
 
@@ -27,17 +28,28 @@ function retryDelay(value) {
   return Number.isFinite(milliseconds) ? Math.max(0, milliseconds) : 1_000;
 }
 
-async function readRows(fetchImpl, path, retry = true) {
-  const signal = AbortSignal.timeout(30_000);
+async function readRows(fetchImpl, path, callerSignal, retry = true) {
+  let signal;
   const url = COUNTRY_URL + path;
   let data;
   try {
-    const response = await fetchImpl(url, {
-      signal,
-      // This adapter already retries both the request and the body read.
-      retryConnection: false,
-      headers: { 'User-Agent': USER_AGENT },
-    });
+    const response = await fetchOnDispatch(
+      fetchImpl,
+      url,
+      {
+        signal: callerSignal,
+        // This adapter already retries both the request and the body read.
+        retryConnection: false,
+        headers: { 'User-Agent': USER_AGENT },
+      },
+      () => {
+        const timeout = AbortSignal.timeout(30_000);
+        signal = callerSignal
+          ? AbortSignal.any([callerSignal, timeout])
+          : timeout;
+        return signal;
+      },
+    );
     if (!response.ok) {
       await response.body?.cancel();
       throw Object.assign(new Error(`HTTP ${response.status} from ${url}`), {
@@ -47,15 +59,16 @@ async function readRows(fetchImpl, path, retry = true) {
     }
     data = await readResponseJsonCapped(response, 2_000_000, signal);
   } catch (failure) {
+    callerSignal?.throwIfAborted();
     const transient =
       failure instanceof TypeError ||
-      signal.aborted ||
+      signal?.aborted ||
       failure.status === 429 ||
       failure.status >= 500;
     const delay = retryDelay(failure.retryAfter ?? null);
     if (!retry || !transient || delay > 30_000) throw failure;
-    await wait(delay);
-    return readRows(fetchImpl, path, false);
+    await wait(delay, null, { signal: callerSignal });
+    return readRows(fetchImpl, path, callerSignal, false);
   }
   const [metadata, rows] = data;
   if (!Array.isArray(rows) || Number(metadata?.pages) !== 1) {
@@ -64,10 +77,11 @@ async function readRows(fetchImpl, path, retry = true) {
   return { metadata, rows };
 }
 
-export async function fetchObservations({ fetchImpl, registry, now }) {
+export async function fetchObservations({ fetchImpl, registry, now, signal }) {
   const { rows: economies } = await readRows(
     fetchImpl,
     '?format=json&per_page=400',
+    signal,
   );
   const economyCodes = new Set(
     economies
@@ -89,6 +103,7 @@ export async function fetchObservations({ fetchImpl, registry, now }) {
     const { metadata, rows } = await readRows(
       fetchImpl,
       `/indicator/${encodeURIComponent(sourceCode)}?format=json&per_page=20000&mrnev=1`,
+      signal,
     );
     const publishedAt = /^\d{4}-\d{2}-\d{2}$/.test(metadata.lastupdated)
       ? metadata.lastupdated
@@ -119,6 +134,7 @@ export async function fetchObservations({ fetchImpl, registry, now }) {
       if (definition === POPULATION) population = rows;
       else observations.push(...rows);
     } catch (reason) {
+      signal?.throwIfAborted();
       const status = reason.message?.match(/^HTTP \d{3}/)?.[0];
       const detail = status ?? reason.cause?.code ?? reason.message;
       failures.push(`${definition.sourceCode}: ${detail}`);

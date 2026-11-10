@@ -13,6 +13,7 @@ import {
 } from './refreshRegistry.js';
 import { scoreCountries } from './scores.js';
 import { runWorldSources } from './sourceQueue.js';
+import { cleanupLegacyWorldDownloads } from './sources/legacyDownloads.js';
 import { createWorldFetch } from './sources/transport.js';
 import { createWorldStore } from './store.js';
 import { createTurn } from './turn.js';
@@ -47,6 +48,28 @@ function vintageKey({
     publishedAt,
     sourceVersion,
   ]);
+}
+
+function readingKey({ iso3, indicator, period }) {
+  return JSON.stringify([iso3, indicator, period]);
+}
+
+function countChangedReadings(previous, additions) {
+  const latest = new Map();
+  for (const reading of previous) {
+    const key = readingKey(reading);
+    const prior = latest.get(key);
+    if (!prior || (reading.retrievedAt ?? '') >= (prior.retrievedAt ?? '')) {
+      latest.set(key, reading);
+    }
+  }
+  let changed = 0;
+  for (const reading of additions) {
+    const key = readingKey(reading);
+    if (latest.get(key)?.value !== reading.value) changed++;
+    latest.set(key, reading);
+  }
+  return changed;
 }
 
 function acceptsGzip(header = '') {
@@ -296,6 +319,7 @@ export function createWorldService({
         const result = await adapter.fetchObservations({
           fetchImpl: worldFetch,
           cacheDirectory,
+          lastCheckedAt: lastCheckedAt[id],
           onProgress(download) {
             downloads.set(id, download);
             addProgress();
@@ -325,6 +349,9 @@ export function createWorldService({
           existing,
           result.observations ?? [],
         ).slice(existing.length);
+        const addedCount = replacedIndicators?.size
+          ? countChangedReadings(observations, additions)
+          : additions.length;
         return {
           status: {
             id,
@@ -332,7 +359,7 @@ export function createWorldService({
             ...(result.error && { error: result.error }),
             checked,
             durationMs: Math.round(performance.now() - clock),
-            count: result.count ?? additions.length,
+            count: result.count ?? addedCount,
             ...(result.count !== undefined && {
               unit: result.unit ?? 'record',
             }),
@@ -340,6 +367,8 @@ export function createWorldService({
             ...(rederive && !result.error && { rederived: true }),
           },
           observations: additions,
+          addedCount,
+          checkedRelease: result.checkedRelease !== false,
           changes: result.changes,
           replacedIndicators,
           data: result.data,
@@ -398,7 +427,7 @@ export function createWorldService({
         };
         liveUpdated = true;
       } else if (result.status.status === 'loaded') {
-        lastCheckedAt[id] = checkedAt;
+        if (result.checkedRelease) lastCheckedAt[id] = checkedAt;
         sourceVersions[id] = adapterVersion;
       }
       if (!liveOnly) {
@@ -408,7 +437,7 @@ export function createWorldService({
           );
         }
         observations = mergeObservations(observations, result.observations);
-        newObservations += result.observations.length;
+        newObservations += result.addedCount ?? 0;
       }
       if (result.dataUpdated) features[id] = result.data;
       if (
@@ -495,6 +524,16 @@ export function createWorldService({
     await store.write(next);
     saved = next;
     board = next.board;
+    await cleanupLegacyWorldDownloads(
+      cacheDirectory,
+      baseline.board?.features ?? EMPTY_FEATURES,
+      baseline.observations,
+      Object.entries(adapters).flatMap(
+        ([id, adapter]) => adapter.downloadUrls?.(features[id]) ?? [],
+      ),
+    ).catch((failure) =>
+      logger.warn?.('[world] Old downloads could not be removed', failure),
+    );
   }
 
   function start(sources = registry.sources, liveOnly = false) {
@@ -647,12 +686,13 @@ export function createWorldService({
         const status = await refresh(liveSourceFromRequest(req.url), {
           compact: true,
         });
-        return status
-          ? sendJson(res, 202, status, encoding)
-          : sendJson(res, 400, { error: 'Unknown World Board live source.' });
+        if (status) return await sendJson(res, 202, status, encoding);
+        return await sendJson(res, 400, {
+          error: 'Unknown World Board live source.',
+        });
       }
       if (pathname === PROGRESS)
-        return sendJson(res, 200, await readProgress(), encoding);
+        return await sendJson(res, 200, await readProgress(), encoding);
       if (pathname === DETAIL) {
         const params = new URLSearchParams(query);
         const country = params.get('country');
@@ -662,14 +702,22 @@ export function createWorldService({
           country !== null &&
           !registry.countries.some(({ iso3 }) => iso3 === country)
         ) {
-          return sendJson(res, 400, { error: 'Unknown World Board country.' });
+          return await sendJson(res, 400, {
+            error: 'Unknown World Board country.',
+          });
         }
         const payload = await detail(country, lens);
-        return payload
-          ? sendJson(res, 200, payload, encoding)
-          : sendJson(res, 404, { error: 'Unknown World Board detail lens.' });
+        if (payload) return await sendJson(res, 200, payload, encoding);
+        return await sendJson(res, 404, {
+          error: 'Unknown World Board detail lens.',
+        });
       }
-      return sendJson(res, 200, await snapshot({ compact: true }), encoding);
+      return await sendJson(
+        res,
+        200,
+        await snapshot({ compact: true }),
+        encoding,
+      );
     } catch (failure) {
       logger.warn?.('[world] Request failed', failure);
       return sendJson(res, 500, {
