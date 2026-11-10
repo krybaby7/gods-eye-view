@@ -1,0 +1,65 @@
+{
+  "notes": "Temporary official evidence where the available directory evidence is missing or demonstrably stale. Review after the listed expiry.",
+  "rows": [
+    {
+      "country": "JPN",
+      "role": "foreign-minister",
+      "name": "Toshimitsu Motegi",
+      "office": "Minister for Foreign Affairs",
+      "evidenceDate": "2026-11-09",
+      "checkedOn": "2026-11-10",
+      "until": "2027-02-10",
+      "sourceUrl": "https://www.mofa.go.jp/erp/erp_1/gb/pageite_000001_00001.html",
+      "reviewed": false,
+      "reason": "The November bilateral meeting identifies Motegi as foreign minister. CIA's Japan page is dated May 2025 and still lists Takeshi Iwaya."
+    },
+    {
+      "country": "JPN",
+      "role": "defence-minister",
+      "name": "Shinjiro Koizumi",
+      "office": "Minister of Defense",
+      "evidenceDate": "2026-09-18",
+      "checkedOn": "2026-11-10",
+      "until": "2027-02-10",
+      "sourceUrl": "https://www.mod.go.jp/en/article/2026/09/066514c9de61cf3b3143ca1df614d5b379f6e89e.html",
+      "reviewed": false,
+      "reason": "The Ministry of Defense confirms Koizumi's reappointment. CIA's Japan page still lists Gen Nakatani, the predecessor shown in round 2."
+    },
+    {
+      "country": "MEX",
+      "role": "foreign-minister",
+      "name": "Roberto Velasco Álvarez",
+      "office": "Secretary of Foreign Affairs",
+      "evidenceDate": "2026-10-14",
+      "checkedOn": "2026-11-10",
+      "until": "2027-02-10",
+      "sourceUrl": "https://www.gob.mx/sre/articulos/sovereignty-and-national-interest-are-not-negotiable-limited-or-subordinated-foreign-secretary-roberto-velasco",
+      "reviewed": false,
+      "reason": "The October Senate record names Velasco as secretary. Wikidata returned his predecessor Juan Ramón de la Fuente in round 2."
+    },
+    {
+      "country": "GHA",
+      "role": "defence-minister",
+      "name": "Kenneth Gilbert Adjei",
+      "office": "Minister for Defence",
+      "evidenceDate": "2026-08-15",
+      "checkedOn": "2026-11-10",
+      "until": "2027-02-10",
+      "sourceUrl": "https://mod.gov.gh/dr-cassiel-ato-forson-hands-over-to-kenneth-gilbert-adjei-at-defence-ministry/",
+      "reviewed": false,
+      "reason": "The Defence Ministry reported a formal handover to Adjei. The older CIA country page still names the outgoing acting minister."
+    },
+    {
+      "country": "PHL",
+      "role": "foreign-minister",
+      "name": "Ma. Theresa P. Lazaro",
+      "office": "Secretary of Foreign Affairs",
+      "evidenceDate": "2026-10-21",
+      "checkedOn": "2026-11-10",
+      "until": "2027-02-10",
+      "sourceUrl": "https://sc.judiciary.gov.ph/sc-dfa-and-oca-partner-to-establish-repository-of-foreign-divorce-and-marriage-laws/",
+      "reviewed": false,
+      "reason": "The Supreme Court identifies Lazaro as Secretary of Foreign Affairs at an October 2026 official signing. The older CIA country page still names Enrique Manalo."
+    }
+  ]
+}

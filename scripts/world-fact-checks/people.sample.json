@@ -1,0 +1,413 @@
+[
+  {
+    "country": "ARG",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://www.argentina.gob.ar/noticias/el-presidente-javier-milei-tomo-juramento-al-nuevo-ministro-de-defensa-el-teniente-general",
+    "roles": {
+      "head-of-state": "Javier Milei",
+      "head-of-government": "Javier Milei",
+      "foreign-minister": {
+        "name": "Pablo Quirno",
+        "source": "https://www.cancilleria.gob.ar/"
+      },
+      "defence-minister": {
+        "name": "Carlos Alberto Presti",
+        "aliases": ["Carlos Presti"]
+      }
+    }
+  },
+  {
+    "country": "AUS",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://www.pmc.gov.au/resources/ministry-list-1-july-2025",
+    "roles": {
+      "head-of-state": {
+        "name": "Charles III",
+        "source": "https://www.pmc.gov.au/government/head-of-state"
+      },
+      "head-of-government": "Anthony Albanese",
+      "foreign-minister": "Penny Wong",
+      "defence-minister": "Richard Marles"
+    }
+  },
+  {
+    "country": "BRA",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://www.gov.br/casacivil/pt-br/assuntos/colegiados/comissao-mista-de-reavaliacao-de-informacoes-cmri/composicao",
+    "roles": {
+      "head-of-state": {
+        "name": "Luiz Inácio Lula da Silva",
+        "source": "https://www.gov.br/planalto/pt-br/conheca-a-presidencia/biografia-do-presidente"
+      },
+      "head-of-government": {
+        "name": "Luiz Inácio Lula da Silva",
+        "source": "https://www.gov.br/planalto/pt-br/conheca-a-presidencia/biografia-do-presidente"
+      },
+      "foreign-minister": "Mauro Vieira",
+      "defence-minister": {
+        "name": "José Múcio Monteiro Filho",
+        "aliases": ["José Múcio", "Jose Mucio Monterio"]
+      }
+    }
+  },
+  {
+    "country": "CAN",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://www.pm.gc.ca/en/cabinet",
+    "roles": {
+      "head-of-state": {
+        "name": "Charles III",
+        "source": "https://www.canada.ca/en/privy-council/corporate/transparency/briefing-documents/prime-minister-2025/cabinet-formation.html"
+      },
+      "head-of-government": "Mark Carney",
+      "foreign-minister": "Anita Anand",
+      "defence-minister": {
+        "name": "David J. McGuinty",
+        "aliases": ["David McGuinty"]
+      }
+    }
+  },
+  {
+    "country": "CHN",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://english.www.gov.cn/news/202610/14/content_WS6acf8100c6d00ca5f9a0db00.html",
+    "roles": {
+      "head-of-state": "Xi Jinping",
+      "head-of-government": "Li Qiang",
+      "foreign-minister": {
+        "name": "Wang Yi",
+        "source": "https://www.mfa.gov.cn/mfa_eng./wjbzhd/202604/t20260424_11899084.html"
+      },
+      "defence-minister": {
+        "name": "Dong Jun",
+        "source": "https://www.mfa.gov.cn/mfa_eng./xw/wsrc/202604/t20260421_11896285.html"
+      }
+    }
+  },
+  {
+    "country": "DEU",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://www.bundesregierung.de/breg-en/federal-cabinet",
+    "roles": {
+      "head-of-state": {
+        "name": "Frank-Walter Steinmeier",
+        "source": "https://www.bundesregierung.de/breg-en/news/appointment-of-new-ministers-2448694"
+      },
+      "head-of-government": "Friedrich Merz",
+      "foreign-minister": "Johann Wadephul",
+      "defence-minister": "Boris Pistorius"
+    }
+  },
+  {
+    "country": "FRA",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://www.info.gouv.fr/composition-du-gouvernement",
+    "roles": {
+      "head-of-state": {
+        "name": "Emmanuel Macron",
+        "source": "https://www.elysee.fr/en/emmanuel-macron"
+      },
+      "head-of-government": {
+        "name": "Sébastien Lecornu",
+        "aliases": ["Sebastian Lecornu"]
+      },
+      "foreign-minister": "Jean-Noël Barrot",
+      "defence-minister": "Catherine Vautrin"
+    }
+  },
+  {
+    "country": "GBR",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://www.gov.uk/government/ministers",
+    "roles": {
+      "head-of-state": {
+        "name": "Charles III",
+        "source": "https://www.royal.uk/the-king"
+      },
+      "head-of-government": "Andy Burnham",
+      "foreign-minister": "Ed Miliband",
+      "defence-minister": "Wes Streeting"
+    }
+  },
+  {
+    "country": "IDN",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://setkab.go.id/en/cabinet-profile/",
+    "roles": {
+      "head-of-state": {
+        "name": "Prabowo Subianto",
+        "source": "https://setkab.go.id/en/president-prabowo-subianto-announces-red-and-white-cabinet-lineup/",
+        "aliases": ["Prabowo Subianto Djojohadikusumo"]
+      },
+      "head-of-government": {
+        "name": "Prabowo Subianto",
+        "source": "https://setkab.go.id/en/president-prabowo-subianto-announces-red-and-white-cabinet-lineup/",
+        "aliases": ["Prabowo Subianto Djojohadikusumo"]
+      },
+      "foreign-minister": {
+        "name": "Arrmanatha Nasir",
+        "aliases": ["Arrmanatha Christiawan Nasir"],
+        "source": "https://setkab.go.id/en/president-prabowo-inaugurates-new-ministers-vice-ministers-at-state-palace/",
+        "checkedOn": "2026-11-10"
+      },
+      "defence-minister": "Sjafrie Sjamsoeddin"
+    }
+  },
+  {
+    "country": "IND",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://www.pmindia.gov.in/en/news_updates/portfolios-of-the-union-council-of-ministers-2/",
+    "roles": {
+      "head-of-state": {
+        "name": "Droupadi Murmu",
+        "source": "https://www.presidentofindia.gov.in/",
+        "aliases": ["Drupadi Murmu"]
+      },
+      "head-of-government": "Narendra Modi",
+      "foreign-minister": "Subrahmanyam Jaishankar",
+      "defence-minister": {
+        "name": "Raj Nath Singh",
+        "aliases": ["Rajnath Singh"]
+      }
+    }
+  },
+  {
+    "country": "ITA",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://presidenza.governo.it/ufficio_cerimoniale/cerimoniale/precedenze_ministri.html",
+    "roles": {
+      "head-of-state": {
+        "name": "Sergio Mattarella",
+        "source": "https://www.quirinale.it/page/biografia_en"
+      },
+      "head-of-government": {
+        "name": "Giorgia Meloni",
+        "source": "https://presidenza.governo.it/AmministrazioneTrasparente/Organizzazione/OrganiIndirizzoPolitico/index.html"
+      },
+      "foreign-minister": "Antonio Tajani",
+      "defence-minister": "Guido Crosetto"
+    }
+  },
+  {
+    "country": "JPN",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://japan.kantei.go.jp/105/actions/202610/26sei_yotou.html",
+    "roles": {
+      "head-of-state": {
+        "name": "Naruhito",
+        "source": "https://www.kunaicho.go.jp/en/learn/about/history/history01.html"
+      },
+      "head-of-government": {
+        "name": "Sanae Takaichi",
+        "aliases": ["Takaichi Sanae"]
+      },
+      "foreign-minister": {
+        "name": "Toshimitsu Motegi",
+        "source": "https://www.mofa.go.jp/press/release/pressite_000001_02811.html",
+        "aliases": ["Motegi Toshimitsu"],
+        "checkedOn": "2026-11-10"
+      },
+      "defence-minister": {
+        "name": "Shinjirō Koizumi",
+        "source": "https://www.mod.go.jp/en/article/2026/10/2f87c33ad8344908ba5bc80f7f184caa6607e590.html",
+        "aliases": ["Koizumi Shinjiro"],
+        "checkedOn": "2026-11-10"
+      }
+    }
+  },
+  {
+    "country": "KEN",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://www.president.go.ke/cabinet/",
+    "roles": {
+      "head-of-state": {
+        "name": "William Ruto",
+        "aliases": ["William Samoei Ruto"]
+      },
+      "head-of-government": {
+        "name": "William Ruto",
+        "aliases": ["William Samoei Ruto"]
+      },
+      "foreign-minister": {
+        "name": "Musalia Mudavadi",
+        "aliases": ["Wycliffe Musalia Mudavadi"],
+        "source": "https://libraryir.parliament.go.ke/server/api/core/bitstreams/0c3e404f-e85b-45ec-82ee-b7fcfa7f0c30/content",
+        "checkedOn": "2026-11-10"
+      },
+      "defence-minister": {
+        "name": "Soipan Tuya",
+        "aliases": ["Roselinda Soipan Tuya"],
+        "source": "https://www.president.go.ke/cabinet/",
+        "checkedOn": "2026-11-10"
+      }
+    }
+  },
+  {
+    "country": "KOR",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://www.korea.net/NewsFocus/policies/view?articleId=274523",
+    "sourceNote": "The Republic of Korea describes the President as both head of state and head of government. The Prime Minister assists the President.",
+    "roles": {
+      "head-of-state": "Lee Jae Myung",
+      "head-of-government": {
+        "name": "Lee Jae Myung",
+        "source": "https://www.korea.net/AboutKorea/OverviewofKorea"
+      },
+      "foreign-minister": {
+        "name": "Cho Hyun",
+        "source": "https://www.mofa.go.kr/eng/wpge/m_24811/contents.do"
+      },
+      "defence-minister": {
+        "name": "Ahn Gyu-Back",
+        "source": "https://mnd.go.kr/mndEN/353/subview.do",
+        "aliases": ["Ahn Gyu Baek"],
+        "checkedOn": "2026-11-10"
+      }
+    }
+  },
+  {
+    "country": "NZL",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://www.dpmc.govt.nz/our-business-units/cabinet-office/ministers-and-their-portfolios/ministerial-list",
+    "roles": {
+      "head-of-state": {
+        "name": "Charles III",
+        "source": "https://gg.govt.nz/office-governor-general/roles-and-functions-governor-general/constitutional-role/constitution/constitution"
+      },
+      "head-of-government": "Christopher Luxon",
+      "foreign-minister": "Winston Peters",
+      "defence-minister": {
+        "name": "Paul Goldsmith",
+        "source": "https://www.beehive.govt.nz/portfolio/nationalactnew-zealand-first-coalition-government-2023-2026/defence",
+        "checkedOn": "2026-11-10"
+      }
+    }
+  },
+  {
+    "country": "PHL",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://pco.gov.ph/presidential-speech/speech-by-president-ferdinand-r-marcos-jr-at-the-68th-philippine-army-pa-change-of-command-ceremony/",
+    "roles": {
+      "head-of-state": {
+        "name": "Ferdinand Marcos Jr.",
+        "aliases": ["Bongbong Marcos", "Ferdinand Romualdez Marcos Jr."]
+      },
+      "head-of-government": {
+        "name": "Ferdinand Marcos Jr.",
+        "aliases": ["Bongbong Marcos", "Ferdinand Romualdez Marcos Jr."]
+      },
+      "foreign-minister": {
+        "name": "Ma. Theresa Lazaro",
+        "source": "https://pco.gov.ph/news_releases/asean-foreign-ministers-express-concern-over-evolving-situation-in-the-middle-east/",
+        "aliases": ["Ma. Theresa P. Lazaro", "Theresa Lazaro", "Tess Lazaro"]
+      },
+      "defence-minister": {
+        "name": "Gilberto Teodoro Jr.",
+        "aliases": ["Gilbert Teodoro", "Gilberto C. Teodoro Jr."]
+      }
+    }
+  },
+  {
+    "country": "RUS",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://www.dfat.gov.au/geo/heads-of-government/russia",
+    "roles": {
+      "head-of-state": {
+        "name": "Vladimir Putin",
+        "aliases": ["Vladimir Vladimirovich Putin"]
+      },
+      "head-of-government": {
+        "name": "Mikhail Mishustin",
+        "aliases": ["Mikhail Vladimirovich Mishustin"]
+      },
+      "foreign-minister": {
+        "name": "Sergey Lavrov",
+        "aliases": ["Sergey Viktorovich Lavrov"]
+      },
+      "defence-minister": {
+        "name": "Andrey Belousov",
+        "aliases": ["Andrei Belousov", "Andrey Removich Belousov"],
+        "source": "https://eng.mod.gov.cn/2025xb/N/T/16497845.html",
+        "checkedOn": "2026-11-10"
+      }
+    }
+  },
+  {
+    "country": "SAU",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://ww.spa.gov.sa/en/N2482667",
+    "roles": {
+      "head-of-state": {
+        "name": "Salman bin Abdulaziz Al Saud",
+        "aliases": ["Salman bin Abd al-Aziz Al Saud"]
+      },
+      "head-of-government": {
+        "name": "Mohammed bin Salman",
+        "aliases": [
+          "Mohammed bin Salman Al Saud",
+          "Mohammed bin Salman bin Abdulaziz Al Saud"
+        ]
+      },
+      "foreign-minister": {
+        "name": "Faisal bin Farhan Al Saud",
+        "source": "https://www.spa.gov.sa/en/N2508132",
+        "aliases": ["Faisal bin Farhan", "Faysal bin Farhan"]
+      },
+      "defence-minister": {
+        "name": "Khalid bin Salman Al Saud",
+        "source": "https://saudipedia.com/en/khalid-bin-salman-bin-abdulaziz",
+        "aliases": ["Khalid bin Salman bin Abdulaziz Al Saud"]
+      }
+    }
+  },
+  {
+    "country": "TUR",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://tccb.gov.tr/haberler/410/165825/cumhurbaskani-erdogan-yuksek-asker-s-ra-uyeleriyle-birlikte-anitkabir-i-ziyaret-etti",
+    "roles": {
+      "head-of-state": "Recep Tayyip Erdoğan",
+      "head-of-government": "Recep Tayyip Erdoğan",
+      "foreign-minister": "Hakan Fidan",
+      "defence-minister": "Yaşar Güler"
+    }
+  },
+  {
+    "country": "ZAF",
+    "asOf": "2026-11-09",
+    "checkedOn": "2026-11-09",
+    "source": "https://www.parliament.gov.za/ministers",
+    "roles": {
+      "head-of-state": {
+        "name": "Cyril Ramaphosa",
+        "source": "https://www.presidency.gov.za/press-statements-by-president-cyril-ramaphosa",
+        "aliases": ["Matamela Cyril Ramaphosa"]
+      },
+      "head-of-government": {
+        "name": "Cyril Ramaphosa",
+        "source": "https://www.presidency.gov.za/press-statements-by-president-cyril-ramaphosa",
+        "aliases": ["Matamela Cyril Ramaphosa"]
+      },
+      "foreign-minister": "Ronald Lamola",
+      "defence-minister": "Angie Motshekga"
+    }
+  }
+]
