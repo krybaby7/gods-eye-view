@@ -25,7 +25,7 @@ const textKey = (value) =>
 
 const titlePatterns = {
   'head-of-state': [
-    /^(?:pres\.|president|king|queen|emperor|pope|sultan|emir|amir)$/,
+    /^(?:(?:(?:fed\.|federal) )?(?:pres\.|president)|king|queen|emperor|pope|sultan|emir|amir)$/,
     /^supreme leader\b/,
     /^co-prince\b/,
     /^captain(?:s)? regent\b/,
@@ -42,11 +42,12 @@ const titlePatterns = {
   'foreign-minister': [
     /^(?:min\.|minister|sec\.|secretary)(?: of| for|,)? (?:state (?:of |for )?)?(?:foreign|external) (?:affairs|relations)\b/,
     /^(?:foreign|external affairs) (?:min\.|minister)$/,
-    /^sec(?:retary)?\. of state for foreign affairs\b/,
-    /^(?:min\.|minister) of (?:europe|european(?: affairs)?) (?:&|and) foreign affairs\b/,
+    /^(?:sec\.|secretary) of state for foreign(?: affairs\b|,|$)/,
+    /^(?:min\.|minister) (?:of|for) (?:europe|european(?: affairs)?) (?:&|and) foreign affairs\b/,
     /^(?:min\.|minister) (?:of|for) international relations (?:&|and) cooperation\b/,
   ],
   'defence-minister': [
+    /^(?:sec\.|secretary) of state for defen[cs]e(?:$|\s*[,&])/,
     /^(?:min\.|minister|sec\.|secretary)(?: of| for|,)? (?:(?:national )?defen[cs]e(?! (?:production|industry))|the armed forces)\b/,
     /^(?:defen[cs]e|armed forces) (?:min\.|minister)$/,
   ],

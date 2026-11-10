@@ -85,7 +85,7 @@
       "titles": {
         "pres.": ["head-of-state", "head-of-government"]
       },
-      "source": "https://servicios.infoleg.gob.ar/infolegInternet/anexos/0-4999/804/norma.htm",
+      "source": "https://www.argentina.gob.ar/normativa/nacional/804/texto",
       "checkedOn": "2026-11-10",
       "reviewed": false
     },
@@ -93,13 +93,19 @@
       "titles": {
         "pres.": ["head-of-state", "head-of-government"]
       },
-      "source": "https://www.planalto.gov.br/ccivil_03/constituicao/constituicao.htm",
+      "source": "https://www2.camara.leg.br/atividade-legislativa/legislacao/Constituicoes_Brasileiras/constituicao-cidada/constituicao-federal/index.html/CF1988.html",
       "checkedOn": "2026-11-10",
       "reviewed": false
     },
     "CHE": {
       "titles": {
-        "pres.": []
+        "pres.": [],
+        "pres., swiss confederation": [],
+        "federal chancellor": [],
+        "chief, federal dept. of foreign affairs": ["foreign-minister"],
+        "chief, federal dept. of defense, civil protection, & sport": [
+          "defence-minister"
+        ]
       },
       "source": "https://www.admin.ch/en/members-federal-council",
       "checkedOn": "2026-11-10",
@@ -109,7 +115,7 @@
       "titles": {
         "pres.": ["head-of-state", "head-of-government"]
       },
-      "source": "https://judicial.gov.gh/index.php/the-executive",
+      "source": "https://www.judicial.gov.gh/index.php/the-executive",
       "checkedOn": "2026-11-10",
       "reviewed": false
     },
@@ -133,7 +139,7 @@
       "titles": {
         "pres.": ["head-of-state", "head-of-government"]
       },
-      "source": "https://www.officialgazette.gov.ph/constitutions/1987-constitution/",
+      "source": "https://lawphil.net/consti/cons1987.html",
       "checkedOn": "2026-11-10",
       "reviewed": false
     },

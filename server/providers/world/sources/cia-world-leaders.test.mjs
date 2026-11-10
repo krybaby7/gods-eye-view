@@ -176,3 +176,50 @@ test('CIA surname casing preserves a Roman regnal suffix', async () => {
   const [actor] = await actorsOf(cia, 'argentina');
   assert.equal(actor.name, 'Charles Windsor III');
 });
+test('CIA maps the Swiss ministries without mislabeling the chancellor or rotating chair', async () => {
+  const { parseCiaPage, resolveCiaPage } =
+    await import('./cia-world-leaders.js');
+  const actual = page('Switzerland', '2025-04-30 00:00:00', [
+    { name: 'Karin KELLER-SUTTER', title: 'Pres., Swiss Confederation' },
+    { name: 'Viktor ROSSI', title: 'Federal Chancellor' },
+    {
+      name: 'Ignazio CASSIS',
+      title: 'Chief, Federal Dept. of Foreign Affairs',
+    },
+    {
+      name: 'Martin PFISTER',
+      title: 'Chief, Federal Dept. of Defense, Civil Protection, & Sport',
+    },
+  ]);
+  const actors = resolveCiaPage(parseCiaPage(actual, 'switzerland'), {
+    countries: [{ name: 'Switzerland', iso3: 'CHE' }],
+  });
+  assert.deepEqual(
+    actors.map(({ role, name }) => [role, name]),
+    [
+      ['foreign-minister', 'Ignazio Cassis'],
+      ['defence-minister', 'Martin Pfister'],
+    ],
+  );
+});
+
+test('CIA handles federal presidents and cabinet secretaries without matching junior portfolios', async () => {
+  const actual = page('Argentina', '2026-08-06 14:01:17', [
+    { name: 'Frank-Walter STEINMEIER', title: 'Fed. Pres.' },
+    {
+      name: 'David LAMMY',
+      title: 'Sec. of State for Foreign, Commonwealth, & Development Affairs',
+    },
+    { name: 'John HEALEY', title: 'Sec. of State for Defense' },
+    { name: 'Other HOLDER', title: 'Min. of Defense Production' },
+  ]);
+  const actors = await actorsOf(actual, 'argentina');
+  assert.deepEqual(
+    actors.map(({ role, name }) => [role, name]),
+    [
+      ['head-of-state', 'Frank-Walter Steinmeier'],
+      ['foreign-minister', 'David Lammy'],
+      ['defence-minister', 'John Healey'],
+    ],
+  );
+});
