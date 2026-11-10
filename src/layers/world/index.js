@@ -307,6 +307,8 @@ export function createWorldLayer({
           viewer,
           signal: lifecycle.signal,
           requestRender,
+          getDetail: (country, lens, options) =>
+            source.getDetail(country, lens, options),
           labelPoint: (iso3) => geometry?.labelPoint(iso3),
           fixtures: new URLSearchParams(globalThis.location?.search).has(
             'world-fixtures',

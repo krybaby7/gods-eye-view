@@ -52,5 +52,45 @@
     "licence": "CC BY-SA 4.0",
     "releaseRhythm": "Annual (March)",
     "marks": ["ShareAlike"]
+  },
+  {
+    "id": "portwatch",
+    "name": "IMF PortWatch",
+    "access": "Keyless ArcGIS FeatureServer. Automated extraction requires permission and GEV_WORLD_PORTWATCH_BULK_OK=1.",
+    "attribution": "IMF PortWatch. Ratios and statuses are transformed from IMF vessel calls.",
+    "url": "https://portwatch.imf.org/",
+    "licence": "IMF terms. Written permission required for automated bulk or systematic extraction and commercial use.",
+    "releaseRhythm": "Daily observations, released in batches with a lag and subject to revision",
+    "marks": ["NonCommercial", "PermissionRequired"]
+  },
+  {
+    "id": "eia-chokepoints",
+    "name": "EIA World Oil Transit Chokepoints",
+    "access": "Public EIA report, hand-entered published aggregates",
+    "attribution": "U.S. Energy Information Administration",
+    "url": "https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/",
+    "licence": "U.S. government published aggregates; underlying commercial tracking data are outside this release",
+    "releaseRhythm": "Irregular; report updated March 2026 with data through H1 2025 and Panama FY 2025",
+    "marks": ["Draft"]
+  },
+  {
+    "id": "fred",
+    "name": "FRED monthly energy prices",
+    "access": "Undocumented keyless FRED graph CSV",
+    "attribution": "FRED, Federal Reserve Bank of St. Louis; original data from EIA and the IMF",
+    "url": "https://fred.stlouisfed.org/",
+    "licence": "EIA oil series are U.S. government data. IMF terms apply to the European gas series.",
+    "releaseRhythm": "Monthly by series, subject to publication lag and revision",
+    "marks": ["NonCommercial"]
+  },
+  {
+    "id": "energy-dependencies",
+    "name": "Energy trade route model",
+    "access": "Keyless annual BACI archive and Eurostat maritime network. Built offline; compact derived data bundled for local use.",
+    "attribution": "CEPII BACI HS22 V202601; Eurostat SeaRoute MARNET via searoute-ts; Natural Earth; U.S. EIA; cited energy terminal and throughput evidence in energy-ports.json",
+    "url": "https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37",
+    "licence": "BACI: Etalab Open Licence 2.0. Eurostat MARNET network: EUPL-1.2. Derived route data is ShareAlike and outside the app MIT licence; review obligations before public or commercial redistribution.",
+    "releaseRhythm": "BACI annual; model data year 2024",
+    "marks": ["ShareAlike"]
   }
 ]

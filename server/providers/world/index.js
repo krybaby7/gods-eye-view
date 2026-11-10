@@ -14,6 +14,7 @@ import { cleanupLegacyWorldDownloads } from './sources/legacyDownloads.js';
 import { createWorldFetch } from './sources/transport.js';
 import { createWorldStore } from './store.js';
 import { createTurn } from './turn.js';
+import './dependencies.js';
 
 const PREFIX = '/api/world';
 const REFRESH = PREFIX + '/refresh';
