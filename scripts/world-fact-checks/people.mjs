@@ -85,6 +85,118 @@ function officeCheck(country, role, records, fetchError) {
   };
 }
 
+function roundFourChecks(board, directory, spec) {
+  const { checkedOn, baseline } = spec;
+  const rows = directory.filter(({ role }) => roles.includes(role));
+  const available = rows.length > 0;
+  const foundOrMissing = (value) =>
+    available ? value : { reason: 'People directory unavailable' };
+  const checks = ['disagreement', 'stale'].map((field) => {
+    const disagreement = field === 'disagreement';
+    const before = disagreement ? baseline.disagreements : baseline.stale;
+    const after = rows.filter((row) => row[field]).length;
+    return {
+      id: disagreement ? 'people-office-disagreements' : 'people-stale-cues',
+      expected: `Fewer than ${before} of ${baseline.roles} shown in the third review`,
+      found: foundOrMissing({
+        before,
+        beforeRoles: baseline.roles,
+        after,
+        afterRoles: rows.length,
+      }),
+      source:
+        'world-board-review-3-2026-11-10.md, People (#18), compared with the running board',
+      checkedOn,
+      pass: available ? after < before : null,
+    };
+  });
+  const portraits = board?.features?.['wikimedia-commons']?.portraits ?? {};
+  for (const expected of spec.corroborated) {
+    const { country, role, name, source } = expected;
+    const found = rows
+      .filter((row) => row.country === country && row.role === role)
+      .map(({ name, id, imageFile, disagreement }) => {
+        const metadata = portraits[imageFile];
+        return {
+          name,
+          id,
+          imageFile,
+          thumbnail: metadata?.thumbnail,
+          attributed: Boolean(metadata?.author && metadata?.licence),
+          disagreement: disagreement?.name ?? null,
+        };
+      });
+    checks.push({
+      id: `people-${country}-${role}-corroborated`,
+      expected: {
+        name,
+        holders: 1,
+        wikidataIdentity: true,
+        attributedPortrait: true,
+        disagreement: null,
+      },
+      found: foundOrMissing(found),
+      source,
+      checkedOn,
+      pass: available
+        ? found.length === 1 &&
+          matchesPerson(found[0], expected) &&
+          /^Q\d+$/.test(found[0].id) &&
+          Boolean(found[0].thumbnail) &&
+          found[0].attributed &&
+          !found[0].disagreement
+        : null,
+    });
+  }
+  for (const [country, source] of Object.entries(spec.fresh)) {
+    const found = rows
+      .filter((row) => row.country === country)
+      .map(({ name, role, asOf, stale }) => ({ name, role, asOf, stale }));
+    checks.push({
+      id: `people-${country}-confirmations-fresh`,
+      expected: 'All four roles have a dated confirmation and no stale cue',
+      found: foundOrMissing(found),
+      source,
+      checkedOn,
+      pass: available
+        ? roles.every((role) =>
+            found.some(
+              (row) =>
+                row.role === role &&
+                /^\d{4}-\d{2}-\d{2}$/.test(row.asOf) &&
+                row.stale === false,
+            ),
+          )
+        : null,
+    });
+  }
+  for (const expected of spec.officeholders) {
+    const { country, role, name, acting, source } = expected;
+    const found = rows
+      .filter((row) => row.country === country && row.role === role)
+      .map(({ name, source, asOf, acting, ambiguity }) => ({
+        name,
+        source,
+        asOf,
+        acting,
+        ambiguity,
+      }));
+    checks.push({
+      id: `people-${country}-${role}-round4`,
+      expected: { name, acting },
+      found: foundOrMissing(found),
+      source,
+      checkedOn,
+      pass: available
+        ? found.length === 1 &&
+          matchesPerson(found[0], expected) &&
+          (acting === undefined || acting === found[0].acting)
+        : null,
+    });
+  }
+  return checks;
+}
+
 export default async function checkPeople({
   board,
   getDetail,
@@ -169,6 +281,8 @@ export default async function checkPeople({
         : null,
     },
   ];
+  if (core.round4)
+    checks.push(...roundFourChecks(board, directory, core.round4));
   const sampleChecks = [];
   const dated = [];
   for (const country of countries) {

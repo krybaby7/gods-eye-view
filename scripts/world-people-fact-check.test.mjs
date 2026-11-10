@@ -2,6 +2,61 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import checkPeople from './world-fact-checks/people.mjs';
 
+test('People measures a single attributed portrait, disagreement counts and stale counts', async () => {
+  const murmu = {
+    country: 'IND',
+    role: 'head-of-state',
+    name: 'Droupadi Murmu',
+    id: 'Q19901232',
+    imageFile: 'Portrait.jpg',
+    source: 'wikidata',
+    asOf: '2026-11-10',
+    stale: false,
+  };
+  const check = async (actors, portraits) =>
+    new Map(
+      (
+        await checkPeople({
+          board: {
+            features: {
+              wikidata: { actors },
+              'wikimedia-commons': { portraits },
+            },
+          },
+          getDetail: async () => null,
+        })
+      ).map((fact) => [fact.id, fact]),
+    );
+  const portrait = {
+    thumbnail:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/portrait.jpg',
+    author: 'Photographer',
+    licence: 'CC BY 4.0',
+  };
+  const accepted = await check([murmu], { 'Portrait.jpg': portrait });
+  assert.equal(
+    accepted.get('people-IND-head-of-state-corroborated').pass,
+    true,
+  );
+  assert.equal(accepted.get('people-office-disagreements').found.after, 0);
+  assert.equal(accepted.get('people-stale-cues').found.after, 0);
+  const missing = await check([murmu], {});
+  assert.equal(
+    missing.get('people-IND-head-of-state-corroborated').pass,
+    false,
+  );
+  const conflict = await check(
+    [{ ...murmu, stale: true, disagreement: { name: 'Other Person' } }],
+    { 'Portrait.jpg': portrait },
+  );
+  assert.equal(
+    conflict.get('people-IND-head-of-state-corroborated').pass,
+    false,
+  );
+  assert.equal(conflict.get('people-office-disagreements').found.after, 1);
+  assert.equal(conflict.get('people-stale-cues').found.after, 1);
+});
+
 test('People reports an unavailable expectation file as not measured', async () => {
   const [result] = await checkPeople({
     board: {},

@@ -93,19 +93,25 @@ export function roleEvidence(document, role) {
     sourceUrl,
     stale,
     disagreement,
+    ambiguity,
     otherEvidence,
     draft,
     reviewed,
   } = role;
-  const date = asOf ?? since;
-  if (!date && !source) return null;
+  if (!asOf && !since && !source) return null;
   const text = node(document, 'div', 'world-person-role world-person-evidence');
   const sourceName = peopleSources[source] ?? source ?? 'Source not recorded';
   text.append(
-    (date ? 'as of ' + date : 'Date not recorded') + ' · ',
+    (asOf ? 'as of ' + asOf : 'Date not recorded') + ' · ',
     externalLink(document, sourceUrl, sourceName) ?? sourceName,
   );
+  if (since) text.append(' · since ' + since);
   if (stale) text.append(' · may be out of date');
+  if (ambiguity)
+    text.append(
+      ' · CIA title ambiguous: also lists ' +
+        ambiguity.alternatives.map(({ name }) => name).join(', '),
+    );
   if (draft || reviewed === false) {
     text.append(
       ' · ',

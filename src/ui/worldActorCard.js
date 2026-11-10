@@ -76,14 +76,13 @@ function actorCard({ document, snapshot, id }) {
   card.dataset.worldActor = id;
   card.append(node(document, 'h3', 'world-actor-name', actor.name));
   for (const record of actor.offices) {
-    const { role, office, since, country, acting, collective } = record;
+    const { role, office, country, acting, collective } = record;
     const description = [
       actorRoles[role] ?? role,
       country,
       collective,
       office,
       acting && 'Acting',
-      since && 'since ' + since,
     ]
       .filter(Boolean)
       .join(' · ');

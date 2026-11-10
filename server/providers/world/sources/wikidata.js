@@ -8,6 +8,7 @@ const MAX_RECOVERY_CALLS = 8;
 const RECOVERY_WINDOW_MS = 45_000;
 const RUN_BUDGET_MS = 240_000;
 const MAX_RETRY_MS = 60_000;
+const ACTING_NATURES = ['Q4676846', 'Q20012923'];
 const ROLES = [
   'head-of-state',
   'head-of-government',
@@ -15,7 +16,7 @@ const ROLES = [
   'defence-minister',
 ];
 
-export const version = 6;
+export const version = 7;
 export const shouldCheck = (context) =>
   !(Date.parse(context.data?.retryAt) > +context.now) &&
   (context.rederive || actorSourceDue(context, 7 * 24));
@@ -180,6 +181,12 @@ function verificationQuery(role, tuples) {
           FILTER(!BOUND(?since) || ${role.startsWith('head-of-') ? '?iso = "CHE" || ' : ''}NOT EXISTS {
             ?laterStatement ps:P39 ?seat; pq:P580 ?laterStart; wikibase:rank ?laterRank .
             FILTER(?laterRank != wikibase:DeprecatedRank && ?laterStart > ?since && ?laterStart <= NOW())
+            FILTER NOT EXISTS { ?laterStatement pq:P582 [] }
+            FILTER NOT EXISTS { ?laterStatement pq:P1366 [] }
+            FILTER NOT EXISTS {
+              ?laterStatement pq:P5102 ?laterNature .
+              FILTER(?laterNature IN (${ACTING_NATURES.map((id) => 'wd:' + id).join(', ')}))
+            }
           })
           FILTER NOT EXISTS { ?statement pq:P582 [] }
           FILTER NOT EXISTS { ?statement pq:P1366 [] }
@@ -278,11 +285,7 @@ function chooseActor(rows, now) {
     office:
       !conflictingOffice && office && !/^Q\d+$/.test(office) ? office : null,
     since: row.since?.slice(0, 10) || null,
-    acting: rows.some(
-      ({ nature, officeLabel }) =>
-        /\/Q(?:4676846|20012923)$/.test(nature ?? '') ||
-        /^(?:acting|interim)\b/i.test(officeLabel ?? ''),
-    ),
+    acting: rows.some(actingStatement),
     ...(collective && { collective: seats.collective }),
     imageFile: image ?? null,
     accounts: accountLinks,
@@ -290,6 +293,13 @@ function chooseActor(rows, now) {
     wikidataUrl: 'https://www.wikidata.org/wiki/' + id,
     lastChecked: now.toISOString(),
   };
+}
+
+function actingStatement({ nature, officeLabel }) {
+  return (
+    ACTING_NATURES.includes(nature?.split('/').at(-1)) ||
+    /^(?:acting|interim)\b/i.test(officeLabel ?? '')
+  );
 }
 
 function normalizeDirectory(bindings, registry, now) {
@@ -340,7 +350,9 @@ function normalizeDirectory(bindings, registry, now) {
   const actors = [...claims.keys()]
     .sort()
     .flatMap((key) => {
-      const rows = claims.get(key);
+      const candidates = claims.get(key);
+      const permanent = candidates.filter((row) => !actingStatement(row));
+      const rows = permanent.length ? permanent : candidates;
       const latest = Math.max(...rows.map(({ since }) => Date.parse(since)));
       const current = rows.filter(({ since }) => Date.parse(since) === latest);
       return fieldsFor(current, 'person').map((person) =>

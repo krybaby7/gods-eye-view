@@ -1,6 +1,63 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+test('People lists one minister with their attributed portrait and account', async () => {
+  const { renderPeopleTab } = await import('../../ui/worldPeopleTab.js');
+  const document = {
+    createElement(tag) {
+      return {
+        tag,
+        children: [],
+        get childElementCount() {
+          return this.children.length;
+        },
+        addEventListener() {},
+        append(...children) {
+          this.children.push(...children);
+        },
+      };
+    },
+  };
+  const actor = {
+    id: 'Q1',
+    kind: 'person',
+    country: 'RUS',
+    role: 'foreign-minister',
+    name: 'Sergey Lavrov',
+    imageFile: 'Lavrov.jpg',
+    accounts: { website: 'https://example.org/lavrov' },
+  };
+  const snapshot = {
+    features: {
+      wikidata: { actors: [actor] },
+      'wikimedia-commons': { portraits: { 'Lavrov.jpg': portrait } },
+    },
+  };
+  const tree = renderPeopleTab({
+    document,
+    snapshot,
+    sheetModel: { iso3: 'RUS' },
+  });
+  function walk(node) {
+    return node.children ? [node, ...node.children.flatMap(walk)] : [];
+  }
+  const nodes = walk(tree);
+  assert.equal(
+    nodes.filter(
+      ({ tag, textContent }) => tag === 'button' && textContent === actor.name,
+    ).length,
+    1,
+  );
+  assert.equal(
+    nodes.find(({ tag, alt }) => tag === 'img' && alt === actor.name)?.src,
+    portrait.thumbnail,
+  );
+  assert.ok(
+    nodes.some(({ className }) => className === 'world-portrait-credit'),
+  );
+  assert.ok(nodes.some(({ href }) => href === 'https://example.org/lavrov'));
+});
+
 const portrait = {
   thumbnail: 'https://upload.wikimedia.org/test',
   author: 'Fixture artist',
@@ -191,4 +248,18 @@ test('role evidence displays date, source, stale cue and the competing holder', 
     /displayed holder confirmed by Wikidata, 2025-10-21/,
   );
   assert.doesNotMatch(agreed.values.join(''), /sources disagree/);
+  const ambiguous = roleEvidence(document, {
+    source: 'wikidata',
+    asOf: '2026-11-10',
+    since: '2024-04-03',
+    ambiguity: { alternatives: [{ name: 'Alternative Holder' }] },
+  });
+  assert.match(
+    ambiguous.values.join(''),
+    /as of 2026-11-10 · Wikidata · since 2024-04-03/,
+  );
+  assert.match(
+    ambiguous.values.join(''),
+    /CIA title ambiguous: also lists Alternative Holder/,
+  );
 });

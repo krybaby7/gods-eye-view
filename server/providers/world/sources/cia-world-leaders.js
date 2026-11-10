@@ -10,6 +10,7 @@ const INDEX = PAGE_DATA + '/foreign-governments/page-data.json';
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const PAUSE_MS = 300;
 const DEADLINE_MS = 12_000;
+const RUN_BUDGET_MS = 240_000;
 const LOOKUP_HASH = '3338022342';
 
 export const requestHost = 'www.cia.gov';
@@ -39,7 +40,7 @@ const titlePatterns = {
     /^(?:prime min\.|prime minister)(?:$|\s*[,&])/,
     /^premier(?:$|\s*[,&])/,
     /^(?:federal )?chancellor$/,
-    /^(?:pres\.|president) of the (?:govt\.|government|council of ministers)(?:$|\s*[,&])/,
+    /^(?:pres\.|president) of the (?:govt\.|government|council of ministers)$/,
     /^head of (?:the )?(?:government|govt\.)$/,
     /^(?:chair|chairman|chairwoman|chmn\.),? (?:of the )?council of ministers$/,
     /^king\s*(?:&|and) prime min\.$/,
@@ -47,7 +48,7 @@ const titlePatterns = {
   'foreign-minister': [
     /^(?:cabinet|state) sec\. (?:of|for) foreign(?: and diaspora)? affairs\b/,
     /^(?:min\.|minister) (?:of|for) european (?:&|and) international affairs\b/,
-    /^(?:min\.|minister|sec\.|secretary)(?: of| for|,)? (?:state (?:of |for )?)?(?:foreign|external) (?:affairs|relations)\b/,
+    /^(?:min\.|minister|sec\.|secretary)(?: of| for|,)? (?:foreign|external) (?:affairs|relations)\b/,
     /^(?:foreign|external affairs) (?:min\.|minister)$/,
     /^(?:sec\.|secretary) of state for foreign(?: affairs\b|,|$)/,
     /^(?:min\.|minister) (?:of|for) (?:europe|european(?: affairs)?) (?:&|and) foreign affairs\b/,
@@ -73,13 +74,21 @@ function mapTitle(country, title) {
       roles: override.titles[clean],
       office: override.officeLabels?.[clean],
       draft: override.source,
+      plainTitle: isPlainTitle(clean),
     };
   }
   return {
     roles: officeRoles.filter((role) =>
       titlePatterns[role].some((pattern) => pattern.test(clean)),
     ),
+    plainTitle: isPlainTitle(clean),
   };
+}
+
+// A comma directly after the office abbreviation is formatting, not an
+// additional portfolio (e.g. "Chmn., Council of Ministers").
+function isPlainTitle(title) {
+  return !/(?:,|&|\band\b)/.test(title.replace(/^(\S+),/, '$1'));
 }
 
 export function parseCiaPage(json, slug) {
@@ -111,12 +120,24 @@ export function parseCiaPage(json, slug) {
 
 function displayName(name) {
   return name.replace(/\p{L}+/gu, (word, offset) => {
-    const regnalSuffix =
-      offset + word.length === name.length &&
-      /^(?:X{0,2})(?:IX|IV|V?I{0,3})$/.test(word);
-    return word.length > 1 && word === word.toUpperCase() && !regnalSuffix
-      ? word[0] + word.slice(1).toLowerCase()
-      : word;
+    const regnal =
+      offset > 0 &&
+      /^(?=[IVXLCDM]+$)M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})$/.test(
+        word,
+      );
+    if (word.length < 2 || word !== word.toUpperCase() || regnal) return word;
+    // CIA capitalizes surnames wholesale. Only restore Mac for known Gaelic
+    // forms, since names like Macron and Macut do not have a medial capital.
+    const prefix =
+      /^(?:MC(?=\p{L})|MAC(?=DONALD|KENNA|KENZIE|KINNON|NEILL|PHERSON|INTOSH))/u.exec(
+        word,
+      )?.[0];
+    const split = prefix?.length ?? 0;
+    return (
+      (prefix ? 'M' + prefix.slice(1).toLowerCase() : '') +
+      word[split] +
+      word.slice(split + 1).toLowerCase()
+    );
   });
 }
 
@@ -146,17 +167,29 @@ export function resolveCiaPage(page, registry) {
       /^(?:vacant|unknown|tbd|none|not appointed|n\/a|[-–—]+)$/i.test(label)
     )
       continue;
-    const { roles, office, draft: titleSource } = mapTitle(country, title);
+    const {
+      roles,
+      office,
+      draft: titleSource,
+      plainTitle,
+    } = mapTitle(country, title);
     const draft = titleSource ?? overrides.countries[country]?.source;
+    const { aliases } = overrides.nameAliases[country]?.[textKey(label)] ?? {};
     for (const role of roles) {
       const id = 'cia-' + country.toLowerCase() + '-' + textKey(label);
-      actors.set(role + ':' + id, {
+      const key = role + ':' + id;
+      if (actors.has(key) && (!plainTitle || actors.get(key).plainTitle))
+        continue;
+      actors.delete(key);
+      actors.set(key, {
         id,
         name: label,
+        ...(aliases && { aliases }),
         kind: 'person',
         country,
         role,
         office: office ?? title,
+        plainTitle,
         acting,
         asOf: page.asOf,
         source: 'cia-world-leaders',
@@ -198,18 +231,26 @@ function indexEntries(body) {
   ];
 }
 
-async function fetchJson(fetchImpl, url, clock, onAttempt) {
+async function fetchJson(
+  fetchImpl,
+  url,
+  clock,
+  budget,
+  onDispatch,
+  retryConnection,
+) {
   const response = await fetchOnDispatch(
     fetchImpl,
     url,
     {
       headers: { Accept: 'application/json' },
       redirect: 'error',
-      retryConnection: !onAttempt,
+      retryConnection,
+      signal: budget,
     },
     () => {
-      onAttempt?.(clock());
-      return AbortSignal.timeout(DEADLINE_MS);
+      onDispatch(clock());
+      return AbortSignal.any([budget, AbortSignal.timeout(DEADLINE_MS)]);
     },
   );
   if (response.ok) return readResponseJsonCapped(response, 1_000_000);
@@ -241,6 +282,9 @@ export async function fetchObservations({
   const started = monotonic();
   const elapsed = () => Math.round(monotonic() - started);
   const clock = () => new Date(+now + elapsed());
+  const budget = AbortSignal.timeout(RUN_BUDGET_MS);
+  const budgetSpent = () => budget.aborted || elapsed() >= RUN_BUDGET_MS;
+  const budgetError = new Error('CIA run budget exhausted');
   const errors = [];
   const pages = { ...data?.pages };
   const attempted = { ...data?.attempted };
@@ -249,10 +293,21 @@ export async function fetchObservations({
   let requests = 0;
   let loadedPages = 0;
   let attemptedPages = 0;
+  let consecutiveFailures = 0;
   async function request(url, onAttempt) {
-    if (requests) await pause(PAUSE_MS);
-    requests++;
-    return fetchJson(fetchImpl, url, clock, onAttempt);
+    if (requests) await pause(PAUSE_MS, null, { signal: budget });
+    if (budgetSpent()) throw budgetError;
+    return fetchJson(
+      fetchImpl,
+      url,
+      clock,
+      budget,
+      (startedAt) => {
+        requests++;
+        onAttempt?.(startedAt);
+      },
+      !onAttempt,
+    );
   }
   function recordFailure(label, failure) {
     errors.push(label + ': ' + failure.message);
@@ -288,7 +343,7 @@ export async function fetchObservations({
     }
   }
   for (const { slug, country } of directory.entries) {
-    if (retryAt) break;
+    if (retryAt || consecutiveFailures >= 3 || budgetSpent()) break;
     if (!due(attempted[slug], clock())) continue;
     try {
       const page = parseCiaPage(
@@ -305,10 +360,16 @@ export async function fetchObservations({
         throw new Error('Country label differs from the index');
       pages[slug] = page;
       loadedPages++;
+      consecutiveFailures = 0;
     } catch (failure) {
+      if (budgetSpent()) break;
       recordFailure(slug, failure);
+      consecutiveFailures++;
     }
   }
+  if (budgetSpent()) errors.push(budgetError.message);
+  else if (consecutiveFailures >= 3)
+    errors.push('Stopped CIA country pages after three consecutive failures');
   const active = new Set(directory.entries.map(({ slug }) => slug));
   const detail = `${loadedPages} of ${attemptedPages} CIA country pages loaded in ${elapsed()} ms (${requests} total requests, ${directory.entries.length} listed).`;
   return {
