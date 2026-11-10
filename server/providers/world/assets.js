@@ -68,7 +68,7 @@ export async function readCuratedAssets() {
       licence: 'Curated facts with company citations',
       reviewed: false,
       owners: curatedOwners(row, 'investor').map((owner) => ({
-        countryLabel: 'Controlling group�s jurisdiction',
+        countryLabel: 'Controlling group’s jurisdiction',
         ...owner,
       })),
       capacity: null,

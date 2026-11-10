@@ -350,7 +350,7 @@ export default async function phase4({
       await pickAsset(piraeusId);
       assert.match(
         await text('#world-card-content'),
-        /Draft, not yet reviewed.*Sourced owner or operator.*COSCO.*Owner’s home country CHN.*67%.*Operator.*Piraeus Port Authority/s,
+        /Draft, not yet reviewed.*Sourced owner or operator.*COSCO.*Controlling group’s jurisdiction CHN.*67%.*Operator.*Piraeus Port Authority/s,
       );
       assert.ok(await page.$('#world-card-content a[href*="olp.gr"]'));
       await shot('phase4-verified-asset-card');
@@ -361,7 +361,15 @@ export default async function phase4({
       );
       await camera(82, 23, 7_000_000);
       await pickAsset(closedId, 'IND');
-      assert.equal(await text('#world-sheet-code'), 'CHN');
+      assert.equal(
+        await page.evaluate(
+          () =>
+            window.__godsEyeView.dataManager.layers
+              .get('world')
+              .module.getSnapshot().selected,
+        ),
+        'CHN',
+      );
       assert.match(
         await text('#world-card-content'),
         /Fixture Closed Plant.*Registered jurisdiction CHN/s,
