@@ -589,6 +589,7 @@ export function buildEnergyModel(flows, { routeFor, references }) {
   return {
     mode: 'modelled',
     version: 'BACI HS22 V202601',
+    routeShareBasis: 'seaborne',
     period: '2024',
     label:
       'Modelled from 2024 BACI trade, benchmarked against EIA. Not a published statistic.',

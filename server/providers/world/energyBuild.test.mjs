@@ -458,6 +458,7 @@ test('bilateral port and passage shares use only the displayed seaborne volume',
   );
   const [row] = model.rows;
   assert.equal(row.volume.value, 48);
+  assert.equal(model.routeShareBasis, 'seaborne');
   assert.deepEqual(
     row.portSplits.map(({ share }) => share),
     [0.75, 0.25],

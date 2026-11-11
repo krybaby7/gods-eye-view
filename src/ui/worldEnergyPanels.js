@@ -79,10 +79,9 @@ function dependencyNotice({ document, snapshot }) {
 
 function dependencyItem({ document, snapshot, openCard }, row, title) {
   const item = node(document, 'li');
+  const model = snapshot.features?.['energy-dependencies'];
   const ports =
-    snapshot.features?.['energy-dependencies']?.routePorts?.[
-      row.id ?? `${row.provider}/${row.dependent}`
-    ];
+    model?.routePorts?.[row.id ?? `${row.provider}/${row.dependent}`];
   item.append(node(document, 'h4', title));
   item.append(
     details(document, [
@@ -164,6 +163,8 @@ function dependencyItem({ document, snapshot, openCard }, row, title) {
   const gates = new Map(
     energyGates(snapshot).map((gate) => [gate.id, gate.name]),
   );
+  const flowBasis =
+    model?.routeShareBasis === 'seaborne' ? 'seaborne flow' : 'flow';
   for (const id of row.route ?? [row.gate]) {
     if (!gates.has(id)) continue;
     const button = node(
@@ -171,7 +172,7 @@ function dependencyItem({ document, snapshot, openCard }, row, title) {
       'button',
       gates.get(id) +
         (row.gateShares?.[id] < 1
-          ? ` · ${pct(row.gateShares[id])} of seaborne flow`
+          ? ` · ${pct(row.gateShares[id])} of ${flowBasis}`
           : ''),
       'world-energy-route',
     );
