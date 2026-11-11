@@ -1,23 +1,26 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+const document = {
+  createElement(tag) {
+    return {
+      tag,
+      children: [],
+      get childElementCount() {
+        return this.children.length;
+      },
+      addEventListener() {},
+      append(...children) {
+        this.children.push(...children);
+      },
+    };
+  },
+};
+const walk = (node) =>
+  node.children ? [node, ...node.children.flatMap(walk)] : [];
+
 test('People lists one minister with their attributed portrait and account', async () => {
   const { renderPeopleTab } = await import('../../ui/worldPeopleTab.js');
-  const document = {
-    createElement(tag) {
-      return {
-        tag,
-        children: [],
-        get childElementCount() {
-          return this.children.length;
-        },
-        addEventListener() {},
-        append(...children) {
-          this.children.push(...children);
-        },
-      };
-    },
-  };
   const actor = {
     id: 'Q1',
     kind: 'person',
@@ -38,9 +41,6 @@ test('People lists one minister with their attributed portrait and account', asy
     snapshot,
     sheetModel: { iso3: 'RUS' },
   });
-  function walk(node) {
-    return node.children ? [node, ...node.children.flatMap(walk)] : [];
-  }
   const nodes = walk(tree);
   assert.equal(
     nodes.filter(
@@ -56,6 +56,55 @@ test('People lists one minister with their attributed portrait and account', asy
     nodes.some(({ className }) => className === 'world-portrait-credit'),
   );
   assert.ok(nodes.some(({ href }) => href === 'https://example.org/lavrov'));
+});
+
+test('People groups a prime minister and vice president by identity and gives the other vice president a portrait', async () => {
+  const { renderPeopleTab } = await import('../../ui/worldPeopleTab.js');
+  const vice = {
+    id: 'Q556607',
+    country: 'ARE',
+    name: 'Mansour bin Zayed Al Nahyan',
+    kind: 'person',
+    role: 'vice-president',
+    imageFile: 'Mansour.jpg',
+  };
+  const prime = {
+    ...vice,
+    id: 'Q57655',
+    name: 'Mohammed bin Rashid Al Maktoum',
+    role: 'head-of-government',
+    imageFile: 'Mohammed.jpg',
+  };
+  const nodes = walk(
+    renderPeopleTab({
+      document,
+      snapshot: {
+        features: {
+          wikidata: {
+            actors: [prime, { ...prime, role: 'vice-president' }, vice],
+          },
+          'wikimedia-commons': {
+            portraits: { 'Mansour.jpg': portrait, 'Mohammed.jpg': portrait },
+          },
+        },
+      },
+      sheetModel: { iso3: 'ARE' },
+    }),
+  );
+  for (const { name } of [prime, vice]) {
+    assert.equal(
+      nodes.filter(
+        ({ tag, textContent }) => tag === 'button' && textContent === name,
+      ).length,
+      1,
+    );
+  }
+  assert.equal(
+    nodes.filter(({ textContent }) => textContent === 'Vice president').length,
+    2,
+  );
+  assert.equal(nodes.find(({ tag }) => tag === 'img')?.alt, vice.name);
+  assert.equal(nodes.filter(({ tag }) => tag === 'img').length, 1);
 });
 
 const portrait = {
