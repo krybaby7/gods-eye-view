@@ -1,7 +1,7 @@
 # Board-first app: roadmap from World Board feature to finished product
 
 Date: 2026-11-11. Status: direction agreed with the owner on 2026-11-11 (section 5); nothing is
-built. Decisions 7 to 22, section 8.1 and section 9 were added the same day, after a second review
+built. Decisions 7 to 24, section 8.1 and section 9 were added the same day, after a second review
 on the owner's machine with live data, and stage 3 was rewritten to follow them. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
@@ -291,7 +291,8 @@ Pakistan? What do the hatched areas mean?
 
 This stage is the difference between a reference board and a replacement for the news. It was
 rewritten on 2026-11-11 to follow decisions 7 to 22. Section 9 lists what is still open. R8 and R9
-come first, so that the sources counted are the sources that work.
+come first, so that the sources counted are the sources that work. Decisions 23 and 24 came after
+the rewrite; once their shape is agreed (section 9.4) they change items 3.1 and 3.4.
 
 **3.1 One stream of events, shown in Today.** The parts exist and are separate: the board's turn
 changes, its live condition flags, chokepoint status, War Monitor's stories, and hazards from the
@@ -481,6 +482,14 @@ Added the same day, on sources:
     built (R9).
 22. **An agent gathers the best and most relevant stories.**
 
+Added the same day, on how news is selected:
+
+23. **News is filed under the board's own areas.** The owner wants one system: a story is
+    categorised by the part of the board it touches, so that the bars and areas a country sheet
+    shows are also how news is sorted and filtered.
+24. **Jev is tried for selection, and kept only if a test shows it works.** Jev is TypeSafe's
+    decision model: it answers typed questions with probabilities and writes no text.
+
 ## 6. Risks
 
 - **Stage 1 is bigger than it looks.** Most of its lines are in panels the owner did not write.
@@ -612,8 +621,11 @@ a decision in section 5 or is dropped.
 - The owner has said sources are looked at later, and has not yet given ideas on the live data
   sources.
 
-### 9.4 Who chooses the best stories (decision 22)
+### 9.4 How news is selected (decisions 22 to 24)
 
+- **Two jobs.** Grouping: seeing that thirty headlines are one event. Ranking: deciding which
+  stories come first. Today's rule for which 400 headlines a Refresh reads is starred outlets
+  first, then the newest, so the busiest feeds win.
 - **Proposed: the agent gathers, code ranks.** The agent groups what was collected and may look
   outward for more on the top stories. Code orders Today by factors the owner can see: how many
   outlets and camps tell a story, whether it sets or clears a flag, the watchlist and newness.
@@ -622,6 +634,37 @@ a decision in section 5 or is dropped.
 - **Two sizes of Refresh.** Proposed: a quick one as today (the digest reads what was collected,
   with no tools) and a deeper one that lets the agent look outward for the top stories, which
   takes minutes and may use metered tools.
+- **Filing by area (decision 23).** Proposed: every story is filed under one or two of the
+  board's twelve Strength areas (Economy, Fiscal, Government, People, Society, Military, Energy,
+  Food, Logistics, Technology, Diplomacy, Culture). They replace the six categories of the World
+  theater, each of which has a home: armed conflict in Military, elections in Government,
+  protests in Society, diplomacy and sanctions in Diplomacy, humanitarian news in Food or People,
+  rights in Society or Government. A fixed table says which areas feed each of the six Condition
+  bars. Whether twelve areas or the six bars is the better list is for the stage 0 mock.
+- **What filing gives.** On a country sheet each bar and area lists its stories under its number.
+  The lens becomes the filter: choosing Strength and then Energy leaves only energy stories on
+  the globe and in Today, with no separate category control. Code can rank by it and say so, as
+  in "touches this country's weakest bar". A story can also attach to a relation between two
+  countries, a chokepoint or a person, which already have cards.
+- **News never moves a bar.** Spec rule 5 holds. A bar shows its published measure and, beside
+  it, a count of the stories of the last seven days. Whether a word such as "rising" may sit with
+  the count, labelled as a model's reading, is open.
+- **Who files.** The digest already gives each story one category from a fixed list, and code
+  drops anything off the list, so changing the list is small. Filing each headline before the
+  digest, so that the right 400 are read, needs a cheaper filer: keyword rules in code, or Jev.
+- **The Jev test (decision 24).** Facts as checked on 2026-10-15 for another project, to be read
+  again before the test: one request carries a state and typed questions and returns
+  probabilities; input costs 0.042 US dollars per million tokens; a version can be pinned; there
+  is no seed, so answers can vary; the one public test, of market prediction, scored worse than a
+  coin flip. Filing headlines is a different job from predicting, so a small test is worth it.
+  Proposed: about 150 collected headlines with the right area and keep-or-drop marked; the same
+  set filed by keyword rules, by Jev and by Claude; Jev is adopted only if it clearly beats the
+  rules and comes close to Claude. Its answers stay advisory: code applies the threshold, every
+  headline shows its filing and probability, and nothing it says sets a flag or a score. It needs
+  a key, which the owner does not have yet, and a daily cap.
+- **A timed filer.** If the test passes, filing could run on the collection timers, because it is
+  not Claude (decision 4) and costs cents. The Overview would then show fresh counts by area
+  without a Refresh, which answers the thin code-only Today of section 8.1. Open.
 
 ### 9.5 The agent (decision 12)
 
