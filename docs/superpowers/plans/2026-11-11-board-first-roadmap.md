@@ -1,8 +1,8 @@
 # Board-first app: roadmap from World Board feature to finished product
 
 Date: 2026-11-11. Status: direction agreed with the owner on 2026-11-11 (section 5); nothing is
-built. Decisions 7 to 13, section 8.1 and section 9 were added the same day, after a second review
-on the owner's machine with live data. Builds on
+built. Decisions 7 to 22, section 8.1 and section 9 were added the same day, after a second review
+on the owner's machine with live data, and stage 3 was rewritten to follow them. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
 what the first review could not see and section 8.1 what the second one found.
@@ -135,7 +135,7 @@ Seven findings. Each one names what was seen or read; appendix C gives the files
 | a plain sentence     |                                       | person, asset, plane, |
 |                      |                                       | ship or earthquake    |
 +----------------------+------------------+--------------------+-----------------------+
-| Lens: Condition  Strength  Energy ...   legend   | Layers   Presets   Zoom   Voice   |
+| Lens: Overview  Strength  Energy        legend   | Layers   Presets   Zoom   Voice   |
 +--------------------------------------------------+-----------------------------------+
 ```
 
@@ -143,31 +143,37 @@ Seven findings. Each one names what was seen or read; appendix C gives the files
   search box for countries, people, places and situations, and a few world gauges (oil, food
   prices, active alerts).
 - **Today.** The left column. A ranked list of what is happening, each item one plain sentence
-  with a place, a time and its sources. Clicking an item flies to it and opens its sheet. The
-  column collapses to give the globe the room.
-- **Globe.** The board at world zoom. Zooming in fades the country colours and brings up the live
-  layers, as now.
-- **Sheet.** The right column, and the only place details open. A country, a situation, a
-  chokepoint, a person, an asset and a live object such as an aircraft all open here.
-- **Bottom bar.** What the colours mean (the lens and its legend) on the left; what else is drawn
-  (layers and presets), zoom and voice on the right.
+  with a place, a time, its sources and why it is listed. Clicking an item flies to it and opens
+  its sheet. The column collapses to give the globe the room.
+- **Globe.** The board at world zoom, opening on the Overview lens: Condition as the fill, with
+  marks on top for alert flags, story counts and current wars (decision 17). Zooming in fades the
+  country colours and brings up the live layers, as now.
+- **Sheet.** The right column, and the only place details open. A country, a situation, a story,
+  a news outlet, a chokepoint, a person, an asset and a live object such as an aircraft all open
+  here.
+- **Bottom bar.** What the colours mean (one of three lenses and its legend) on the left; what
+  else is drawn (layers and presets), zoom and voice on the right.
 
 Nothing else is permanently on screen. Settings, data sources and the original repo's tools open
 from a menu.
 
 ### 3.2 Words
 
-| Word      | Meaning                                                                                                                                           |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Board     | The home view: the globe with countries coloured by a lens.                                                                                       |
-| Lens      | What the country colours mean. The word stays with the board, where Civilization uses it too.                                                     |
-| Layer     | Something live or mapped drawn on the globe: flights, ships, earthquakes, cables.                                                                 |
-| Preset    | A named group of layers switched together. New name for today's Air, Sea, Space, Conflict, Hazards, City and Signals buttons, ending the clash.   |
-| Sheet     | The right-hand panel for the selected thing.                                                                                                      |
-| Today     | The ranked list of current events on the left.                                                                                                    |
-| Situation | An ongoing story with a place, actors and a history, such as a war or a blocked strait. Built from a War Monitor theater and its Situation Brief. |
-| Turn      | One refresh and its list of changes. Unchanged from the spec.                                                                                     |
-| Watchlist | The countries and situations the owner follows. Their changes rank first in Today.                                                                |
+| Word       | Meaning                                                                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Board      | The home view: the globe with countries coloured by a lens.                                                                                       |
+| Lens       | What the country colours mean. The word stays with the board, where Civilization uses it too.                                                     |
+| Layer      | Something live or mapped drawn on the globe: flights, ships, earthquakes, cables.                                                                 |
+| Preset     | A named group of layers switched together. New name for today's Air, Sea, Space, Conflict, Hazards, City and Signals buttons, ending the clash.   |
+| Sheet      | The right-hand panel for the selected thing.                                                                                                      |
+| Today      | The ranked list of current events on the left.                                                                                                    |
+| Situation  | An ongoing story with a place, actors and a history, such as a war or a blocked strait. Built from a War Monitor theater and its Situation Brief. |
+| Turn       | One refresh and its list of changes. Unchanged from the spec.                                                                                     |
+| Watchlist  | The countries and situations the owner follows. Their changes rank first in Today.                                                                |
+| Overview   | The home lens. The fill is Condition; marks on top show what is new.                                                                              |
+| Outlet     | A news publisher the app follows. It has three separate facts: where it is based, who owns it and who funds it.                                   |
+| Slant      | How an outlet leans toward a party in a situation, shown in four labelled kinds: documented, declared, observed and assessed.                     |
+| Allegation | An unconfirmed claim about who funds or controls an outlet, shown with who made it and never as a fact.                                           |
 
 ### 3.3 Rules
 
@@ -186,6 +192,9 @@ The 13 rules in the World Board spec stay. These are added.
    fetches or draws its data.
 7. **Readable sizes.** Reading text is at least 13 pixels in sentence case. Monospace is for
    figures and codes only.
+8. **Everything on the main screen is a command.** Selecting, changing lens, switching a layer
+   and opening a sheet can each be done by a command as well as by hand, so the agent of stage 5
+   can drive the app (decision 18).
 
 ## 4. The work, in order
 
@@ -280,42 +289,67 @@ Pakistan? What do the hatched areas mean?
 
 ### Stage 3: what is happening (large)
 
-This stage is the difference between a reference board and a replacement for the news.
-
-Decisions 7 to 11 and 13 (section 5) reshape items 3.1, 3.3 and 3.5. The shapes are not agreed
-yet; section 9 lists them. This stage is rewritten once they are.
+This stage is the difference between a reference board and a replacement for the news. It was
+rewritten on 2026-11-11 to follow decisions 7 to 22. Section 9 lists what is still open. R8 and R9
+come first, so that the sources counted are the sources that work.
 
 **3.1 One stream of events, shown in Today.** The parts exist and are separate: the board's turn
 changes, its live condition flags, chokepoint status, War Monitor's stories, and hazards from the
 live layers (large earthquakes, cyclones, red disaster alerts). Join them into one list of typed,
-dated, sourced events. Code ranks them by severity, newness and the watchlist.
+dated, sourced events. Code ranks them by factors the owner can see: how many outlets and camps
+tell a story, whether it sets or clears a flag, the watchlist and newness. Each item says why it
+is listed. Turn changes are cut down to changes in the world; source housekeeping moves to the
+Data sources screen (4.4).
 
 **3.2 Since your last visit.** The top bar counts what changed since the last time the app was
 opened and Today marks those items. War Monitor already does this for its own stories.
 
-**3.3 Country and news, linked both ways.** A country sheet lists its stories. A story names its
-countries, and each name opens that sheet. Story volume per country becomes a seventh lens,
-Attention, in place of hotspot bubbles at board zoom.
+**3.3 Who is telling it.** Each outlet in the source list gains where it is based, who owns it
+and who funds it (decision 14). Code then groups a story's outlets: from inside the country, from
+the state of a party to it, and from outside. The story's sheet shows the groups and where they
+disagree, and selecting the story draws a line from its place to each outlet's home. Counts are
+of outlets, never of items, and are given as "of the outlets followed": with a few dozen outlets,
+"no outlet from this country reports it" mostly means none from there is followed.
 
-**3.4 Situations.** An ongoing story gets its own sheet: what is happening, who is involved
-(each actor opens its country sheet), a timeline, what to watch next, and the preset of layers
-that shows it. The Situation Brief already writes most of this for one theater. The work is to
-give it a sheet, more theaters and a place in Today.
+**3.4 News on the Overview, and country and news linked both ways.** At board zoom each country
+carries a count of its stories, in place of hotspot bubbles; pins return on zooming in. A country
+sheet lists its stories and shows coverage in both directions: whose outlets are covering this
+country, and what this country's outlets are looking at. A story names its countries and each
+name opens that sheet. There is no Attention lens (decision 17).
 
-**3.5 A World Brief.** Five to seven items, two minutes to read, written from the World theater's
-stories and the board's changes, every sentence cited. Claude writes it when the owner asks, on
-Refresh, and it shows the time it was written (section 5, decision 4).
+**3.5 Outlets.** An outlet opens in the sheet like anything else: its three facts, its slant in
+the four labelled kinds per situation and party (decision 15), and any allegation with who made
+it, when, the link and the denial (decision 16). The facts come from the source survey (R9) and
+from the owner's media research after review (decision 19, R3).
 
-**3.6 News to events.** The digest emits typed events that set or clear a status flag, with
+**3.6 Situations.** An ongoing story gets its own sheet: what is happening, who is involved (each
+actor opens its country sheet), a timeline, what to watch next, the preset of layers that shows
+it, and how each outlet following it leans. The Situation Brief already writes most of this for
+one theater. The work is to give it a sheet, more theaters and a place in Today.
+
+**3.7 Gathering, and a World Brief.** On Refresh the digest groups what was collected into
+stories, as now. An agent may then look outward for the top stories: what officials said on X,
+named YouTube channels, the web (decisions 20 to 22). What it brings back is cited to a page or a
+post that a tool returned. The World Brief follows: five to seven items, two minutes to read,
+every sentence cited, with the time it was written. All of it runs only when the owner asks
+(decision 4), and a metered tool runs under a daily cap.
+
+**3.8 News to events.** The digest emits typed events that set or clear a status flag, with
 citations. Spec rule 5 holds: events change facts, never scores.
 
-**3.7 Turn history.** Step back through past turns and see the board as it was.
+**3.9 Turn history.** Step back through past turns and see the board as it was.
 
-**3.8 Watchlist.** Follow a country or a situation.
+**3.10 Watchlist.** Follow a country or a situation.
 
-Done when opening the app shows a ranked Today list from the code-only sources without pressing
-anything, one Refresh adds the stories and a dated brief, every item flies to its place and opens
-its sheet, and every country with stories lists them.
+Done when:
+
+- opening the app shows the Overview with the story counts of the last digest and a Today list
+  ranked by code, each item saying why it is listed, without pressing anything;
+- one Refresh adds the stories, their tellers and a dated brief;
+- every item flies to its place and opens its sheet, and a selected story draws its lines;
+- every outlet named opens a sheet with its three facts, and no slant or allegation appears
+  without its label and source;
+- every country with stories lists them.
 
 ### Stage 4: board and live layers joined (medium)
 
@@ -337,15 +371,17 @@ environment variables only.
 
 **4.5 One family for places.** The board's assets (bases, power plants, ports, fabs) and the
 original repo's mapped sites (installations, dams, data centres, cables) share one presentation
-and one group.
+and one group. News outlets join as holdings: a country's Ownership view shows the foreign-owned
+outlets it hosts and the outlets its entities own abroad (decisions 14 and 19).
 
 ### Stage 5: Claude's jobs (medium)
 
 This is phase 7 of the World Board spec, widened. The shared Claude adapter it waited for is now
 merged.
 
-Decision 12 (section 5) asks for one agent in place of several separate helpers. Which of the
-items below it absorbs is open (section 9).
+Decision 12 (section 5) asks for one agent in place of several separate helpers, and decision 18
+sets what it may do unasked. "Explain this", "Ask about the selection" and "Voice for the board"
+below are the likeliest parts of it; which it absorbs is open (section 9.5).
 
 - **Stakes** per country: declared objectives and commitments, with evidence labels.
 - **Estimates** for stale values, drawn as the spec's dashed ghost beside the measured value.
@@ -358,16 +394,17 @@ items below it absorbs is open (section 9).
 
 ### Track R: it runs every day (beside the stages, starting with stage 1)
 
-| Item | What                                                                                                                                                                                                                                                                 | Needed by             |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| R1   | A real server. One `npm start` serves the built app and its data routes and runs the code-only schedule (dataset checks, live feeds) whether or not a browser is open. Claude still runs only when asked.                                                            | Stage 3               |
-| R2   | A fast first start. The saved board paints in under a second. A seed snapshot ships with the app so the first run is not empty. Downloads resume. Measure a cold start on the owner's connection; target 2 minutes.                                                  | 2.5                   |
-| R3   | Data review. The 20 curated tables, row by row, each with its source, by a research agent with the owner signing off. "Draft" comes off one table at a time. Decide each permission-gated feed.                                                                      | End of stage 2        |
-| R4   | Budgets. Payload sizes, and frame rate on the owner's hardware, which has not been measured.                                                                                                                                                                         | End of stage 1        |
-| R5   | Acceptance. The fixture harness covers each new screen; the live fact checks keep running; the picture check from 1.6 gates every pull request.                                                                                                                      | Every stage           |
-| R6   | Docs and name. A README for this app. Spec headers that still say "not built" corrected. KNOWN-ISSUES entries for the fork's features. The new name, Global Eye View, in the title, the README and the package, with the MIT notice and credit to the original kept. | End of stage 1        |
-| R7   | The Telegram question left open in the World Board spec (section 13.5): its 2026 terms and War Monitor's collector.                                                                                                                                                  | Before stage 3.5      |
-| R8   | Connection allowance. Raise the time Node allows each connection attempt, set once at server start. On the owner's connection the default fails sources that work (section 8.1). Then count again which sources deliver.                                             | Before R2 is measured |
+| Item | What                                                                                                                                                                                                                                                                                                                   | Needed by             |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| R1   | A real server. One `npm start` serves the built app and its data routes and runs the code-only schedule (dataset checks, live feeds) whether or not a browser is open. Claude still runs only when asked.                                                                                                              | Stage 3               |
+| R2   | A fast first start. The saved board paints in under a second. A seed snapshot ships with the app so the first run is not empty. Downloads resume. Measure a cold start on the owner's connection; target 2 minutes.                                                                                                    | 2.5                   |
+| R3   | Data review. The 20 curated tables, row by row, each with its source, by a research agent with the owner signing off. "Draft" comes off one table at a time. Decide each permission-gated feed. The owner's media research joins the list: 333 ownership links, each checked against a retrieved source (decision 19). | End of stage 2        |
+| R4   | Budgets. Payload sizes, and frame rate on the owner's hardware, which has not been measured.                                                                                                                                                                                                                           | End of stage 1        |
+| R5   | Acceptance. The fixture harness covers each new screen; the live fact checks keep running; the picture check from 1.6 gates every pull request.                                                                                                                                                                        | Every stage           |
+| R6   | Docs and name. A README for this app. Spec headers that still say "not built" corrected. KNOWN-ISSUES entries for the fork's features. The new name, Global Eye View, in the title, the README and the package, with the MIT notice and credit to the original kept.                                                   | End of stage 1        |
+| R7   | The Telegram question left open in the World Board spec (section 13.5): its 2026 terms and War Monitor's collector.                                                                                                                                                                                                    | Before stage 3.7      |
+| R8   | Connection allowance. Raise the time Node allows each connection attempt, set once at server start. On the owner's connection the default fails sources that work (section 8.1). Then count again which sources deliver.                                                                                               | Before R2 is measured |
+| R9   | Source survey. Candidate news APIs, feeds, named YouTube channels and X accounts, each with its terms, its cost in money and in megabytes a day on the owner's connection, and the three outlet facts of decision 14. The owner reviews the list before it is adopted (decision 21).                                   | Before stage 3        |
 
 ## 5. Decisions (owner, 2026-11-11)
 
@@ -407,6 +444,42 @@ open about each.
     asking (decision 4).
 13. **The right news feeds and tools are connected.** The app's collectors, and the tools Claude
     is given when it runs, are chosen to serve the goal. Which ones is open.
+
+Accepted the same day, when the owner approved the shapes proposed for decisions 7 to 13:
+
+14. **An outlet's country is three facts.** Based in, owned by and funded by are recorded
+    separately, as spec rule 8 does for assets. Al Jazeera is based in Qatar and funded by its
+    government; Politico is based in the United States and owned by a German company; Meduza is
+    Russian-language and based in Latvia. One colour per outlet would be wrong for all three.
+15. **Slant is shown in four labelled kinds.** Documented: who owns and funds the outlet.
+    Declared: what the outlet says its line is. Observed: counted by code from the stories this
+    app has collected, such as whose claims an outlet carries. Assessed: a researched judgement
+    with its sources and date. Slant is stated per situation and per party, never as one number
+    for an outlet, and it never changes a verification label, a ranking or a score.
+16. **An allegation needs a named maker.** It shows who made it and when, links to a page that
+    was retrieved (spec rule 13), shows the denial if there is one, and concerns an organisation
+    or a public figure, never a private individual (spec rule 12).
+17. **The home view is a layered Overview, and three lenses colour the world.** Spec rule 10 and
+    the owner's decision of 2026-11-08 rule out one blended number, so Overview layers instead:
+    the fill is Condition, and marks on top show what is new (alert flags, a story count per
+    country, lines for current wars). Overview, Strength and Energy colour the whole world.
+    Diplomacy and Ownership follow the open tab of a selected country's sheet. Data age becomes a
+    switch. News has no lens or mode of its own, and the Attention lens once planned is dropped.
+18. **The agent looks and points freely and asks before it spends.** It may fly, select, switch
+    lenses and layers and open sheets unasked. It asks before a digest, a search, a board refresh
+    or any metered tool. It may add background from its own knowledge, marked as unsourced and
+    dated to its training, beside sentences cited to the board or to stories. From stage 1 on,
+    anything the owner can do on the main screen can also be done by a command (rule 8 in 3.3).
+19. **The owner's media research is a starting list, not a source.** Each ownership link is
+    checked against a retrieved source under R3 and stays draft until the owner signs it off.
+
+Added the same day, on sources:
+
+20. **X is connected.** Directly, or through Grok if that is the better way to read it.
+21. **The source list is made as complete as it can be.** A survey covers news APIs, feeds, named
+    YouTube channels and anything else that is possible. It is done later, before stage 3 is
+    built (R9).
+22. **An agent gathers the best and most relevant stories.**
 
 ## 6. Risks
 
@@ -496,71 +569,66 @@ a decision in section 5 or is dropped.
 
 ### 9.1 How news is shown
 
-- **Order.** Proposed: first "who is telling this" on every story, with lines on the globe from
-  the story's place to each outlet's home when the story is selected; second, attention in both
-  directions (who is covering a country, and what a country's outlets are looking at); third,
-  media outlets as holdings in the Ownership lens.
-- **An outlet's country is three facts.** Proposed: based in, owned by and funded by are recorded
-  separately, as spec rule 8 does for assets. Al Jazeera is based in Qatar and funded by its
-  government; Politico is based in the United States and owned by a German company; Meduza is
-  Russian-language and based in Latvia. One colour per outlet would be wrong for all three.
-- **How slant is established (decision 8).** Proposed: four kinds, each labelled as spec rule 9
-  requires. Documented: who owns and funds the outlet. Declared: what the outlet says its line
-  is. Observed: counted by code from the stories this app has collected, such as whose claims an
-  outlet carries. Assessed: a researched judgement with its sources and date. Slant is stated per
-  situation and per party, never as one number for an outlet, and it never changes a verification
-  label, a ranking or a score.
-- **When an allegation may appear (decision 10).** Proposed: it names who made it and when, links
-  to a page that was retrieved (spec rule 13), shows the denial if there is one, and concerns an
-  organisation or a public figure, never a private individual (spec rule 12).
-- **Counting honestly.** With 42 outlets followed, "no outlet from this country reports it" mostly
-  means none from that country is followed. Counts are of outlets, never of items, and are always
-  given as "of the outlets followed".
+- **Order of building.** Proposed and not answered: "who is telling this" first, then coverage in
+  both directions on the country sheet, then news outlets in the Ownership view. Stage 3 is
+  written in that order.
+- **How the lines and marks look** is for the stage 0 mock: the lines from a story to its
+  outlets' homes, the story count on a country, and how a state-run outlet, a private one and one
+  in exile differ at a glance.
 
-### 9.2 The owner's media research
+### 9.2 X and Grok (decision 20)
 
-It holds 178 outlets, 180 owners, 333 ownership links, 12 cooperation records and a coverage-tone
-table for one conflict, generated in March 2026. It is a starting list, not a source. The outlet
-research lost the links behind its footnotes for 177 of 178 outlets, the country is blank for 21
-outlets and wrong for at least seven, and about 28 of the app's 78 news sources appear in it.
-Proposed: each link is checked against a retrieved source under R3 and stays draft until the
-owner signs it off.
+- **Both ways cost money for each post.** Checked on 2026-11-11 from search results, not from the
+  price pages themselves. xAI's API gives Grok a tool that searches X, priced at about 5 US
+  dollars per 1,000 posts returned on top of the model's own charges. X's own API is pay-per-use
+  at about half a cent per post read, with no free tier for new accounts. Neither is covered by
+  the owner's Claude subscription. The prices are to be read from the two price pages before a
+  choice is made.
+- **A spending cap.** Proposed: a metered tool gets a daily cap, as the optional Perplexity
+  digest already has, and the agent asks before using it (decision 18).
+- **What to read on X.** Proposed: start with the official accounts the People tab already lists
+  for heads of state, ministers and organisations, and attach their posts to stories and sheets
+  as what that actor declared. An open search of X is noisier and easier to manipulate; its
+  results would carry the lowest confidence label.
+- **A second model in the workflow.** Proposed: Grok is a tool the agent calls, not a second
+  agent that writes stories. Whether its summaries may be shown, or only the posts it returns, is
+  open. Spec rule 13 applies: a post is cited only by a link the tool returned.
 
-### 9.3 Lenses and modes (decision 11)
+### 9.3 Sources (decisions 13 and 21)
 
-- **A general view without a total.** Spec rule 10 and the owner's decision of 2026-11-08 rule
-  out one blended number. Proposed: the home view is layered, not blended. The fill is Condition;
-  marks on top show what is new: alert flags, a story count per country, and lines for current
-  wars.
-- **Fewer lenses.** Proposed: three lenses colour the whole world (Overview, Strength, Energy).
-  Diplomacy and Ownership show nothing until a country is selected, so they follow the open tab
-  of its sheet. Data age becomes a switch. News is marks on the general view and the Today list,
-  with no lens or mode of its own; this would drop the Attention lens of 3.3.
-
-### 9.4 Sources and tools (decision 13)
-
-- Which feeds to add or drop, and how to get wire headlines now that Reuters and AP refuse
-  automated readers. The owner has not yet given their ideas on live data sources and news
+- **Complete in viewpoints before complete in volume.** One Refresh digests 400 items and about
+  900 can already be waiting. More feeds without better selection lengthen the queue. Proposed:
+  the survey aims first at every region and camp having several outlets, and each outlet gets
+  the three facts of decision 14.
+- **A data allowance.** The owner is on a slow connection. Proposed: the survey records what each
+  source costs in megabytes a day, and the list is cut to an agreed daily total.
+- **YouTube.** The board already reads channel feeds for officials without a key: titles, links
+  and times, not what is said in the video. Whether titles are enough, or a transcript tool is
+  wanted when Claude runs, is open.
+- **Wire headlines.** Reuters and AP refuse automated readers and publish no feed.
+- **MCP tools.** A tool of this kind works only while Claude is running, so under decision 4 it
+  serves the digest, a search and the agent, never the timed collection.
+- **The Telegram question** (R7).
+- The owner has said sources are looked at later, and has not yet given ideas on the live data
   sources.
-- An MCP tool works only while Claude is running, so under decision 4 it serves the digest, a
-  search and the agent, never the timed collection. Which tools to give each is open and needs a
-  survey of what exists and on what terms.
-- The Telegram question (R7).
+
+### 9.4 Who chooses the best stories (decision 22)
+
+- **Proposed: the agent gathers, code ranks.** The agent groups what was collected and may look
+  outward for more on the top stories. Code orders Today by factors the owner can see: how many
+  outlets and camps tell a story, whether it sets or clears a flag, the watchlist and newness.
+  Each item says why it is listed. If a model alone chose what is best, the app's own choice
+  would be a slant nobody could inspect, which is what decisions 8 to 10 exist to prevent.
+- **Two sizes of Refresh.** Proposed: a quick one as today (the digest reads what was collected,
+  with no tools) and a deeper one that lets the agent look outward for the top stories, which
+  takes minutes and may use metered tools.
 
 ### 9.5 The agent (decision 12)
 
-- **Hands.** The voice assistant already has 32 actions that move the globe, such as flying to a
-  place, switching layers and opening panels. None acts on the board. Proposed rule from stage 1
-  on: anything the owner can do on the main screen can also be done by a command, so the agent
-  can drive it later.
-- **What it may do unasked.** Proposed: look and point freely; ask before anything that spends or
-  downloads, such as a digest, a search or a board refresh.
-- **Background knowledge.** Stage 5 has "Explain this" answer only from what a sheet holds. A
-  non-specialist also needs history. Proposed: the agent may add background from its own
-  knowledge, marked as unsourced and dated to its training, beside sentences cited to the board
-  or to stories.
 - **What it absorbs.** Which stage 5 items become part of it, and whether voice becomes a way of
   talking to it or stays a separate assistant.
+- **Hands.** The voice assistant has 32 actions that move the globe, such as flying to a place,
+  switching layers and opening panels. None acts on the board yet.
 
 ## Appendix A: the original's ornament and tools
 
