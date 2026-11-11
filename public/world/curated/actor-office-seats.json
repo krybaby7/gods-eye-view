@@ -18,6 +18,14 @@
     }
   ],
   "countries": {
+    "ARE": {
+      "vicePresidency": {
+        "seat": "Q48774199",
+        "holders": 2,
+        "label": "Vice Presidents of the United Arab Emirates"
+      },
+      "source": "https://u.ae/about-the-uae/the-uae-government/the-president-and-his-deputy"
+    },
     "USA": {
       "state": ["Q11696"],
       "government": ["Q11696"],

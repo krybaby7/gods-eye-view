@@ -1,5 +1,6 @@
 import { setTimeout as wait } from 'node:timers/promises';
 import overrides from '../../../../public/world/curated/cia-office-overrides.json' with { type: 'json' };
+import officeSeats from '../../../../public/world/curated/actor-office-seats.json' with { type: 'json' };
 import { readResponseJsonCapped } from '../../../../src/sources/httpBody.js';
 import { officeRoles } from '../officeholders.js';
 import { fetchOnDispatch } from './transport.js';
@@ -61,7 +62,12 @@ const titlePatterns = {
     /^(?:min\.|minister|sec\.|secretary)(?: of| for|,)? (?:(?:national )?defen[cs]e(?! (?:production|industry|personnel))|the armed forces)\b/,
     /^(?:defen[cs]e|armed forces) (?:min\.|minister)$/,
   ],
+  'vice-president': [/^vice (?:pres\.|president)$/],
 };
+
+const foreignAffairsTitle = /\b(?:foreign|external) (?:affairs|relations)\b/;
+const foreignMinisterOfState =
+  /^(?:min\.|minister) of state (?:of|for) foreign affairs\b/;
 
 function mapTitle(country, title) {
   const key = title.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -75,13 +81,22 @@ function mapTitle(country, title) {
       office: override.officeLabels?.[clean],
       draft: override.source,
       plainTitle: isPlainTitle(clean),
+      foreignAffairs: foreignAffairsTitle.test(clean),
     };
   }
+  const ministry = clean.replace(/^dep\. prime min\. and (?=min\. of )/, '');
+  const roles = officeRoles.filter(
+    (role) =>
+      (role !== 'vice-president' ||
+        officeSeats.countries[country]?.vicePresidency) &&
+      titlePatterns[role].some((pattern) => pattern.test(ministry)),
+  );
   return {
-    roles: officeRoles.filter((role) =>
-      titlePatterns[role].some((pattern) => pattern.test(clean)),
-    ),
+    roles,
     plainTitle: isPlainTitle(clean),
+    foreignAffairs:
+      roles.includes('foreign-minister') || foreignAffairsTitle.test(clean),
+    foreignMinisterOfState: foreignMinisterOfState.test(clean),
   };
 }
 
@@ -120,25 +135,47 @@ export function parseCiaPage(json, slug) {
   };
 }
 
+const medialCapitalNames = new Map(
+  [
+    'MacDonald',
+    'MacIntosh',
+    'MacKenzie',
+    'MacKinnon',
+    'MacNeill',
+    'MacPherson',
+    'McAllister',
+    'McBain',
+    'McCarthy',
+    'McClay',
+    'McConney',
+    'McEntee',
+    'McFadden',
+    'McGuinty',
+    'McIntyre',
+    'McKee',
+    'McKenzie',
+    'McKnight',
+    'McKoy',
+  ].map((name) => [name.toUpperCase(), name]),
+);
+const particles = new Map([
+  ['DI', 'Di'],
+  ['DE', 'De'],
+  ['DA', 'Da'],
+  ['LE', 'Le'],
+]);
+
 function displayName(name) {
   return name.replace(/\p{L}+/gu, (word, offset) => {
+    if (particles.has(word)) return particles.get(word);
     const regnal =
       offset > 0 &&
       /^(?=[IVXLCDM]+$)M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})$/.test(
         word,
       );
     if (word.length < 2 || word !== word.toUpperCase() || regnal) return word;
-    // CIA capitalizes surnames wholesale. Only restore Mac for known Gaelic
-    // forms, since names like Macron and Macut do not have a medial capital.
-    const prefix =
-      /^(?:MC(?=\p{L})|MAC(?=DONALD|KENNA|KENZIE|KINNON|NEILL|PHERSON|INTOSH))/u.exec(
-        word,
-      )?.[0];
-    const split = prefix?.length ?? 0;
     return (
-      (prefix ? 'M' + prefix.slice(1).toLowerCase() : '') +
-      word[split] +
-      word.slice(split + 1).toLowerCase()
+      medialCapitalNames.get(word) ?? word[0] + word.slice(1).toLowerCase()
     );
   });
 }
@@ -159,7 +196,21 @@ export function resolveCiaPage(page, registry) {
   const country = matching.iso3;
   const sourceUrl = BASE + '/foreign-governments/' + page.slug + '/';
   const actors = new Map();
-  for (const { name, title } of page.leaders) {
+  const leaders = page.leaders.map((leader) => ({
+    ...leader,
+    ...mapTitle(country, leader.title),
+  }));
+  const soleForeignAffairsTitle =
+    leaders.filter(({ foreignAffairs }) => foreignAffairs).length === 1;
+  for (const {
+    name,
+    title,
+    roles,
+    office,
+    draft: titleSource,
+    plainTitle,
+    foreignMinisterOfState,
+  } of leaders) {
     const acting = /\b(?:acting|interim)\b/i.test(name + ' ' + title);
     const label = displayName(
       name.replace(/\s*\((?:acting|interim|a\.k\.a\..*)\)$/i, ''),
@@ -169,15 +220,13 @@ export function resolveCiaPage(page, registry) {
       /^(?:vacant|unknown|tbd|none|not appointed|n\/a|[-–—]+)$/i.test(label)
     )
       continue;
-    const {
-      roles,
-      office,
-      draft: titleSource,
-      plainTitle,
-    } = mapTitle(country, title);
     const draft = titleSource ?? overrides.countries[country]?.source;
     const { aliases } = overrides.nameAliases[country]?.[textKey(label)] ?? {};
-    for (const role of roles) {
+    const mappedRoles =
+      foreignMinisterOfState && soleForeignAffairsTitle
+        ? [...roles, 'foreign-minister']
+        : roles;
+    for (const role of mappedRoles) {
       const id = 'cia-' + country.toLowerCase() + '-' + textKey(label);
       const key = role + ':' + id;
       if (actors.has(key) && (!plainTitle || actors.get(key).plainTitle))

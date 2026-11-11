@@ -2,6 +2,15 @@
   "notes": "CIA office-title, country-label and cited name-alias crosswalk. Title keys are case-insensitive. An empty role list excludes an office that cannot stand for the complete collective. Name aliases are used for matching and preserve the original source spelling.",
   "nameAliases": {
     "ISR": {
+      "yitzhak-herzog": {
+        "aliases": ["Isaac Herzog"],
+        "sources": [
+          "https://www.president.gov.il/president/",
+          "https://www.president.gov.il/en/president/"
+        ],
+        "checkedOn": "2026-11-11",
+        "reviewed": false
+      },
       "binyamin-netanyahu": {
         "aliases": ["Benjamin Netanyahu"],
         "sources": [

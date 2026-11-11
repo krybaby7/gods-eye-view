@@ -3,6 +3,7 @@ export const actorRoles = {
   'head-of-government': 'Head of government',
   'foreign-minister': 'Foreign minister',
   'defence-minister': 'Defence minister',
+  'vice-president': 'Vice president',
   military: 'Military',
   'central-bank': 'Central bank',
   'armed-group': 'Armed group',

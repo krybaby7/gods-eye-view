@@ -23,13 +23,49 @@ function oneEdit(left, right) {
     .every((letter, index) => letter === b[first + 1 + index]);
 }
 
+const regnalNumeral = /^[ivxlcdm]+$/;
+const patronymic = /^(?:bin|ibn|bint|ould|walad)$/;
+
+function nameTokens(name) {
+  return normalizePersonName(name)
+    .replace(
+      /^(?:(?:crown prince|king|queen|sultan|emir|sheikh|prince)(?: |$))+/,
+      '',
+    )
+    .replace(/ of .+$/, '')
+    .replace(/\babd(?: (?:al|el) |[aeu]l *)/g, 'abdal')
+    .split(' ')
+    .filter(Boolean);
+}
+
+function skeleton(token) {
+  if (!/^\p{L}+$/u.test(token) || regnalNumeral.test(token)) return '';
+  return token
+    .replace(
+      /kh|gh|zh|x/g,
+      (cluster) => ({ kh: 'k', gh: 'q', zh: 'j', x: 'ks' })[cluster],
+    )
+    .replace(/[aeiouy]/g, '')
+    .replace(/(\p{L})\1+/gu, '$1');
+}
+
+function transliteration(left, right) {
+  const letters = skeleton(left);
+  return Boolean(letters && letters === skeleton(right));
+}
+
 // Match distinct token positions, so a repeated token cannot be reused.
-export function personNameMatch(left, right) {
-  const a = normalizePersonName(left).split(' ').filter(Boolean);
-  const b = normalizePersonName(right).split(' ').filter(Boolean);
+function matchTokens(a, b) {
   const [shorter, longer] = a.length <= b.length ? [a, b] : [b, a];
   if (!shorter.length || (shorter.length === 1 && longer.length > 1))
     return null;
+  const aPatronymic = a.findIndex((token) => patronymic.test(token));
+  const bPatronymic = b.findIndex((token) => patronymic.test(token));
+  const aGiven = a[(aPatronymic < 0 ? bPatronymic : aPatronymic) - 1];
+  const bGiven = b[(bPatronymic < 0 ? aPatronymic : bPatronymic) - 1];
+  const matchesGiven = (matches) =>
+    (aPatronymic < 0 && bPatronymic < 0) ||
+    (aGiven && bGiven && matches(aGiven, bGiven));
   function covers(matches, index = 0, used = new Set()) {
     if (index === shorter.length) return true;
     return longer.some(
@@ -39,8 +75,34 @@ export function personNameMatch(left, right) {
         covers(matches, index + 1, new Set([...used, position])),
     );
   }
-  if (covers((a, b) => a === b)) return 'tokens';
-  return covers((a, b) => a === b || oneEdit(a, b)) ? 'one-edit' : null;
+  const exact = (a, b) => a === b;
+  const edit = (a, b) => exact(a, b) || oneEdit(a, b);
+  const transliterated = (a, b) => edit(a, b) || transliteration(a, b);
+  if (matchesGiven(exact) && covers(exact)) return 'tokens';
+  if (matchesGiven(edit) && covers(edit)) return 'one-edit';
+  return matchesGiven(transliterated) && covers(transliterated)
+    ? 'transliteration'
+    : null;
+}
+
+const joinArticles = (tokens) =>
+  tokens
+    .join(' ')
+    .replace(/ (al|el) (?=\p{L})/gu, ' $1')
+    .split(' ');
+
+export function personNameMatch(left, right) {
+  const a = nameTokens(left);
+  const b = nameTokens(right);
+  const direct = matchTokens(a, b);
+  if (direct || !a.length || !b.length) return direct;
+  // Arabic definite articles sometimes appear without a word separator
+  // (el-Sisi / Elsisi). Keep the separate-token match as the first choice.
+  const joinedA = joinArticles(a);
+  const joinedB = joinArticles(b);
+  return joinedA.length < a.length || joinedB.length < b.length
+    ? matchTokens(joinedA, joinedB)
+    : null;
 }
 
 function wikidataId(person) {

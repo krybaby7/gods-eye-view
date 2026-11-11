@@ -197,6 +197,112 @@ function roundFourChecks(board, directory, spec) {
   return checks;
 }
 
+function followUpChecks(board, directory, spec) {
+  const { checkedOn, baseline, officeholders } = spec;
+  const core = directory.filter(({ role }) => roles.includes(role));
+  const available = directory.length > 0;
+  const missingDirectory = 'People directory unavailable';
+  const portraits = board?.features?.['wikimedia-commons']?.portraits ?? {};
+  const checks = ['disagreement', 'stale'].map((field) => {
+    const after = core.filter((row) => row[field]).length;
+    return {
+      id: 'people-follow-up-' + field,
+      expected: 'Fewer than ' + baseline[field],
+      found: core.length
+        ? {
+            before: baseline[field],
+            beforeRoles: baseline.roles,
+            after,
+            afterRoles: core.length,
+          }
+        : null,
+      source:
+        'world-board-review-4-2026-11-10.md, People (#18), compared with the running board',
+      checkedOn,
+      pass: core.length ? after < baseline[field] : null,
+      ...(!core.length && { reason: missingDirectory }),
+    };
+  });
+  for (const expectation of officeholders) {
+    const {
+      country,
+      role,
+      people,
+      portrait,
+      ciaConfirmation,
+      noDisagreement,
+      source,
+    } = expectation;
+    const expected = people ?? [expectation];
+    const found = directory
+      .filter((row) => row.country === country && row.role === role)
+      .map(
+        ({
+          name,
+          id,
+          imageFile,
+          office,
+          source,
+          disagreement,
+          otherEvidence,
+        }) => {
+          const metadata = portraits[imageFile];
+          return {
+            name,
+            id,
+            office,
+            thumbnail: metadata?.thumbnail,
+            attributed: Boolean(metadata?.author && metadata?.licence),
+            disagreement: disagreement?.name ?? null,
+            ciaConfirmation:
+              source === 'cia-world-leaders' ||
+              Boolean(
+                otherEvidence?.some(
+                  (row) => row.agrees && row.source === 'cia-world-leaders',
+                ),
+              ),
+          };
+        },
+      );
+    const remaining = [...found];
+    const named = expected.every((person) => {
+      const index = remaining.findIndex((actor) =>
+        matchesPerson(actor, person),
+      );
+      if (index < 0) return false;
+      remaining.splice(index, 1);
+      return true;
+    });
+    checks.push({
+      id: `people-${country}-${role}-follow-up`,
+      expected: {
+        names: expected.map(({ name }) => name),
+        ...(portrait && { attributedPortrait: true }),
+        ...(noDisagreement && { disagreement: null }),
+        ...(ciaConfirmation && { ciaConfirmation: true }),
+      },
+      found: available ? found : null,
+      source,
+      checkedOn,
+      pass: available
+        ? named &&
+          remaining.length === 0 &&
+          found.every(
+            (actor) =>
+              (!portrait ||
+                (/^Q\d+$/.test(actor.id) &&
+                  actor.thumbnail &&
+                  actor.attributed)) &&
+              (!noDisagreement || !actor.disagreement) &&
+              (!ciaConfirmation || actor.ciaConfirmation),
+          )
+        : null,
+      ...(!available && { reason: missingDirectory }),
+    });
+  }
+  return checks;
+}
+
 export default async function checkPeople({
   board,
   getDetail,
@@ -283,6 +389,8 @@ export default async function checkPeople({
   ];
   if (core.round4)
     checks.push(...roundFourChecks(board, directory, core.round4));
+  if (core.followUp)
+    checks.push(...followUpChecks(board, directory, core.followUp));
   const sampleChecks = [];
   const dated = [];
   for (const country of countries) {
