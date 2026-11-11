@@ -1,7 +1,7 @@
 # Board-first app: roadmap from World Board feature to finished product
 
-Date: 2026-11-11. Status: proposal for the owner. Nothing here is built and nothing is decided;
-section 5 lists the decisions that are the owner's. Builds on
+Date: 2026-11-11. Status: direction agreed with the owner on 2026-11-11 (section 5); nothing is
+built. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
 what that review could not see.
@@ -125,7 +125,7 @@ Seven findings. Each one names what was seen or read; appendix C gives the files
 
 ```text
 +--------------------------------------------------------------------------------------+
-| Name   11 Nov 2026   Turn 14 · 6 changes since Tuesday        [ Search ]    gauges   |
+| Global Eye View   11 Nov 2026   Turn 14 · 6 changes since Tuesday   [ Search ]  gauges |
 +----------------------+---------------------------------------+-----------------------+
 | TODAY                |                                       | SHEET                 |
 |                      |                                       |                       |
@@ -177,8 +177,8 @@ The 13 rules in the World Board spec stay. These are added.
    everywhere today. The work is the first two.
 2. **One selection, one sheet.** Whatever is clicked opens in the same place with the same parts.
 3. **Nothing decorative.** Every mark on screen is information or a control.
-4. **The board is ready when opened.** The saved board paints at once. Fetching happens on a
-   schedule on the server, not when the page loads.
+4. **The board is ready when opened.** The saved board paints at once. Code fetches datasets and
+   live feeds on a schedule on the server, not when the page loads. Claude runs only when asked.
 5. **Uncertainty stays visible and leaves the headline.** Unknown stays hatched. Draft, stale and
    low-confidence labels stay, at the detail and evidence depths.
 6. **Keep what the original does, change how it looks.** Restyling does not touch how a layer
@@ -204,7 +204,6 @@ here, and more, because this changes every screen.
   selected.
 - One page of the design tokens: colours with their meanings, the type scale, spacing, panel and
   button shapes.
-- The answers to section 5.
 
 Done when the owner has approved the mock. Stage 1 builds to it.
 
@@ -234,8 +233,7 @@ the frame, the second feeds Today, the third becomes a tool.
 
 **1.5 The original tools move out of the way.** The cockpit, voice, scenes and recording, drawing,
 and the render styles (night vision, thermal, CRT and the others) keep working. They open from a
-Tools menu or from the thing they act on, not from the main screen. Section 5 asks whether any
-should go altogether.
+Tools menu or from the thing they act on, not from the main screen (section 5, decision 3).
 
 **1.6 Tests follow.** Rewrite the tests that pin text, and add a picture-based check: one capture
 per region at three window sizes, compared with an approved set, so a restyle is judged by how it
@@ -300,8 +298,9 @@ Attention, in place of hotspot bubbles at board zoom.
 that shows it. The Situation Brief already writes most of this for one theater. The work is to
 give it a sheet, more theaters and a place in Today.
 
-**3.5 A daily World Brief.** Five to seven items, two minutes to read, written each morning from
-the World theater's stories and the board's changes, every sentence cited. It needs track item R1.
+**3.5 A World Brief.** Five to seven items, two minutes to read, written from the World theater's
+stories and the board's changes, every sentence cited. Claude writes it when the owner asks, on
+Refresh, and it shows the time it was written (section 5, decision 4).
 
 **3.6 News to events.** The digest emits typed events that set or clear a status flag, with
 citations. Spec rule 5 holds: events change facts, never scores.
@@ -310,9 +309,9 @@ citations. Spec rule 5 holds: events change facts, never scores.
 
 **3.8 Watchlist.** Follow a country or a situation.
 
-Done when opening the app in the morning shows a dated brief and a ranked Today list without
-pressing anything, every item flies to its place and opens its sheet, and every country with
-stories lists them.
+Done when opening the app shows a ranked Today list from the code-only sources without pressing
+anything, one Refresh adds the stories and a dated brief, every item flies to its place and opens
+its sheet, and every country with stories lists them.
 
 ### Stage 4: board and live layers joined (medium)
 
@@ -352,28 +351,31 @@ merged.
 
 ### Track R: it runs every day (beside the stages, starting with stage 1)
 
-| Item | What                                                                                                                                                                                                                | Needed by        |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
-| R1   | A real server. One `npm start` serves the built app and its data routes and runs the schedule (dataset checks, live feeds, the morning digest) whether or not a browser is open.                                    | 3.5              |
-| R2   | A fast first start. The saved board paints in under a second. A seed snapshot ships with the app so the first run is not empty. Downloads resume. Measure a cold start on the owner's connection; target 2 minutes. | 2.5              |
-| R3   | Data review. The 20 curated tables, row by row, each with its source, by a research agent with the owner signing off. "Draft" comes off one table at a time. Decide each permission-gated feed.                     | End of stage 2   |
-| R4   | Budgets. Payload sizes, and frame rate on the owner's hardware, which has not been measured.                                                                                                                        | End of stage 1   |
-| R5   | Acceptance. The fixture harness covers each new screen; the live fact checks keep running; the picture check from 1.6 gates every pull request.                                                                     | Every stage      |
-| R6   | Docs and name. A README for this app. Spec headers that still say "not built" corrected. KNOWN-ISSUES entries for the fork's features. The name, if it changes.                                                     | End of stage 1   |
-| R7   | The Telegram question left open in the World Board spec (section 13.5): its 2026 terms and War Monitor's collector.                                                                                                 | Before stage 3.5 |
+| Item | What                                                                                                                                                                                                                                                                 | Needed by        |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| R1   | A real server. One `npm start` serves the built app and its data routes and runs the code-only schedule (dataset checks, live feeds) whether or not a browser is open. Claude still runs only when asked.                                                            | Stage 3          |
+| R2   | A fast first start. The saved board paints in under a second. A seed snapshot ships with the app so the first run is not empty. Downloads resume. Measure a cold start on the owner's connection; target 2 minutes.                                                  | 2.5              |
+| R3   | Data review. The 20 curated tables, row by row, each with its source, by a research agent with the owner signing off. "Draft" comes off one table at a time. Decide each permission-gated feed.                                                                      | End of stage 2   |
+| R4   | Budgets. Payload sizes, and frame rate on the owner's hardware, which has not been measured.                                                                                                                                                                         | End of stage 1   |
+| R5   | Acceptance. The fixture harness covers each new screen; the live fact checks keep running; the picture check from 1.6 gates every pull request.                                                                                                                      | Every stage      |
+| R6   | Docs and name. A README for this app. Spec headers that still say "not built" corrected. KNOWN-ISSUES entries for the fork's features. The new name, Global Eye View, in the title, the README and the package, with the MIT notice and credit to the original kept. | End of stage 1   |
+| R7   | The Telegram question left open in the World Board spec (section 13.5): its 2026 terms and War Monitor's collector.                                                                                                                                                  | Before stage 3.5 |
 
-## 5. Decisions for the owner
+## 5. Decisions (owner, 2026-11-11)
 
-Each has a recommendation. The roadmap above assumes the recommendation.
-
-| #   | Decision                                                                                                                | Recommendation                                                                                                                        | If the owner chooses otherwise                                                                                                                |
-| --- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Stay mergeable with the original repo, or become a separate app?                                                        | Separate. Take later fixes to data layers from the original by hand when wanted.                                                      | Staying mergeable rules out removing its markup. Stage 1 shrinks to a skin laid over the original, and the ornament is hidden, not removed.   |
-| 2   | Personal and local, or hosted for other people?                                                                         | Personal and local. R1 makes it a proper always-on local server.                                                                      | Hosting adds sign-in, a licence review of every NonCommercial and permission-gated source, and a paid model key in place of the subscription. |
-| 3   | The original's experience features: cockpit, voice, scenes and recording, render styles, radio. Keep, demote or delete? | Demote: keep them working, off the main screen. Delete only the Cyber skin, the sonar and the costume.                                | Deleting the cockpit and scenes removes about 2,600 lines of stylesheet from stage 1.3 and several test files.                                |
-| 4   | May Claude run on a schedule? The spec says Claude runs only when the owner asks.                                       | Yes, once each morning for the World Brief, with the last run time shown and a pause switch.                                          | The brief is written when Refresh is pressed. Today still fills from the code-only sources.                                                   |
-| 5   | The name. "God's Eye View" is the original project's.                                                                   | Choose a name before 1.2, since the title is being rebuilt anyway. The MIT licence notice and credit to the original stay either way. | No effect on the work.                                                                                                                        |
-| 6   | Dark only, or a light theme too?                                                                                        | Dark only. The tokens are named so a light set can be added later.                                                                    | A light theme roughly doubles the checking in 1.3.                                                                                            |
+1. **A separate app.** It no longer stays mergeable with the original repo. Later fixes to data
+   layers are taken from the original by hand when wanted.
+2. **Personal and local, for now.** Hosting for other people is not planned. If that changes it
+   adds sign-in, a licence review of every NonCommercial and permission-gated source, and a paid
+   model key in place of the subscription.
+3. **The original's experience features are demoted, not deleted.** The cockpit, voice, scenes
+   and recording, drawing, render styles and radio keep working, off the main screen. Only the
+   Cyber skin, the sonar and the costume are deleted.
+4. **Claude runs only when the owner asks.** No scheduled Claude runs, because the app is not yet
+   continuously online. The World Brief is written on Refresh. To be looked at again once R1
+   makes the app always-on.
+5. **The name is Global Eye View.**
+6. **Dark only.** The tokens are named so a light set can be added later.
 
 ## 6. Risks
 
@@ -384,7 +386,7 @@ Each has a recommendation. The roadmap above assumes the recommendation.
 - **The Cyber skin also holds a panel rule** (only one panel open at a time) and the celestial
   ring file also holds geometry that detection uses. Both need to be separated out, not deleted
   whole.
-- **The daily brief depends on a local Claude sign-in** and shares one run slot with Search
+- **The World Brief depends on a local Claude sign-in** and shares one run slot with Search
   Layers. If the sign-in lapses, the brief must say so plainly and Today must still work.
 - **Draft data read as fact.** Plain sentences in 2.1 sound more certain than a bare number. The
   sentence has to carry the draft and stale labels with it until R3 clears them.
