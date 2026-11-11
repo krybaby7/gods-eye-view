@@ -652,16 +652,27 @@ a decision in section 5 or is dropped.
 - **Who files.** The digest already gives each story one category from a fixed list, and code
   drops anything off the list, so changing the list is small. Filing each headline before the
   digest, so that the right 400 are read, needs a cheaper filer: keyword rules in code, or Jev.
-- **The Jev test (decision 24).** Facts as checked on 2026-10-15 for another project, to be read
-  again before the test: one request carries a state and typed questions and returns
-  probabilities; input costs 0.042 US dollars per million tokens; a version can be pinned; there
-  is no seed, so answers can vary; the one public test, of market prediction, scored worse than a
-  coin flip. Filing headlines is a different job from predicting, so a small test is worth it.
-  Proposed: about 150 collected headlines with the right area and keep-or-drop marked; the same
-  set filed by keyword rules, by Jev and by Claude; Jev is adopted only if it clearly beats the
-  rules and comes close to Claude. Its answers stay advisory: code applies the threshold, every
-  headline shows its filing and probability, and nothing it says sets a flag or a score. It needs
-  a key, which the owner does not have yet, and a daily cap.
+- **The Jev test (decision 24), prepared on 2026-11-11 for the day the owner gets a key.**
+  - What Jev is, read from TypeSafe's own docs that day: one request carries a state and typed
+    questions and returns probabilities, with no text; version 1.14.0 can be pinned; input costs
+    0.042 US dollars per million tokens; there is no seed, so answers can vary. Its one public
+    test, of market prediction, scored worse than a coin flip. Filing a headline is a different
+    job from predicting.
+  - The set: 150 headlines collected that day, at most seven from one outlet. Two labellers
+    working apart mark each as keep or drop and file it under an area. Only the items they agree
+    on count.
+  - Three filers: keyword rules in code, Jev asked twice, and Claude through the digest's own
+    path.
+  - Pass marks for Jev, fixed before any result was seen: keep or drop right on 90%; at most 5%
+    of real news dropped; the right area, as first or second choice, on 80%; ten points above the
+    rules; within five points of Claude; the same answer on 95% when asked twice.
+  - Limits: one day's headlines, about a hundred kept items, and labellers that are themselves
+    Claude models. The owner's check of the items the labellers disagreed on matters.
+  - The script and its data stay out of the repository, because collected headlines are not
+    committed.
+  - If it passes, its answers stay advisory: code applies the threshold, every headline shows
+    its filing and probability, and nothing it says sets a flag or a score. It runs under a daily
+    cap.
 - **A timed filer.** If the test passes, filing could run on the collection timers, because it is
   not Claude (decision 4) and costs cents. The Overview would then show fresh counts by area
   without a Refresh, which answers the thin code-only Today of section 8.1. Open.
@@ -672,6 +683,33 @@ a decision in section 5 or is dropped.
   talking to it or stays a separate assistant.
 - **Hands.** The voice assistant has 32 actions that move the globe, such as flying to a place,
   switching layers and opening panels. None acts on the board yet.
+
+### 9.6 How a bar moves
+
+The owner asked on 2026-11-11 how a bar moves if news never moves it. Five of the six Condition
+bars rest on one figure published once a year; only Security, from conflict deaths, is monthly.
+All twelve Strength areas are yearly or slower. Proposed: a bar has three layers that look
+different, and each has its own way of moving.
+
+- **Measured, the solid bar.** It moves when its source publishes. To make it move more often,
+  a bar gets a faster figure where an open one exists: monthly consumer prices for Households
+  (already fetched for the inflation flag), monthly conflict deaths for Security (already used),
+  and the daily exchange rate for Fiscal, for the currencies the feed covers. Government,
+  Services and Society have no open monthly figure that covers the world, so they stay yearly.
+  This is item 2.6, a second indicator for each area, with the fast ones first.
+- **Status, marks on the bar.** Dated facts that switch on and off: a coup attempt, a currency
+  down 20% in a month, a red disaster alert and, once 3.8 is built, events taken from stories. In
+  a game these are status effects: the bar keeps its length and its state changes. The board
+  showed 108 of them on 2026-11-11. This is where news acts on a bar.
+- **Estimate, a dashed ghost beside the bar.** Where the figure probably is now, with a range, a
+  date and its sources, never replacing the measured value (spec rules 4 and 5). Two ways to make
+  one: a formula in code from faster figures where they exist; otherwise Claude's research on
+  request, one country at a time (stage 5). An estimate may cite news that was retrieved. A count
+  of stories may not move it, because a count measures attention, not what happened.
+- **Direction.** The server keeps every past value, so each bar can show whether it rose or fell
+  at its last release (2.1) without new data.
+- **No overall bar.** The sheet's "HP" line is the weakest bar, not a total, and spec rule 10
+  keeps a total out for now. Renaming that line is already in 2.6.
 
 ## Appendix A: the original's ornament and tools
 
