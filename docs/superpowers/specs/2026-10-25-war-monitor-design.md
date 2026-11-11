@@ -270,6 +270,9 @@ with per-source `stale`, `error`, `loading`, `blocked`.
 - Bot-protected outlets are not scraped.
 
 ## 9. Decisions (owner)
+
+- 2026-11-08. Refresh runs on Claude through the owner’s subscription.
+  Perplexity is optional.
 - Personal, non-commercial app. Node only, no Python, no Supabase, no new database.
 - ReliefWeb: owner requests the free `appname`; `RELIEFWEB_APPNAME` enables the fetcher.
 - Telegram public previews are an accepted transport, marked fragile in `/status`.

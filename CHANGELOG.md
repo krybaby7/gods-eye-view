@@ -1,5 +1,10 @@
 # Changelog
 
+- War Monitor Refresh and Situation Brief use the owner’s Claude plan by
+  default and share one Claude run slot with Search Layers. Perplexity remains
+  available through `NEWS_DIGEST_AGENT=perplexity` with its existing daily
+  budget.
+
 - Add Events > World Board with Condition, Strength and Data age lenses, country sheets, locally persisted turns and manual refresh. Scores use draft anchors and expose source coverage and uncertainty; see [World Board](docs/WORLD-BOARD.md).
 
 - War monitor: GDELT outlets come from GDELT 2.0's 15-minute data files

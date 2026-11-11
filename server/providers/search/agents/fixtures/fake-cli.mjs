@@ -6,15 +6,24 @@ import {
 } from 'node:fs';
 import { spawn } from 'node:child_process';
 const [configuration, ...args] = process.argv.slice(2);
-const { authMethod, log, mode } = JSON.parse(configuration);
+const {
+  authMethod,
+  log,
+  mode,
+  reply,
+  briefReply,
+  version,
+  loggedIn,
+  exitCode,
+} = JSON.parse(configuration);
 if (args[0] === '--version') {
   if (log) appendFileSync(log, 'version\n');
-  console.log('2.1.302 (Claude Code)');
-} else if (args[0] === 'auth') {
+  console.log(version || '2.1.302 (Claude Code)');
+} else if (args.includes('auth')) {
   if (log) appendFileSync(log, 'auth\n');
   console.log(
     JSON.stringify({
-      loggedIn: true,
+      loggedIn: loggedIn ?? true,
       authMethod: authMethod || 'claude.ai',
       email: 'private@example.com',
     }),
@@ -30,6 +39,10 @@ if (args[0] === '--version') {
       log,
       JSON.stringify({
         args,
+        systemPrompt: args.includes('--system-prompt-file')
+          ? readFileSync(args[args.indexOf('--system-prompt-file') + 1], 'utf8')
+          : undefined,
+        maxOutputTokens: process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS,
         mcpConfig,
         appname: process.env.SEARCH_RELIEFWEB_APPNAME,
         prompt,
@@ -55,6 +68,14 @@ if (args[0] === '--version') {
   else if (mode === 'fail') {
     console.error('private model response');
     process.exitCode = 1;
+  } else if (reply) {
+    const isBrief = JSON.parse(
+      args[args.indexOf('--json-schema') + 1],
+    ).required.includes('headline');
+    process.stdout.write(
+      readFileSync(isBrief && briefReply ? briefReply : reply),
+    );
+    process.exitCode = exitCode ?? 0;
   } else
     console.log(
       readFileSync(

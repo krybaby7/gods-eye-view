@@ -106,7 +106,7 @@
   transition:
     opacity 0.4s ease,
     visibility 0.4s ease;
-  --hud-color: rgba(0, 255, 255, 0.6);
+  --hud-color: #b6f8fa;
   --hud-glow: rgba(0, 255, 255, 0.4);
   --hud-border: rgba(0, 255, 255, 0.15);
 }
@@ -370,4 +370,25 @@
 
 #intel-hud[data-variant='minimal'] .hud-summary-wrap {
   max-width: 280px;
+}
+
+/* Keep readouts legible over bright imagery without dimming the map. */
+#intel-hud:not([data-variant='cyber'])
+  :is(.hud-corner, .hud-edge, .hud-top-bar, .hud-bottom-bar) {
+  background: var(--map-readout-bg);
+  border-radius: 4px;
+}
+
+#intel-hud:not([data-variant='cyber'])
+  :is(
+    .hud-system,
+    .hud-summary-label,
+    .hud-summary,
+    .hud-orbital,
+    .hud-ais-vessel:not(.active),
+    .hud-edge,
+    .hud-top-bar-left,
+    .hud-top-bar-right
+  ) {
+  opacity: 0.84;
 }

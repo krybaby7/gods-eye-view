@@ -13,6 +13,27 @@ export function startApplicationChrome({
   let firstRun;
   let revealTimer;
   let resolveDelay;
+  const document = loadingScreen.ownerDocument;
+  const searchButtons =
+    !signal.aborted && dataManager?.layers?.has('searches')
+      ? [...(document?.querySelectorAll('[data-open-search-layers]') ?? [])]
+      : [];
+  const openSearchLayers = async () => {
+    const enabled = await dataManager.setEnabled('searches', true, {
+      origin: 'user',
+      signal,
+    });
+    if (!enabled || disposed || signal.aborted) return;
+    styleManager.setPanelCollapsed('searches-panel', false, { explicit: true });
+    if (firstRun?.isTopmost?.()) firstRun.dismiss({ restoreFocus: false });
+    document
+      .querySelector('#searches-panel .searches-question')
+      ?.focus({ preventScroll: true });
+  };
+  for (const button of searchButtons) {
+    button.hidden = false;
+    button.addEventListener('click', openSearchLayers);
+  }
   const minimumDelay = new Promise((resolve) => {
     resolveDelay = resolve;
   });
@@ -44,6 +65,10 @@ export function startApplicationChrome({
   );
   return async () => {
     disposed = true;
+    for (const button of searchButtons) {
+      button.removeEventListener('click', openSearchLayers);
+      button.hidden = true;
+    }
     clearTimeout(delayTimer);
     clearTimeout(revealTimer);
     resolveDelay();

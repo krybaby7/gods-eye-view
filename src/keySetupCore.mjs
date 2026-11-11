@@ -79,7 +79,8 @@ export const KEY_SETUP_KEYS = Object.freeze([
   Object.freeze({
     id: 'perplexity',
     title: 'PERPLEXITY',
-    unlocks: 'War monitor digest — Refresh turns headlines into mapped stories',
+    unlocks:
+      'Optional metered provider for War Monitor Refresh and Situation Brief',
     getUrl: 'https://www.perplexity.ai/account/api/keys',
     envVars: Object.freeze(['PERPLEXITY_API_KEY']),
     tier: 'metered',

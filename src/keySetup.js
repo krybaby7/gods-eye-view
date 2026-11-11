@@ -350,6 +350,26 @@ export async function initKeySetup({
     }
   };
 
+  const refreshWarMonitor = async () => {
+    const section = root.querySelector('[data-key-setup-war-monitor]');
+    if (!section) return;
+    try {
+      const response = await doFetch('/api/news/status', { cache: 'no-store' });
+      if (!response.ok) return;
+      const { digest, keyConfigured } = await response.json();
+      if (disposed || !digest) return;
+      const label =
+        digest.agent === 'claude'
+          ? `Claude plan · ${digest.agentStatus?.disabledReason || 'Signed in'}`
+          : `Perplexity Agent API · ${keyConfigured ? 'Key configured' : 'API key required'}`;
+      section.querySelector('[data-key-setup-war-monitor-status]').textContent =
+        label;
+      section.hidden = false;
+    } catch {
+      // Keep the other Provider Settings available.
+    }
+  };
+
   const visible = () =>
     root.isConnected &&
     root.classList.contains('visible') &&
@@ -367,6 +387,7 @@ export async function initKeySetup({
     open = true;
     keyboard.activate();
     void refreshSearchAgents();
+    void refreshWarMonitor();
     root.hidden = false;
     globalThis.requestAnimationFrame?.(() => {
       if (!open) return;

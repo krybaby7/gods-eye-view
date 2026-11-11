@@ -583,7 +583,11 @@ export function createNewsLayer({
     id: 'news',
     name: 'War Monitor',
     icon: '◉',
-    source: 'Source directory · Perplexity digest',
+    get source() {
+      return _snapshot?.digest?.agent === 'claude'
+        ? 'Source directory · Claude plan'
+        : 'Source directory · Perplexity digest';
+    },
     requiresKeyId: 'perplexity',
     updateInterval: 60_000,
 
@@ -893,20 +897,25 @@ export function createNewsLayer({
           error: 'in_flight',
           summary: 'A digest is already running.',
         };
-      _digestRunning = { startedAt: now() };
+      const controller =
+        _snapshot?.digest?.agent === 'claude' ? new AbortController() : null;
+      _digestRunning = { startedAt: now(), controller };
       _digestOutcome = null;
       notify('digest');
       let outcome;
       try {
         outcome = await source.requestDigest({
           theater: _theaterId || undefined,
+          ...(controller && { signal: controller.signal }),
         });
       } catch (error) {
-        outcome = {
-          ok: false,
-          error: 'network',
-          message: error?.message || 'News provider unavailable',
-        };
+        outcome = controller?.signal.aborted
+          ? { ok: false, error: 'cancelled' }
+          : {
+              ok: false,
+              error: 'network',
+              message: error?.message || 'News provider unavailable',
+            };
       }
       _digestRunning = null;
       if (_destroyed) return outcome;
@@ -932,20 +941,25 @@ export function createNewsLayer({
           error: 'in_flight',
           summary: formatBriefOutcome({ error: 'in_flight' }),
         };
-      _briefRunning = { startedAt: now() };
+      const controller =
+        _snapshot?.digest?.agent === 'claude' ? new AbortController() : null;
+      _briefRunning = { startedAt: now(), controller };
       _digestOutcome = null;
       notify('digest');
       let outcome;
       try {
         outcome = await source.requestBrief({
           theater: _theaterId || undefined,
+          ...(controller && { signal: controller.signal }),
         });
       } catch (error) {
-        outcome = {
-          ok: false,
-          error: 'network',
-          message: error?.message || 'News provider unavailable',
-        };
+        outcome = controller?.signal.aborted
+          ? { ok: false, error: 'cancelled' }
+          : {
+              ok: false,
+              error: 'network',
+              message: error?.message || 'News provider unavailable',
+            };
       }
       _briefRunning = null;
       if (_destroyed) return outcome;
@@ -957,6 +971,14 @@ export function createNewsLayer({
       };
       notify('digest');
       return _digestOutcome;
+    },
+
+    cancelDigest() {
+      const controller = (_digestRunning || _briefRunning)?.controller;
+      if (controller && !controller.signal.aborted) {
+        controller.abort();
+        notify('digest');
+      }
     },
 
     /** Everything the Situation panel renders. */
@@ -1001,6 +1023,9 @@ export function createNewsLayer({
         digest: {
           ...(server || {}),
           running: Boolean(local || server?.running),
+          cancellable: Boolean(
+            local?.controller && !local.controller.signal.aborted,
+          ),
           phase: _briefRunning
             ? 'brief'
             : _digestRunning
@@ -1042,10 +1067,13 @@ export function createNewsLayer({
       const sources = _snapshot?.sources || [];
       const degraded = sources.filter((s) => s.health.degraded).length;
       const lastDigestAt = Date.parse(_snapshot?.lastDigest?.finishedAt || '');
-      const budget = _snapshot?.budget || null;
+      const onClaude = _snapshot?.digest?.agent === 'claude';
+      const budget = onClaude ? null : _snapshot?.budget || null;
       // The feed loads without a key; only Refresh needs one. Reported apart
       // from `keyRequired`, which the loading status reads as a failed load.
-      const keyRequired = Boolean(_snapshot && !_snapshot.digest.keyConfigured);
+      const keyRequired = Boolean(
+        _snapshot && !onClaude && !_snapshot.digest.keyConfigured,
+      );
       let loadingLabel = '';
       if (_loading && !_snapshot) loadingLabel = 'loading...';
       else if (_error) loadingLabel = _error;
@@ -1061,13 +1089,15 @@ export function createNewsLayer({
             degraded
               ? `${degraded} ${degraded === 1 ? 'source' : 'sources'} degraded`
               : null,
-            keyRequired
-              ? 'digest needs key'
-              : budget?.exhausted
-                ? 'budget used up'
-                : Number.isFinite(budget?.remainingUsd)
-                  ? `budget $${budget.remainingUsd.toFixed(2)} left`
-                  : null,
+            onClaude
+              ? 'Claude plan'
+              : keyRequired
+                ? 'digest needs key'
+                : budget?.exhausted
+                  ? 'budget used up'
+                  : Number.isFinite(budget?.remainingUsd)
+                    ? `budget $${budget.remainingUsd.toFixed(2)} left`
+                    : null,
           ]
             .filter(Boolean)
             .join(' · ');

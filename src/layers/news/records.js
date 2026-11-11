@@ -270,6 +270,17 @@ function normalizeRun(raw) {
   const count = (value) => (Number.isFinite(value) ? value : null);
   return {
     id: raw.id,
+    ...(raw.agent === 'claude' && {
+      agent: 'claude',
+      planUsage: raw.planUsage
+        ? {
+            durationMs: count(raw.planUsage.durationMs),
+            inputTokens: count(raw.planUsage.inputTokens),
+            outputTokens: count(raw.planUsage.outputTokens),
+            costUsd: count(raw.planUsage.costUsd),
+          }
+        : null,
+    }),
     kind: raw.kind === 'brief' ? 'brief' : 'digest',
     digestRunId: textOrNull(raw.digestRunId, 64),
     reason: textOrNull(raw.reason, 32),
@@ -413,7 +424,7 @@ export function normalizeNewsSnapshot(payload) {
         ? Math.max(0, briefStatus.digestsBehind)
         : null,
       retryable: briefStatus.retryable === true,
-      retryDisabledReason: textOrNull(briefStatus.retryDisabledReason, 32),
+      retryDisabledReason: textOrNull(briefStatus.retryDisabledReason, 200),
     },
     sources: (Array.isArray(payload.sources) ? payload.sources : [])
       .filter((s) => s && typeof s.id === 'string')
@@ -455,13 +466,23 @@ export function normalizeNewsSnapshot(payload) {
       lastBriefCostUsd: finiteOrNull(budget.lastBriefCostUsd),
     },
     digest: {
+      ...(digest.agent && {
+        agent: digest.agent === 'claude' ? 'claude' : 'perplexity',
+      }),
+      ...(digest.agentStatus && {
+        agentStatus: {
+          installed: digest.agentStatus.installed === true,
+          signedIn: digest.agentStatus.signedIn === true,
+          disabledReason: textOrNull(digest.agentStatus.disabledReason, 200),
+        },
+      }),
       provider: text(digest.provider, 80),
       model: text(digest.model, 80),
       keyConfigured: digest.keyConfigured === true,
       running: digest.running === true,
       phase: ['digest', 'brief'].includes(digest.phase) ? digest.phase : null,
       startedAt: isoOrNull(digest.startedAt),
-      disabledReason: textOrNull(digest.disabledReason, 32),
+      disabledReason: textOrNull(digest.disabledReason, 200),
       undigestedCount: finiteOrNull(digest.undigestedCount) ?? 0,
     },
   };
@@ -571,7 +592,9 @@ export function formatUsdShort(value) {
 function briefSentence(briefRun) {
   if (!briefRun) return '';
   if (briefRun.status === 'ok')
-    return `Brief written, ${formatUsdShort(briefRun.costUsd)}.`;
+    return briefRun.agent === 'claude'
+      ? 'Brief written with the Claude plan.'
+      : `Brief written, ${formatUsdShort(briefRun.costUsd)}.`;
   if (briefRun.status === 'skipped')
     return `${String(briefRun.message || 'Brief skipped').replace(/\.$/, '')}.`;
   const cost =
@@ -591,6 +614,9 @@ export function formatBriefOutcome(outcome) {
     return 'The brief needs a Perplexity API key: add PERPLEXITY_API_KEY in Provider Settings.';
   if (outcome.error === 'in_flight')
     return 'A digest or brief is already running.';
+  if (outcome.error === 'cancelled') return 'Claude run canceled.';
+  if (outcome.error === 'agent_busy' || outcome.error === 'agent_unavailable')
+    return outcome.message || 'Claude Code is unavailable.';
   if (outcome.error === 'nothing_to_retry')
     return 'There is no failed brief to retry.';
   if (outcome.error === 'rate_limited')
@@ -615,6 +641,9 @@ export function formatDigestOutcome(outcome, budget = null) {
   if (outcome.keyRequired)
     return 'The digest needs a Perplexity API key: add PERPLEXITY_API_KEY in Provider Settings.';
   if (outcome.error === 'in_flight') return 'A digest is already running.';
+  if (outcome.error === 'cancelled') return 'Claude run canceled.';
+  if (outcome.error === 'agent_busy' || outcome.error === 'agent_unavailable')
+    return outcome.message || 'Claude Code is unavailable.';
   if (outcome.error === 'over_budget')
     return `${outcome.message || "Today's digest budget is used up"}. Refresh is off until tomorrow.`;
   if (outcome.error === 'rate_limited')
@@ -628,7 +657,11 @@ export function formatDigestOutcome(outcome, budget = null) {
     const items = run.itemCount ?? 0;
     const unassigned = run.unassignedCount ?? 0;
     const brief = briefSentence(outcome.briefRun);
-    return `Digest done: ${created} new and ${updated} updated ${created + updated === 1 ? 'story' : 'stories'} from ${items} items, ${unassigned} left unassigned. Cost ${formatUsdShort(run.costUsd)}.${brief ? ` ${brief}` : ''}${left}`;
+    const usage =
+      run.agent === 'claude'
+        ? 'Claude plan.'
+        : `Cost ${formatUsdShort(run.costUsd)}.`;
+    return `Digest done: ${created} new and ${updated} updated ${created + updated === 1 ? 'story' : 'stories'} from ${items} items, ${unassigned} left unassigned. ${usage}${brief ? ` ${brief}` : ''}${run.agent === 'claude' ? '' : left}`;
   }
   const cost =
     Number(run.costUsd) > 0 ? ` It cost ${formatUsdShort(run.costUsd)}.` : '';

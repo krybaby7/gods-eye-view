@@ -572,15 +572,20 @@ export async function runBrief({
   nowMs,
   fetchImpl,
   signal,
+  callModel = callDigestModel,
 }) {
-  const result = await callDigestModel({
+  const result = await callModel({
     apiKey,
     body: prepared.body,
     fetchImpl,
     signal,
     label: 'brief',
   });
-  const billed = { cost: result.cost, model: result.model };
+  const billed = {
+    cost: result.cost,
+    model: result.model,
+    ...(result.planUsage && { planUsage: result.planUsage }),
+  };
   const parsed = parseDigestText(result.text);
   if (!parsed)
     throw briefError(
@@ -615,5 +620,6 @@ export async function runBrief({
     cost: result.cost,
     reasoningTokens: result.reasoningTokens,
     responseId: result.responseId,
+    ...(result.planUsage && { planUsage: result.planUsage }),
   };
 }

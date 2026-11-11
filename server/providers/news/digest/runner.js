@@ -651,6 +651,7 @@ export async function runDigest({
   nowMs,
   fetchImpl,
   signal,
+  callModel = callDigestModel,
 }) {
   const selected = selectDigestItems(newItems, sourcesById);
   const open = selectOpenStories(openStories);
@@ -667,12 +668,13 @@ export async function runDigest({
     categoryIds,
     actorIds,
   });
-  const result = await callDigestModel({ apiKey, body, fetchImpl, signal });
+  const result = await callModel({ apiKey, body, fetchImpl, signal });
   const parsed = parseDigestText(result.text);
   if (!parsed)
     throw digestError('malformed_output', 'digest output was not valid JSON', {
       cost: result.cost,
       model: result.model,
+      ...(result.planUsage && { planUsage: result.planUsage }),
     });
   let validated;
   try {
@@ -686,6 +688,7 @@ export async function runDigest({
   } catch (error) {
     error.cost = result.cost;
     error.model = result.model;
+    if (result.planUsage) error.planUsage = result.planUsage;
     throw error;
   }
   return {
@@ -698,5 +701,6 @@ export async function runDigest({
     cost: result.cost,
     reasoningTokens: result.reasoningTokens,
     responseId: result.responseId,
+    ...(result.planUsage && { planUsage: result.planUsage }),
   };
 }

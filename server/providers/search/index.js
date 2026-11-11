@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { admitSameSiteRequest } from '../../../src/localRequestGate.mjs';
 import { clientKey, makeCostRateLimiter } from '../common/rate-limit.js';
+import { claudeSlot } from '../common/claude-slot.js';
 import { readRequestBody } from '../common/request.js';
 import { createSearchAgents } from './agents/index.js';
 import { boundToolkitOrigin } from './agents/toolkit.js';
@@ -119,7 +120,9 @@ function terminalError(error, signal) {
     case 'SEARCH_MAP_INVALID':
       return {
         reason: 'invalid_map',
-        message: 'Claude Code returned invalid map data.',
+        message: ['Claude Code returned invalid map data.', error.mapIssue]
+          .filter(Boolean)
+          .join(' '),
       };
     default:
       return {
@@ -272,10 +275,14 @@ export function createSearchService({
         Object.assign(failed.runs.at(-1), {
           usage: usageTotal(
             research?.usage,
-            mapping?.usage,
+            mapping?.usage ?? error?.usage,
             Math.max(0, Date.parse(finishedAt) - Date.parse(run.startedAt)),
           ),
-          agentModel: mapping?.agentModel ?? research?.agentModel ?? null,
+          agentModel:
+            mapping?.agentModel ??
+            error?.agentModel ??
+            research?.agentModel ??
+            null,
         });
         return failed;
       });
@@ -293,8 +300,10 @@ export function createSearchService({
     requireSupportedAgent(agent);
     if (lifecycle.signal.aborted)
       throw unavailable('The search server is closing.');
-    if (active.has(agent))
+    if (active.has(agent) || claudeSlot.owner() === 'search')
       throw conflict('Claude Code is already running a search.');
+    const releaseClaude = claudeSlot.claim('search');
+    if (!releaseClaude) throw conflict('Claude is busy with War Monitor.');
 
     const task = { controller: new AbortController(), searchId: id, run: null };
     active.set(agent, task);
@@ -377,7 +386,10 @@ export function createSearchService({
         if (task.run) logger.warn?.('[searches] Could not save run', error);
         else rejectAdmission(error);
       })
-      .finally(() => active.delete(agent));
+      .finally(() => {
+        active.delete(agent);
+        releaseClaude();
+      });
     return admitted;
   }
 
@@ -484,7 +496,13 @@ export function createSearchService({
       asOf,
       days: listSearchDays(records, { dayKey }),
       agents: {
-        claude: { ...status.claude, busy: active.has(DEFAULT_AGENT) },
+        claude: {
+          ...status.claude,
+          ...(claudeSlot.owner() === 'news' && {
+            disabledReason: 'Claude is busy with War Monitor.',
+          }),
+          busy: claudeSlot.owner() !== null,
+        },
         codex: CODEX_STATUS,
       },
       defaultAgent: DEFAULT_AGENT,

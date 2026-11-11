@@ -522,8 +522,8 @@ Routes, same-site gated and rate limited like `/api/news`:
 - `PATCH /api/searches/:id` with `{ label?, visible?, pinned?, agent? }`.
 - `DELETE /api/searches/:id` and `DELETE /api/searches/:id/findings/:findingId`.
 
-No budget and no daily cap for searches. The war monitor's digest keeps its own Perplexity setup
-and budget unchanged; moving it to these agents is a separate, later decision.
+Searches have no app-level daily spend cap. War Monitor shares the Claude slot
+and applies its daily budget when using Perplexity.
 
 ## 10. Voice
 
@@ -587,8 +587,7 @@ palette.
 - **Later:** Codex adapter: subscription with read-only sandbox, or metered OpenAI API.
   Folders or tags in the history; lines between places (trade or migration routes);
   areas drawn as outlines; follow-up questions inside a search; pinning a search as a theater; a
-  Brief per search; the war monitor's "evidence nearby" from live layers; moving the war monitor's
-  digest off Perplexity.
+  Brief per search; the war monitor's "evidence nearby" from live layers.
 
 **The existing roadmap:** this feature replaces the war monitor's Phase 2 "per-story deep dive with
 web search". War monitor Phase 3 and Brief phases B and C wait until search layers ship.

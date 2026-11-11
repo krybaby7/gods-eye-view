@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  formatBriefOutcome,
+  formatDigestOutcome,
+  normalizeNewsSnapshot,
+} from '../layers/news/records.js';
+import { retryBriefState } from './situationBriefModel.js';
+import {
   citedItems,
   degradedSources,
   filterRawItems,
@@ -258,4 +264,65 @@ test('degraded sources name the reason; cited items come from items then snapsho
   );
   assert.equal(verificationLabel('participant-claim'), 'Participant claim');
   assert.equal(verificationLabel('nonsense'), 'Reported');
+});
+test('Claude plan displays elapsed duration without metered spend', () => {
+  const state = snapshot({
+    digest: { agent: 'claude', disabledReason: 'Claude is busy with a search' },
+    lastRun: {
+      status: 'ok',
+      agent: 'claude',
+      durationMs: 66_000,
+      planUsage: { durationMs: 65_000, costUsd: 0.18 },
+    },
+  });
+  assert.match(
+    formatDigestLine(state, NOW, UTC),
+    /last run 1m 05s · Claude plan$/,
+  );
+  assert.doesNotMatch(formatDigestLine(state, NOW, UTC), /budget|¢/);
+  assert.equal(refreshState(state, NOW).reason, 'Claude is busy with a search');
+});
+test('the normalized Claude snapshot and outcomes carry plan usage and complete status', () => {
+  const reason =
+    'Sign in with your Claude subscription using claude auth login.';
+  const lastRun = {
+    id: 'run_1',
+    status: 'ok',
+    agent: 'claude',
+    costUsd: 0,
+    planUsage: {
+      durationMs: 65_000,
+      inputTokens: 32,
+      outputTokens: 5,
+      costUsd: 0.02,
+    },
+  };
+  const payload = normalizeNewsSnapshot({
+    theater: { id: 'fixture' },
+    items: [],
+    stories: [],
+    lastRun,
+    digest: {
+      agent: 'claude',
+      disabledReason: reason,
+      agentStatus: { installed: true, signedIn: false, disabledReason: reason },
+    },
+    briefStatus: { retryable: true, retryDisabledReason: reason },
+  });
+  const state = { ...payload, ready: true };
+  assert.equal(refreshState(state, NOW).reason, reason);
+  assert.equal(retryBriefState(state).reason, reason);
+  assert.equal(state.digest.agentStatus.disabledReason, reason);
+  assert.match(formatDigestLine(state, NOW), /last run 1m 05s · Claude plan$/);
+  assert.equal(
+    formatBriefOutcome({ ok: true, briefRun: lastRun }),
+    'Brief written with the Claude plan.',
+  );
+  assert.doesNotMatch(
+    formatDigestOutcome(
+      { ok: true, run: lastRun, briefRun: lastRun },
+      snapshot().budget,
+    ),
+    /¢|Cost|budget/,
+  );
 });

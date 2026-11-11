@@ -7,7 +7,7 @@ continent. Pick the theater in the Situation panel's menu. It has three parts:
 
 1. **Collect.** Free and keyless. Feeds are fetched on timers and kept for 72
    hours.
-2. **Digest.** Paid and manual. One model call per **Refresh** groups the new
+2. **Digest.** Manual, using the owner’s Claude plan by default. One model call per **Refresh** groups the new
    items into stories. A second call then writes the
    [Situation Brief](#situation-brief), which explains the whole crisis from
    those stories.
@@ -32,14 +32,16 @@ Sources and terms: the War monitor section of
    folder (Reporting, Official, Local, Armed group, Verification,
    Humanitarian, Analysis). Each item is marked as not digested yet,
    unassigned, or attached to a story.
-3. Add `PERPLEXITY_API_KEY` in Provider Settings (or `.env`).
+3. Install Claude Code on the server, run `claude auth login`, and check War
+   Monitor readiness in Provider Settings. For Perplexity, select it in
+   [Configuration](#configuration) and add its key.
 4. Press **Refresh**, or say "refresh news". After the digest:
    - pins appear for located event stories;
    - the **Stories** tab lists every story, including list-only ones
      (no location, or a development such as talks or a sanction);
    - the Situation Brief at the top of the panel is rewritten;
    - the digest line reads, for example:
-     `Digest 14:02 · 23 stories from 312 items · 9 unassigned · last run 34¢ · brief 12¢ · budget $1.08 left`.
+     `Digest 14:02 · 23 stories from 312 items · 9 unassigned · last run 1m 05s · Claude plan`.
 5. The category chips filter the pins and the story list together. The choice
    is kept in share links. The Brief's actor chips narrow both further.
    **Frame theater**, next to Refresh, flies to every visible pin at once.
@@ -84,8 +86,9 @@ Voice:
 
 The Refresh control is disabled with a reason when:
 
-- there is no key;
-- today's budget is used up;
+- Claude Code is missing, needs an update, or needs subscription sign-in;
+- Claude is busy with a Search Layers run;
+- the selected Perplexity provider needs an API key or has reached its daily budget;
 - a digest or brief is already running;
 - nothing new has arrived since the last digest.
 
@@ -185,7 +188,29 @@ writes the English story headline.
 The digest runs only on an explicit Refresh: the panel button, the
 `refresh_news` voice action, or `POST /api/news/digest`. Nothing schedules it.
 
-**The call.** One request to the Perplexity Agent API:
+**Claude plan (default).** Install Claude Code 2.1.248 or later on the server
+and run `claude auth login`. Provider Settings shows the selected provider and
+whether Claude is ready. The default model alias is `sonnet`; the digest and
+brief prompts were tuned on Sonnet 5.5. Refresh and its automatic brief share
+one Claude slot with Search Layers. If a search holds the slot, Refresh returns
+409 with “Claude is busy with a search”. Cancel stops the active Claude process
+tree for a Refresh or Retry brief started in that panel.
+
+The server runs `claude -p` with the original instructions in a private
+`--system-prompt-file`, which replaces Claude Code’s coding prompt and keeps
+the place list off the Windows command line. It pipes the feed or stories over
+stdin and supplies the matching schema with `--json-schema`. Restricted mode
+ignores user, project and local settings. The server also disables built-in
+tools, MCP, Chrome and session persistence. The child receives OS environment
+variables plus a fixed `CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000`. Subscription
+sign-in stays available in restricted mode. Bare mode disables OAuth and
+keychain access. The run has a 20-minute limit and an 8 MiB stdout cap.
+[Claude Code CLI reference](https://code.claude.com/docs/en/cli-reference)
+and [environment variables](https://code.claude.com/docs/en/env-vars).
+
+**Perplexity (optional).** Set `NEWS_DIGEST_AGENT=perplexity` and add a
+`PERPLEXITY_API_KEY` in Provider Settings. Each call uses the Perplexity Agent
+API:
 
 - `POST https://api.perplexity.ai/v1/agent` (the documented endpoint; the
   earlier `/v1/responses` path is no longer documented for creating one);
@@ -233,6 +258,8 @@ undigested for the next Refresh, and the run records how many were left out.
 
 | Status            | Meaning                                                                                                                                                        | Recorded as a run?                       |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| 503 `agent_unavailable` | Claude Code is missing, too old, or needs subscription sign-in. | — |
+| 409 `agent_busy` | Claude is already running a search or another War Monitor run. | — |
 | 503 `no_key`      | No key is configured.                                                                                                                                          | —                                        |
 | 409 `in_flight`   | A digest is already running.                                                                                                                                   | —                                        |
 | 429 `over_budget` | Today's budget is used up.                                                                                                                                     | —                                        |
@@ -240,12 +267,17 @@ undigested for the next Refresh, and the run records how many were left out.
 | 200 `ok`          | The digest ran.                                                                                                                                                | Yes                                      |
 | 502               | The call failed: `auth`, `rate_limited`, `upstream`, `model_error`, `malformed_output`, `truncated` (the answer hit the output limit), `network` or `timeout`. | Yes, with its reported or estimated cost |
 
-A failed run that was still billed keeps its cost. A call that timed out (after
+A failed Perplexity run that was still billed keeps its cost. A call that timed out (after
 15 minutes, room for a full answer at the measured 95 tokens a second) or was cut off mid-answer returns no usage, so it is charged a
 worst-case estimate instead: the input size plus a full 64k-token answer, at
 list price.
 
-**Cost and budget.** Every run records `usage.cost.total_cost` from the
+**Usage.** Claude run records include `planUsage` with the CLI-reported
+duration, input and output tokens, and cost figure when available. Claude plan
+usage stays outside the Perplexity daily spend and the Situation panel shows
+elapsed time rather than cents.
+
+**Perplexity cost and budget.** Every Perplexity run records `usage.cost.total_cost` from the
 response. If a response omits it, the cost is estimated from the token counts
 at list price ($2 input / $10 output per million tokens) and flagged as an
 estimate.
@@ -255,7 +287,7 @@ against the day's recorded spend, by local calendar day. Because the check
 happens before the call, the run that crosses the cap is allowed to finish.
 
 The key, the request bodies and the response bodies are never logged. The
-server logs one line per run: counts and cost.
+server logs one line per run with counts and either Claude plan or Perplexity cost.
 
 **Story lifetime:**
 
@@ -417,8 +449,8 @@ perspectives with no item in 24 hours ("no Iran state items in 24 h"); open
 stories without a location. Show more lists the details.
 
 **Budget.** Brief runs go into the same run log with `kind: "brief"` (older
-records without a kind read as digests), so the daily budget covers both.
-Before the call, code checks that the remaining budget covers a worst-case
+records without a kind read as digests). For Perplexity, the daily budget
+covers both. Before a Perplexity call, code checks that the remaining budget covers a worst-case
 brief: the input plus a full 16,000-token answer at list price, about 20 to 25
 cents. If not, the brief is skipped and the reason is shown. A brief is
 expected to cost about 10 to 15 cents.
@@ -512,8 +544,10 @@ usual vantage point, not any one article.
 
 | Setting                        | Default | Effect                                                                                                         |
 | ------------------------------ | ------- | -------------------------------------------------------------------------------------------------------------- |
-| `PERPLEXITY_API_KEY`           | unset   | Turns on the digest. Without it, collection and the Raw feed still work and Refresh is disabled with "no key". |
-| `NEWS_DIGEST_DAILY_BUDGET_USD` | `2.00`  | Daily spend cap.                                                                                               |
+| `NEWS_DIGEST_AGENT` | `claude` | Provider for Refresh and Situation Brief. Set to `perplexity` for the metered API. |
+| `NEWS_CLAUDE_MODEL` | `sonnet` | Model alias or name for Claude Code. |
+| `PERPLEXITY_API_KEY` | unset | Required when Perplexity is selected. Collection and the Raw feed are keyless. |
+| `NEWS_DIGEST_DAILY_BUDGET_USD` | `2.00`  | Perplexity daily spend cap.                                                                                               |
 | `RELIEFWEB_APPNAME`            | unset   | Turns on the ReliefWeb source.                                                                                 |
 | `NEWS_GDELT_FILES`             | off     | `on` reads GDELT outlets from the 15-minute files instead of the DOC 2.0 search API (about 514 MB a day).      |
 
@@ -551,9 +585,9 @@ whom is never written into the actor list.
   [Digest](#digest).
 - `POST /api/news/brief?theater=<id>`: Retry brief. Same-site only, sharing
   the digest's rate limit. 409 unless the latest brief failed or was skipped
-  for budget; 429 when the budget cannot cover it. See
+  for budget. When Perplexity is selected, 429 means the budget cannot cover it. See
   [Situation Brief](#situation-brief).
-- `GET /api/news/status`: collection health per theater.
+- `GET /api/news/status`: selected provider, Claude readiness or Perplexity key status, and collection health per theater.
 
 ## Code
 

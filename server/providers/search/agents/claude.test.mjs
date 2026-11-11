@@ -50,8 +50,15 @@ test('takes map data only from structured output', async () => {
   assert.equal(parsed.agentModel, 'claude-sonnet-test');
   assert.throws(
     () => parseClaudeMap('{"type":"result","subtype":"success","result":"{}"}'),
-    { code: 'SEARCH_MAP_INVALID' },
+    {
+      code: 'SEARCH_MAP_INVALID',
+      mapIssue: 'Claude Code returned no structured map object.',
+    },
   );
+  assert.throws(() => parseClaudeMap('unstructured output'), {
+    code: 'SEARCH_MAP_INVALID',
+    mapIssue: 'The Claude Code response was not valid JSON.',
+  });
 });
 
 test('Claude argv omits unsupported bounds while retaining map shape and instructions', async () => {

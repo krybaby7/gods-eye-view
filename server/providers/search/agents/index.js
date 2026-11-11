@@ -1,5 +1,5 @@
 import { createClaudeAdapter } from './claude.js';
-import { agentError } from './process.js';
+import { agentError } from '../../common/claude-process.js';
 
 const STATUS_TTL_MS = 5_000;
 const CODEX_STATUS = Object.freeze({

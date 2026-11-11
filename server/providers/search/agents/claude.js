@@ -2,48 +2,24 @@ import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { buildResearchPrompt } from '../research.js';
-import { agentError, createProcessRunner } from './process.js';
+import {
+  agentError,
+  createProcessRunner,
+} from '../../common/claude-process.js';
+import {
+  baseClaudeArgs,
+  claudeProcessEnv,
+  claudeStatus,
+  parseClaudeStructured,
+  parseJson,
+  resultOk,
+  structuredClaudeArgs,
+  usageOf,
+} from '../../common/claude.js';
 import { createSearchToolkit, toolkitSources } from './toolkit.js';
 
 const WEB_TOOLS = 'WebSearch,WebFetch';
-const MIN_VERSION = [2, 1, 248];
 const DEFAULT_RUN_TIMEOUT_MS = 10 * 60_000;
-const OS_ENV =
-  /^(path|pathext|systemroot|windir|comspec|home|userprofile|homedrive|homepath|appdata|localappdata|tmpdir|tmp|temp|lang|lc_[a-z_]+|xdg_config_home|xdg_data_home|xdg_runtime_dir|dbus_session_bus_address|claude_config_dir)$/i;
-
-// Claude's structured output accepts the schema shape. Local map validation
-// enforces the bounds that its grammar cannot express.
-function claudeSchema(schema) {
-  const {
-    description,
-    properties,
-    items,
-    minLength,
-    maxLength,
-    maxItems,
-    minimum,
-    maximum,
-    ...shape
-  } = schema;
-  if (properties) {
-    shape.properties = Object.fromEntries(
-      Object.entries(properties).map(([name, child]) => [
-        name,
-        claudeSchema(child),
-      ]),
-    );
-  }
-  if (items) shape.items = claudeSchema(items);
-  const details = [description];
-  if (minLength != null) details.push('At least ' + minLength + ' characters.');
-  if (maxLength != null) details.push('At most ' + maxLength + ' characters.');
-  if (maxItems != null) details.push('At most ' + maxItems + ' items.');
-  if (minimum != null) details.push('Minimum ' + minimum + '.');
-  if (maximum != null) details.push('Maximum ' + maximum + '.');
-  const instruction = details.filter(Boolean).join(' ');
-  if (instruction) shape.description = instruction;
-  return shape;
-}
 
 export function buildClaudeArgs({
   step,
@@ -52,71 +28,21 @@ export function buildClaudeArgs({
   mcpConfigPath,
   mcpTools = [],
 }) {
-  const useToolkit =
-    step === 'research' && mcpConfigPath && mcpTools.length > 0;
-  const args = [
-    '-p',
-    '--restricted',
-    '--no-chrome',
-    '--no-session-persistence',
-    '--permission-mode',
-    'dontAsk',
-    '--strict-mcp-config',
-    '--mcp-config',
-    useToolkit ? mcpConfigPath : '{"mcpServers":{}}',
-    '--disallowedTools',
-    useToolkit ? 'ListMcpResourcesTool,ReadMcpResourceTool' : 'mcp__*',
-  ];
-  if (model) args.push('--model', model);
-  if (step === 'research') {
-    return [
-      ...args,
-      '--output-format',
-      'stream-json',
-      '--verbose',
-      '--tools',
-      WEB_TOOLS,
-      '--allowedTools',
-      (useToolkit ? [WEB_TOOLS, ...mcpTools] : [WEB_TOOLS]).join(','),
-    ];
-  }
+  if (step !== 'research') return structuredClaudeArgs({ model, schema });
+  const useToolkit = mcpConfigPath && mcpTools.length > 0;
   return [
-    ...args,
+    ...baseClaudeArgs({
+      model,
+      mcpConfigPath: useToolkit ? mcpConfigPath : undefined,
+    }),
     '--output-format',
-    'json',
+    'stream-json',
+    '--verbose',
     '--tools',
-    '',
-    '--json-schema',
-    JSON.stringify(claudeSchema(schema)),
+    WEB_TOOLS,
+    '--allowedTools',
+    (useToolkit ? [WEB_TOOLS, ...mcpTools] : [WEB_TOOLS]).join(','),
   ];
-}
-
-function parseJson(text, code = 'SEARCH_AGENT_FAILED') {
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw agentError(code);
-  }
-}
-
-function usageOf(result) {
-  const measured = (n) => (Number.isFinite(n) && n >= 0 ? n : null);
-  return {
-    durationMs: measured(result.duration_ms),
-    inputTokens: measured(result.usage?.input_tokens),
-    outputTokens: measured(result.usage?.output_tokens),
-    costUsd: measured(result.total_cost_usd),
-  };
-}
-
-function resultOk(result) {
-  if (
-    result?.type !== 'result' ||
-    result.subtype !== 'success' ||
-    result.is_error
-  ) {
-    throw agentError('SEARCH_AGENT_FAILED');
-  }
 }
 
 function searchLinks(content) {
@@ -232,32 +158,8 @@ export function parseClaudeResearch(stdout, mcpTools = []) {
 }
 
 export function parseClaudeMap(stdout) {
-  const result = parseJson(stdout, 'SEARCH_MAP_INVALID');
-  resultOk(result);
-  if (
-    !result.structured_output ||
-    typeof result.structured_output !== 'object' ||
-    Array.isArray(result.structured_output)
-  ) {
-    throw agentError('SEARCH_MAP_INVALID');
-  }
-  return {
-    json: result.structured_output,
-    usage: usageOf(result),
-    agentModel: Object.keys(result.modelUsage || {})[0] || null,
-  };
-}
-
-function versionSupported(stdout) {
-  const version = /^\s*(\d+)\.(\d+)\.(\d+)\b/
-    .exec(stdout)
-    ?.slice(1)
-    .map(Number);
-  if (!version) return false;
-  const difference = version.findIndex(
-    (part, index) => part !== MIN_VERSION[index],
-  );
-  return difference < 0 || version[difference] > MIN_VERSION[difference];
+  const { json, usage, agentModel } = parseClaudeStructured(stdout);
+  return { json, usage, agentModel };
 }
 
 export function createClaudeAdapter({
@@ -270,14 +172,11 @@ export function createClaudeAdapter({
   maxOutputBytes = 8 * 1024 * 1024,
   getToolkitOrigin,
 } = {}) {
-  const cliEnv = Object.fromEntries(
-    Object.entries(env).filter(([key]) => OS_ENV.test(key)),
-  );
   const run = createProcessRunner({
     cacheDir,
     executable,
     executableArgs,
-    env: cliEnv,
+    env: claudeProcessEnv(env),
     maxOutputBytes,
   });
   const model = env.SEARCH_CLAUDE_MODEL || undefined;
@@ -288,45 +187,8 @@ export function createClaudeAdapter({
       ? timeoutMs
       : DEFAULT_RUN_TIMEOUT_MS;
   return {
-    async status({ signal } = {}) {
-      let installed = false;
-      try {
-        const options = { signal, timeoutMs: statusTimeoutMs };
-        const version = await run(['--version'], options);
-        installed = true;
-        if (!versionSupported(version)) {
-          return {
-            installed,
-            signedIn: false,
-            disabledReason: 'Update Claude Code to 2.1.248 or later.',
-          };
-        }
-        const auth = parseJson(
-          await run(['auth', 'status', '--json'], {
-            ...options,
-            acceptExitFailure: true,
-          }),
-        );
-        const signedIn =
-          auth?.loggedIn === true && auth.authMethod === 'claude.ai';
-        return {
-          installed,
-          signedIn,
-          disabledReason: signedIn
-            ? null
-            : 'Sign in with your Claude subscription using claude auth login.',
-        };
-      } catch (error) {
-        if (signal?.aborted) throw agentError('SEARCH_AGENT_CANCELED');
-        return {
-          installed,
-          signedIn: false,
-          disabledReason: installed
-            ? 'Could not check Claude sign-in.'
-            : 'Install Claude Code and make it available on PATH.',
-        };
-      }
-    },
+    status: ({ signal } = {}) =>
+      claudeStatus(run, { signal, timeoutMs: statusTimeoutMs }),
     async research({ question, since, previousFindings, signal }) {
       const toolkit = createSearchToolkit(env, getToolkitOrigin?.());
       const prompt = buildResearchPrompt({

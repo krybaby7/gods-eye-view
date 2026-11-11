@@ -1002,13 +1002,36 @@ async function serveFixtures(page, state) {
         void json(200, worldSnapshot());
         return;
       }
-      void json(
-        200,
-        fixtureSnapshot({
-          digested: state.digested,
-          briefFailed: state.briefFailed,
-        }),
-      );
+      const snapshot = fixtureSnapshot({
+        digested: state.digested,
+        briefFailed: state.briefFailed,
+      });
+      if (state.claudeFixture) {
+        const { disabledReason } = state.claudeFixture;
+        snapshot.revision += '-claude';
+        Object.assign(snapshot.digest, {
+          agent: 'claude',
+          provider: 'Claude plan',
+          keyConfigured: false,
+          disabledReason,
+          agentStatus: {
+            installed: true,
+            signedIn: !disabledReason,
+            disabledReason,
+          },
+        });
+        Object.assign(snapshot.lastRun, {
+          agent: 'claude',
+          costUsd: 0,
+          planUsage: {
+            durationMs: 65_000,
+            inputTokens: 5000,
+            outputTokens: 1000,
+            costUsd: 0.18,
+          },
+        });
+      }
+      void json(200, snapshot);
       return;
     }
     void json(404, { error: 'not_found' });
@@ -2444,6 +2467,40 @@ async function main() {
           );
           assert.match(s.digestLine, / · brief \d+¢ · /);
           await shot(page, '28-back-to-iran');
+        },
+      );
+
+    if (fixtures)
+      await step(
+        'Claude plan shows usage and subscription readiness',
+        async () => {
+          const reason =
+            'Sign in with your Claude subscription using claude auth login.';
+          state.claudeFixture = { disabledReason: reason };
+          await page.evaluate(() =>
+            window.__godsEyeView.dataManager.layers
+              .get('news')
+              .module.refresh(),
+          );
+          const view = await newsState(page);
+          assert.match(view.digestLine, /last run 1m 05s · Claude plan$/);
+          assert.doesNotMatch(view.digestLine, /budget|¢/);
+          assert.equal(view.refreshDisabled, true);
+          assert.equal(
+            await page.$eval(
+              '#situation-refresh-reason',
+              (node) => node.textContent,
+            ),
+            reason,
+          );
+          assert.match(view.stats.summary, /Claude plan/);
+          assert.doesNotMatch(view.stats.summary, /budget|needs key/);
+          state.claudeFixture = null;
+          await page.evaluate(() =>
+            window.__godsEyeView.dataManager.layers
+              .get('news')
+              .module.refresh(),
+          );
         },
       );
 

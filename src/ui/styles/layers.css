@@ -74,6 +74,18 @@
   min-height: 0;
 }
 
+button.search-layers-shortcut {
+  flex-shrink: 0;
+  color: var(--text-primary);
+  font-size: 12px;
+  letter-spacing: normal;
+}
+
+#data-panel .search-layers-shortcut {
+  align-self: flex-start;
+  margin: 4px 0;
+}
+
 .data-toggle-list {
   display: flex;
   flex-direction: column;

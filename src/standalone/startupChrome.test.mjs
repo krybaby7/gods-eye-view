@@ -10,13 +10,22 @@ const source = readFileSync(
   .replace(/^import .*;\n/gm, '')
   .replace('export function', 'function');
 
-function fixture() {
+function fixture({ withSearches = false } = {}) {
   const timers = new Map();
   const listeners = new Map();
   const events = [];
   let restored;
   let nextTimer = 0;
   const controller = new AbortController();
+  const searchButtons = Array.from({ length: 2 }, () => ({
+    hidden: true,
+    addEventListener(type, handler) {
+      this[type] = handler;
+    },
+    removeEventListener(type) {
+      delete this[type];
+    },
+  }));
   const context = {
     console,
     setTimeout(fn, delay) {
@@ -29,7 +38,11 @@ function fixture() {
     },
     initFirstRunExperience() {
       events.push('welcome');
-      return { destroy: () => events.push('welcome:destroy') };
+      return {
+        destroy: () => events.push('welcome:destroy'),
+        isTopmost: () => true,
+        dismiss: ({ restoreFocus }) => events.push(['dismiss', restoreFocus]),
+      };
     },
     async initKeySetup() {
       return { destroy: () => events.push('settings:destroy') };
@@ -40,6 +53,12 @@ function fixture() {
   const stop = context.startApplicationChrome({
     initializeSettings: context.initKeySetup,
     loadingScreen: {
+      ownerDocument: {
+        querySelectorAll: () => searchButtons,
+        querySelector: () => ({
+          focus: () => events.push('question:focus'),
+        }),
+      },
       classList: { add: (value) => events.push(value) },
       addEventListener: (type, listener) => listeners.set(type, listener),
       removeEventListener: (type) => listeners.delete(type),
@@ -48,8 +67,17 @@ function fixture() {
       initialRestorePromise: new Promise((resolve) => {
         restored = resolve;
       }),
+      setPanelCollapsed: (id, collapsed) => events.push([id, collapsed]),
     },
-    dataManager: {},
+    dataManager: withSearches
+      ? {
+          layers: new Map([['searches', {}]]),
+          async setEnabled(id, enabled, { origin }) {
+            events.push([id, enabled, origin]);
+            return true;
+          },
+        }
+      : {},
     signal: controller.signal,
   });
   return {
@@ -58,6 +86,7 @@ function fixture() {
     stop,
     restored,
     controller,
+    searchButtons,
     fire(delay) {
       for (const [id, task] of timers) {
         if (task.delay === delay) {
@@ -69,6 +98,26 @@ function fixture() {
     timers,
   };
 }
+
+test('both Search Layers shortcuts open the existing panel and focus its question', async () => {
+  const f = fixture({ withSearches: true });
+  f.restored();
+  f.fire(1000);
+  await flush();
+  f.fire(900);
+  for (const button of f.searchButtons) {
+    assert.equal(button.hidden, false);
+    await button.click();
+    assert.deepEqual(f.events.slice(-4), [
+      ['searches', true, 'user'],
+      ['searches-panel', false],
+      ['dismiss', false],
+      'question:focus',
+    ]);
+  }
+  await f.stop();
+  assert.ok(f.searchButtons.every((button) => button.hidden && !button.click));
+});
 async function flush() {
   for (let i = 0; i < 12; i++) await Promise.resolve();
 }
