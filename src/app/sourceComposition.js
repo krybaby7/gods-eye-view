@@ -45,6 +45,7 @@ export const CATALOG_SOURCE_CONTRACTS = Object.freeze({
     ['searches'],
     ['getSnapshot', 'ask', 'action', 'getRun', 'getChanges'],
   ),
+  world: contract(['world'], ['getSnapshot', 'refresh']),
   wind: contract(['wind'], ['getSnapshot']),
   weather: contract(
     ['weather-radar', 'weather-satellite', 'weather-lightning'],

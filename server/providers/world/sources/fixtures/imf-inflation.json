@@ -1,0 +1,15 @@
+{
+  "values": {
+    "PCPIPCH": {
+      "UVK": {
+        "2025": 3.9,
+        "2026": 6.8,
+        "2027": 4.5
+      }
+    }
+  },
+  "api": {
+    "version": "1",
+    "output-method": "json"
+  }
+}

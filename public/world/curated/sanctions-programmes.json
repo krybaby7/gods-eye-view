@@ -1,0 +1,396 @@
+{
+  "checkedOn": "2026-11-10",
+  "scopeNotes": "State covers legal measures aimed at a government or economic sector. Persons covers designation regimes aimed at specified individuals or groups, even where associated goods also have export controls. Occupied-territory programmes never imply sanctions on the recognized sovereign.",
+  "ofac": {
+    "source": "https://ofac.treasury.gov/specially-designated-nationals-list-sdn-list/program-tag-definitions-for-ofac-sanctions-lists",
+    "thematic": [
+      "CYBER2",
+      "CYBER3",
+      "CYBER4",
+      "ELECTION-EO13848",
+      "FTO",
+      "GLOMAG",
+      "HOSTAGES-EO14078",
+      "ICC-EO14203",
+      "ILLICIT-DRUGS-EO14059",
+      "MAGNIT",
+      "NPWMD",
+      "NS-PLC",
+      "PAIPA",
+      "SDGT",
+      "SDNT",
+      "SDNTK",
+      "TCO"
+    ],
+    "mapped": [
+      [
+        ["BALKANS", "BALKANS-EO14033"],
+        ["ALB", "BIH", "KOS", "MNE", "MKD", "SRB"],
+        "persons",
+        "Western Balkans sanctions",
+        "balkans-related-sanctions"
+      ],
+      [
+        ["BELARUS"],
+        ["BLR"],
+        "persons",
+        "Belarus sanctions",
+        "belarus-sanctions"
+      ],
+      [
+        ["BELARUS-EO14038"],
+        ["BLR"],
+        "persons",
+        "Belarus designated persons sanctions under Executive Order 14038",
+        "belarus-sanctions"
+      ],
+      [["BURMA-EO14014"], ["MMR"], "state", "Burma sanctions", "burma"],
+      [
+        ["CAR"],
+        ["CAF"],
+        "persons",
+        "Central African Republic sanctions",
+        "central-african-republic-sanctions"
+      ],
+      [
+        ["CUBA", "CUBA-EO14404"],
+        ["CUB"],
+        "state",
+        "Cuba sanctions",
+        "cuba-sanctions"
+      ],
+      [
+        ["DARFUR", "SUDAN-EO14098"],
+        ["SDN"],
+        "persons",
+        "Sudan and Darfur sanctions",
+        "sudan-and-darfur-sanctions"
+      ],
+      [
+        ["DPRK", "DPRK-NKSPEA", "DPRK2", "DPRK3", "DPRK4"],
+        ["PRK"],
+        "state",
+        "North Korea sanctions",
+        "north-korea-sanctions"
+      ],
+      [
+        ["DRCONGO"],
+        ["COD"],
+        "persons",
+        "Democratic Republic of the Congo sanctions",
+        "democratic-republic-of-the-congo-related-sanctions"
+      ],
+      [
+        [
+          "CAATSA - IRAN",
+          "HRIT-IR",
+          "IRAN-EO13876",
+          "IRAN-HR",
+          "IRAN-TRA",
+          "IRGC"
+        ],
+        ["IRN"],
+        "persons",
+        "Iran designated persons sanctions",
+        "iran-sanctions"
+      ],
+      [
+        [
+          "IFCA",
+          "IFSR",
+          "IRAN",
+          "IRAN-CON-ARMS-EO",
+          "IRAN-EO13846",
+          "IRAN-EO13871",
+          "IRAN-EO13902"
+        ],
+        ["IRN"],
+        "state",
+        "Iran sanctions",
+        "iran-sanctions"
+      ],
+      [
+        ["HRIT-SY", "PAARSSR-EO13894"],
+        ["SYR"],
+        "persons",
+        "Assad accountability and regional stabilization sanctions",
+        "paarss"
+      ],
+      [
+        ["IRAQ2", "IRAQ3"],
+        ["IRQ"],
+        "persons",
+        "Iraq sanctions",
+        "iraq-related-sanctions"
+      ],
+      [
+        ["LEBANON"],
+        ["LBN"],
+        "persons",
+        "Lebanon sanctions",
+        "lebanon-related-sanctions"
+      ],
+      [
+        ["LIBYA2", "LIBYA3"],
+        ["LBY"],
+        "persons",
+        "Libya sanctions",
+        "libya-sanctions"
+      ],
+      [
+        ["MALI-EO13882"],
+        ["MLI"],
+        "persons",
+        "Mali sanctions",
+        "mali-related-sanctions"
+      ],
+      [
+        ["NICARAGUA", "NICARAGUA-NHRAA"],
+        ["NIC"],
+        "persons",
+        "Nicaragua sanctions",
+        "nicaragua-related-sanctions"
+      ],
+      [
+        ["CAATSA - RUSSIA", "RUSSIA-EO14024", "UKRAINE-EO13662"],
+        ["RUS"],
+        "state",
+        "Russia sanctions",
+        "russia-related-sanctions"
+      ],
+      [
+        ["PEESA-EO14039", "UKRAINE-EO13661"],
+        ["RUS"],
+        "persons",
+        "Russia-related designated persons sanctions",
+        "russia-related-sanctions"
+      ],
+      [
+        ["RUSSIA-EO14065", "UKRAINE-EO13685"],
+        ["UKR"],
+        "persons",
+        "Sanctions concerning specified occupied Ukrainian regions",
+        "ukraine-russia-related-sanctions"
+      ],
+      [
+        ["SSIDES"],
+        ["RUS"],
+        "targeted",
+        "Russia-related SSIDES designations",
+        "ukraine-russia-related-sanctions"
+      ],
+      [
+        ["UKRAINE-EO13660"],
+        ["RUS"],
+        "persons",
+        "Russia-related designations under Ukraine sovereignty authorities",
+        "ukraine-russia-related-sanctions"
+      ],
+      [
+        ["SOMALIA"],
+        ["SOM"],
+        "persons",
+        "Somalia sanctions",
+        "somalia-sanctions"
+      ],
+      [
+        ["SOUTH SUDAN"],
+        ["SSD"],
+        "persons",
+        "South Sudan sanctions",
+        "south-sudan-related-sanctions"
+      ],
+      [
+        ["UHRPA"],
+        ["CHN"],
+        "persons",
+        "Uyghur Human Rights Policy Act sanctions",
+        "global-magnitsky-sanctions"
+      ],
+      [
+        ["VENEZUELA"],
+        ["VEN"],
+        "persons",
+        "Venezuela designated persons sanctions",
+        "venezuela-related-sanctions"
+      ],
+      [
+        ["VENEZUELA-EO13850", "VENEZUELA-EO13884"],
+        ["VEN"],
+        "state",
+        "Venezuela sectoral and government sanctions",
+        "venezuela-related-sanctions"
+      ],
+      [
+        ["YEMEN"],
+        ["YEM"],
+        "persons",
+        "Yemen sanctions",
+        "yemen-related-sanctions"
+      ]
+    ],
+    "scopeEvidence": {
+      "BELARUS-EO14038": {
+        "detail": "The SDN tag applies to designated individuals and entities. OFAC rescinded the separate finance-ministry and development-bank debt directive in March 2026.",
+        "sources": [
+          "https://ofac.treasury.gov/faqs/916",
+          "https://ofac.treasury.gov/recent-actions/20260326"
+        ]
+      },
+      "SSIDES": {
+        "detail": "The Russia-related SSIDES tag covers designated individuals and entities, including state-linked entities. The listed actors are targeted under this tag.",
+        "sources": [
+          "https://ofac.treasury.gov/faqs/546",
+          "https://ofac.treasury.gov/system/files/126/20220429_ukraine_regulations.pdf"
+        ]
+      },
+      "UKRAINE-EO13660": {
+        "detail": "The Ukraine/Russia-related regulation blocks designated persons undermining Ukraine’s sovereignty, stability or territorial integrity.",
+        "sources": [
+          "https://ofac.treasury.gov/system/files/126/20220429_ukraine_regulations.pdf"
+        ]
+      }
+    }
+  },
+  "uk": {
+    "source": "https://www.gov.uk/government/collections/uk-sanctions-regimes-under-the-sanctions-act",
+    "thematic": [
+      "ISIL (DA'ESH) AND AL-QAEDA (UNITED NATIONS SANCTIONS) (EU EXIT) REGULATIONS 2019",
+      "THE CHEMICAL WEAPONS (SANCTIONS) (EU EXIT) REGULATIONS 2019",
+      "THE COUNTER-TERRORISM (INTERNATIONAL SANCTIONS) (EU EXIT) REGULATIONS 2019",
+      "THE COUNTER-TERRORISM (SANCTIONS) (EU EXIT) REGULATIONS 2019",
+      "THE CYBER (SANCTIONS) (EU EXIT) REGULATIONS 2020",
+      "THE GLOBAL ANTI-CORRUPTION SANCTIONS REGULATIONS 2021",
+      "THE GLOBAL HUMAN RIGHTS SANCTIONS REGULATIONS 2020",
+      "THE GLOBAL IRREGULAR MIGRATION AND TRAFFICKING IN PERSONS SANCTIONS REGULATIONS 2025"
+    ],
+    "mapped": [
+      [
+        "Afghanistan",
+        "AFG",
+        "afghanistan",
+        "persons",
+        "(EU Exit) Regulations 2020"
+      ],
+      [
+        "Bosnia and Herzegovina",
+        "BIH",
+        "bosnia-and-herzegovina",
+        "persons",
+        "(EU Exit) Regulations 2020"
+      ],
+      [
+        "Central African Republic",
+        "CAF",
+        "central-african-republic",
+        "persons",
+        "(EU Exit) Regulations 2020"
+      ],
+      [
+        "Democratic People's Republic of Korea",
+        "PRK",
+        "democratic-peoples-republic-of-korea",
+        "state",
+        "(EU Exit) Regulations 2019"
+      ],
+      [
+        "Democratic Republic of the Congo",
+        "COD",
+        "democratic-republic-of-the-congo",
+        "persons",
+        "(EU Exit) Regulations 2019"
+      ],
+      ["Guinea", "GIN", "guinea", "persons", "(EU Exit) Regulations 2019"],
+      ["Haiti", "HTI", "haiti", "persons", "Regulations 2022"],
+      ["Iran", "IRN", "iran", "state", "Regulations 2023"],
+      [
+        "Iran",
+        "IRN",
+        "iran-nuclear",
+        "state",
+        "(Nuclear) (EU Exit) Regulations 2019"
+      ],
+      ["Iraq", "IRQ", "iraq", "persons", "(EU Exit) Regulations 2020"],
+      ["Libya", "LBY", "libya", "persons", "(EU Exit) Regulations 2020"],
+      ["Mali", "MLI", "mali", "persons", "(EU Exit) Regulations 2020"],
+      ["Myanmar", "MMR", "myanmar", "persons", "Regulations 2021"],
+      [
+        "Nicaragua",
+        "NIC",
+        "nicaragua",
+        "persons",
+        "(EU Exit) Regulations 2020"
+      ],
+      [
+        "Republic of Belarus",
+        "BLR",
+        "republic-of-belarus",
+        "state",
+        "(EU Exit) Regulations 2019"
+      ],
+      [
+        "Republic of Guinea-Bissau",
+        "GNB",
+        "republic-of-guinea-bissau",
+        "persons",
+        "(EU Exit) Regulations 2019"
+      ],
+      ["Russia", "RUS", "russia", "state", "(EU Exit) Regulations 2019"],
+      ["Somalia", "SOM", "somalia", "persons", "(EU Exit) Regulations 2020"],
+      [
+        "South Sudan",
+        "SSD",
+        "south-sudan",
+        "persons",
+        "(EU Exit) Regulations 2019"
+      ],
+      ["Sudan", "SDN", "sudan", "persons", "(EU Exit) Regulations 2020"],
+      ["Syria", "SYR", "syria", "state", "(EU Exit) Regulations 2019"],
+      [
+        "Venezuela",
+        "VEN",
+        "venezuela",
+        "persons",
+        "(EU Exit) Regulations 2019"
+      ],
+      ["Yemen", "YEM", "yemen", "persons", "(EU Exit) Regulations 2020"]
+    ],
+    "scopeEvidence": {
+      "Iran": {
+        "detail": "Alongside targeted designations, the 2023 regulations prohibit supplying interception and monitoring services to the Government of Iran and restrict strategic goods and technology supplied to Iran.",
+        "sources": [
+          "https://www.gov.uk/government/publications/iran-sanctions-guidance/iran-sanctions-guidance"
+        ]
+      },
+      "Syria": {
+        "detail": "After the 2025 easing and further 2026 changes, designation measures coexist with narrow state-facing controls on government interception and monitoring services and imports of military goods.",
+        "sources": [
+          "https://www.gov.uk/government/publications/supporting-syrias-future-guidance-for-businesses-and-aid-organisations/supporting-a-secure-and-prosperous-future-for-syria-guidance-for-businesses-and-ngos"
+        ]
+      }
+    }
+  },
+  "reviewed": false,
+  "un": {
+    "thematic": ["QD", "SO", "TA"],
+    "scopeEvidence": {
+      "QD": {
+        "programme": "ISIL (Da’esh), Al-Qaida and associates",
+        "scope": "persons",
+        "sources": ["https://main.un.org/securitycouncil/en/sanctions/1267"]
+      },
+      "SO": {
+        "programme": "Al-Shabaab and designated associates",
+        "scope": "persons",
+        "sources": ["https://main.un.org/securitycouncil/en/sanctions/2713"]
+      },
+      "TA": {
+        "programme": "Taliban-associated individuals and entities",
+        "scope": "persons",
+        "sources": [
+          "https://main.un.org/securitycouncil/en/sanctions/1988/materials"
+        ]
+      }
+    }
+  }
+}

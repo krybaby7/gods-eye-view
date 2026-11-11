@@ -1,5 +1,7 @@
 # God's Eye View Current State
 
+World Board is available under Events, with Condition, Strength and Data age lenses and 18 source-backed slots. Its first turn runs in the background; later refreshes are local and owner-initiated. State is saved in `.gev-cache/world/state.json`; share token `5` carries enabled state only. Draft anchors, source terms, unknown C6 and fixture instructions are described in [World Board](WORLD-BOARD.md).
+
 Search layers use locally installed Claude Code for owner-initiated research and map source-backed findings in Events > Searches. Runs, updates, UTC history and comparisons are stored locally; there is no scheduled refresh. Claude is the Phase 1 agent and Codex is not available yet. See [Search layers](SEARCH-LAYERS.md) for setup and operation.
 
 The Lenses bar is the first left-rail surface: Air, Sea, Space, Conflict,

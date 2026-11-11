@@ -199,6 +199,72 @@ export const DATA_CREDITS = [
     key: 'searches-geocoding',
     html: 'Searches geocoding: <a href="https://nominatim.org/" target="_blank" rel="noopener">OpenStreetMap Nominatim</a>',
   },
+  {
+    key: 'world-board-sources',
+    html:
+      'World Board data: ' +
+      '<a href="https://data.worldbank.org/" target="_blank" rel="noopener">World Bank</a> · ' +
+      '<a href="https://www.imf.org/external/datamapper/" target="_blank" rel="noopener">IMF DataMapper</a> · ' +
+      '<a href="https://ucdp.uu.se/downloads/" target="_blank" rel="noopener">UCDP</a> · ' +
+      '<a href="https://www.v-dem.net/data/the-v-dem-dataset/" target="_blank" rel="noopener">V-Dem</a> · ' +
+      '<a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a> · ' +
+      '<a href="https://portwatch.imf.org/" target="_blank" rel="noopener">IMF PortWatch</a> · ' +
+      '<a href="https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/" target="_blank" rel="noopener">U.S. EIA</a> · ' +
+      '<a href="https://fred.stlouisfed.org/" target="_blank" rel="noopener">FRED (EIA and IMF)</a> · ' +
+      '<a href="https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37" target="_blank" rel="noopener">CEPII BACI (Etalab 2.0)</a> · ' +
+      '<a href="https://github.com/eurostat/searoute" target="_blank" rel="noopener">Eurostat SeaRoute MARNET (EUPL-1.2, ShareAlike, outside app MIT licence)</a> · ' +
+      '<a href="https://datasets.wri.org/datasets/global-power-plant-database" target="_blank" rel="noopener">WRI Global Power Plant Database</a> · ' +
+      '<a href="https://www.wikidata.org/" target="_blank" rel="noopener">Wikidata</a> · ' +
+      '<a href="https://msi.nga.mil/Publications/WPI" target="_blank" rel="noopener">NGA World Port Index</a> · ' +
+      '<a href="https://ourairports.com/data/" target="_blank" rel="noopener">OurAirports</a> · ' +
+      '<a href="https://fas.org/initiative/status-world-nuclear-forces/" target="_blank" rel="noopener">Federation of American Scientists</a> · curated government and company citations',
+  },
+  {
+    key: 'world-board-relations',
+    html:
+      'World Board relations: ' +
+      '<a href="https://ucdp.uu.se/downloads/" target="_blank" rel="noopener">UCDP/PRIO and UCDP Dyadic v26.1</a> · ' +
+      '<a href="https://doi.org/10.7910/DVN/LEJUQZ" target="_blank" rel="noopener">Erik Voeten, Harvard Dataverse v39</a> · ' +
+      '<a href="https://www.wikidata.org/wiki/Property:P463" target="_blank" rel="noopener">Wikidata bloc memberships</a> · ' +
+      '<a href="https://www.wikidata.org/wiki/Property:P530" target="_blank" rel="noopener">Wikidata diplomatic links</a> · ' +
+      '<a href="https://www.wikidata.org/wiki/Property:P1336" target="_blank" rel="noopener">Wikidata territorial seeds</a> · ' +
+      '<a href="https://www.kentarosakuwa.info/data.html" target="_blank" rel="noopener">Thompson, Sakuwa and Suhas, Strategic Rivalries Data (1816–2020)</a> · ' +
+      '<a href="https://main.un.org/securitycouncil/en/content/un-sc-consolidated-list" target="_blank" rel="noopener">UN Security Council</a> · ' +
+      '<a href="https://www.gov.uk/government/publications/the-uk-sanctions-list" target="_blank" rel="noopener">UK FCDO</a> · ' +
+      '<a href="https://ofac.treasury.gov/sanctions-list-service" target="_blank" rel="noopener">US Treasury OFAC</a>. ' +
+      'Treaty and official membership sources are linked in relation cards.',
+  },
+  {
+    key: 'world-board-people',
+    html:
+      'World Board People: ' +
+      '<a href="https://www.wikidata.org/" target="_blank" rel="noopener">Wikidata</a> · ' +
+      '<a href="https://www.cia.gov/resources/world-leaders/" target="_blank" rel="noopener">CIA World Leaders</a> (US government public domain) · ' +
+      '<a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a> (per-photo attribution) · ' +
+      '<a href="https://bsky.app/" target="_blank" rel="noopener">Bluesky</a> · ' +
+      '<a href="https://www.youtube.com/" target="_blank" rel="noopener">YouTube</a> · ' +
+      '<a href="https://www.federalreserve.gov/feeds/feeds.htm" target="_blank" rel="noopener">Federal Reserve RSS</a> · ' +
+      '<a href="https://help.x.com/en/using-x/embed-x-feed" target="_blank" rel="noopener">X timeline widget</a> · ' +
+      'Draft organization directory from Wikidata and official organization links',
+  },
+  {
+    key: 'world-board-live-condition',
+    html:
+      'World Board condition flags: ' +
+      '<a href="https://www.gdacs.org/xml/rss.xml" target="_blank" rel="noopener">GDACS · European Commission JRC, CC BY 4.0</a> · ' +
+      '<a href="https://frankfurter.dev/" target="_blank" rel="noopener">Frankfurter</a> · ' +
+      '<a href="https://jonathanmpowell.com/coups/" target="_blank" rel="noopener">Powell and Thyne</a> · ' +
+      '<a href="https://www.gdeltproject.org/data.html" target="_blank" rel="noopener">GDELT</a> · ' +
+      '<a href="https://www.fao.org/worldfoodsituation/foodpricesindex/en/" target="_blank" rel="noopener">FAO</a> · ' +
+      '<a href="https://data.imf.org/Datasets/CPI" target="_blank" rel="noopener">IMF CPI</a> · ' +
+      '<a href="https://www.unhcr.org/refugee-statistics/" target="_blank" rel="noopener">UNHCR</a> · ' +
+      '<a href="https://ucdp.uu.se/downloads/" target="_blank" rel="noopener">UCDP Candidate, CC BY 4.0</a> · ' +
+      '<a href="https://www.worldbank.org/en/programs/debt-toolkit/dsa" target="_blank" rel="noopener">IMF–World Bank LIC DSA</a>. ' +
+      'Optional feeds: <a href="https://www.electionguide.org/p/access/" target="_blank" rel="noopener">IFES ElectionGuide</a> · ' +
+      '<a href="https://docs.humdata.org/build/hdx-apis/hapi" target="_blank" rel="noopener">UN OCHA HDX HAPI / IPC / WFP</a> · ' +
+      '<a href="https://ioda.inetintel.cc.gatech.edu/" target="_blank" rel="noopener">IODA</a> · ' +
+      '<a href="https://ucdp.uu.se/apidocs/" target="_blank" rel="noopener">UCDP Candidate API</a>.',
+  },
   // War monitor: headline, snippet, link and publisher only. One group per
   // transport; every fetched source in public/news/sources.json is named here.
   {

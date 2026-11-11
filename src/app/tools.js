@@ -5,6 +5,7 @@ import { initImageryBoxTool } from '../ui/imageryBoxTool.js';
 import { createRecentImageryPanel } from '../ui/recentImagery.js';
 import { createSituationPanel } from '../ui/situationPanel.js';
 import { createSearchesPanel } from '../ui/searchesPanel.js';
+import { createWorldPanel } from '../ui/worldPanel.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
 import { installViews, isEmbeddedInline } from './embed.js';
 import { installScopeMask, destroyScopeMask } from '../scopeMask.js';
@@ -132,6 +133,19 @@ export function createApplicationTools({
   }
   if (startChrome)
     defer(startChrome({ loadingScreen, styleManager, dataManager, signal }));
+  const world = dataManager.layers.get('world')?.module;
+  if (world) {
+    const panel = createWorldPanel({
+      layer: world,
+      openSheet: () =>
+        styleManager.setPanelCollapsed('world-character-sheet', false, {
+          explicit: true,
+          persist: false,
+          syncShare: false,
+        }),
+    });
+    defer(() => panel.destroy());
+  }
   // Idle render governor: flips the scene into requestRenderMode whenever
   // nothing animates per frame. Installed AFTER every module above has had
   // its chance to register pre-install holds. (perf wave 2)

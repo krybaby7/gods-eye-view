@@ -66,7 +66,8 @@
     "mapillary-js": "^4.1.2",
     "mgrs": "^2.1.0",
     "pbf": "^5.1.2",
-    "satellite.js": "^6.0.2"
+    "satellite.js": "^6.0.2",
+    "undici": "7.30.2"
   },
   "devDependencies": {
     "prettier": "3.9.6",
@@ -113,6 +114,9 @@
     },
     "./server/providers/search": {
       "node": "./server/providers/search/index.js"
+    },
+    "./server/providers/world": {
+      "node": "./server/providers/world/index.js"
     },
     "./server/providers/news/digest": {
       "node": "./server/providers/news/digest/runner.js"

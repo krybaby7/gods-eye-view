@@ -1,0 +1,438 @@
+[
+  {
+    "id": "worldbank",
+    "name": "World Bank",
+    "access": "Keyless Indicators API",
+    "attribution": "World Bank World Development Indicators and Worldwide Governance Indicators",
+    "url": "https://data.worldbank.org/",
+    "licence": "CC BY 4.0 by default; third-party terms may apply",
+    "releaseRhythm": "Annual observations, with updates as series are released",
+    "marks": ["NonCommercial"],
+    "series": {
+      "MS.MIL.XPND.CD": {
+        "publisher": "SIPRI",
+        "marks": ["NonCommercial"]
+      },
+      "IT.NET.USER.ZS": {
+        "publisher": "ITU",
+        "marks": ["NonCommercial"]
+      },
+      "EG.IMP.CONS.ZS": {
+        "publisher": "IEA",
+        "note": "Underlying redistribution terms unconfirmed"
+      }
+    }
+  },
+  {
+    "id": "imf",
+    "name": "IMF DataMapper",
+    "access": "Keyless DataMapper API",
+    "attribution": "International Monetary Fund, World Economic Outlook",
+    "url": "https://www.imf.org/external/datamapper/",
+    "licence": "IMF terms (attribution required; commercial use requires permission)",
+    "releaseRhythm": "WEO editions in April and October",
+    "marks": ["NonCommercial"]
+  },
+  {
+    "id": "ucdp",
+    "name": "UCDP Candidate Events",
+    "access": "Keyless public bulk CSV",
+    "attribution": "Uppsala Conflict Data Program Candidate Events Dataset",
+    "url": "https://ucdp.uu.se/downloads/",
+    "licence": "CC BY 4.0",
+    "releaseRhythm": "Monthly",
+    "marks": []
+  },
+  {
+    "id": "vdem",
+    "name": "V-Dem",
+    "access": "Keyless Country-Year Full+Others download",
+    "attribution": "Varieties of Democracy Project, V-Dem Country-Year Dataset",
+    "url": "https://www.v-dem.net/data/the-v-dem-dataset/",
+    "licence": "CC BY-SA 4.0",
+    "releaseRhythm": "Annual (March)",
+    "marks": ["ShareAlike"]
+  },
+  {
+    "id": "portwatch",
+    "name": "IMF PortWatch",
+    "access": "Keyless ArcGIS FeatureServer. Automated extraction requires permission and GEV_WORLD_PORTWATCH_BULK_OK=1.",
+    "attribution": "IMF PortWatch. Ratios and statuses are transformed from IMF vessel calls.",
+    "url": "https://portwatch.imf.org/",
+    "licence": "IMF terms. Written permission required for automated bulk or systematic extraction and commercial use.",
+    "releaseRhythm": "Daily observations, released in batches with a lag and subject to revision",
+    "marks": ["NonCommercial", "PermissionRequired"]
+  },
+  {
+    "id": "eia-chokepoints",
+    "name": "EIA World Oil Transit Chokepoints",
+    "access": "Public EIA report, hand-entered published aggregates",
+    "attribution": "U.S. Energy Information Administration",
+    "url": "https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/",
+    "licence": "U.S. government published aggregates; underlying commercial tracking data are outside this release",
+    "releaseRhythm": "Irregular; report updated March 2026 with data through H1 2025 and Panama FY 2025",
+    "marks": ["Draft"]
+  },
+  {
+    "id": "fred",
+    "name": "FRED monthly energy prices",
+    "access": "Undocumented keyless FRED graph CSV",
+    "attribution": "FRED, Federal Reserve Bank of St. Louis; original data from EIA and the IMF",
+    "url": "https://fred.stlouisfed.org/",
+    "licence": "EIA oil series are U.S. government data. IMF terms apply to the European gas series.",
+    "releaseRhythm": "Monthly by series, subject to publication lag and revision",
+    "marks": ["NonCommercial"]
+  },
+  {
+    "id": "energy-dependencies",
+    "name": "Energy trade route model",
+    "access": "Keyless annual BACI archive and Eurostat maritime network. Built offline; compact derived data bundled for local use.",
+    "attribution": "CEPII BACI HS22 V202601; Eurostat SeaRoute MARNET via searoute-ts; Natural Earth; U.S. EIA; cited energy terminal and throughput evidence in energy-ports.json",
+    "url": "https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37",
+    "licence": "BACI: Etalab Open Licence 2.0. Eurostat MARNET network: EUPL-1.2. Derived route data is ShareAlike and outside the app MIT licence; review obligations before public or commercial redistribution.",
+    "releaseRhythm": "BACI annual; model data year 2024",
+    "marks": ["ShareAlike"]
+  },
+  {
+    "id": "relations-curated",
+    "name": "Curated relation evidence",
+    "access": "Bundled editorial tables",
+    "attribution": "World Board treaty, diplomatic and territorial research. Historical rivalry start years from Thompson, Sakuwa and Suhas (2021), Strategic Rivalries Data, 1816–2020.",
+    "url": "https://www.kentarosakuwa.info/data.html",
+    "licence": "Original summaries and selected cited facts. Wikidata seeds are CC0. No redistribution licence is listed for the rivalry download.",
+    "releaseRhythm": "Manual, with checked date",
+    "marks": []
+  },
+  {
+    "id": "relations-ucdp",
+    "name": "UCDP armed conflict dyads",
+    "access": "Keyless public annual CSV ZIP files",
+    "attribution": "UCDP/PRIO Armed Conflict Dataset and UCDP Dyadic Dataset v26.1",
+    "url": "https://ucdp.uu.se/downloads/",
+    "licence": "CC BY 4.0",
+    "releaseRhythm": "Annual, pinned to v26.1",
+    "marks": []
+  },
+  {
+    "id": "relations-voting",
+    "name": "Voeten UN voting agreement",
+    "access": "Keyless Harvard Dataverse public bulk files",
+    "attribution": "Erik Voeten, United Nations General Assembly Ideal Points, Harvard Dataverse v39",
+    "url": "https://doi.org/10.7910/DVN/LEJUQZ",
+    "licence": "CC0 1.0",
+    "releaseRhythm": "Release-pinned to v39, agreement through session 79",
+    "marks": []
+  },
+  {
+    "id": "relations-blocs",
+    "name": "Wikidata bloc memberships",
+    "access": "Keyless Wikidata SPARQL and official participant lists",
+    "attribution": "Wikidata contributors, P463; official bloc participant lists",
+    "url": "https://www.wikidata.org/wiki/Property:P463",
+    "licence": "CC0 1.0 for Wikidata; factual citations for official lists",
+    "releaseRhythm": "Continuous; checked on Refresh after seven days",
+    "marks": []
+  },
+  {
+    "id": "relations-diplomatic",
+    "name": "Wikidata diplomatic links",
+    "access": "Keyless Wikidata SPARQL",
+    "attribution": "Wikidata contributors, P530",
+    "url": "https://www.wikidata.org/wiki/Property:P530",
+    "licence": "CC0 1.0",
+    "releaseRhythm": "Continuous; checked on Refresh after seven days",
+    "marks": []
+  },
+  {
+    "id": "relations-sanctions-un",
+    "name": "UN Security Council sanctions",
+    "access": "Keyless published consolidated XML",
+    "attribution": "United Nations Security Council Consolidated Sanctions List and sanctions committees",
+    "url": "https://main.un.org/securitycouncil/en/content/un-sc-consolidated-list",
+    "licence": "United Nations site terms. The published list is used locally; only factual programme aggregates are retained.",
+    "releaseRhythm": "Checked monthly on Refresh",
+    "marks": ["NonCommercial"]
+  },
+  {
+    "id": "relations-sanctions-uk",
+    "name": "UK sanctions regimes",
+    "access": "Keyless published UK Sanctions List ODT",
+    "attribution": "Foreign, Commonwealth & Development Office, UK Sanctions List",
+    "url": "https://www.gov.uk/government/publications/the-uk-sanctions-list",
+    "licence": "Open Government Licence v3.0",
+    "releaseRhythm": "Checked monthly on Refresh",
+    "marks": []
+  },
+  {
+    "id": "relations-sanctions-ofac",
+    "name": "US OFAC sanctions",
+    "access": "Keyless published SDN primary CSV",
+    "attribution": "U.S. Treasury Office of Foreign Assets Control, Specially Designated Nationals List",
+    "url": "https://ofac.treasury.gov/sanctions-list-service",
+    "licence": "US government public information",
+    "releaseRhythm": "Checked monthly on Refresh",
+    "marks": []
+  },
+  {
+    "id": "wikidata",
+    "name": "Wikidata officeholders",
+    "access": "Keyless Wikidata Query Service",
+    "attribution": "Wikidata contributors",
+    "url": "https://query.wikidata.org/",
+    "licence": "CC0",
+    "releaseRhythm": "Checked weekly on World Board Refresh",
+    "marks": []
+  },
+  {
+    "id": "cia-world-leaders",
+    "name": "CIA World Leaders",
+    "access": "Keyless public country-page JSON",
+    "attribution": "Central Intelligence Agency, World Leaders",
+    "url": "https://www.cia.gov/resources/world-leaders/",
+    "licence": "US government public domain unless copyright is indicated",
+    "licenceUrl": "https://www.cia.gov/site-policies/#copyright-notice",
+    "licenceCheckedOn": "2026-11-10",
+    "releaseRhythm": "Directory and country pages checked at most weekly on World Board Refresh",
+    "marks": []
+  },
+  {
+    "id": "wikimedia-commons",
+    "name": "Wikimedia Commons portraits",
+    "access": "Keyless MediaWiki imageinfo API",
+    "attribution": "Individual creators via Wikimedia Commons",
+    "url": "https://commons.wikimedia.org/",
+    "licence": "Per file, shown next to each portrait",
+    "releaseRhythm": "Checked weekly or when the directory changes",
+    "marks": ["ShareAlike"]
+  },
+  {
+    "id": "bluesky",
+    "name": "Bluesky public author feeds",
+    "access": "Keyless public AppView",
+    "attribution": "Original account and Bluesky",
+    "url": "https://docs.bsky.app/docs/api/app-bsky-feed-get-author-feed",
+    "licence": "Publisher rights and Bluesky terms apply",
+    "releaseRhythm": "Checked at most daily on World Board Refresh",
+    "marks": ["No stated licence"]
+  },
+  {
+    "id": "youtube-rss",
+    "name": "YouTube channel feeds",
+    "access": "Keyless public Atom feeds",
+    "attribution": "Original channel and YouTube",
+    "url": "https://www.youtube.com/",
+    "licence": "Publisher rights and YouTube terms apply",
+    "releaseRhythm": "Checked at most daily on World Board Refresh",
+    "marks": ["No stated licence"]
+  },
+  {
+    "id": "government-rss",
+    "name": "Federal Reserve official RSS",
+    "access": "Keyless official publisher feed",
+    "attribution": "Federal Reserve Board",
+    "url": "https://www.federalreserve.gov/feeds/feeds.htm",
+    "licence": "Publisher terms apply to linked material",
+    "releaseRhythm": "Checked at most daily on World Board Refresh",
+    "marks": ["No stated licence"]
+  },
+  {
+    "id": "actor-organizations",
+    "name": "World Board organization directory",
+    "access": "Bundled draft table",
+    "attribution": "Wikidata and official organization links",
+    "url": "https://www.wikidata.org/",
+    "licence": "CC0 Wikidata metadata. Publisher terms apply to linked pages",
+    "releaseRhythm": "Manually maintained",
+    "marks": []
+  },
+  {
+    "id": "x-embed",
+    "name": "X official timeline widget",
+    "access": "Optional browser embed. X may require sign-in",
+    "attribution": "X and original account",
+    "url": "https://help.x.com/en/using-x/embed-x-feed",
+    "licence": "X terms and publisher rights apply",
+    "releaseRhythm": "Loaded only by an explicit Show X timeline click",
+    "marks": ["No stated licence"]
+  },
+  {
+    "id": "wri-power",
+    "name": "WRI Global Power Plant Database",
+    "access": "Keyless v1.3.0 ZIP, WRI Data Explorer",
+    "attribution": "World Resources Institute, Global Power Plant Database",
+    "url": "https://datasets.wri.org/datasets/global-power-plant-database",
+    "licence": "CC BY 4.0",
+    "releaseRhythm": "Historical 2021 inventory; no routine updates",
+    "marks": ["Historical"]
+  },
+  {
+    "id": "wikidata-assets",
+    "name": "Wikidata facilities and port operators",
+    "access": "Keyless Wikidata Query Service, paced POST batches by facility class and host",
+    "attribution": "Wikidata contributors, structured data",
+    "url": "https://www.wikidata.org/",
+    "licence": "CC0",
+    "releaseRhythm": "Continuously edited; local refresh no more often than every 14 days",
+    "marks": ["LiveUnverified"]
+  },
+  {
+    "id": "nga-ports",
+    "name": "NGA World Port Index",
+    "access": "Keyless World Port Index data via the U.S. Department of Energy NETL public mirror",
+    "attribution": "U.S. National Geospatial-Intelligence Agency, World Port Index (Pub. 150)",
+    "url": "https://arcgis.netl.doe.gov/server/rest/services/Hosted/CCS_EJ_SJ_Data/FeatureServer/17",
+    "licence": "Public domain (U.S. government)",
+    "releaseRhythm": "Mirror publication schedule is unconfirmed. Local checks run no more often than every 30 days.",
+    "marks": ["Mirror"]
+  },
+  {
+    "id": "ourairports",
+    "name": "OurAirports",
+    "access": "Keyless CSV from the official OurAirports GitHub Pages mirror",
+    "attribution": "OurAirports contributors",
+    "url": "https://ourairports.com/data/",
+    "licence": "Public domain",
+    "releaseRhythm": "Daily publication; local check no more often than every seven days",
+    "marks": ["LiveUnverified"]
+  },
+  {
+    "id": "curated-assets",
+    "name": "Curated asset facts and nuclear badges",
+    "access": "Local hand tables with individual primary citations",
+    "attribution": "Government sources, company filings and Federation of American Scientists",
+    "url": "https://fas.org/initiative/status-world-nuclear-forces/",
+    "licence": "Cited factual summaries; no protected tables are reproduced",
+    "releaseRhythm": "Manual review, with date and provenance per fact",
+    "marks": ["Draft", "FAS has no stated licence"]
+  },
+  {
+    "id": "live-gdacs",
+    "name": "GDACS disaster alerts",
+    "access": "Keyless public RSS",
+    "attribution": "GDACS and European Commission Joint Research Centre",
+    "url": "https://www.gdacs.org/xml/rss.xml",
+    "licence": "CC BY 4.0 for item data",
+    "releaseRhythm": "Hourly while enabled",
+    "marks": []
+  },
+  {
+    "id": "live-fx",
+    "name": "Frankfurter FX",
+    "access": "Keyless daily public rate history",
+    "attribution": "Frankfurter and contributing central banks",
+    "url": "https://frankfurter.dev/",
+    "licence": "Public blended data, underlying provider terms apply",
+    "releaseRhythm": "Daily while enabled",
+    "marks": []
+  },
+  {
+    "id": "live-coups",
+    "name": "Powell and Thyne coup dataset",
+    "access": "Keyless authors’ CSV",
+    "attribution": "Jonathan M. Powell and Clayton L. Thyne, Global Instances of Coups",
+    "url": "https://jonathanmpowell.com/coups/",
+    "licence": "Publisher licence unconfirmed; derived, cited event flags",
+    "releaseRhythm": "Weekly while enabled",
+    "marks": ["LicenceUnconfirmed"]
+  },
+  {
+    "id": "live-gdelt",
+    "name": "GDELT event samples",
+    "access": "Keyless 15-minute export manifest and CSV ZIP",
+    "attribution": "The GDELT Project, GDELT 2.0 Events",
+    "url": "https://www.gdeltproject.org/data.html",
+    "licence": "Free data use with GDELT attribution",
+    "releaseRhythm": "15 minutes while enabled, completed files sampled only",
+    "marks": []
+  },
+  {
+    "id": "live-fao",
+    "name": "FAO Food Price Index",
+    "access": "Keyless public nominal monthly CSV",
+    "attribution": "Food and Agriculture Organization of the United Nations",
+    "url": "https://www.fao.org/worldfoodsituation/foodpricesindex/en/",
+    "licence": "Publisher terms apply; cited index and derived change",
+    "releaseRhythm": "Monthly release, checked weekly while enabled",
+    "marks": ["LicenceUnconfirmed"]
+  },
+  {
+    "id": "live-imf-cpi",
+    "name": "IMF Consumer Price Index",
+    "access": "Keyless public SDMX 3.0 national all-items monthly index and published year-on-year rate",
+    "attribution": "International Monetary Fund, CPI all-items monthly index",
+    "url": "https://data.imf.org/Datasets/CPI",
+    "licence": "IMF terms, commercial use requires permission",
+    "releaseRhythm": "Monthly release, checked weekly while enabled",
+    "marks": ["NonCommercial"]
+  },
+  {
+    "id": "live-unhcr",
+    "name": "UNHCR displacement stocks",
+    "access": "Keyless Refugee Statistics API",
+    "attribution": "United Nations High Commissioner for Refugees, Refugee Data Finder",
+    "url": "https://www.unhcr.org/refugee-statistics/",
+    "licence": "API data licence unconfirmed; derived stock flags",
+    "releaseRhythm": "Annual stock, checked weekly while enabled",
+    "marks": ["LicenceUnconfirmed"]
+  },
+  {
+    "id": "live-ucdp-saved",
+    "name": "Saved UCDP Candidate fatality counts",
+    "access": "Saved rolling 12-month counts, draft threshold of 25 recorded deaths",
+    "attribution": "Uppsala Conflict Data Program Candidate Events Dataset",
+    "url": "https://ucdp.uu.se/downloads/",
+    "licence": "CC BY 4.0",
+    "releaseRhythm": "Uses the latest saved monthly release",
+    "marks": []
+  },
+  {
+    "id": "live-debt-dsa",
+    "name": "LIC debt sustainability assessments",
+    "access": "Bundled cited factual summaries",
+    "attribution": "IMF and World Bank LIC Debt Sustainability Framework",
+    "url": "https://www.worldbank.org/en/programs/debt-toolkit/dsa",
+    "licence": "Cited facts and original summaries",
+    "releaseRhythm": "Editorial annual review",
+    "marks": []
+  },
+  {
+    "id": "live-electionguide",
+    "name": "IFES ElectionGuide",
+    "access": "Token, disabled by default",
+    "attribution": "IFES ElectionGuide",
+    "url": "https://www.electionguide.org/p/access/",
+    "licence": "Non-commercial with attribution; other publisher terms apply",
+    "releaseRhythm": "Daily if explicitly configured",
+    "marks": ["NonCommercial"]
+  },
+  {
+    "id": "live-hdx",
+    "name": "HDX HAPI food and prices",
+    "access": "App identifier, disabled by default",
+    "attribution": "UN OCHA HDX HAPI, IPC and World Food Programme",
+    "url": "https://docs.humdata.org/build/hdx-apis/hapi",
+    "licence": "Underlying IPC and WFP terms apply",
+    "releaseRhythm": "Weekly if explicitly configured",
+    "marks": ["LicenceUnconfirmed"]
+  },
+  {
+    "id": "live-ioda",
+    "name": "IODA outages",
+    "access": "Public API with explicit licence approval, disabled by default",
+    "attribution": "Internet Outage Detection and Analysis, Georgia Tech",
+    "url": "https://ioda.inetintel.cc.gatech.edu/",
+    "licence": "Redistribution licence unconfirmed",
+    "releaseRhythm": "Hourly if explicitly configured",
+    "marks": ["LicenceUnconfirmed"]
+  },
+  {
+    "id": "live-ucdp-token",
+    "name": "UCDP Candidate API",
+    "access": "Token, disabled by default",
+    "attribution": "Uppsala Conflict Data Program Candidate Events Dataset",
+    "url": "https://ucdp.uu.se/apidocs/",
+    "licence": "CC BY 4.0",
+    "releaseRhythm": "Monthly release, checked weekly if explicitly configured",
+    "marks": []
+  }
+]

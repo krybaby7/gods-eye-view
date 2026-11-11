@@ -21,6 +21,7 @@ import { createWindSource } from '../layers/wind/source.js';
 import { createFirmsSource } from '../layers/firms/source.js';
 import { createNewsSource } from '../layers/news/source.js';
 import { createSearchesSource } from '../layers/searches/source.js';
+import { createWorldSource } from '../layers/world/source.js';
 import { createMapillarySource } from '../layers/streetLevel/providers/mapillary/source.js';
 import { createReferenceSources } from '../sources/reference.js';
 export { createReferenceSources as createStandaloneReferenceSources } from '../sources/reference.js';
@@ -54,6 +55,7 @@ export function createStandaloneLayerSources(overrides = {}) {
     firms: createFirmsSource(),
     news: createNewsSource(),
     searches: createSearchesSource(),
+    world: createWorldSource(),
     wind: createWindSource(),
     weather: createWeatherSource(),
     cyclones: createCycloneSource(),

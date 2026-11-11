@@ -1,0 +1,19 @@
+{
+  "notes": [
+    "Historical corrections apply only to matching named source assets. Closure dates describe the documented facility and period."
+  ],
+  "rows": [
+    {
+      "source": "wikidata-assets",
+      "type": "spaceport",
+      "nameToken": "hammaguir",
+      "locatedIn": "DZA",
+      "status": "closed",
+      "statusAsOf": "1967-07-01",
+      "statusDetail": "The French test range closed on 1 July 1967 under the Évian Accords.",
+      "sourceUrl": "https://www.esa.int/esapub/hsr/HSR_37.pdf",
+      "lastVerified": "2026-11-10",
+      "reviewed": false
+    }
+  ]
+}

@@ -162,7 +162,7 @@ test('local receiver availability follows a connected device without selecting i
 
 test('all acquisition sources may be absent, and enable fails before initializing or fetching', async (t) => {
   const actual = catalog({}, t);
-  assert.equal(actual.layers.length, 32);
+  assert.equal(actual.layers.length, 33);
   const manager = new LayerLifecycle(
     {},
     { getSourceAvailability: actual.getSourceAvailability },
@@ -205,6 +205,7 @@ test('standalone defaults allow exact replacements and explicit removal, and rej
   assert.equal(sources.flights, source);
   assert.equal(sources.military, null);
   assert.equal(typeof sources.cctv.getCatalog, 'function');
+  assert.equal(typeof sources.world.refresh, 'function');
   assert.throws(
     () => createStandaloneLayerSources({ fligts: source }),
     /Unknown source/,

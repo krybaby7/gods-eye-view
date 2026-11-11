@@ -5,6 +5,8 @@
   available through `NEWS_DIGEST_AGENT=perplexity` with its existing daily
   budget.
 
+- Add Events > World Board with Condition, Strength and Data age lenses, country sheets, locally persisted turns and manual refresh. Scores use draft anchors and expose source coverage and uncertainty; see [World Board](docs/WORLD-BOARD.md).
+
 - War monitor: GDELT outlets come from GDELT 2.0's 15-minute data files
   instead of its search API, which answered with rate limits and no results
   on 2026-10-28; `NEWS_GDELT_FILES=off` switches back. On the search API path,

@@ -56,6 +56,7 @@ const PANEL_GROUPS = [
       'fire-perimeters',
       'news',
       'searches',
+      'world',
     ],
   },
   {
