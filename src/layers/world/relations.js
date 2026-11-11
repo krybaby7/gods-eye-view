@@ -74,6 +74,13 @@ export function isDocumentedRivalry({ type, sources, hostilityOn }) {
 
 export const ALLIED_RIVALRY_CUE = 'Allies, with a documented rivalry';
 
+export function supportDyadSummary(row) {
+  const count = row.dyadIds?.length;
+  if (row.type !== 'support_to_party' || !count) return null;
+  const cue = row.unMission ? ' (UN mission troop contributor, per UCDP)' : '';
+  return count + (count === 1 ? ' dyad' : ' dyads') + cue;
+}
+
 export function alliedRivalries(row, selected, relations) {
   if (!row || row.end || !selected || !alliances.has(row.type)) return [];
   return relationPeers(row, selected).flatMap((peer) => {

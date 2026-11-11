@@ -55,6 +55,87 @@ const registry = (...codes) => ({ countries: codes.map((iso3) => ({ iso3 })) });
 const roleOf = (body) =>
   body.get('query').match(/BIND\("([^"]+)" AS \?role/)[1];
 
+test('keeps English aliases and the article title without its disambiguation suffix', async () => {
+  const role = 'head-of-government';
+  const { data } = await fetchObservations({
+    registry: registry('GUY'),
+    now,
+    fetchImpl: async (_url, { body }) => {
+      if (roleOf(body) !== role) return reply([]);
+      const query = body.get('query');
+      const label = { personLabel: 'Hugo Chávez' };
+      if (!query.includes('SELECT DISTINCT ?iso ?role ?person ?personLabel'))
+        return reply([row('GUY', role, 'Q10', label)]);
+      assert.match(query, /\?person skos:altLabel \?personAlias/);
+      assert.match(query, /LANG\(\?personAlias\) = "en"/);
+      assert.match(query, /schema:isPartOf <https:\/\/en\.wikipedia\.org\/>/);
+      return reply([
+        row('GUY', role, 'Q10', {
+          ...label,
+          personAlias: 'Mark Anthony Phillips',
+          articleTitle: 'Mark Phillips (Guyanese politician)',
+        }),
+        row('GUY', role, 'Q10', {
+          ...label,
+          personAlias: 'Mark Phillips',
+          articleTitle: 'Mark Phillips (Guyanese politician)',
+        }),
+      ]);
+    },
+  });
+  assert.deepEqual(
+    data?.actors.map(({ name, aliases, articleTitle }) => ({
+      name,
+      aliases,
+      articleTitle,
+    })),
+    [
+      {
+        name: 'Hugo Chávez',
+        aliases: ['Mark Anthony Phillips', 'Mark Phillips'],
+        articleTitle: 'Mark Phillips',
+      },
+    ],
+  );
+});
+
+test('discovers both sitting UAE vice presidents and verifies them separately', async () => {
+  const role = 'vice-president';
+  const seat = item('Q48774199');
+  const holders = [
+    row('ARE', role, 'Q57655', {
+      seat,
+      office: seat,
+      since: '2006-01-05',
+    }),
+    row('ARE', role, 'Q556607', {
+      seat,
+      office: seat,
+      since: '2023-03-29',
+    }),
+  ];
+  const { data } = await fetchObservations({
+    registry: registry('ARE', 'USA'),
+    now,
+    fetchImpl: async (_url, { body }) => {
+      if (roleOf(body) !== role) return reply([]);
+      const query = body.get('query');
+      assert.match(query, /"ARE".*wd:Q48774199/);
+      assert.doesNotMatch(query, /"USA"/);
+      if (query.includes('SELECT DISTINCT ?iso ?role ?person ?personLabel'))
+        assert.doesNotMatch(query, /\?laterStatement/);
+      return reply(holders);
+    },
+  });
+  assert.deepEqual(
+    data.actors
+      .filter((actor) => actor.role === role)
+      .map(({ id }) => id)
+      .sort(),
+    ['Q556607', 'Q57655'],
+  );
+});
+
 test('requires a dated, open person office statement and keeps the latest start including ties', async () => {
   const { data } = await fetchObservations({
     registry: registry('IND'),

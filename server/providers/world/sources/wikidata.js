@@ -9,14 +9,16 @@ const RECOVERY_WINDOW_MS = 45_000;
 const RUN_BUDGET_MS = 240_000;
 const MAX_RETRY_MS = 60_000;
 const ACTING_NATURES = ['Q4676846', 'Q20012923'];
-const ROLES = [
+const CORE_ROLES = [
   'head-of-state',
   'head-of-government',
   'foreign-minister',
   'defence-minister',
 ];
+const VICE_PRESIDENT = 'vice-president';
+const ROLES = [...CORE_ROLES, VICE_PRESIDENT];
 
-export const version = 7;
+export const version = 8;
 export const shouldCheck = (context) =>
   !(Date.parse(context.data?.retryAt) > +context.now) &&
   (context.rederive || actorSourceDue(context, 7 * 24));
@@ -71,6 +73,17 @@ function seatPattern(role, overrides) {
 }
 
 function directoryQuery(role, codes) {
+  if (role === VICE_PRESIDENT) {
+    const seats = codes.map(
+      (code) =>
+        `("${code}" wd:${officeSeats.countries[code].vicePresidency.seat})`,
+    );
+    return `
+      SELECT DISTINCT ?iso ?role ?seat WHERE {
+        BIND("${role}" AS ?role)
+        VALUES (?iso ?seat) { ${seats.join(' ')} }
+      }`;
+  }
   const isoMatch = `{ VALUES ?iso { ${codes.map((code) => '"' + code + '"').join(' ')} }
     ?country wdt:P298 ?iso . }`;
   // Kosovo has no ISO alpha-3 code. Resolve that UNION before the office joins.
@@ -162,10 +175,25 @@ function candidatesQuery(role, tuples) {
 }
 
 function verificationQuery(role, tuples) {
+  // Both vice presidents serve concurrently. A later start does not supersede
+  // the other officeholder's open statement.
+  const newerOfficeFilter =
+    role === VICE_PRESIDENT
+      ? ''
+      : `FILTER(!BOUND(?since) || ${role.startsWith('head-of-') ? '?iso = "CHE" || ' : ''}NOT EXISTS {
+            ?laterStatement ps:P39 ?seat; pq:P580 ?laterStart; wikibase:rank ?laterRank .
+            FILTER(?laterRank != wikibase:DeprecatedRank && ?laterStart > ?since && ?laterStart <= NOW())
+            FILTER NOT EXISTS { ?laterStatement pq:P582 [] }
+            FILTER NOT EXISTS { ?laterStatement pq:P1366 [] }
+            FILTER NOT EXISTS {
+              ?laterStatement pq:P5102 ?laterNature .
+              FILTER(?laterNature IN (${ACTING_NATURES.map((id) => 'wd:' + id).join(', ')}))
+            }
+          })`;
   return `
     SELECT DISTINCT ?iso ?role ?person ?personLabel ?seat ?office ?officeLabel
         ?since ?rank ?nature ?image ?x ?bluesky ?mastodon ?youtube ?facebook
-        ?instagram ?vk ?weibo ?website WHERE {
+        ?instagram ?vk ?weibo ?website ?personAlias ?articleTitle WHERE {
       BIND("${role}" AS ?role)
       {
         SELECT DISTINCT ?iso ?person ?seat ?office ?since ?rank ?nature WHERE {
@@ -178,16 +206,7 @@ function verificationQuery(role, tuples) {
           ?person wdt:P31 wd:Q5 .
           FILTER(?rank != wikibase:DeprecatedRank)
           FILTER(!BOUND(?since) || ?since <= NOW())
-          FILTER(!BOUND(?since) || ${role.startsWith('head-of-') ? '?iso = "CHE" || ' : ''}NOT EXISTS {
-            ?laterStatement ps:P39 ?seat; pq:P580 ?laterStart; wikibase:rank ?laterRank .
-            FILTER(?laterRank != wikibase:DeprecatedRank && ?laterStart > ?since && ?laterStart <= NOW())
-            FILTER NOT EXISTS { ?laterStatement pq:P582 [] }
-            FILTER NOT EXISTS { ?laterStatement pq:P1366 [] }
-            FILTER NOT EXISTS {
-              ?laterStatement pq:P5102 ?laterNature .
-              FILTER(?laterNature IN (${ACTING_NATURES.map((id) => 'wd:' + id).join(', ')}))
-            }
-          })
+          ${newerOfficeFilter}
           FILTER NOT EXISTS { ?statement pq:P582 [] }
           FILTER NOT EXISTS { ?statement pq:P1366 [] }
           OPTIONAL { ?statement pq:P5102 ?nature . }
@@ -204,6 +223,15 @@ function verificationQuery(role, tuples) {
       OPTIONAL { ?person wdt:P3185 ?vk . }
       OPTIONAL { ?person wdt:P3579 ?weibo . }
       OPTIONAL { ?person wdt:P856 ?website . }
+      OPTIONAL {
+        ?person skos:altLabel ?personAlias .
+        FILTER(LANG(?personAlias) = "en")
+      }
+      OPTIONAL {
+        ?article schema:about ?person;
+          schema:isPartOf <https://en.wikipedia.org/>;
+          schema:name ?articleTitle .
+      }
       SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
     }`;
 }
@@ -245,11 +273,20 @@ function fieldsFor(rows, key) {
   return [...new Set(rows.map((row) => row[key]).filter(Boolean))].sort();
 }
 
+function englishArticleTitle(title) {
+  if (typeof title !== 'string' || /^\w+:/u.test(title)) return null;
+  return title.replace(/\s+(?:\([^()]*\)|\[[^\[\]]*\])$/, '').trim();
+}
+
 function chooseActor(rows, now) {
   const [row] = rows;
   const labels = fieldsFor(rows, 'personLabel');
   if (labels.length !== 1 || /^Q\d+$/.test(labels[0])) return null;
   const id = row.person.split('/').at(-1);
+  const aliases = fieldsFor(rows, 'personAlias');
+  const [articleTitle] = fieldsFor(rows, 'articleTitle')
+    .map(englishArticleTitle)
+    .filter(Boolean);
   const [office, conflictingOffice] = fieldsFor(rows, 'officeLabel');
   const [image] = fieldsFor(rows, 'image').map(commonsFile).filter(Boolean);
   const seats = officeSeats.countries[row.iso];
@@ -280,6 +317,8 @@ function chooseActor(rows, now) {
     id,
     kind: 'person',
     name: labels[0],
+    ...(aliases.length && { aliases }),
+    ...(articleTitle && { articleTitle }),
     role: row.role,
     country: row.iso,
     office:
@@ -337,8 +376,9 @@ function normalizeDirectory(bindings, registry, now) {
     const seats = officeSeats.countries[row.iso];
     const separateSeats = state && seats?.state?.length > 1;
     const staggered =
-      ['head-of-state', 'head-of-government'].includes(row.role) &&
-      seats?.staggered;
+      row.role === VICE_PRESIDENT ||
+      (['head-of-state', 'head-of-government'].includes(row.role) &&
+        seats?.staggered);
     const key = [
       row.iso,
       ROLES.indexOf(row.role),
@@ -439,7 +479,10 @@ export async function fetchObservations({
     slices.push(codes.slice(offset, offset + BATCH_SIZE));
   const batches = [
     ...slices.map((batch) => ['government', batch]),
-    ...slices.flatMap((batch) => ROLES.map((role) => [role, batch])),
+    ...codes
+      .filter((code) => officeSeats.countries[code]?.vicePresidency)
+      .map((code) => [VICE_PRESIDENT, [code]]),
+    ...slices.flatMap((batch) => CORE_ROLES.map((role) => [role, batch])),
   ];
   const total = batches.length;
   const budget = AbortSignal.timeout(RUN_BUDGET_MS);
@@ -569,12 +612,17 @@ export async function fetchObservations({
     if (recovered !== 2)
       errors.push(...(failures.length ? failures : [describe(failure)]));
   }
-  // WDQS reports an item's QID when it has no English label. Resolve the
-  // title of the English Wikipedia article linked on that exact item.
+  // WDQS reports an item's QID when it has no English label. If the same
+  // response has no English sitelink, try the exact item via the Entity API.
   const missingLabels = new Map();
   for (const row of bindings) {
     const id = row.person?.value?.split('/').at(-1);
     if (!/^Q[1-9]\d*$/.test(id) || row.personLabel?.value !== id) continue;
+    const title = englishArticleTitle(row.articleTitle?.value);
+    if (title) {
+      row.personLabel = { value: title };
+      continue;
+    }
     if (!missingLabels.has(id)) missingLabels.set(id, []);
     missingLabels.get(id).push(row);
   }
@@ -587,8 +635,8 @@ export async function fetchObservations({
       continue;
     }
     for (const id of ids) {
-      const title = entities[id]?.sitelinks?.enwiki?.title;
-      if (typeof title !== 'string' || !title || /^\w+:/u.test(title)) continue;
+      const title = englishArticleTitle(entities[id]?.sitelinks?.enwiki?.title);
+      if (!title) continue;
       for (const row of missingLabels.get(id))
         row.personLabel = { value: title };
     }

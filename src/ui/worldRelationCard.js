@@ -3,6 +3,7 @@ import {
   alliedRivalries,
   currentRelations,
   DIPLOMACY_RULES,
+  supportDyadSummary,
 } from '../layers/world/relations.js';
 
 function text(document, tag, value, className) {
@@ -74,6 +75,7 @@ function relationCard({ document, snapshot, id }) {
     card.append(cue);
   }
   for (const value of [
+    supportDyadSummary(row),
     row.conditions,
     row.reference,
     row.start

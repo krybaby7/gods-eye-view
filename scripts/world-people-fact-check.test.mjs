@@ -67,6 +67,51 @@ test('People reports an unavailable expectation file as not measured', async () 
   assert.match(result.found.reason, /people-sample\.json.*not found/);
 });
 
+test('follow-up checks both current UAE vice presidents and independently attributed portraits', async () => {
+  const holders = [
+    {
+      name: 'Mohammed bin Rashid Al Maktoum',
+      id: 'Q57655',
+      imageFile: 'Mohammed.jpg',
+    },
+    {
+      name: 'Mansour bin Zayed Al Nahyan',
+      id: 'Q556607',
+      imageFile: 'Mansour.jpg',
+    },
+  ].map((person) => ({
+    ...person,
+    role: 'vice-president',
+    country: 'ARE',
+    source: 'wikidata',
+  }));
+  const metadata = {
+    thumbnail:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/portrait.jpg',
+    author: 'Photographer',
+    licence: 'CC BY 4.0',
+  };
+  const check = async (actors, portraits) =>
+    (
+      await checkPeople({
+        board: {
+          features: {
+            wikidata: { actors },
+            'wikimedia-commons': { portraits },
+          },
+        },
+        getDetail: async () => null,
+      })
+    ).find(({ id }) => id === 'people-ARE-vice-president-follow-up');
+  const portraits = { 'Mohammed.jpg': metadata, 'Mansour.jpg': metadata };
+  assert.equal((await check(holders, portraits))?.pass, true);
+  assert.equal(
+    (await check(holders, { 'Mohammed.jpg': metadata }))?.pass,
+    false,
+  );
+  assert.equal((await check([holders[0], holders[0]], portraits))?.pass, false);
+});
+
 test('People keeps 30 countries and accepts only verified name variants with dated evidence', async () => {
   const actors = [
     {
@@ -79,6 +124,13 @@ test('People keeps 30 countries and accepts only verified name variants with dat
     {
       country: 'PHL',
       role: 'head-of-state',
+      name: 'Ferdinand "Bongbong" Marcos Jr.',
+      source: 'wikidata',
+      asOf: '2026-11-11',
+    },
+    {
+      country: 'PHL',
+      role: 'head-of-government',
       name: 'Bongbong Marcos',
       source: 'wikidata',
       asOf: '2022-06-30',
@@ -103,6 +155,7 @@ test('People keeps 30 countries and accepts only verified name variants with dat
   for (const id of [
     'people-IND-defence-minister',
     'people-PHL-head-of-state',
+    'people-PHL-head-of-government',
     'people-JPN-defence-minister-dated',
   ]) {
     assert.equal(checks.find((check) => check.id === id)?.pass, true, id);

@@ -113,7 +113,11 @@ function actorRow(document, actor, country, openCard) {
   const identity = node(document, 'div', 'world-person-identity');
   const portrait =
     actor.offices.some(
-      (entry) => entry.country === country && ministries.includes(entry.role),
+      (entry) =>
+        entry.country === country &&
+        (ministries.includes(entry.role) ||
+          (entry.role === 'vice-president' &&
+            !actor.roles.includes('head-of-government'))),
     ) && portraitImage(document, actor);
   if (portrait) {
     portrait.loading = 'lazy';

@@ -356,6 +356,7 @@
       "public/world/curated/bloc-memberships.json",
       "public/world/curated/sanctions-programmes.json",
       "server/providers/world/sources/relationsUcdp.js",
+      "public/world/curated/ucdp-support-missions.json",
       "server/providers/world/sources/relationsVoting.js",
       "server/providers/world/sources/relationsWikidata.js",
       "server/providers/world/sources/relationsSanctions.js",

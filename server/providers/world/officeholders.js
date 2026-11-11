@@ -7,17 +7,42 @@ export const officeRoles = [
   'head-of-government',
   'foreign-minister',
   'defence-minister',
+  'vice-president',
 ];
 
-function samePerson(left, right) {
-  if (/^Q\d+$/.test(left.id) && /^Q\d+$/.test(right.id))
-    return left.id === right.id;
-  return [left.name, ...(left.aliases ?? [])].some((name) =>
-    [right.name, ...(right.aliases ?? [])].some((other) =>
-      personNameMatch(name, other),
-    ),
-  );
+const actorNames = ({ name, articleTitle, aliases }) =>
+  [...new Set([name, articleTitle, ...(aliases ?? [])])].filter(Boolean);
+
+export function compareOfficeholderNames(left, right) {
+  if (
+    !left ||
+    !right ||
+    left.country !== right.country ||
+    left.role !== right.role
+  )
+    return null;
+  if (/^Q\d+$/.test(left.id) && /^Q\d+$/.test(right.id)) {
+    return left.id === right.id
+      ? { kind: 'id', leftName: left.name, rightName: right.name }
+      : null;
+  }
+  const alternatives = actorNames(right);
+  for (const leftName of actorNames(left)) {
+    for (const rightName of alternatives) {
+      const kind = personNameMatch(leftName, rightName);
+      if (kind) return { kind, leftName, rightName };
+    }
+  }
+  return null;
 }
+
+const samePerson = (left, right) =>
+  Boolean(compareOfficeholderNames(left, right));
+
+const corroboratedName = (actor, other) =>
+  actor.source === 'wikidata'
+    ? (compareOfficeholderNames(actor, other)?.leftName ?? actor.name)
+    : actor.name;
 
 const orderingDate = (actor) =>
   actor.source === 'wikidata'
@@ -68,6 +93,7 @@ function corroboration(actor, others) {
     .filter((other) => other && other !== actor)
     .map((other) => ({
       ...provenance(other),
+      name: corroboratedName(other, actor),
       agrees: samePerson(actor, other),
     }));
 }
@@ -77,7 +103,7 @@ function withIdentity(actor, match) {
   return {
     ...actor,
     id: match.id,
-    name: match.name,
+    name: corroboratedName(match, actor),
     office: match.office ?? actor.office,
     imageFile: match.imageFile,
     accounts: match.accounts,
@@ -132,12 +158,16 @@ export function mergeOfficeholders(
     const sample = firstWd ?? firstCia ?? official[0];
     if (!sample) return [];
     const { country, role } = sample;
+    const seats = officeSeats.countries[country];
+    const vicePresidency = role === 'vice-president' && seats?.vicePresidency;
     const collective =
-      (role === 'head-of-state' ||
+      vicePresidency?.label ||
+      ((role === 'head-of-state' ||
         (country === 'CHE' && role === 'head-of-government')) &&
-      officeSeats.countries[country]?.collective;
+        seats?.collective);
     if (collective) {
-      const expectedSeats = { AND: 2, BIH: 3, CHE: 7, SMR: 2 }[country];
+      const expectedSeats =
+        vicePresidency?.holders ?? { AND: 2, BIH: 3, CHE: 7, SMR: 2 }[country];
       // A chair or incomplete list cannot replace the collective office.
       const matching = (actor, candidates) =>
         candidates.find((candidate) => samePerson(actor, candidate));
@@ -152,11 +182,21 @@ export function mergeOfficeholders(
           : null;
       return primary.map((actor) => {
         const peer = matching(actor, secondary);
-        const preferred = (show && peer) || actor;
+        const identities =
+          show && vicePresidency && !peer
+            ? undated.filter((candidate) => samePerson(actor, candidate))
+            : [];
+        const identity = identities.length === 1 ? identities[0] : null;
+        const preferred = (show && peer) || withIdentity(actor, identity);
+        const other = show ? (peer ? actor : identity) : peer;
         return withEvidence(
-          { ...preferred, collective },
+          {
+            ...preferred,
+            name: corroboratedName(preferred, other),
+            collective,
+          },
           ageCutoff,
-          corroboration(preferred, [show ? actor : peer]),
+          corroboration(preferred, [other]),
           peer ? null : dispute,
         );
       });
@@ -222,7 +262,9 @@ export function mergeOfficeholders(
     ]).filter(({ agrees }) => agrees);
     return [
       withEvidence(
-        useCia ? withIdentity(primary, match) : primary,
+        useCia
+          ? withIdentity(primary, match)
+          : { ...primary, name: corroboratedName(primary, competingHolder) },
         ageCutoff,
         otherEvidence,
         competingHolder && !samePerson(primary, competingHolder)

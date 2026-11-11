@@ -3,6 +3,7 @@ import test from 'node:test';
 import './phase-3.js';
 import { worldFeatureViews } from './refreshRegistry.js';
 import { fetchObservations as curated } from './sources/relationsCurated.js';
+import { classifyDiplomacy } from '../../../src/layers/world/relations.js';
 
 test('keeps only lens inputs on the board and reads heavy relation details per country', () => {
   const { summary, detail } = worldFeatureViews.get('diplomacy');
@@ -64,4 +65,24 @@ test('official AU and Arab League rosters keep membership distinct from suspensi
     arab.find(({ from }) => from === 'SYR').statusSince,
     '2023-05-07',
   );
+});
+
+test('the three Makkah pact parties paint as allies and former Qatar rivals are excluded', async () => {
+  const {
+    data: { relations },
+  } = await curated({});
+  const pact = relations.find(({ id }) => id === 'rel_makkah');
+  assert.deepEqual(pact?.participants, ['SAU', 'TUR', 'PAK']);
+  assert.equal(pact.start, '2026-08-07');
+  assert.match(pact.detail, /5 November 2026/);
+  for (const [a, b] of [
+    ['SAU', 'TUR'],
+    ['SAU', 'PAK'],
+    ['TUR', 'PAK'],
+  ])
+    assert.equal(classifyDiplomacy(a, b, relations), 'ally');
+  assert.notEqual(classifyDiplomacy('SAU', 'QAT', relations), 'rival');
+  assert.equal(classifyDiplomacy('CHN', 'IND', relations), 'rival');
+  assert.equal(classifyDiplomacy('MYS', 'SGP', relations), 'rival');
+  assert.equal(relations.filter(({ type }) => type === 'rivalry').length, 44);
 });

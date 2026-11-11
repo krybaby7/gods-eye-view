@@ -125,13 +125,6 @@
       "2026-08-31",
       "https://www.mofa.gov.ae/en/MediaHub/News/2026/8/31/UAE-iran"
     ],
-    [
-      "GAB",
-      "GNQ",
-      "1972",
-      null,
-      "https://api.icj-cij.org/sites/default/files/case-related/179/179-20250519-jud-01-00-en.pdf"
-    ],
     ["IRN", "SAU", "1979", "2026-03-22", "https://spa.gov.sa/en/N2543729"],
     [
       "IRN",
@@ -162,14 +155,6 @@
       "1992",
       null,
       "https://www.un.org/en/about-us/member-states/yugoslavia"
-    ],
-    ["ERI", "SDN", "1993", null, null],
-    [
-      "QAT",
-      "SAU",
-      "1995",
-      null,
-      "https://www.gco.gov.qa/en/media-centre/in-focus/gcc-crisis/"
     ],
     ["COD", "UGA", "1996", null, null],
     [
@@ -237,21 +222,6 @@
       "https://documents.un.org/doc/undoc/gen/n25/238/27/pdf/n2523827.pdf"
     ],
     [
-      "SAU",
-      "SYR",
-      "2011",
-      null,
-      "https://mofa.gov.qa/en/latest-articles/statements/qatar--syria-issue-joint-statement"
-    ],
-    ["SYR", "TUR", "2011", null, null],
-    [
-      "ARE",
-      "QAT",
-      "2011",
-      null,
-      "https://www.mofa.gov.ae/en/mediahub/news/2023/6/19/19-6-2023-uae-qatar"
-    ],
-    [
       "IRN",
       "YEM",
       "2011",
@@ -259,36 +229,8 @@
       "https://documents.un.org/api/symbol/access?l=en&s=S%2F2025%2F485&t=pdf"
     ],
     ["IRN", "TUR", "2011", null, null],
-    [
-      "EGY",
-      "TUR",
-      "2013",
-      null,
-      "https://www.mfa.gov.tr/no_-164_-turkiye-misir--ortak--aciklamasi.en.mfa"
-    ],
-    [
-      "EGY",
-      "QAT",
-      "2013",
-      null,
-      "https://www.gco.gov.qa/en/media-centre/in-focus/gcc-crisis/"
-    ],
     ["KEN", "SOM", "2013", null, null],
-    [
-      "SAU",
-      "TUR",
-      "2013",
-      null,
-      "https://www.mfa.gov.tr/turkiye-suudi-arabistan-siyasi-iliskileri.tr.mfa"
-    ],
     ["RUS", "UKR", "2014", "2026-11-09", "https://dppa.un.org/en/node/137309"],
-    [
-      "BHR",
-      "QAT",
-      "2014",
-      null,
-      "https://mofa.gov.qa/en/qatar/latest-articles/latest-news/details/1444/07/22/qatari-bahraini-follow-up-committee-holds-first-meeting-in-riyadh"
-    ],
     [
       "BDI",
       "RWA",
@@ -382,6 +324,126 @@
       "partner": 1,
       "rival": 1,
       "sanctions": 6
+    }
+  },
+  "followUp": {
+    "checkedOn": "2026-11-11",
+    "round4": {
+      "configuredRivalries": 54,
+      "paintedRivals": 49
+    },
+    "exclusions": [
+      [
+        "SAU",
+        "SYR",
+        "The dataset rivalry was with Assad's government, which fell in December 2024. Saudi Arabia has since signed cooperation agreements with the new Syrian government.",
+        [
+          "https://mofa.gov.qa/en/latest-articles/statements/qatar--syria-issue-joint-statement",
+          "https://www.spa.gov.sa/en/N2718384"
+        ]
+      ],
+      [
+        "SYR",
+        "TUR",
+        "The dataset rivalry was with Assad's government. Türkiye welcomed the transitional government and supports Syria's reconstruction following the December 2024 change of government.",
+        [
+          "https://www.mfa.gov.tr/no_-68_-suriye-de-gecis-hukumeti-kurulmasi-hk.en.mfa",
+          "https://www.mfa.gov.tr/suriye-deki-son-gelismelere-iliskin-ortak-aciklama-17-temmuz-2025.en.mfa"
+        ]
+      ],
+      [
+        "QAT",
+        "SAU",
+        "The Al-Ula Declaration ended the Gulf rift in January 2021 and Saudi Arabia reopened its borders with Qatar.",
+        [
+          "https://treaties.un.org/Pages/showDetails.aspx?objid=08000002805b2870",
+          "https://www.un.org/sg/en/content/sg/statements/2021-01-05/statement-attributable-the-spokesperson-for-the-secretary-general-the-al-ula-declaration-announced-at-the-41st-gcc-summit",
+          "https://www.gco.gov.qa/en/media-centre/in-focus/gcc-crisis/"
+        ]
+      ],
+      [
+        "ARE",
+        "QAT",
+        "The Al-Ula Declaration ended the Gulf rift in January 2021. The UAE and Qatar restored diplomatic representation in June 2023.",
+        [
+          "https://treaties.un.org/Pages/showDetails.aspx?objid=08000002805b2870",
+          "https://www.mofa.gov.ae/en/mediahub/news/2023/6/19/19-6-2023-uae-qatar"
+        ]
+      ],
+      [
+        "BHR",
+        "QAT",
+        "The Al-Ula Declaration ended the Gulf rift in January 2021. The Bahraini and Qatari follow-up committee met in February 2023 to implement it.",
+        [
+          "https://treaties.un.org/Pages/showDetails.aspx?objid=08000002805b2870",
+          "https://mofa.gov.qa/en/qatar/latest-articles/latest-news/details/1444/07/22/qatari-bahraini-follow-up-committee-holds-first-meeting-in-riyadh"
+        ]
+      ],
+      [
+        "EGY",
+        "QAT",
+        "Egypt signed the January 2021 Al-Ula Declaration, which ended the Gulf rift with Qatar.",
+        [
+          "https://treaties.un.org/Pages/showDetails.aspx?objid=08000002805b2870",
+          "https://www.un.org/sg/en/content/sg/statements/2021-01-05/statement-attributable-the-spokesperson-for-the-secretary-general-the-al-ula-declaration-announced-at-the-41st-gcc-summit",
+          "https://www.gco.gov.qa/en/media-centre/in-focus/gcc-crisis/"
+        ]
+      ],
+      [
+        "EGY",
+        "TUR",
+        "Egypt and Türkiye restored diplomatic relations at ambassador level in July 2023.",
+        [
+          "https://www.mfa.gov.tr/no_-164_-turkiye-misir--ortak--aciklamasi.en.mfa"
+        ]
+      ],
+      [
+        "SAU",
+        "TUR",
+        "Saudi Arabia and Türkiye resumed high-level ties in 2022 and signed five cooperation agreements during the July 2023 visit.",
+        [
+          "https://www.mfa.gov.tr/turkiye-suudi-arabistan-siyasi-iliskileri.tr.mfa"
+        ]
+      ],
+      [
+        "GAB",
+        "GNQ",
+        "Equatorial Guinea and Gabon signed the 28 July 2026 Addis Ababa agreement to implement the 2025 International Court of Justice judgment.",
+        [
+          "https://www.au.int/en/pressrelease/auc-chairperson-welcomes-signing-joint-engagement-agreement-between-republic",
+          "https://www.gabonreview.com/gabon-guinee-equatoriale-accord-signe-a-addis-abeba-pour-lapplication-de-larret-de-la-cij/",
+          "https://www.capmad.com/post/libreville-and-malabo-seal-addis-ababa-accord-to-implement-the-icj-ruling"
+        ]
+      ],
+      [
+        "ERI",
+        "SDN",
+        "Eritrea supports Sudan's army in the current war. Horn Review reported Eritrean forces fighting alongside it. Eritrea's government documents its cooperation with Sudan's authorities.",
+        [
+          "https://hornreview.org/2026/08/18/making-sense-of-the-alignment-between-eritrea-and-the-sudanese-armed-forces/",
+          "https://www.gov.uk/government/publications/sudan-country-policy-and-information-notes/country-policy-and-information-note-security-situation-sudan-july-2026-accessible",
+          "https://shabait.com/amp/2025/11/30/president-isaias-afwerki-and-general-abdel-fattah-al-burhan-held-extensive-talks-2/"
+        ]
+      ]
+    ],
+    "makkah": {
+      "participants": ["SAU", "TUR", "PAK"],
+      "signedOn": "2026-08-07",
+      "ratifiedOn": "5 November 2026",
+      "sources": [
+        "https://www.iletisim.gov.tr/english/Haberler/detay/turkiye-and-saudi-arabia-sign-a-joint-defence-agreement",
+        "https://www.aljazeera.com/news/2026/11/6/turkiyes-parliament-ratifies-mecca-defence-agreement",
+        "https://www.hurriyetdailynews.com/parliament-approves-defense-pact-with-saudi-arabia-and-pakistan-229079"
+      ]
+    },
+    "chinaSupport": {
+      "party": "Government of Central African Republic",
+      "dyadIds": ["16562", "18287", "18304"],
+      "mission": "MINUSCA",
+      "sources": [
+        "https://ucdp.uu.se/country/482",
+        "https://peacekeeping.un.org/sites/default/files/03_country_and_mission_93_december_2025.pdf"
+      ]
     }
   }
 }

@@ -1,5 +1,189 @@
 {
   "asOf": "2026-11-09",
+  "followUp": {
+    "checkedOn": "2026-11-11",
+    "baseline": { "roles": 780, "disagreement": 143, "stale": 76 },
+    "officeholders": [
+      {
+        "country": "ARE",
+        "role": "head-of-state",
+        "name": "Mohamed bin Zayed Al Nahyan",
+        "aliases": ["Mohammed bin Zayed Al Nahyan"],
+        "portrait": true,
+        "noDisagreement": true,
+        "source": "https://u.ae/about-the-uae/the-uae-government/the-president-and-his-deputy"
+      },
+      {
+        "country": "ARE",
+        "role": "head-of-government",
+        "name": "Mohammed bin Rashid Al Maktoum",
+        "portrait": true,
+        "noDisagreement": true,
+        "source": "https://u.ae/about-the-uae/the-uae-government/the-president-and-his-deputy"
+      },
+      {
+        "country": "ARE",
+        "role": "vice-president",
+        "people": [
+          { "name": "Mohammed bin Rashid Al Maktoum" },
+          {
+            "name": "Mansour bin Zayed Al Nahyan",
+            "aliases": ["Mansour bin Zayed bin Sultan Al Nahyan"]
+          }
+        ],
+        "portrait": true,
+        "noDisagreement": true,
+        "source": "https://www.mofa.gov.ae/en/MediaHub/News/2023/3/30/30-03-2023-UAE-Federal"
+      },
+      {
+        "country": "SAU",
+        "role": "head-of-state",
+        "name": "Salman bin Abdulaziz Al Saud",
+        "portrait": true,
+        "noDisagreement": true,
+        "source": "https://mofa.gov.sa/en/ksa/Pages/leadership.aspx"
+      },
+      {
+        "country": "QAT",
+        "role": "head-of-state",
+        "name": "Tamim bin Hamad Al Thani",
+        "portrait": true,
+        "noDisagreement": true,
+        "source": "https://www.diwan.gov.qa/hh-the-amir/biography?sc_lang=en"
+      },
+      {
+        "country": "EGY",
+        "role": "head-of-state",
+        "name": "Abdel Fattah El-Sisi",
+        "portrait": true,
+        "noDisagreement": true,
+        "source": "https://www.presidency.eg/en/%D8%A7%D9%84%D8%B1%D8%A6%D8%A7%D8%B3%D8%A9/%D8%A7%D9%84%D8%B1%D8%A6%D9%8A%D8%B3/"
+      },
+      {
+        "country": "ISR",
+        "role": "head-of-state",
+        "name": "Isaac Herzog",
+        "aliases": ["Yitzhak Herzog"],
+        "portrait": true,
+        "noDisagreement": true,
+        "source": "https://www.president.gov.il/en/president/"
+      },
+      {
+        "country": "KAZ",
+        "role": "head-of-state",
+        "name": "Kassym-Jomart Tokayev",
+        "aliases": ["Kassym-Jomart K. Tokayev"],
+        "portrait": true,
+        "noDisagreement": true,
+        "source": "https://akorda.kz/public/en/president/president"
+      },
+      {
+        "country": "BLR",
+        "role": "head-of-state",
+        "name": "Aleksandr Lukashenko",
+        "aliases": [
+          "Alexander Lukashenka",
+          "Alyaksandr Lukashenka",
+          "Alexander Lukashenko"
+        ],
+        "portrait": true,
+        "noDisagreement": true,
+        "source": "https://president.gov.by/en/president/biography"
+      },
+      {
+        "country": "PHL",
+        "role": "head-of-state",
+        "name": "Ferdinand R. Marcos Jr.",
+        "aliases": [
+          "Ferdinand Marcos Jr.",
+          "Ferdinand Romualdez Marcos Jr.",
+          "Ferdinand Bongbong Marcos Jr.",
+          "Bongbong Marcos"
+        ],
+        "portrait": true,
+        "noDisagreement": true,
+        "source": "https://pco.gov.ph/news_releases/pbbm-leads-busy-week-of-initiatives-steps-up-efforts-on-disaster-recovery-peace-energy-security/"
+      },
+      {
+        "country": "PHL",
+        "role": "head-of-government",
+        "name": "Ferdinand R. Marcos Jr.",
+        "aliases": [
+          "Ferdinand Marcos Jr.",
+          "Ferdinand Romualdez Marcos Jr.",
+          "Ferdinand Bongbong Marcos Jr.",
+          "Bongbong Marcos"
+        ],
+        "portrait": true,
+        "noDisagreement": true,
+        "source": "https://pco.gov.ph/news_releases/pbbm-leads-busy-week-of-initiatives-steps-up-efforts-on-disaster-recovery-peace-energy-security/"
+      },
+      {
+        "country": "BEL",
+        "role": "head-of-state",
+        "name": "Philippe",
+        "aliases": ["Philippe of Belgium"],
+        "portrait": true,
+        "noDisagreement": true,
+        "source": "https://www.monarchie.be/en/royal-family/the-king"
+      },
+      {
+        "country": "THA",
+        "role": "head-of-state",
+        "name": "Maha Vajiralongkorn",
+        "aliases": ["Vajiralongkorn"],
+        "portrait": true,
+        "noDisagreement": true,
+        "source": "https://www.thaigov.go.th/en/news/162739"
+      },
+      {
+        "country": "GUY",
+        "role": "head-of-government",
+        "name": "Mark Anthony Phillips",
+        "aliases": ["Mark Phillips"],
+        "noDisagreement": true,
+        "source": "https://www.parliament.gov.gy/about-parliament/parliamentarian/hon.-brigadier-retd-mark-anthony-phillips-m.s.s"
+      },
+      {
+        "country": "SWZ",
+        "role": "head-of-government",
+        "name": "Russell Mmiso Dlamini",
+        "aliases": ["Russell Dlamini"],
+        "noDisagreement": true,
+        "source": "https://parliament.gov.sz/about/pm/"
+      },
+      {
+        "country": "TUV",
+        "role": "head-of-government",
+        "name": "Feleti Penitala Teo",
+        "aliases": ["Feleti Teo", "Feleti P. Teo"],
+        "noDisagreement": true,
+        "source": "https://psc.gov.tv/wp-content/uploads/2024/09/Statement-of-the-21-Priorities-of-the-New-Tuvalu-Government-1.pdf"
+      },
+      {
+        "country": "COD",
+        "role": "foreign-minister",
+        "name": "Thérèse Kayikwamba Wagner",
+        "ciaConfirmation": true,
+        "source": "https://diplomatie.gouv.cd/le-cabinet-de-la-ministre-detat/"
+      },
+      {
+        "country": "JOR",
+        "role": "foreign-minister",
+        "name": "Ayman Safadi",
+        "aliases": ["Ayman al-Ṣafadī"],
+        "ciaConfirmation": true,
+        "source": "https://mfa.gov.jo/Gaza/documents/agenda-english.pdf"
+      },
+      {
+        "country": "RWA",
+        "role": "foreign-minister",
+        "name": "Olivier Nduhungirehe",
+        "ciaConfirmation": true,
+        "source": "https://www.minaffet.gov.rw/the-ministry"
+      }
+    ]
+  },
   "round4": {
     "checkedOn": "2026-11-10",
     "baseline": { "roles": 780, "disagreements": 266, "stale": 369 },

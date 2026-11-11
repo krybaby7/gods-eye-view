@@ -20,29 +20,33 @@ const beforeGapPct = {
   panama: { oil: 21.8 },
   'cape-of-good-hope': { oil: -64.6, lng: -79.4 },
 };
-// Archived observations from reviewed PR #19 head 92c3087a (fix round 3).
-const round3Modelled = {
-  malacca: { oil: 16.834, lng: 7.391 },
-  hormuz: { oil: 15.543, lng: 9.562 },
-  suez: { oil: 6.826, lng: 3.294 },
-  'bab-el-mandeb': { oil: 6.549, lng: 2.184 },
-  'danish-straits': { oil: 1.509, lng: 2.1 },
-  dardanelles: { oil: 2.638, lng: 0.145 },
-  panama: { oil: 3.438 },
-  'cape-of-good-hope': { oil: 3.259, lng: 1.505 },
+// Modelled volume and stored percentage gap on main a9601c8d.
+const mainCalibration = {
+  malacca: { oil: [16.306, -27.5], lng: [8.333, -17.5] },
+  hormuz: { oil: [16.064, -22.4], lng: [9.562, -8.9] },
+  suez: { oil: [8.631, 79.8], lng: [4.242, 748.3] },
+  'bab-el-mandeb': { oil: [7.701, 87.8], lng: [3.132, null] },
+  'danish-straits': { oil: [3.06, -37.6], lng: [0.958, -31.5] },
+  dardanelles: { oil: [2.386, -33.7], lng: [0.145, -70.9] },
+  panama: { oil: [3.446, 72.3] },
+  'cape-of-good-hope': { oil: [3.279, -64.7], lng: [1.813, -76.8] },
 };
 const naturalEarth =
   'https://www.naturalearthdata.com/downloads/50m-cultural-vectors/50m-admin-0-countries-2/';
 const cepii =
   'https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37';
-const borderPairs = [
-  'MYS/THA',
-  'ARE/OMN',
-  'ARE/SAU',
-  'DEU/DNK',
-  'CMR/GNQ',
-  'GAB/GNQ',
-];
+const borderPairs = {
+  'MYS/THA': true,
+  'ARE/OMN': true,
+  'ARE/SAU': true,
+  'DEU/DNK': true,
+  'CMR/GNQ': true,
+  'GAB/GNQ': true,
+  'FRA/BRA': false,
+  'GBR/IRL': false,
+  'RUS/LTU': false,
+  'AGO/COG': false,
+};
 const measuredPorts = portTable.rows.filter(
   ({ direction, share }) => direction === 'export' && share !== null,
 );
@@ -56,6 +60,11 @@ const makeCheck = (id, expected, found, source, pass, date = checkedOn) => ({
 });
 const checkedRound3 = '2026-11-10';
 const checkedRound4 = '2026-11-10';
+const checkedFollowUp = '2026-11-11';
+const lngDiversions =
+  'https://www.shell.com/what-we-do/oil-and-natural-gas/liquefied-natural-gas-lng/lng-outlook-2025/_jcr_content/root/main/section_125126292_co/promo_copy_copy_copy/links/item0.stream/1740577530786/97f8aacf1e8b27cd8dd32f6070d6463f60cff411/lng-outlook-2025-full-report.pdf#page=14';
+const malaccaLNGLabel =
+  'US LNG to Asia is routed via Panama in this model. In 2024 much of it went round the Cape of Good Hope and through Malacca.';
 
 const cargoRegression = [
   {
@@ -92,15 +101,65 @@ const mainlandPorts = {
     'https://www.kimberleyports.wa.gov.au/awcontent/web/documents/rec221362-kpa-port-and-terminal-handbook-v8-0.pdf',
   ],
 };
+const javaPorts = {
+  'crude oil': [
+    'Cilacap Refinery Terminal',
+    'https://piep.pertamina.com/id/berita/buktikan-komitmen-ketahanan-energi-pertamina-bawa-pulang-minyak-mentah-dari-lapangan-aljazair',
+  ],
+  'refined products': [
+    'Tanjung Priok Fuel Terminal',
+    'https://www.vopak.com/newsroom/news/first-independent-import-terminal-oil-products-jakarta-indonesia-opened?language_content_entity=en',
+  ],
+  lng: ['West Java LNG', lngReport],
+  coal: [
+    'Cigading Coal Terminal',
+    'https://www.krakatauinternationalport.co.id/en/coal-terminal',
+  ],
+};
+
+function importPortsByProduct(detail, country) {
+  return Object.fromEntries(
+    [
+      ...Map.groupBy(
+        (detail?.rows ?? []).filter(({ dependent }) => dependent === country),
+        ({ item }) => item,
+      ),
+    ].map(([item, rows]) => [
+      item,
+      [
+        ...new Set(
+          rows.map(({ id }) => detail.routePorts?.[id]?.[1]).filter(Boolean),
+        ),
+      ].sort(),
+    ]),
+  );
+}
 
 export default async function checkEnergy({ board, getDetail }) {
   const model = board?.features?.['energy-dependencies'];
-  const [thailand, taiwan, india, global, denmark, ...ports] =
-    await Promise.all(
-      ['THA', 'TWN', 'IND', null, 'DNK', ...Object.keys(mainlandPorts)].map(
-        (country) => getDetail(country, 'energy'),
-      ),
-    );
+  const [
+    thailand,
+    taiwan,
+    india,
+    global,
+    denmark,
+    china,
+    ireland,
+    indonesia,
+    ...ports
+  ] = await Promise.all(
+    [
+      'THA',
+      'TWN',
+      'IND',
+      null,
+      'DNK',
+      'CHN',
+      'IRL',
+      'IDN',
+      ...Object.keys(mainlandPorts),
+    ].map((country) => getDetail(country, 'energy')),
+  );
   const hormuz = chokepointExposure(board ?? {}, 'chokepoint6');
   const top = hormuz
     .slice(0, 4)
@@ -183,6 +242,24 @@ export default async function checkEnergy({ board, getDetail }) {
       ?.allocatedTonnes / 1e6;
   const borderAudit = global?.allocationAudit?.borders;
   const uaeSaudi = global?.allocationAudit?.uaeSaudiRefinedProducts;
+  const rusChina = china?.rows?.find(({ id }) => id === 'RUS/CHN/crude oil');
+  const seaPortSplits = rusChina?.portSplits ?? [];
+  const chinaKozmino = seaPortSplits.find(
+    ({ ports }) => ports[0] === 'Kozmino',
+  )?.share;
+  const chinaMalacca = rusChina?.gateShares?.chokepoint5;
+  const chinaSplitTotal = seaPortSplits.reduce(
+    (total, { share }) => total + share,
+    0,
+  );
+  const irishRefined = ireland?.rows?.find(
+    ({ id }) => id === 'GBR/IRL/refined products',
+  );
+  const irishPorts = ireland?.routePorts?.[irishRefined?.id];
+  const indonesiaPorts = importPortsByProduct(indonesia, 'IDN');
+  const malaccaLNG = global?.calibration?.find(
+    ({ routeId, commodity }) => routeId === 'malacca' && commodity === 'lng',
+  );
   const danishCrude = denmark?.exposure?.find(
     ({ gate, item }) => gate === 'chokepoint10' && item === 'crude oil',
   );
@@ -270,11 +347,54 @@ export default async function checkEnergy({ board, getDetail }) {
     ),
     makeCheck(
       'land-borders',
-      Object.fromEntries(borderPairs.map((pair) => [pair, true])),
+      borderPairs,
       borderAudit,
       naturalEarth,
-      borderPairs.every((pair) => borderAudit?.[pair] === true),
-      checkedRound4,
+      Object.entries(borderPairs).every(
+        ([pair, expected]) => borderAudit?.[pair] === expected,
+      ),
+      checkedFollowUp,
+    ),
+    makeCheck(
+      'russia-china-crude-seaborne-shares',
+      'Port splits sum to 100% of 68.469 Mt seaborne as on main, with about 77% from Kozmino and 23% through Malacca',
+      {
+        seaborneTonnes: rusChina?.volume?.value,
+        kozminoShare: chinaKozmino,
+        malaccaShare: chinaMalacca,
+        portShareTotal: chinaSplitTotal,
+      },
+      [
+        eiaRussia,
+        'https://view.argusmedia.com/rs/584-BUW-606/images/CRU-Sample-Report-Argus-Eurasia-Energy-%282025-02-06%29.pdf',
+        'World Board main a9601c8d and review 4, seaborne denominator check',
+      ],
+      rusChina?.volume?.value === 68_469_240 &&
+        Math.abs(chinaKozmino - 0.77) <= 0.01 &&
+        Math.abs(chinaMalacca - 0.23) <= 0.01 &&
+        Math.abs(chinaSplitTotal - 1) <= 0.00001,
+      checkedFollowUp,
+    ),
+    makeCheck(
+      'britain-ireland-refined-products',
+      'A port-to-port route carrying about 1.9 Mt of refined products from Britain to Ireland',
+      { tonnes: irishRefined?.volume?.value, ports: irishPorts },
+      [
+        'https://www.imdo.ie/sites/default/files/publications/2025/file_sources/irish-maritime-transport-economist-2024-volume-21.pdf',
+        'World Board review 4, modelled BACI trade volume',
+      ],
+      (irishRefined?.volume?.value / 1e6).toFixed(1) === '1.9' &&
+        irishPorts?.length === 2,
+      checkedFollowUp,
+    ),
+    makeCheck(
+      'malacca-lng-routing-label',
+      malaccaLNGLabel,
+      malaccaLNG?.dataNote?.text,
+      [lngDiversions, eiaChokepoints],
+      malaccaLNG?.dataNote?.text === malaccaLNGLabel &&
+        malaccaLNG?.dataNote?.sourceUrl === lngDiversions,
+      checkedFollowUp,
     ),
     makeCheck(
       'uae-saudi-refined-products',
@@ -307,6 +427,19 @@ export default async function checkEnergy({ board, getDetail }) {
         blackSea.every(({ gates }) => gates.includes('eia-dardanelles')),
     ),
   ];
+  for (const [item, [port, source]] of Object.entries(javaPorts)) {
+    const found = indonesiaPorts[item];
+    result.push(
+      makeCheck(
+        `indonesia-import-port-${item.replaceAll(' ', '-')}`,
+        [port],
+        found,
+        source,
+        found?.length === 1 && found[0] === port,
+        checkedFollowUp,
+      ),
+    );
+  }
   for (const {
     provider,
     dependent,
@@ -347,22 +480,7 @@ export default async function checkEnergy({ board, getDetail }) {
   for (const [index, [country, [expectedPort, source]]] of Object.entries(
     mainlandPorts,
   ).entries()) {
-    const detail = ports[index];
-    const importPorts = Object.fromEntries(
-      [
-        ...Map.groupBy(
-          (detail?.rows ?? []).filter(({ dependent }) => dependent === country),
-          ({ item }) => item,
-        ),
-      ].map(([item, rows]) => [
-        item,
-        [
-          ...new Set(
-            rows.map(({ id }) => detail.routePorts?.[id]?.[1]).filter(Boolean),
-          ),
-        ].sort(),
-      ]),
-    );
+    const importPorts = importPortsByProduct(ports[index], country);
     result.push(
       makeCheck(
         `mainland-import-port-${country.toLowerCase()}`,
@@ -387,14 +505,12 @@ export default async function checkEnergy({ board, getDetail }) {
       note,
       dataNote,
     } = row;
-    const beforeModelled = round3Modelled[routeId]?.[commodity];
+    const [beforeModelled, mainGap] =
+      mainCalibration[routeId]?.[commodity] ?? [];
     const found = {
       originalGapPct: before,
       beforeModelled,
-      beforeGapPct:
-        published > 0
-          ? Number((100 * (beforeModelled / published - 1)).toFixed(1))
-          : null,
+      beforeGapPct: mainGap,
       afterGapPct: gapPct,
       modelled,
       published,
@@ -418,7 +534,7 @@ export default async function checkEnergy({ board, getDetail }) {
       expected = 'Absolute calibration gap at most 25%';
       pass &&= Math.abs(gapPct) <= 25;
     } else if (routeId === 'danish-straits' || routeId === 'dardanelles') {
-      expected = 'Absolute calibration gap smaller than the previous model';
+      expected = 'Absolute calibration gap smaller than the original model';
       pass &&= Math.abs(gapPct) < Math.abs(before);
     } else if (
       ['suez', 'bab-el-mandeb', 'cape-of-good-hope'].includes(routeId)
@@ -433,7 +549,7 @@ export default async function checkEnergy({ board, getDetail }) {
         found,
         dataNote ? [eiaChokepoints, dataNote.sourceUrl] : eiaChokepoints,
         pass,
-        checkedRound4,
+        checkedFollowUp,
       ),
     );
   }

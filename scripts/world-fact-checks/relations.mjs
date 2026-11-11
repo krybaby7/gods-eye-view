@@ -5,10 +5,11 @@ import {
   currentRelations,
   isDocumentedRivalry,
   relationsBetween,
+  supportDyadSummary,
 } from '../../src/layers/world/relations.js';
 import expectations from './relations.expect.json' with { type: 'json' };
 
-const { checkedOn, round3 } = expectations;
+const { checkedOn, followUp, round3 } = expectations;
 const nato =
   'https://www.nato.int/en/about-us/organization/nato-member-countries';
 const ofac =
@@ -43,21 +44,21 @@ export default async function checkRelations({ board, getDetail }) {
   const snapshot = board ?? {};
   const features = snapshot.features ?? {};
   const rows = currentRelations(snapshot, now);
-  const [detail, ukDetail] = await Promise.all(
-    ['USA', 'GBR'].map((country) =>
+  const [detail, ukDetail, chinaDetail] = await Promise.all(
+    ['USA', 'GBR', 'CHN'].map((country) =>
       getDetail(country, 'diplomacy').catch(() => null),
     ),
   );
   const usaDetails = currentRelations(detail ?? {}, now);
   const ukDetails = currentRelations(ukDetail ?? {}, now);
   const checks = [];
-  const add = (id, expected, found, source, pass) =>
+  const add = (id, expected, found, source, pass, date = checkedOn) =>
     checks.push({
       id: 'relations-' + id,
       expected,
       found,
       source,
-      checkedOn,
+      checkedOn: date,
       pass,
     });
   const rivalryRows = rows.filter(
@@ -113,6 +114,77 @@ export default async function checkRelations({ board, getDetail }) {
       Boolean(board) && found.length === 0,
     );
   }
+  for (const [from, to, reason, sources] of followUp.exclusions) {
+    const found = relationsBetween(from, to, rivalryRows);
+    const mapClass = classifyDiplomacy(from, to, rows, now);
+    add(
+      'rivalry-exclusion-' + from + '-' + to,
+      { mapClass: 'Any class except rival', reason },
+      { rows: found, mapClass },
+      [expectations.dataset, ...sources],
+      Boolean(board) && found.length === 0 && mapClass !== 'rival',
+      followUp.checkedOn,
+    );
+  }
+  const pact = rows.find(({ id }) => id === 'rel_makkah');
+  const makkah = followUp.makkah;
+  const pactClasses = Object.fromEntries(
+    makkah.participants.flatMap((a, i) =>
+      makkah.participants
+        .slice(i + 1)
+        .map((b) => [pairKey(a, b), classifyDiplomacy(a, b, rows, now)]),
+    ),
+  );
+  add(
+    'makkah-defence-pact',
+    {
+      parties: makkah.participants,
+      signed: makkah.signedOn,
+      ratifiedByTurkiye: makkah.ratifiedOn,
+      mapClass: 'ally for each pair',
+    },
+    { pact, mapClasses: pactClasses },
+    makkah.sources,
+    pact?.type === 'defence_pact' &&
+      pact.start === makkah.signedOn &&
+      pact.startBasis === 'signed' &&
+      pact.detail?.includes(makkah.ratifiedOn) &&
+      [...(pact.participants ?? [])].sort().join() ===
+        [...makkah.participants].sort().join() &&
+      makkah.sources.every((source) => pact.sources?.includes(source)) &&
+      Object.values(pactClasses).every((type) => type === 'ally'),
+    followUp.checkedOn,
+  );
+  const chinaSupport = followUp.chinaSupport;
+  const carRows = currentRelations(chinaDetail ?? {}, now).filter(
+    ({ type, from, to }) =>
+      type === 'support_to_party' && from === 'CHN' && to === 'CAF',
+  );
+  add(
+    'china-car-support-grouped',
+    {
+      rows: 1,
+      party: chinaSupport.party,
+      dyadIds: chinaSupport.dyadIds,
+      mission: chinaSupport.mission,
+    },
+    carRows.map((row) => ({
+      party: row.toLabel,
+      dyadIds: row.dyadIds,
+      mission: row.unMission,
+      cue: supportDyadSummary(row),
+    })),
+    chinaSupport.sources,
+    chinaDetail
+      ? carRows.length === 1 &&
+          carRows[0].toLabel === chinaSupport.party &&
+          [...(carRows[0].dyadIds ?? [])].sort().join() ===
+            chinaSupport.dyadIds.join() &&
+          carRows[0].unMission === chinaSupport.mission &&
+          carRows[0].sources?.includes(chinaSupport.sources[0])
+      : null,
+    followUp.checkedOn,
+  );
   const natoRow = rows.find(({ id }) => id === 'rel_nato');
   const greekCitation = expectations.rivalries
     .find(([from, to]) => from === 'GRC' && to === 'TUR')
@@ -149,6 +221,8 @@ export default async function checkRelations({ board, getDetail }) {
       configured: expectedRivalryPairs,
       round3Configured: round3.configuredRivalries,
       round3Painted: round3.paintedRivals,
+      round4Configured: followUp.round4.configuredRivalries,
+      round4Painted: followUp.round4.paintedRivals,
     },
     {
       configured: rivalryRows.length,

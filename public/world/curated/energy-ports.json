@@ -913,6 +913,51 @@
     {
       "iso": "IDN",
       "direction": "import",
+      "product": "crude oil",
+      "port": "Cilacap Refinery Terminal",
+      "coordinates": [
+        108.99,
+        -7.75
+      ],
+      "sourceUrl": "https://piep.pertamina.com/id/berita/buktikan-komitmen-ketahanan-energi-pertamina-bawa-pulang-minyak-mentah-dari-lapangan-aljazair",
+      "checkedAt": "2026-11-11",
+      "reviewed": false,
+      "share": null,
+      "note": "Pertamina documents reception of an imported crude cargo at Cilacap Refinery Unit IV in 2026. Representative Java terminal for crude, with no national throughput split assumed."
+    },
+    {
+      "iso": "IDN",
+      "direction": "import",
+      "product": "refined products",
+      "port": "Tanjung Priok Fuel Terminal",
+      "coordinates": [
+        106.89,
+        -6.1
+      ],
+      "sourceUrl": "https://www.vopak.com/newsroom/news/first-independent-import-terminal-oil-products-jakarta-indonesia-opened?language_content_entity=en",
+      "checkedAt": "2026-11-11",
+      "reviewed": false,
+      "share": null,
+      "note": "Vopak identifies its Tanjung Priok facility as a petroleum products import terminal. Representative Java terminal, with no national throughput split assumed."
+    },
+    {
+      "iso": "IDN",
+      "direction": "import",
+      "product": "coal",
+      "port": "Cigading Coal Terminal",
+      "coordinates": [
+        105.96,
+        -6.01
+      ],
+      "sourceUrl": "https://www.krakatauinternationalport.co.id/en/coal-terminal",
+      "checkedAt": "2026-11-11",
+      "reviewed": false,
+      "share": null,
+      "note": "Krakatau International Port documents dedicated coal loading and unloading at Cigading. Representative Java terminal, with no national throughput split assumed."
+    },
+    {
+      "iso": "IDN",
+      "direction": "import",
       "product": "lng",
       "port": "West Java LNG",
       "coordinates": [

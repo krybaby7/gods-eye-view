@@ -1,4 +1,5 @@
 import { TextDecoder } from 'node:util';
+import supportMissions from '../../../../public/world/curated/ucdp-support-missions.json' with { type: 'json' };
 import { makeRelation, relationResult } from '../relations.js';
 import { columnIndices, csvRows } from './csv.js';
 import { downloadWorldFile } from './download.js';
@@ -13,7 +14,7 @@ const URLS = [
 const LIMIT = 10_000_000;
 export const estimatedBytes = 100_000;
 export const requestHost = 'ucdp.uu.se';
-export const version = 2;
+export const version = 3;
 export const downloadUrls = () => URLS;
 const DATASET = 'https://ucdp.uu.se/downloads/#armedconflict';
 const HOUTHI = 'Government of Yemen (North Yemen)';
@@ -105,6 +106,7 @@ export function ucdpRelations(conflictCsv, dyadCsv, countries) {
       );
   }
   const result = [];
+  const support = new Map();
   for (const [
     id,
     conflict,
@@ -168,14 +170,46 @@ export function ucdpRelations(conflictCsv, dyadCsv, countries) {
         sourceVersion: RELEASE,
       }),
     );
-    for (const [label, codes, party, partyLabel, direction] of [
-      [supportA, gwSupportA, from, a, 'a'],
-      [supportB, gwSupportB, to, b, 'b'],
+    for (const [label, codes, party, partyLabel, partyId, direction] of [
+      [supportA, gwSupportA, from, a, aId, 'a'],
+      [supportB, gwSupportB, to, b, bId, 'b'],
     ]) {
       if (!label) continue;
+      // UCDP identifies mission contributors in its conflict narrative. The
+      // annual CSV lists all secondary supporters without their support reason.
+      const mission = supportMissions.find(
+        (row) =>
+          row.release === RELEASE &&
+          row.year === year &&
+          row.conflictId === conflict &&
+          row.supportedParty === party.actor,
+      );
+      const identity = party.actor.startsWith('ucdp:side:')
+        ? 'coalition:' + (partyId || partyLabel)
+        : party.actor;
+      const end = episodes.get(conflict);
       for (const supporter of side(label, id, codes, names, id, direction)
         .actors) {
-        result.push(
+        const missionSupport =
+          mission && !mission.otherSupporters.includes(supporter);
+        const unMission = missionSupport ? mission.mission : undefined;
+        const key = supporter + ':' + identity;
+        const existing = support.get(key);
+        if (existing) {
+          if (!existing.dyadIds.includes(id)) existing.dyadIds.push(id);
+          if (end === null || (existing.end !== null && end > existing.end))
+            existing.end = end;
+          if (existing.unMission !== unMission) {
+            delete existing.unMission;
+            delete existing.dateChecked;
+            delete existing.reviewed;
+          }
+          if (missionSupport && !existing.sources.includes(mission.source))
+            existing.sources.push(mission.source);
+          continue;
+        }
+        support.set(
+          key,
           makeRelation({
             id: 'rel_ucdp_support_' + id + '_' + direction + '_' + supporter,
             type: 'support_to_party',
@@ -188,14 +222,18 @@ export function ucdpRelations(conflictCsv, dyadCsv, countries) {
                 ? 'Houthi movement (' + HOUTHI + ')'
                 : partyLabel,
             period: year,
-            end: episodes.get(conflict),
+            end,
+            dyadIds: [id],
+            ...(missionSupport && {
+              unMission,
+              dateChecked: mission.dateChecked,
+              reviewed: mission.reviewed,
+            }),
             detail:
               'UCDP ' +
               year +
-              ' records the state as a secondary warring party supporting this side of dyad ' +
-              id +
-              '.',
-            sources: [DATASET],
+              ' records the state as a secondary warring party supporting this side.',
+            sources: missionSupport ? [DATASET, mission.source] : [DATASET],
             sourceVersion: RELEASE,
           }),
         );
@@ -204,7 +242,7 @@ export function ucdpRelations(conflictCsv, dyadCsv, countries) {
   }
   if (!result.length)
     throw new Error('No UCDP dyads found in the expected annual release');
-  return result;
+  return [...result, ...support.values()];
 }
 
 export function shouldCheck(context) {
@@ -263,5 +301,6 @@ export async function fetchObservations({
     'UCDP',
   );
   result.data.sourceVersion = RELEASE;
+  if (first.reused && second.reused) result.checkedRelease = false;
   return result;
 }

@@ -3,6 +3,184 @@ import test from 'node:test';
 
 const now = new Date('2026-11-10T09:00:00Z');
 
+test('matches transliterations and regnal styles while retaining the Wikidata identity', async () => {
+  const { mergeOfficeholders } = await import('../officeholders.js');
+  for (const [name, other] of [
+    ['Mohammed Bin Zayed Al Nahyan', 'Sheikh Muhammad bin Zayid Al Nuhayyan'],
+    ['Salman bin Abdulaziz Al Saud', 'King Salman bin Abd al-Aziz Al Saud'],
+    [
+      'Mohammed bin Abdulrahman Al Thani',
+      'Muhammad bin Abd el-Rahman Al Thani',
+    ],
+    ['Kassym-Jomart Tokayev', 'Kasym-Zhomart Tokayev'],
+    ['Alexander Lukashenka', 'Alyaksandr Lukashenka'],
+    ['Abdel Fattah el-Sisi', 'Abdelfattah Elsisi'],
+    ['Philippe of Belgium', 'King Philippe'],
+    ['Felipe VI of Spain', 'King Felipe VI'],
+  ]) {
+    const wd = wikidata('ARG', name, 'Q1', '2020-01-01');
+    const cia = {
+      ...wd,
+      id: 'cia-1',
+      name: other,
+      source: 'cia-world-leaders',
+      asOf: '2026-08-01',
+    };
+    const [actor] = mergeOfficeholders([wd], [cia], now);
+    assert.equal(actor.name, name);
+    assert.equal(actor.disagreement, undefined);
+    assert.equal(actor.imageFile, 'portrait.jpg');
+    assert.equal(actor.otherEvidence[0].name, other);
+  }
+});
+
+test('the first patronymic given name must match and regnal numerals stay distinct', async () => {
+  const { personNameMatch } = await import('../personIdentity.js');
+  for (const [name, other] of [
+    [
+      'Hamdan bin Mohammed bin Rashid Al Maktoum',
+      'Mohammed bin Rashid Al Maktoum',
+    ],
+    ['Theyazin bin Haitham bin Tariq Al Said', 'Haitham bin Tariq Al Said'],
+    ['Juan Carlos I of Spain', 'Juan Carlos II'],
+  ]) {
+    assert.equal(personNameMatch(name, other), null);
+    assert.equal(personNameMatch(other, name), null);
+  }
+  assert.equal(
+    personNameMatch(
+      'Sheikh Hamdan bin Mohammed bin Rashid Al Maktoum',
+      'Hamdan Al Maktoum',
+    ),
+    'tokens',
+  );
+  assert.equal(
+    personNameMatch('Mohamed Salem Ould Merzoug', 'Mohamed Salem Merzoug'),
+    'tokens',
+  );
+});
+
+test('displays the corroborated English article title or alias if the item label disagrees', async () => {
+  const { mergeOfficeholders } = await import('../officeholders.js');
+  for (const [name, other, names, expected] of [
+    [
+      'Hugo Chávez',
+      'Mark Phillips',
+      { articleTitle: 'Mark Phillips' },
+      'Mark Phillips',
+    ],
+    [
+      'Isaac Herzog',
+      'Yitzhak Herzog',
+      { aliases: ['Yitzhak Herzog'] },
+      'Yitzhak Herzog',
+    ],
+    [
+      'Bongbong Marcos',
+      'Ferdinand Marcos, Jr.',
+      { aliases: ['Ferdinand Romualdez Marcos Jr.'] },
+      'Ferdinand Romualdez Marcos Jr.',
+    ],
+  ]) {
+    const wd = wikidata('ARG', name, 'Q1', '2020-01-01', names);
+    const cia = {
+      ...wd,
+      id: 'cia-1',
+      name: other,
+      aliases: undefined,
+      articleTitle: undefined,
+      source: 'cia-world-leaders',
+      asOf: '2026-08-01',
+    };
+    const [actor] = mergeOfficeholders([wd], [cia], now);
+    assert.equal(actor.name, expected);
+    assert.equal(actor.disagreement, undefined);
+    assert.equal(actor.id, 'Q1');
+    assert.equal(actor.imageFile, 'portrait.jpg');
+    assert.equal(actor.otherEvidence[0].name, other);
+  }
+});
+
+test('accepts a foreign minister of state only when the page has no other foreign-affairs title', async () => {
+  const { parseCiaPage, resolveCiaPage } =
+    await import('./cia-world-leaders.js');
+  const minister = {
+    title:
+      'Min. of State of Foreign Affairs, International Cooperation, & Francophonie',
+    name: 'Therese KAYIKWAMBA Wagner',
+  };
+  const congo = resolveCiaPage(
+    parseCiaPage(
+      page('Congo, Democratic Republic of the', '2026-08-06', [minister]),
+      'congo-democratic-republic-of-the',
+    ),
+    { countries: [{ iso3: 'COD', name: 'Democratic Republic of the Congo' }] },
+  );
+  assert.deepEqual(
+    congo.map(({ name, role }) => [name, role]),
+    [['Therese Kayikwamba Wagner', 'foreign-minister']],
+  );
+  const registry = { countries: [{ iso3: 'JOR', name: 'Jordan' }] };
+  const resolve = (leaders) =>
+    resolveCiaPage(
+      {
+        country: 'Jordan',
+        slug: 'jordan',
+        asOf: '2026-08-06',
+        leaders,
+      },
+      registry,
+    );
+  const deputy = {
+    title: 'Dep. Prime Min. and Min. of Foreign Affairs & Expatriates',
+    name: 'Ayman al-SAFADI',
+  };
+  const state = {
+    title: 'Minister of State for Foreign Affairs',
+    name: 'Nancy NAMROQAH',
+  };
+  const defence = {
+    title: 'Dep. Prime Min. and Min. of Defense',
+    name: 'Defence Holder',
+  };
+  assert.deepEqual(
+    resolve([state, deputy, defence]).map(({ name, role }) => [name, role]),
+    [
+      ['Ayman al-Safadi', 'foreign-minister'],
+      ['Defence Holder', 'defence-minister'],
+    ],
+  );
+  assert.deepEqual(resolve([state, minister]), []);
+  assert.deepEqual(
+    resolve([
+      state,
+      { title: 'Deputy Minister of Foreign Affairs', name: 'Deputy Holder' },
+    ]),
+    [],
+  );
+});
+
+test('title cases CIA particles and surnames with ordinary Mac and Mc spellings', async () => {
+  const cia = await actorsOf(
+    page('Argentina', '2026-08-06', [
+      { title: 'Pres.', name: 'Francisco Perez MACKENNA' },
+      { title: 'Prime Min.', name: 'Mohamed MCHENGERWA' },
+      { title: 'Min. of Foreign Affairs', name: 'Luigi DI MAIO' },
+      { title: 'Min. of Defense', name: 'H. DE LE DA Test' },
+    ]),
+    'argentina',
+  );
+  assert.deepEqual(
+    [...new Set(cia.map(({ name }) => name))],
+    [
+      'Francisco Perez Mackenna',
+      'Mohamed Mchengerwa',
+      'Luigi Di Maio',
+      'H. De Le Da Test',
+    ],
+  );
+});
+
 test('prefers the plain title over a separately numbered ministry', async () => {
   const { mergeOfficeholders } = await import('../officeholders.js');
   const leaders = [
@@ -55,6 +233,47 @@ test('a CIA confirmation refreshes a matching collective member without replacin
   assert.equal(actor.otherEvidence[0].asOf, '2026-09-10');
 });
 
+test('uses an undated Wikidata identity only for a CIA-confirmed UAE vice president', async () => {
+  const { mergeOfficeholders } = await import('../officeholders.js');
+  const role = 'vice-president';
+  const dated = wikidata(
+    'ARE',
+    'Mohammed bin Rashid Al Maktoum',
+    'Q57655',
+    '2006-01-05',
+    { role },
+  );
+  const undated = wikidata(
+    'ARE',
+    'Mansour bin Zayed Al Nahyan',
+    'Q556607',
+    null,
+    { role },
+  );
+  const unmatched = wikidata('ARE', 'Unconfirmed Officeholder', 'Q7', null, {
+    role,
+  });
+  const cia = [dated, undated].map((actor, index) => ({
+    ...actor,
+    id: 'cia-' + index,
+    name: ['Muhammad Bin Rashid Al Maktum', 'Mansur bin Zayid Al Nuhayyan'][
+      index
+    ],
+    since: undefined,
+    imageFile: undefined,
+    source: 'cia-world-leaders',
+    asOf: '2025-06-25',
+  }));
+  const holders = mergeOfficeholders([dated], cia, now, [undated, unmatched]);
+  assert.deepEqual(
+    holders.map(({ id }) => id),
+    ['Q57655', 'Q556607'],
+  );
+  assert.equal(holders[1].name, 'Mansour bin Zayed Al Nahyan');
+  assert.equal(holders[1].source, 'cia-world-leaders');
+  assert.equal(holders[1].imageFile, 'portrait.jpg');
+});
+
 test('preserves the CIA spelling and corroborates a cited multi-edit transliteration', async () => {
   const { parseCiaPage, resolveCiaPage } =
     await import('./cia-world-leaders.js');
@@ -74,6 +293,50 @@ test('preserves the CIA spelling and corroborates a cited multi-edit translitera
   assert.equal(actor.id, 'Q43723');
   assert.equal(actor.disagreement, undefined);
   assert.equal(actor.otherEvidence[0].name, 'Binyamin Netanyahu');
+});
+
+test('corroborates the Hebrew and English forms of the Israeli president’s name', async () => {
+  const { resolveCiaPage } = await import('./cia-world-leaders.js');
+  const { mergeOfficeholders } = await import('../officeholders.js');
+  const cia = resolveCiaPage(
+    {
+      country: 'Israel',
+      slug: 'israel',
+      asOf: '2026-08-06',
+      leaders: [{ name: 'Yitzhak HERZOG', title: 'Pres.' }],
+    },
+    { countries: [{ iso3: 'ISR', name: 'Israel' }] },
+  );
+  const wd = wikidata('ISR', 'Isaac Herzog', 'Q983258', '2021-07-07', {
+    role: 'head-of-state',
+  });
+  const [actor] = mergeOfficeholders([wd], cia, now);
+  assert.equal(actor.name, 'Isaac Herzog');
+  assert.equal(actor.otherEvidence[0].name, 'Yitzhak Herzog');
+  assert.equal(actor.disagreement, undefined);
+});
+
+test('corroborates the official English article title for Thailand’s king', async () => {
+  const { resolveCiaPage } = await import('./cia-world-leaders.js');
+  const { mergeOfficeholders } = await import('../officeholders.js');
+  const cia = resolveCiaPage(
+    {
+      country: 'Thailand',
+      slug: 'thailand',
+      asOf: '2026-04-07',
+      leaders: [{ name: 'WACHIRALONGKON', title: 'King' }],
+    },
+    { countries: [{ iso3: 'THA', name: 'Thailand' }] },
+  );
+  const wd = wikidata('THA', 'Rama X of Thailand', 'Q548733', '2016-10-13', {
+    role: 'head-of-state',
+    articleTitle: 'Vajiralongkorn',
+  });
+  const [actor] = mergeOfficeholders([wd], cia, now);
+  assert.equal(actor.name, 'Vajiralongkorn');
+  assert.equal(actor.id, 'Q548733');
+  assert.equal(actor.otherEvidence[0].name, 'Wachiralongkon');
+  assert.equal(actor.disagreement, undefined);
 });
 
 test('corroborates abbreviated and one-edit names while retaining Wikidata identity', async () => {
