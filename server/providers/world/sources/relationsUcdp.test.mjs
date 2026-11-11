@@ -57,6 +57,49 @@ test('keeps the Houthi actor separate from Yemen and records secondary support o
   assert.deepEqual([rows[1].from, rows[1].to], ['USA', 'PAK']);
 });
 
+test('groups distinct dyads by supporter and supported party and attributes MINUSCA selectively', () => {
+  const rows = ucdpRelations(
+    conflict + '\n416,2025,0,,,26.1',
+    [
+      'dyad_id,' + header,
+      '16562,416,Central African Republic,Government of Central African Republic,86,CPC,7870,2025,1,4,2020-12-25,1,482,,"Government of China, Government of Russia (Soviet Union)",,"710,365",',
+      '18287,416,Central African Republic,Government of Central African Republic,86,CMSPR,9360,2025,1,4,2025-12-03,1,482,,"Government of China, Government of Russia (Soviet Union)",,"710,365",',
+      '300,10,Pakistan,Government of Pakistan,1,Armed Group,12,2025,1,4,2025-01-01,3,770,,Government of China,,710,',
+    ].join('\n'),
+    [
+      ...countries,
+      country('CHN', 'China'),
+      country('CAF', 'Central African Republic'),
+      country('RUS', 'Russia'),
+    ],
+  );
+  const support = rows.filter(({ type }) => type === 'support_to_party');
+  assert.deepEqual(
+    support.map(({ from, to, dyadIds, unMission }) => ({
+      from,
+      to,
+      dyadIds,
+      unMission,
+    })),
+    [
+      {
+        from: 'CHN',
+        to: 'CAF',
+        dyadIds: ['16562', '18287'],
+        unMission: 'MINUSCA',
+      },
+      {
+        from: 'RUS',
+        to: 'CAF',
+        dyadIds: ['16562', '18287'],
+        unMission: undefined,
+      },
+      { from: 'CHN', to: 'PAK', dyadIds: ['300'], unMission: undefined },
+    ],
+  );
+  assert.ok(support[0].sources.includes('https://ucdp.uu.se/country/482'));
+});
+
 test('UCDP relations reuses both versioned ZIPs and reports aggregate bytes', async (t) => {
   const cacheDirectory = await mkdtemp(join(tmpdir(), 'world-ucdp-relations-'));
   t.after(() => rm(cacheDirectory, { recursive: true, force: true }));
@@ -81,6 +124,8 @@ test('UCDP relations reuses both versioned ZIPs and reports aggregate bytes', as
   const first = await fetchObservations(context);
   const second = await fetchObservations(context);
   assert.deepEqual(first.data, second.data);
+  assert.notEqual(first.checkedRelease, false);
+  assert.equal(second.checkedRelease, false);
   assert.equal(requests.length, 2);
   assert.equal(progress.at(-1)?.bytes, files[0].length + files[1].length);
 });

@@ -348,6 +348,28 @@
     "reviewed": false
   },
   {
+    "id": "rel_makkah",
+    "type": "defence_pact",
+    "from": "MAKKAH",
+    "to": "MAKKAH",
+    "directed": false,
+    "start": "2026-08-07",
+    "end": null,
+    "detail": "Saudi Arabia, Türkiye and Pakistan signed the agreement on 7 August 2026. Türkiye's parliament ratified it on 5 November 2026.",
+    "conditions": "The collective defence clause treats an armed attack on any party as an attack on all three.",
+    "sources": [
+      "https://www.iletisim.gov.tr/english/Haberler/detay/turkiye-and-saudi-arabia-sign-a-joint-defence-agreement",
+      "https://www.aljazeera.com/news/2026/11/6/turkiyes-parliament-ratifies-mecca-defence-agreement",
+      "https://www.hurriyetdailynews.com/parliament-approves-defense-pact-with-saudi-arabia-and-pakistan-229079"
+    ],
+    "evidence": "documented",
+    "instrument": "Makkah Joint Defence Agreement",
+    "participants": ["SAU", "TUR", "PAK"],
+    "startBasis": "signed",
+    "dateChecked": "2026-11-11",
+    "reviewed": false
+  },
+  {
     "id": "rel_five-power-defence-arrangements",
     "type": "defence_cooperation",
     "from": "FPDA",

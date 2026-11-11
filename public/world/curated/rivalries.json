@@ -363,24 +363,6 @@
     "reviewed": false
   },
   {
-    "id": "rel_rivalry_gab_gnq",
-    "type": "rivalry",
-    "from": "GNQ",
-    "to": "GAB",
-    "directed": false,
-    "start": "1972",
-    "end": null,
-    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The 2025 ICJ judgment identified the legal titles for the border and islands. The parties signed a 2026 engagement agreement to implement it, while final delimitation remains a separate step.",
-    "sources": [
-      "https://www.kentarosakuwa.info/data.html",
-      "https://api.icj-cij.org/sites/default/files/case-related/179/179-20250519-jud-01-00-en.pdf",
-      "https://www.au.int/en/pressrelease/auc-chairperson-welcomes-signing-joint-engagement-agreement-between-republic"
-    ],
-    "evidence": "strategic-rivalry-dataset",
-    "dateChecked": "2026-11-10",
-    "reviewed": false
-  },
-  {
     "id": "rel_rivalry_irn_sau",
     "type": "rivalry",
     "from": "IRN",
@@ -493,37 +475,6 @@
     "sources": [
       "https://www.kentarosakuwa.info/data.html",
       "https://www.un.org/en/about-us/member-states/yugoslavia"
-    ],
-    "evidence": "strategic-rivalry-dataset",
-    "dateChecked": "2026-11-10",
-    "reviewed": false
-  },
-  {
-    "id": "rel_rivalry_eri_sdn",
-    "type": "rivalry",
-    "from": "ERI",
-    "to": "SDN",
-    "directed": false,
-    "start": "1993",
-    "end": null,
-    "detail": "Strategic rivalry ongoing at 2020, per the dataset.",
-    "sources": ["https://www.kentarosakuwa.info/data.html"],
-    "evidence": "strategic-rivalry-dataset",
-    "dateChecked": "2026-11-10",
-    "reviewed": false
-  },
-  {
-    "id": "rel_rivalry_qat_sau",
-    "type": "rivalry",
-    "from": "QAT",
-    "to": "SAU",
-    "directed": false,
-    "start": "1995",
-    "end": null,
-    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The Al-Ula Declaration ended the 2017 Gulf crisis. The dataset dates this wider rivalry to 1995.",
-    "sources": [
-      "https://www.kentarosakuwa.info/data.html",
-      "https://www.gco.gov.qa/en/media-centre/in-focus/gcc-crisis/"
     ],
     "evidence": "strategic-rivalry-dataset",
     "dateChecked": "2026-11-10",
@@ -721,54 +672,6 @@
     "reviewed": false
   },
   {
-    "id": "rel_rivalry_sau_syr",
-    "type": "rivalry",
-    "from": "SAU",
-    "to": "SYR",
-    "directed": false,
-    "start": "2011",
-    "end": null,
-    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The Saudi and Qatari governments worked with the new Syrian government on reconstruction support in 2025.",
-    "sources": [
-      "https://www.kentarosakuwa.info/data.html",
-      "https://mofa.gov.qa/en/latest-articles/statements/qatar--syria-issue-joint-statement"
-    ],
-    "evidence": "strategic-rivalry-dataset",
-    "dateChecked": "2026-11-10",
-    "reviewed": false
-  },
-  {
-    "id": "rel_rivalry_syr_tur",
-    "type": "rivalry",
-    "from": "SYR",
-    "to": "TUR",
-    "directed": false,
-    "start": "2011",
-    "end": null,
-    "detail": "Strategic rivalry ongoing at 2020, per the dataset.",
-    "sources": ["https://www.kentarosakuwa.info/data.html"],
-    "evidence": "strategic-rivalry-dataset",
-    "dateChecked": "2026-11-10",
-    "reviewed": false
-  },
-  {
-    "id": "rel_rivalry_are_qat",
-    "type": "rivalry",
-    "from": "QAT",
-    "to": "ARE",
-    "directed": false,
-    "start": "2011",
-    "end": null,
-    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Al-Ula was followed by a 2023 restoration of diplomatic representation. The dataset dates this wider rivalry to 2011.",
-    "sources": [
-      "https://www.kentarosakuwa.info/data.html",
-      "https://www.mofa.gov.ae/en/mediahub/news/2023/6/19/19-6-2023-uae-qatar"
-    ],
-    "evidence": "strategic-rivalry-dataset",
-    "dateChecked": "2026-11-10",
-    "reviewed": false
-  },
-  {
     "id": "rel_rivalry_irn_yem",
     "type": "rivalry",
     "from": "IRN",
@@ -801,41 +704,6 @@
     "reviewed": false
   },
   {
-    "id": "rel_rivalry_egy_tur",
-    "type": "rivalry",
-    "from": "EGY",
-    "to": "TUR",
-    "directed": false,
-    "start": "2013",
-    "end": null,
-    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Türkiye and Egypt restored ambassador-level ties in 2023 and signed a cooperation declaration in 2024.",
-    "sources": [
-      "https://www.kentarosakuwa.info/data.html",
-      "https://www.mfa.gov.tr/no_-164_-turkiye-misir--ortak--aciklamasi.en.mfa",
-      "https://www.iletisim.gov.tr/English/haberler/detay/turkiye-and-egypt-sign-joint-declaration-on-cooperation"
-    ],
-    "evidence": "strategic-rivalry-dataset",
-    "dateChecked": "2026-11-10",
-    "reviewed": false
-  },
-  {
-    "id": "rel_rivalry_egy_qat",
-    "type": "rivalry",
-    "from": "EGY",
-    "to": "QAT",
-    "directed": false,
-    "start": "2013",
-    "end": null,
-    "detail": "Strategic rivalry ongoing at 2020, per the dataset. The Al-Ula Declaration ended the 2017 Gulf crisis. The dataset dates this rivalry to 2013.",
-    "sources": [
-      "https://www.kentarosakuwa.info/data.html",
-      "https://www.gco.gov.qa/en/media-centre/in-focus/gcc-crisis/"
-    ],
-    "evidence": "strategic-rivalry-dataset",
-    "dateChecked": "2026-11-10",
-    "reviewed": false
-  },
-  {
     "id": "rel_rivalry_ken_som",
     "type": "rivalry",
     "from": "KEN",
@@ -845,23 +713,6 @@
     "end": null,
     "detail": "Strategic rivalry ongoing at 2020, per the dataset.",
     "sources": ["https://www.kentarosakuwa.info/data.html"],
-    "evidence": "strategic-rivalry-dataset",
-    "dateChecked": "2026-11-10",
-    "reviewed": false
-  },
-  {
-    "id": "rel_rivalry_sau_tur",
-    "type": "rivalry",
-    "from": "SAU",
-    "to": "TUR",
-    "directed": false,
-    "start": "2013",
-    "end": null,
-    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Türkiye reports signing five cooperation agreements with Saudi Arabia in 2023.",
-    "sources": [
-      "https://www.kentarosakuwa.info/data.html",
-      "https://www.mfa.gov.tr/turkiye-suudi-arabistan-siyasi-iliskileri.tr.mfa"
-    ],
     "evidence": "strategic-rivalry-dataset",
     "dateChecked": "2026-11-10",
     "reviewed": false
@@ -881,24 +732,6 @@
     ],
     "evidence": "strategic-rivalry-and-current-hostility",
     "hostilityOn": "2026-11-09",
-    "dateChecked": "2026-11-10",
-    "reviewed": false
-  },
-  {
-    "id": "rel_rivalry_bhr_qat",
-    "type": "rivalry",
-    "from": "BHR",
-    "to": "QAT",
-    "directed": false,
-    "start": "2014",
-    "end": null,
-    "detail": "Strategic rivalry ongoing at 2020, per the dataset. Al-Ula ended the Gulf crisis. The bilateral committee still reported pending issues in 2023.",
-    "sources": [
-      "https://www.kentarosakuwa.info/data.html",
-      "https://mofa.gov.qa/en/qatar/latest-articles/latest-news/details/1444/07/22/qatari-bahraini-follow-up-committee-holds-first-meeting-in-riyadh",
-      "https://www.gco.gov.qa/en/media-centre/in-focus/gcc-crisis/"
-    ],
-    "evidence": "strategic-rivalry-dataset",
     "dateChecked": "2026-11-10",
     "reviewed": false
   },

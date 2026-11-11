@@ -3,6 +3,7 @@ import {
   currentRelations,
   isDocumentedRivalry,
   relationPeers,
+  supportDyadSummary,
 } from '../layers/world/relations.js';
 
 function section(document, label, rows, openCard, name, peers) {
@@ -67,6 +68,8 @@ function relationsTab({ document, snapshot, sheetModel, openCard }) {
       row.from === selected || row.fromActors?.includes(selected)
         ? row.toLabel
         : row.fromLabel;
+    const support = supportDyadSummary(row);
+    if (support) return (opposingSide ?? other) + ' · ' + support;
     if (row.type === 'un_alignment') {
       return (
         'UN voting closeness: ' +
