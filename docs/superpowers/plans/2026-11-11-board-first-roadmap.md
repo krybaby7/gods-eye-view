@@ -1,7 +1,7 @@
 # Board-first app: roadmap from World Board feature to finished product
 
 Date: 2026-11-11. Status: direction agreed with the owner on 2026-11-11 (section 5); nothing is
-built. Decisions 7 to 24, section 8.1 and section 9 were added the same day, after a second review
+built. Decisions 7 to 25, section 8.1 and section 9 were added the same day, after a second review
 on the owner's machine with live data, and stage 3 was rewritten to follow them. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
@@ -159,21 +159,22 @@ from a menu.
 
 ### 3.2 Words
 
-| Word       | Meaning                                                                                                                                           |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Board      | The home view: the globe with countries coloured by a lens.                                                                                       |
-| Lens       | What the country colours mean. The word stays with the board, where Civilization uses it too.                                                     |
-| Layer      | Something live or mapped drawn on the globe: flights, ships, earthquakes, cables.                                                                 |
-| Preset     | A named group of layers switched together. New name for today's Air, Sea, Space, Conflict, Hazards, City and Signals buttons, ending the clash.   |
-| Sheet      | The right-hand panel for the selected thing.                                                                                                      |
-| Today      | The ranked list of current events on the left.                                                                                                    |
-| Situation  | An ongoing story with a place, actors and a history, such as a war or a blocked strait. Built from a War Monitor theater and its Situation Brief. |
-| Turn       | One refresh and its list of changes. Unchanged from the spec.                                                                                     |
-| Watchlist  | The countries and situations the owner follows. Their changes rank first in Today.                                                                |
-| Overview   | The home lens. The fill is Condition; marks on top show what is new.                                                                              |
-| Outlet     | A news publisher the app follows. It has three separate facts: where it is based, who owns it and who funds it.                                   |
-| Slant      | How an outlet leans toward a party in a situation, shown in four labelled kinds: documented, declared, observed and assessed.                     |
-| Allegation | An unconfirmed claim about who funds or controls an outlet, shown with who made it and never as a fact.                                           |
+| Word        | Meaning                                                                                                                                            |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Board       | The home view: the globe with countries coloured by a lens.                                                                                        |
+| Lens        | What the country colours mean. The word stays with the board, where Civilization uses it too.                                                      |
+| Layer       | Something live or mapped drawn on the globe: flights, ships, earthquakes, cables.                                                                  |
+| Preset      | A named group of layers switched together. New name for today's Air, Sea, Space, Conflict, Hazards, City and Signals buttons, ending the clash.    |
+| Sheet       | The right-hand panel for the selected thing.                                                                                                       |
+| Today       | The ranked list of current events on the left.                                                                                                     |
+| Situation   | An ongoing story with a place, actors and a history, such as a war or a blocked strait. Built from a War Monitor theater and its Situation Brief.  |
+| Turn        | One refresh and its list of changes. Unchanged from the spec.                                                                                      |
+| Watchlist   | The countries and situations the owner follows. Their changes rank first in Today.                                                                 |
+| Overview    | The home lens. The fill is Condition; marks on top show what is new.                                                                               |
+| Outlet      | A news publisher the app follows. It has three separate facts: where it is based, who owns it and who funds it.                                    |
+| Slant       | How an outlet leans toward a party in a situation, shown in four labelled kinds: documented, declared, observed and assessed.                      |
+| Allegation  | An unconfirmed claim about who funds or controls an outlet, shown with who made it and never as a fact.                                            |
+| Alert level | A four-step reading beside a Condition bar (calm, watch, strained, crisis), set by written rules from dated facts. It is where news acts on a bar. |
 
 ### 3.3 Rules
 
@@ -280,7 +281,9 @@ how long it will take and what is arriving.
 
 **2.6 Finish the scoring.** Review the 18 anchors and drop "draft" where they hold. Set critical
 thresholds. Give each area a second indicator, starting by replacing the S11 and S12
-placeholders. Rename what reads as jargon ("HP", "weakest bar", "draft anchors").
+placeholders. Rename what reads as jargon ("HP", "weakest bar", "draft anchors"). Decision 25
+widens this item for the six Condition bars: a basket of figures for each, a second reading
+against the country's own past, and an alert level with written rules. R10 comes first.
 
 Done when someone who has never seen the app can answer these five questions without the docs,
 with the owner watching: Which countries in one region are in the worst condition, and why? Who
@@ -406,6 +409,7 @@ below are the likeliest parts of it; which it absorbs is open (section 9.5).
 | R7   | The Telegram question left open in the World Board spec (section 13.5): its 2026 terms and War Monitor's collector.                                                                                                                                                                                                    | Before stage 3.7      |
 | R8   | Connection allowance. Raise the time Node allows each connection attempt, set once at server start. On the owner's connection the default fails sources that work (section 8.1). Then count again which sources deliver.                                                                                               | Before R2 is measured |
 | R9   | Source survey. Candidate news APIs, feeds, named YouTube channels and X accounts, each with its terms, its cost in money and in megabytes a day on the owner's connection, and the three outlet facts of decision 14. The owner reviews the list before it is adopted (decision 21).                                   | Before stage 3        |
+| R10  | Fast figures for the bars. For each Condition bar, the monthly, weekly or daily figures and the named trackers that exist, each with its coverage, its release rhythm and its terms (decision 25). This is the "live data sources" topic the owner set aside.                                                          | Before 2.6            |
 
 ## 5. Decisions (owner, 2026-11-11)
 
@@ -489,6 +493,15 @@ Added the same day, on how news is selected:
     shows are also how news is sorted and filtered.
 24. **Jev is tried for selection, and kept only if a test shows it works.** Jev is TypeSafe's
     decision model: it answers typed questions with probabilities and writes no text.
+
+Added the same day, on how a bar moves:
+
+25. **The Condition bars are rebuilt so that they can move honestly.** News and events never add
+    or remove points: the weights would be invented, and the countries the press watches most
+    would lose the most. Instead each bar becomes a small basket of figures of different speeds.
+    Each bar is read against the world and against the country's own past. A separate alert
+    level beside each bar is set by written rules from dated facts, and this is where news acts.
+    Fast judgements that named organisations already publish are shown under the issuer's name.
 
 ## 6. Risks
 
@@ -684,32 +697,35 @@ a decision in section 5 or is dropped.
 - **Hands.** The voice assistant has 32 actions that move the globe, such as flying to a place,
   switching layers and opening panels. None acts on the board yet.
 
-### 9.6 How a bar moves
+### 9.6 How a bar moves (decision 25)
 
-The owner asked on 2026-11-11 how a bar moves if news never moves it. Five of the six Condition
-bars rest on one figure published once a year; only Security, from conflict deaths, is monthly.
-All twelve Strength areas are yearly or slower. Proposed: a bar has three layers that look
-different, and each has its own way of moving.
+The owner asked on 2026-11-11 how a bar moves if news never moves it, and then whether a full
+rework would do better. Five of the six Condition bars rest on one figure published once a year;
+only Security, from conflict deaths, is monthly. All twelve Strength areas are yearly or slower.
+No design creates data: for Government, Services and Society nobody publishes a fast figure for
+every country. Decision 25 sets the direction. Still open:
 
-- **Measured, the solid bar.** It moves when its source publishes. To make it move more often,
-  a bar gets a faster figure where an open one exists: monthly consumer prices for Households
-  (already fetched for the inflation flag), monthly conflict deaths for Security (already used),
-  and the daily exchange rate for Fiscal, for the currencies the feed covers. Government,
-  Services and Society have no open monthly figure that covers the world, so they stay yearly.
-  This is item 2.6, a second indicator for each area, with the fast ones first.
-- **Status, marks on the bar.** Dated facts that switch on and off: a coup attempt, a currency
-  down 20% in a month, a red disaster alert and, once 3.8 is built, events taken from stories. In
-  a game these are status effects: the bar keeps its length and its state changes. The board
-  showed 108 of them on 2026-11-11. This is where news acts on a bar.
-- **Estimate, a dashed ghost beside the bar.** Where the figure probably is now, with a range, a
-  date and its sources, never replacing the measured value (spec rules 4 and 5). Two ways to make
-  one: a formula in code from faster figures where they exist; otherwise Claude's research on
-  request, one country at a time (stage 5). An estimate may cite news that was retrieved. A count
-  of stories may not move it, because a count measures attention, not what happened.
-- **Direction.** The server keeps every past value, so each bar can show whether it rose or fell
-  at its last release (2.1) without new data.
+- **What goes in each basket.** Known today: monthly consumer prices for Households (already
+  fetched for the inflation flag), monthly conflict deaths for Security (already used) and the
+  daily exchange rate for Fiscal, for the currencies the feed covers. The baskets of Government,
+  Services and Society stay slow, and their alert level carries the present. R10 finds the rest.
+- **How a basket is combined,** and how a bar shows the age of its newest figure.
+- **The second reading.** How far back "its own past" goes (five years is proposed), and whether
+  the sources' older values are fetched for it.
+- **The alert level.** Four steps are proposed: calm, watch, strained, crisis. The rules that
+  set each step for each bar are written and reviewed like the anchors, and each level says why
+  it is set. Proposed: an event taken from stories can raise a level only when the story is
+  corroborated.
+- **Named outside trackers.** Candidates to check for terms and coverage: a monthly reading of
+  conflict direction, food-crisis phases, and travel advisories from several governments. Each
+  is shown with its issuer, as any teller is.
+- **Estimates stay.** The spec's dashed ghost for a stale figure (rule 4, stage 5) is unchanged.
+- **The Strength areas stay yearly.** They describe capacity, which changes slowly.
 - **No overall bar.** The sheet's "HP" line is the weakest bar, not a total, and spec rule 10
   keeps a total out for now. Renaming that line is already in 2.6.
+- **The spec.** Decision 25 changes how the World Board spec defines an indicator, a bar's score
+  and the live condition flags (its sections 4.2, 4.5 and 8.3). It needs a dated revision before
+  2.6 is built.
 
 ## Appendix A: the original's ornament and tools
 
