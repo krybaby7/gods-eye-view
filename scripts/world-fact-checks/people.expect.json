@@ -128,6 +128,15 @@
         "source": "https://www.monarchie.be/en/royal-family/the-king"
       },
       {
+        "country": "THA",
+        "role": "head-of-state",
+        "name": "Maha Vajiralongkorn",
+        "aliases": ["Vajiralongkorn"],
+        "portrait": true,
+        "noDisagreement": true,
+        "source": "https://www.thaigov.go.th/en/news/162739"
+      },
+      {
         "country": "GUY",
         "role": "head-of-government",
         "name": "Mark Anthony Phillips",

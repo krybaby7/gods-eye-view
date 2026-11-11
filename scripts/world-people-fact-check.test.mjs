@@ -124,6 +124,13 @@ test('People keeps 30 countries and accepts only verified name variants with dat
     {
       country: 'PHL',
       role: 'head-of-state',
+      name: 'Ferdinand "Bongbong" Marcos Jr.',
+      source: 'wikidata',
+      asOf: '2026-11-11',
+    },
+    {
+      country: 'PHL',
+      role: 'head-of-government',
       name: 'Bongbong Marcos',
       source: 'wikidata',
       asOf: '2022-06-30',
@@ -148,6 +155,7 @@ test('People keeps 30 countries and accepts only verified name variants with dat
   for (const id of [
     'people-IND-defence-minister',
     'people-PHL-head-of-state',
+    'people-PHL-head-of-government',
     'people-JPN-defence-minister-dated',
   ]) {
     assert.equal(checks.find((check) => check.id === id)?.pass, true, id);

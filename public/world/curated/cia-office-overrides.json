@@ -20,6 +20,17 @@
         "checkedOn": "2026-11-10",
         "reviewed": false
       }
+    },
+    "THA": {
+      "wachiralongkon": {
+        "aliases": ["Vajiralongkorn"],
+        "sources": [
+          "https://www.cfe-dmha.org/LinkClick.aspx?fileticket=Lzww4BKKIIk%3D&portalid=0",
+          "https://www.thaigov.go.th/en/news/162739"
+        ],
+        "checkedOn": "2026-11-11",
+        "reviewed": false
+      }
     }
   },
   "countries": {

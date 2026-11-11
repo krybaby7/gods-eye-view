@@ -24,7 +24,9 @@
         "holders": 2,
         "label": "Vice Presidents of the United Arab Emirates"
       },
-      "source": "https://u.ae/about-the-uae/the-uae-government/the-president-and-his-deputy"
+      "source": "https://u.ae/about-the-uae/the-uae-government/the-president-and-his-deputy",
+      "checkedOn": "2026-11-11",
+      "reviewed": false
     },
     "USA": {
       "state": ["Q11696"],

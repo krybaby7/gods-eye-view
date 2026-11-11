@@ -316,6 +316,29 @@ test('corroborates the Hebrew and English forms of the Israeli president’s nam
   assert.equal(actor.disagreement, undefined);
 });
 
+test('corroborates the official English article title for Thailand’s king', async () => {
+  const { resolveCiaPage } = await import('./cia-world-leaders.js');
+  const { mergeOfficeholders } = await import('../officeholders.js');
+  const cia = resolveCiaPage(
+    {
+      country: 'Thailand',
+      slug: 'thailand',
+      asOf: '2026-04-07',
+      leaders: [{ name: 'WACHIRALONGKON', title: 'King' }],
+    },
+    { countries: [{ iso3: 'THA', name: 'Thailand' }] },
+  );
+  const wd = wikidata('THA', 'Rama X of Thailand', 'Q548733', '2016-10-13', {
+    role: 'head-of-state',
+    articleTitle: 'Vajiralongkorn',
+  });
+  const [actor] = mergeOfficeholders([wd], cia, now);
+  assert.equal(actor.name, 'Vajiralongkorn');
+  assert.equal(actor.id, 'Q548733');
+  assert.equal(actor.otherEvidence[0].name, 'Wachiralongkon');
+  assert.equal(actor.disagreement, undefined);
+});
+
 test('corroborates abbreviated and one-edit names while retaining Wikidata identity', async () => {
   const { mergeOfficeholders } = await import('../officeholders.js');
   for (const [wdName, ciaName] of [

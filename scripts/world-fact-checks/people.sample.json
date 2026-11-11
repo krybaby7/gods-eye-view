@@ -306,11 +306,23 @@
     "roles": {
       "head-of-state": {
         "name": "Ferdinand Marcos Jr.",
-        "aliases": ["Bongbong Marcos", "Ferdinand Romualdez Marcos Jr."]
+        "aliases": [
+          "Bongbong Marcos",
+          "Ferdinand Romualdez Marcos Jr.",
+          "Ferdinand Bongbong Marcos Jr."
+        ],
+        "checkedOn": "2026-11-11",
+        "source": "https://mirror.pco.gov.ph/wp-content/uploads/2025/05/20250528-Kapihan-with-the-Media-In-Malaysia-.pdf"
       },
       "head-of-government": {
         "name": "Ferdinand Marcos Jr.",
-        "aliases": ["Bongbong Marcos", "Ferdinand Romualdez Marcos Jr."]
+        "aliases": [
+          "Bongbong Marcos",
+          "Ferdinand Romualdez Marcos Jr.",
+          "Ferdinand Bongbong Marcos Jr."
+        ],
+        "checkedOn": "2026-11-11",
+        "source": "https://mirror.pco.gov.ph/wp-content/uploads/2025/05/20250528-Kapihan-with-the-Media-In-Malaysia-.pdf"
       },
       "foreign-minister": {
         "name": "Ma. Theresa Lazaro",
