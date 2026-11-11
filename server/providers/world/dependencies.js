@@ -49,7 +49,7 @@ const eia = {
 };
 
 const dependencies = {
-  version: 5,
+  version: 6,
   shouldCheck: ({ data, rederive }) =>
     rederive || data?.mode !== 'modelled' || !data.energyExposure,
   async fetchObservations() {

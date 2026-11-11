@@ -319,7 +319,7 @@ test('energy port resolution rejects missing routes and respects transit and mai
       ['unknown', 0.19],
     ],
   );
-  assert.equal(route('FRA', 'BRA', 'crude oil').mode, 'land'); // French Guiana
+  assert.notEqual(route('FRA', 'BRA', 'crude oil').mode, 'land'); // French Guiana
   assert.equal(route('MYS', 'IDN', 'crude oil').mode, 'unknown');
   assert.equal(route('FRA', 'DEU', 'crude oil').mode, 'land');
   assert.equal(route('MYS', 'THA', 'crude oil').mode, 'land');
@@ -422,6 +422,48 @@ test('a sourced land volume is retained while routing remaining bilateral crude 
   assert.deepEqual(model.exposure.CHN[0].shares, { all: 0.6, seaborne: 1 });
   assert.equal(model.importTonnes.CHN['crude oil'], 100);
   assert.equal(model.coverage.landFlows, 1);
+});
+
+test('bilateral port and passage shares use only the displayed seaborne volume', () => {
+  const model = buildEnergyModel(
+    [
+      {
+        provider: 'RUS',
+        dependent: 'CHN',
+        item: 'crude oil',
+        tonnes: 100,
+        landShare: 0.4,
+      },
+    ],
+    {
+      routeFor: () => [
+        {
+          share: 0.6,
+          mode: 'sea',
+          gates: [],
+          ports: ['Kozmino'],
+          coordinates: [],
+        },
+        {
+          share: 0.2,
+          mode: 'sea',
+          gates: ['chokepoint5'],
+          ports: ['Novorossiysk'],
+          coordinates: [],
+        },
+        { share: 0.2, mode: 'unknown' },
+      ],
+      references: [],
+    },
+  );
+  const [row] = model.rows;
+  assert.equal(row.volume.value, 48);
+  assert.deepEqual(
+    row.portSplits.map(({ share }) => share),
+    [0.75, 0.25],
+  );
+  assert.equal(row.gateShares.chokepoint5, 0.25);
+  assert.deepEqual(model.exposure.CHN[0].shares, { seaborne: 0.25, all: 0.12 });
 });
 
 test('a landlocked trade partner alone is insufficient evidence for land routing', async () => {
@@ -666,6 +708,14 @@ test('the rebuilt calibration carries source notes through the board and detail 
       (entry) => entry.routeId === 'dardanelles' && entry.commodity === 'oil',
     );
     assert.match(row.dataNote.text, /4\.8 Mt.*30 Mt/);
+    const malaccaLNG = calibration.find(
+      (entry) => entry.routeId === 'malacca' && entry.commodity === 'lng',
+    );
+    assert.equal(
+      malaccaLNG.dataNote?.text,
+      'US LNG to Asia is routed via Panama in this model. In 2024 much of it went round the Cape of Good Hope and through Malacca.',
+    );
+    assert.match(malaccaLNG.dataNote.sourceUrl, /^https:\/\/www\.shell\.com\//);
   }
 });
 
@@ -704,7 +754,7 @@ test('trivial-exporter fact compares each top-ten dependent with the whole gate 
   );
 });
 
-test('land borders use all polygons for crude and refined products', async () => {
+test('land borders only use touching polygons at least a third of each country’s largest', async () => {
   const { routesFor } =
     await import('../../../scripts/build-world-energy-model.mjs');
   const routes = routesFor({ features: [] }, { features: [] });
@@ -722,9 +772,42 @@ test('land borders use all polygons for crude and refined products', async () =>
       from + '/' + to,
     );
   }
+  for (const [from, to] of [
+    ['FRA', 'BRA'],
+    ['GBR', 'IRL'],
+    ['RUS', 'LTU'],
+    ['AGO', 'COG'],
+  ]) {
+    assert.equal(
+      routes.adjacent(from, to, 'refined products'),
+      false,
+      from + '/' + to,
+    );
+  }
 });
 
-test('manual Refresh replaces the cached round 3 Energy model', async () => {
+test('published Indonesian import routes use curated terminals on Java', () => {
+  const { rows, routePorts } = energyModel;
+  for (const [id, port] of [
+    ['SAU/IDN/crude oil', 'Cilacap Refinery Terminal'],
+    ['SGP/IDN/refined products', 'Tanjung Priok Fuel Terminal'],
+    ['USA/IDN/lng', 'West Java LNG'],
+    ['AUS/IDN/coal', 'Cigading Coal Terminal'],
+  ]) {
+    assert.equal(rows.find((row) => row.id === id)?.volume.value > 0, true, id);
+    assert.equal(routePorts[id]?.[1], port, id);
+  }
+});
+
+test('British refined products to Ireland appear as a seaborne route', () => {
+  const row = energyModel.rows.find(
+    ({ id }) => id === 'GBR/IRL/refined products',
+  );
+  assert.ok(row?.volume.value > 1.8e6);
+  assert.equal(energyModel.routePorts[row.id]?.length, 2);
+});
+
+test('manual Refresh replaces the cached round 4 Energy model', async () => {
   const { createWorldService } = await import('./index.js');
   const source = 'energy-dependencies';
   const oldModel = {
@@ -732,14 +815,14 @@ test('manual Refresh replaces the cached round 3 Energy model', async () => {
     period: '2024',
     rows: [],
     energyExposure: {},
-    calibration: [{ routeId: 'malacca', commodity: 'lng', modelled: 7.391 }],
+    calibration: [{ routeId: 'malacca', commodity: 'lng', modelled: 8.333 }],
   };
   let state = {
     board: { countries: {}, features: { [source]: oldModel } },
     observations: [],
     turns: [{ number: 1 }],
     lastCheckedAt: { [source]: '2026-11-10T12:00:00Z' },
-    sourceVersions: { [source]: 4 },
+    sourceVersions: { [source]: 5 },
   };
   let upstreamRequests = 0;
   const service = createWorldService({
@@ -771,6 +854,6 @@ test('manual Refresh replaces the cached round 3 Energy model', async () => {
     refreshed.features[source].calibration,
     energyModel.calibration,
   );
-  assert.equal(state.sourceVersions[source], 5);
+  assert.equal(state.sourceVersions[source], 6);
   assert.equal(upstreamRequests, 0);
 });

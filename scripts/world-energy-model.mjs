@@ -421,6 +421,7 @@ export function buildEnergyModel(flows, { routeFor, references }) {
       }
       const seaborne = [];
       const flowGates = {};
+      let seaTonnes = 0;
       for (const route of routes) {
         const share = route.share ?? 1;
         if (share <= 0) continue;
@@ -438,6 +439,7 @@ export function buildEnergyModel(flows, { routeFor, references }) {
         coverage.seaFlows++;
         totals.seaborne += portion;
         combined.seaborne += energy * share;
+        seaTonnes += portion;
         seaborne.push({ portion, route });
         if (!inspectedRoutes.has(route.coordinates)) {
           inspectedRoutes.add(route.coordinates);
@@ -448,7 +450,7 @@ export function buildEnergyModel(flows, { routeFor, references }) {
         }
         for (const gate of route.gates) {
           crossings.set(gate, (crossings.get(gate) ?? 0) + portion);
-          flowGates[gate] = (flowGates[gate] ?? 0) + share;
+          flowGates[gate] = (flowGates[gate] ?? 0) + portion;
           const mix = combined.crossings.get(gate) ?? {};
           mix[item] = (mix[item] ?? 0) + energy * share;
           combined.crossings.set(gate, mix);
@@ -464,19 +466,24 @@ export function buildEnergyModel(flows, { routeFor, references }) {
           transit.set(gate, estimate);
         }
       }
-      if (seaborne.length) {
+      if (seaTonnes > 0) {
         const dominant = seaborne.reduce((a, b) =>
           a.portion >= b.portion ? a : b,
         );
         routed.push({
           provider,
-          amount: seaborne.reduce((sum, entry) => sum + entry.portion, 0),
+          amount: seaTonnes,
           route: dominant.route,
-          gateShares: flowGates,
+          gateShares: Object.fromEntries(
+            Object.entries(flowGates).map(([gate, tonnes]) => [
+              gate,
+              tonnes / seaTonnes,
+            ]),
+          ),
           portSplits:
             seaborne.length > 1
-              ? seaborne.map(({ route }) => ({
-                  share: round(route.share, 6),
+              ? seaborne.map(({ portion, route }) => ({
+                  share: round(portion / seaTonnes, 6),
                   ports: route.ports,
                   gates: route.gates,
                 }))

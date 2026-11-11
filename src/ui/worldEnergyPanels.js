@@ -171,7 +171,7 @@ function dependencyItem({ document, snapshot, openCard }, row, title) {
       'button',
       gates.get(id) +
         (row.gateShares?.[id] < 1
-          ? ` · ${pct(row.gateShares[id])} of flow`
+          ? ` · ${pct(row.gateShares[id])} of seaborne flow`
           : ''),
       'world-energy-route',
     );

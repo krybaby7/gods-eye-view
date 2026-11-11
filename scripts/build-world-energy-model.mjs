@@ -254,16 +254,19 @@ function neighboursAndPorts(ports, router) {
       const parts = polygons.map((poly) =>
         poly.map((ring) => decodeRing(ring, d ?? shapes.meta.decimals)),
       );
-      const largestFirst = parts.toSorted(
-        (a, b) => ringAreaKm2(b[0]) - ringAreaKm2(a[0]),
+      const largestFirst = parts
+        .map((part) => ({ part, area: ringAreaKm2(part[0]) }))
+        .sort((a, b) => b.area - a.area);
+      const borderPolygons = new Set(
+        largestFirst
+          .filter(({ area }) => area >= largestFirst[0].area / 3)
+          .map(({ part }) => part),
       );
       const mainland =
-        largestFirst.find(
-          (part) =>
-            ringAreaKm2(part[0]) >= ringAreaKm2(largestFirst[0][0]) / 3 &&
-            capitals.some(({ lat, lon }) => polygonsContain([part], lat, lon)),
-        ) ?? largestFirst[0];
-      return { iso, polygons: parts, mainland };
+        [...borderPolygons].find((part) =>
+          capitals.some(({ lat, lon }) => polygonsContain([part], lat, lon)),
+        ) ?? largestFirst[0].part;
+      return { iso, polygons: parts, mainland, borderPolygons };
     });
   const owners = new Map();
   const sharedVertices = new Set();
@@ -272,12 +275,17 @@ function neighboursAndPorts(ports, router) {
   );
   const pair = (a, b) => [a, b].sort().join('/');
   const commonVertices = new Map();
-  for (const { iso, polygons } of countries) {
-    for (const [outer] of polygons) {
+  for (const { iso, polygons, borderPolygons } of countries) {
+    for (const polygon of polygons) {
+      const [outer] = polygon;
+      const eligible = borderPolygons.has(polygon);
       for (const point of outer) {
         const key = point.join(',');
-        const countriesAtPoint = owners.get(key) ?? new Set();
-        countriesAtPoint.add(iso);
+        const countriesAtPoint = owners.get(key) ?? new Map();
+        countriesAtPoint.set(
+          iso,
+          eligible || countriesAtPoint.get(iso) === true,
+        );
         owners.set(key, countriesAtPoint);
       }
     }
@@ -285,7 +293,9 @@ function neighboursAndPorts(ports, router) {
   for (const [key, countriesAtPoint] of owners) {
     if (countriesAtPoint.size < 2) continue;
     sharedVertices.add(key);
-    const atPoint = [...countriesAtPoint];
+    const atPoint = [...countriesAtPoint]
+      .filter(([, eligible]) => eligible)
+      .map(([iso]) => iso);
     for (const [index, iso] of atPoint.entries()) {
       for (const other of atPoint.slice(index + 1)) {
         const id = pair(iso, other);
@@ -752,6 +762,10 @@ if (import.meta.main) {
     'DEU/DNK',
     'CMR/GNQ',
     'GAB/GNQ',
+    'FRA/BRA',
+    'GBR/IRL',
+    'RUS/LTU',
+    'AGO/COG',
   ];
   const borderAudit = Object.fromEntries(
     borderPairs.map((pair) => [
@@ -784,6 +798,13 @@ if (import.meta.main) {
     model.calibrationWithoutOriginCorrection = calibration;
   }
   for (const row of model.calibration) {
+    if (row.routeId === 'malacca' && row.commodity === 'lng') {
+      row.dataNote = {
+        text: 'US LNG to Asia is routed via Panama in this model. In 2024 much of it went round the Cape of Good Hope and through Malacca.',
+        sourceUrl:
+          'https://www.shell.com/what-we-do/oil-and-natural-gas/liquefied-natural-gas-lng/lng-outlook-2025/_jcr_content/root/main/section_125126292_co/promo_copy_copy_copy/links/item0.stream/1740577530786/97f8aacf1e8b27cd8dd32f6070d6463f60cff411/lng-outlook-2025-full-report.pdf#page=14',
+      };
+    }
     if (row.commodity !== 'oil') continue;
     if (correction && ['hormuz', 'malacca'].includes(row.routeId)) {
       row.dataNote = {
