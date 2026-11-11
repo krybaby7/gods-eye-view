@@ -125,7 +125,7 @@ Seven findings. Each one names what was seen or read; appendix C gives the files
 
 ```text
 +--------------------------------------------------------------------------------------+
-| Global Eye View   11 Nov 2026   Turn 14 · 6 changes since Tuesday   [ Search ]  gauges |
+| Global Eye View  11 Nov 2026  Turn 14 · 6 changes since Tuesday    [ Search ]  gauges|
 +----------------------+---------------------------------------+-----------------------+
 | TODAY                |                                       | SHEET                 |
 |                      |                                       |                       |
