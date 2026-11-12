@@ -686,6 +686,14 @@ a decision in section 5 or is dropped.
   - If it passes, its answers stay advisory: code applies the threshold, every headline shows
     its filing and probability, and nothing it says sets a flag or a score. It runs under a daily
     cap.
+  - Result, 2026-11-12, on version 1.14.0. Keep or drop right on 96% (keyword rules 76%). Real
+    news dropped: 3% (rules 20%). Noise kept: 7% (rules 39%). Right area as first or second
+    choice on 95% and exactly on 90% (rules 70% and 54%). The same answer on 96% when asked
+    twice. 300 requests cost about 1.2 US cents and took 0.3 seconds each. Every mark that was
+    run is met. Claude was not run: on the scored run even a perfect Claude would lead by 4.8
+    points, inside the mark, though the second run was a point lower, so that margin is thin.
+    Open: whether Jev becomes the filer before the digest, and whether it runs on the collection
+    timers.
 - **A timed filer.** If the test passes, filing could run on the collection timers, because it is
   not Claude (decision 4) and costs cents. The Overview would then show fresh counts by area
   without a Refresh, which answers the thin code-only Today of section 8.1. Open.
