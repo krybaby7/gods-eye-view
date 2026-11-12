@@ -1,11 +1,12 @@
 # Board-first app: roadmap from World Board feature to finished product
 
-Date: 2026-11-11. Status: direction agreed with the owner on 2026-11-11 (section 5). Decisions 7
-to 25, section 8.1 and section 9 were added the same day, after a second review on the owner's
-machine with live data, and stage 3 was rewritten to follow them. Decisions 26 to 29 followed on
-2026-11-12; the Jev filer of decision 26 is the first thing built and is merged (pull request 25,
-section 8.2). The owner approved the stage 0 mock on 2026-11-12 (decisions 30 and 31, section 8.3
-and Appendix D). Section 10 gives the order of building and the state of each piece. Builds on
+Date: 2026-11-11. Status: direction agreed with the owner on 2026-11-11 (section 5). Decisions 7 to
+25, section 8.1 and section 9 were added the same day, after a second review on the owner's machine
+with live data, and stage 3 was rewritten to follow them. Decisions 26 to 29 followed on 2026-11-12;
+the Jev filer of decision 26 is the first thing built and is merged (pull request 25, section 8.2).
+The owner approved the stage 0 mock on 2026-11-12 (decisions 30 and 31, section 8.3 and Appendix D).
+Piece 2, costume off and board on, was built unattended on 2026-11-12 as pull request 26 and waits
+on the owner's review. Section 10 gives the order of building and the state of each piece. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
 what the first review could not see and section 8.1 what the second one found.
@@ -883,15 +884,22 @@ Decision 29 sets how: one piece, one fresh Claude session, one pull request, mer
 asks. This table is the order and the state. The session that finishes a piece updates its row,
 the status line at the top of this file and the owner's status page.
 
-| Order  | Piece                                                                                                               | State on 2026-11-12                        |
-| ------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                  |
-| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)    |
-| 2      | Costume off, board on: the first pull request of section 7                                                          | Not started. It does not wait for the mock |
-| 3      | The frame (1.2), built to the approved mock                                                                         | Not started. Unblocked by decision 30      |
-| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Not started. It needs no restyle           |
-| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Not started                                |
-| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock       |
+| Order  | Piece                                                                                                               | State on 2026-11-12                          |
+| ------ | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                    |
+| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)      |
+| 2      | Costume off, board on: the first pull request of section 7                                                          | Built as pull request 26; waits on the owner |
+| 3      | The frame (1.2), built to the approved mock                                                                         | Not started. Unblocked by decision 30        |
+| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Not started. It needs no restyle             |
+| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Not started                                  |
+| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock         |
+
+**Piece 2, costume off and board on.** Pull request 26, branch `feat/costume-off`, worktree
+`gev-costume-off` beside the main folder (left for the review). All five gates and the four fixture
+QA scripts passed; the before and after captures are in that worktree under
+`qa-artifacts/costume-off/`. Left as follow-ups: the TR-3B aircraft registry and sprites, now
+unreachable; `qa-cockpit-utility.mjs` and `qa-ui-disposal.mjs`, which still use the removed parts;
+and a look at the country-code cover with imagery on.
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
