@@ -3,7 +3,8 @@
 Date: 2026-11-11. Status: direction agreed with the owner on 2026-11-11 (section 5). Decisions 7
 to 25, section 8.1 and section 9 were added the same day, after a second review on the owner's
 machine with live data, and stage 3 was rewritten to follow them. Decisions 26 to 28 followed on
-2026-11-12; the Jev filer of decision 26 is the first thing being built. Builds on
+2026-11-12; the Jev filer of decision 26 is the first thing built and waits in pull request 25
+(section 8.2). Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
 what the first review could not see and section 8.1 what the second one found.
@@ -390,8 +391,10 @@ place; they are never offered as proof of the story (spec rule 9).
 **4.7 Watchposts.** About thirty places that matter, taken from what the app already lists: the
 chokepoints and the news gazetteer's hotspots. At each one, code counts ships, flights and fires
 against that place's own normal and sets the alert level by written rules (decision 25): "Hormuz:
-3 tankers today, 40 is normal". With the owner's ships key, a strait's own count could stand in
-for the chokepoint traffic that waits on IMF permission. It needs the server running all day (R1)
+3 tankers today, 40 is normal". The owner's ships key can supply the count at Malacca, Gibraltar
+and the Danish Straits. It cannot stand in for the chokepoint traffic that waits on IMF permission
+at Hormuz, Suez, Bab-el-Mandeb, the Turkish Straits or Panama, where the feed heard almost nothing
+(section 8.2). It needs the server running all day (R1)
 to learn what is normal, and a place with poor coverage shows as unknown, never as quiet.
 
 ### Stage 5: Claude's jobs (medium)
@@ -616,6 +619,26 @@ search was run and nothing was downloaded for the board.
   flag for 343 recorded conflict deaths. Both follow their rules; a plain-language reading (2.1)
   has to explain the pair.
 
+### 8.2 Checked on 2026-11-12, by asking each provider directly
+
+The app was not started, to spare the owner's mobile data, so nothing here was seen on the globe.
+
+- **The Jev filer and the connection allowance (R8) are in pull request 25,** not merged. GitHub
+  runs no automatic checks on the owner's fork: the check workflow is registered but has never
+  run, so a pull request rests on the gates run locally.
+- **The owner's new keys work.** Flights: the account signs in. Cesium: terrain, aerial imagery
+  and 3D cities open. OpenAI: the key is accepted, and the summary line would call it at most
+  once every 15 seconds while the view changes. Ships: the key is accepted.
+- **The free ship feed is nearly deaf where the board's energy routes pass.** A six-minute listen
+  heard 446 ships: 181 around Malacca and Singapore, 151 in the Danish Straits, 64 at Gibraltar,
+  32 off the Cape of Good Hope and 13 in the Dover Strait, but one at Hormuz, one at Panama, two
+  in the Taiwan Strait and none at Suez, Bab-el-Mandeb, the Bosphorus or the Dardanelles. One
+  listen is not a measurement, but it changes 4.7.
+- **The three sources that failed on 2026-11-11 answered,** even with Node's default allowance:
+  earthquakes, military flights and launches. Their failure follows the speed of the link on the
+  day. Earthquakes are fetched by the browser, so that layer may never have failed in the app.
+- **The Claude sign-in is still lapsed.**
+
 ## 9. Open after the discussion of 2026-11-11
 
 Proposals made to the owner and not yet answered, and questions nobody has answered. Each becomes
@@ -785,9 +808,15 @@ Raised on 2026-11-12 and not yet answered.
   most four times an hour. The app uses only its launches. Proposed uses: launches per country in
   the last year as a fresh figure for the Technology area; launch sites with their counts as
   board assets; upcoming launches and events as dated items in Today.
-- **The owner's new keys** (ships, flights through an account, Cesium, OpenAI) have not been
-  tried in the running app. With an OpenAI key set, the summary line at the top left calls OpenAI
-  by itself while the app is open; Appendix A already drops that call.
+- **The owner's new keys** (ships, flights through an account, Cesium, OpenAI) were checked on
+  2026-11-12 and work (section 8.2). None has been seen in the running app. With an OpenAI key
+  set, the summary line at the top left calls OpenAI by itself while the app is open; Appendix A
+  already drops that call.
+- **Whether to ask the IMF for permission.** The free ship feed cannot replace PortWatch at the
+  Middle East straits (section 8.2). Proposed: the owner sends one short request, and those
+  straits show as unknown until an answer comes.
+- **Whether to switch on GitHub's automatic checks** on the owner's fork, so that each pull
+  request is also tested on a clean machine.
 
 ## Appendix A: the original's ornament and tools
 
