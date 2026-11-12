@@ -4,7 +4,8 @@ Date: 2026-11-11. Status: direction agreed with the owner on 2026-11-11 (section
 to 25, section 8.1 and section 9 were added the same day, after a second review on the owner's
 machine with live data, and stage 3 was rewritten to follow them. Decisions 26 to 29 followed on
 2026-11-12; the Jev filer of decision 26 is the first thing built and is merged (pull request 25,
-section 8.2). Section 10 gives the order of building and the state of each piece. Builds on
+section 8.2). The stage 0 mock was shown to the owner on 2026-11-12 and waits for their approval
+(sections 8.3 and 10). Section 10 gives the order of building and the state of each piece. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
 what the first review could not see and section 8.1 what the second one found.
@@ -654,6 +655,32 @@ The app was not started, to spare the owner's mobile data, so nothing here was s
   day. Earthquakes are fetched by the browser, so that layer may never have failed in the app.
 - **The Claude sign-in is still lapsed.**
 
+### 8.3 Seen on 2026-11-12, while photographing the board for the mock
+
+The owner allowed one start of the app, to photograph the saved board for the stage 0 mock. A
+script took five pictures with every panel hidden. No Refresh was pressed and War Monitor stayed
+off.
+
+- **The saved board paints whole.** 256 entries, with 195 of 199 states coloured, as of the
+  refresh of 2026-11-11. This is the first capture of the real board without the costume.
+- **What a start costs.** One page load took 11.6 MB from outside, 11.2 MB of it Google's 3D
+  tiles, because a fresh start flies to a city at 600 metres with the photorealistic map on. A
+  second load with flights on took 15.8 MB of flight data in a few minutes: the feed had fallen
+  back to adsb.lol, whose regional answer is large. The app also made one Google Places call at
+  start. Opening on the board at world zoom (piece 2) removes the first cost. Each figure is one
+  measurement. The preview tab was also open for about three minutes and was not measured.
+- **The summary line calls OpenAI as soon as the view moves.** The script stopped 28 such calls in
+  two loads. Appendix A already drops that call.
+- **A trend cannot be written from the saved board yet.** Item 2.1 says the server keeps every
+  past value. It keeps what it has fetched, and it has fetched one period for 3,501 of the 3,504
+  pairs of country and figure. A trend, and decision 25's reading against a country's own past,
+  need the sources' older values fetched first. Section 9.6 already asks whether they are.
+- **A callsign's route on record can be wrong.** For the aircraft in the mock a public lookup gave
+  Stuttgart to Bucharest while it flew south over Belgium. The app hides a route it judges
+  implausible. The sheet of 4.1 has to say so in words, not leave a gap.
+- **The repository has Puppeteer, not Playwright.** The capture script and the mock's layout check
+  used it.
+
 ## 9. Open after the discussion of 2026-11-11
 
 Proposals made to the owner and not yet answered, and questions nobody has answered. Each becomes
@@ -723,7 +750,10 @@ a decision in section 5 or is dropped.
   theater, each of which has a home: armed conflict in Military, elections in Government,
   protests in Society, diplomacy and sanctions in Diplomacy, humanitarian news in Food or People,
   rights in Society or Government. A fixed table says which areas feed each of the six Condition
-  bars. Whether twelve areas or the six bars is the better list is for the stage 0 mock.
+  bars. Whether twelve areas or the six bars is the better list is for the stage 0 mock. The mock
+  shows the same stories filed both ways. Proposed there, and not yet answered: the twelve areas,
+  because the filer already uses them and diplomacy and energy have no bar of their own, with the
+  fixed table putting each story under a bar on a country sheet.
 - **What filing gives.** On a country sheet each bar and area lists its stories under its number.
   The lens becomes the filter: choosing Strength and then Energy leaves only energy stories on
   the globe and in Today, with no separate category control. Code can rank by it and say so, as
@@ -842,12 +872,19 @@ the status line at the top of this file and the owner's status page.
 | Order  | Piece                                                                                                               | State on 2026-11-12                        |
 | ------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                  |
-| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Next. It starts on the owner's word        |
+| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Shown on 2026-11-12. Waits for approval    |
 | 2      | Costume off, board on: the first pull request of section 7                                                          | Not started. It does not wait for the mock |
-| 3      | The frame (1.2), built to the approved mock                                                                         | Waits for piece 1                          |
+| 3      | The frame (1.2), built to the approved mock                                                                         | Waits for the approval of piece 1          |
 | 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Not started. It needs no restyle           |
 | Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Not started                                |
 | Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock       |
+
+**The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
+holds eight boards: the six screens of stage 0, the page of design tokens and the open question of
+section 9.4. Every screen is drawn over a capture of the owner's saved board (section 8.3). The
+token values are in the artifact's style sheet, `project/gev.css`. The owner has not approved it
+yet, so nothing in it binds. On approval the session records it here, copies the token values into
+this repository where the session building the frame will find them, and unblocks piece 3.
 
 ## Appendix A: the original's ornament and tools
 
