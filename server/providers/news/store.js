@@ -7,7 +7,9 @@ import { promises as fsp } from 'node:fs';
  * cap and a disk cache at .gev-cache/news/<theater>.json. Items are reporting
  * metadata only (headline, snippet, link, publisher); nothing here is a
  * verified incident. The cache also keeps collection cursors (the last GDELT
- * file read) so a restart does not read the same files again.
+ * file read) so a restart does not read the same files again, the filer's
+ * answer on each filed item (`filing`, `filingAttempts`) and the filer's
+ * usage for the current local day.
  */
 
 export const ITEM_RETENTION_MS = 72 * 3600_000;
@@ -47,6 +49,12 @@ export function canonicalizeUrl(raw) {
 /** Stable item id: the first 16 hex digits of sha1(canonicalUrl). */
 export function newsItemId(canonicalUrl) {
   return createHash('sha1').update(canonicalUrl).digest('hex').slice(0, 16);
+}
+
+/** Local calendar day, as digest/store.js counts its budget (no import: that module imports this one through stories.js). */
+function localDayKey(ms) {
+  const date = new Date(ms);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 function titleKey(title, sourceId) {
@@ -122,6 +130,13 @@ export function createNewsItemStore({
   const titles = new Map();
   /** @type {Map<string, string>} */
   const cursors = new Map();
+  const emptyUsage = (day) => ({
+    day,
+    requests: 0,
+    inputTokens: 0,
+    costUsd: 0,
+  });
+  let filingUsage = emptyUsage(null);
   let revision = 0;
   let loaded = null;
   let saving = Promise.resolve();
@@ -183,6 +198,14 @@ export function createNewsItemStore({
               index(item);
           for (const [key, value] of Object.entries(parsed.cursors || {}))
             if (typeof value === 'string') cursors.set(key, value);
+          const usage = parsed.filingUsage;
+          if (typeof usage?.day === 'string')
+            filingUsage = {
+              day: usage.day,
+              requests: Number(usage.requests) || 0,
+              inputTokens: Number(usage.inputTokens) || 0,
+              costUsd: Number(usage.costUsd) || 0,
+            };
           prune();
           revision++;
         } catch {
@@ -203,6 +226,7 @@ export function createNewsItemStore({
           theater: theaterId,
           savedAt: new Date(now()).toISOString(),
           cursors: Object.fromEntries(cursors),
+          filingUsage,
           items: [...items.values()],
         });
         try {
@@ -293,6 +317,53 @@ export function createNewsItemStore({
     /** Items no digest has processed yet, newest first. */
     undigested() {
       return this.list().filter((item) => !item.digestedAt);
+    },
+
+    /**
+     * Undigested items the digest may read: everything except items the
+     * filer set aside. An unfiled item counts as kept.
+     */
+    waiting() {
+      return this.undigested().filter((item) => item.filing?.keep !== false);
+    },
+
+    /** Undigested items the filer set aside. */
+    setAside() {
+      return this.undigested().filter((item) => item.filing?.keep === false);
+    },
+
+    /** Record the filer's answer on an item; it is saved with the item. */
+    setFiling(id, filing) {
+      const item = items.get(id);
+      if (!item) return;
+      item.filing = filing;
+      revision++;
+    },
+
+    /** Count one filer request for an item (at most three in all). */
+    noteFilingAttempt(id) {
+      const item = items.get(id);
+      if (item) item.filingAttempts = (Number(item.filingAttempts) || 0) + 1;
+    },
+
+    /** The filer's usage on the local day of `ms` (zeros on a new day). */
+    filingUsage(ms) {
+      const day = localDayKey(ms);
+      return filingUsage.day === day ? { ...filingUsage } : emptyUsage(day);
+    },
+
+    /** Add one batch's usage to the local day of `ms`. */
+    addFilingUsage(ms, usage) {
+      const today = this.filingUsage(ms);
+      filingUsage = {
+        day: today.day,
+        requests: today.requests + (Number(usage.requests) || 0),
+        inputTokens: today.inputTokens + (Number(usage.inputTokens) || 0),
+        costUsd:
+          Math.round((today.costUsd + (Number(usage.costUsd) || 0)) * 1e7) /
+          1e7,
+      };
+      revision++;
     },
 
     /**

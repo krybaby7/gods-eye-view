@@ -83,8 +83,10 @@ function laterIso(iso, ms) {
  *   queue?: ReturnType<import('./fetchers/gdeltDomain.js').createGdeltQueue>,
  *   gdeltFiles?: ReturnType<import('./fetchers/gdeltFiles.js').createGdeltFileFeed>,
  *   timers?: {setInterval: Function, clearInterval: Function},
- *   onUpdate?: () => void,
+ *   onUpdate?: (outcome: {added: number}) => void,
  * }} options
+ * `onUpdate` runs after every transport pass with the store's ingest outcome;
+ * it must return at once (filing in collect mode starts from it, detached).
  */
 export function createNewsCollector({
   registry,
@@ -223,7 +225,7 @@ export function createNewsCollector({
       store.cursor(GDELT_FILES_CURSOR) !== cursorBefore
     )
       await store.save();
-    onUpdate();
+    onUpdate(outcome);
     return outcome;
   }
 

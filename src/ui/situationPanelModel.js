@@ -3,6 +3,7 @@
  * folder counts, raw-feed filters and timestamps. No DOM.
  */
 import {
+  NEWS_FILING_AREA_LABELS,
   NEWS_FOLDERS,
   NEWS_VERIFICATION_LABELS,
   formatUsdShort,
@@ -109,9 +110,55 @@ export function unassignedItems(items) {
   return (items || []).filter((item) => item.digestedAt && !item.storyId);
 }
 
+/** Undigested items the filer set aside (never sent to the digest model). */
+export function setAsideCount(items) {
+  return (items || []).filter(
+    (item) => !item.digestedAt && item.filing?.keep === false,
+  ).length;
+}
+
 /**
- * "Digest 14:02 · 23 stories from 312 items · 9 unassigned · last run 18¢ ·
- * budget $1.42 left".
+ * The filer's note for an item's meta line, or null when it was not filed:
+ * the area (and second area) of a kept item, or "Set aside by the filer ·
+ * 92%" with one minus the keep probability.
+ * @returns {?{text: string, setAside: boolean}}
+ */
+export function itemFilingNote(item) {
+  const filing = item?.filing;
+  if (!filing) return null;
+  if (filing.keep === false) {
+    const p = filing.keepProbability;
+    return {
+      setAside: true,
+      text: Number.isFinite(p)
+        ? `Set aside by the filer · ${Math.round((1 - p) * 100)}%`
+        : 'Set aside by the filer',
+    };
+  }
+  const labels = [filing.area, filing.area2]
+    .map((area) => NEWS_FILING_AREA_LABELS[area])
+    .filter(Boolean);
+  return labels.length ? { setAside: false, text: labels.join(', ') } : null;
+}
+
+/**
+ * Why filing is not working, in plain words, or "" when it is fine or off.
+ * Shown where the panel shows source problems.
+ */
+export function filingProblem(filing) {
+  if (!filing?.enabled || !filing.theaterOptedIn) return '';
+  if (filing.exhausted)
+    return `Filing paused: today's ${Number.isFinite(filing.budgetUsd) ? `$${filing.budgetUsd.toFixed(2)} ` : ''}filing budget is used up. New headlines are not filed until tomorrow; they still reach the digest.`;
+  const error = filing.lastError;
+  if (!error) return '';
+  if (error.code === 'auth')
+    return 'Filing failing: TypeSafe refused the key (check TYPESAFE_API_KEY). Unfiled headlines still reach the digest.';
+  return `Filing failing: ${String(error.message || error.code).replace(/\.$/, '')}. Unfiled headlines still reach the digest.`;
+}
+
+/**
+ * "Digest 14:02 · 23 stories from 312 items · 9 unassigned · 40 set aside by
+ * Jev · last run 18¢ · budget $1.42 left".
  */
 export function formatDigestLine(snapshot, nowMs, options = {}) {
   if (!snapshot?.ready) return 'Loading the news feed…';
@@ -119,6 +166,8 @@ export function formatDigestLine(snapshot, nowMs, options = {}) {
   const items = snapshot.items || [];
   const digested = items.filter((item) => item.digestedAt).length;
   const budget = snapshot.budget || {};
+  const setAside = setAsideCount(items);
+  const filed = setAside > 0 ? [`${setAside} set aside by Jev`] : [];
   const tail = [];
   if (snapshot.digest?.agent === 'claude') {
     const run = snapshot.lastRun || snapshot.lastDigest;
@@ -145,13 +194,16 @@ export function formatDigestLine(snapshot, nowMs, options = {}) {
   }
   const lastDigest = snapshot.lastDigest;
   if (!lastDigest)
-    return [`No digest yet · ${items.length} items collected`, ...tail].join(
-      ' · ',
-    );
+    return [
+      `No digest yet · ${items.length} items collected`,
+      ...filed,
+      ...tail,
+    ].join(' · ');
   return [
     `Digest ${formatSituationTime(lastDigest.finishedAt, nowMs, options)}`,
     `${open.length} ${open.length === 1 ? 'story' : 'stories'} from ${digested} items`,
     `${unassignedItems(items).length} unassigned`,
+    ...filed,
     ...tail,
   ].join(' · ');
 }

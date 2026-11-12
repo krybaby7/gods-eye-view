@@ -1020,6 +1020,7 @@ export function createNewsLayer({
         brief: _snapshot?.brief || null,
         briefRun: _snapshot?.briefRun || null,
         briefStatus: _snapshot?.briefStatus || null,
+        filing: _snapshot?.filing || null,
         digest: {
           ...(server || {}),
           running: Boolean(local || server?.running),

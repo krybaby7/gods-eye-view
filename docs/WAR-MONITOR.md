@@ -183,6 +183,88 @@ source keeps at most 60 items. Items are kept for 72 hours in
 Article bodies are never fetched. Collection never translates; the digest
 writes the English story headline.
 
+## Filing
+
+World collects about 900 headlines in 72 hours, and a fifth to a quarter of
+them are noise: sport, local administration, lifestyle. **Filing** asks a
+cheap classifier, Jev (TypeSafe System One, model `jev-1.14.0`), two
+questions about each headline: does it belong in a daily digest of world
+affairs (keep or set aside), and which one of the board's twelve areas
+(Economy, Fiscal, Government, People, Society, Military, Energy, Food,
+Logistics, Technology, Diplomacy, Culture) does it mostly concern. A filing
+says which area a headline concerns and whether it belongs in a
+world-affairs digest, never whether it is true.
+
+The owner tested Jev on 132 reference headlines and adopted it on
+2026-11-12: it got keep-or-drop right on 96%, dropped 3% of real news, put
+the right area first or second on 95%, and gave the same answer on 96% when
+asked twice.
+
+**What is sent.** One request per headline to
+`POST https://api.typesafe.ai/v1/systemone`, with exactly the outlet id, the
+headline and the snippet when there is one:
+
+```text
+Outlet: bbcworld
+Headline: Talks resume in Doha
+Snippet: Envoys met on Monday.
+```
+
+and two questions: `keep` (yes or no, with the keep rule) and `area` (a
+choice over the twelve areas). No link and nothing else. The areas and the
+keep rule are word for word the ones tested
+(`server/providers/news/filing/areas.js`). A headline is kept when the yes
+probability is at least 0.5; the most probable area is its area, and the
+next one is a second area when its probability is at least 0.25. A filed
+item keeps `filing: {keep, keepProbability, area, area2, areaProbability,
+model, filedAt}` in the theater's item cache.
+
+**Which theaters.** Only a theater whose file sets `"filing": true`. World
+does; Iran · Israel · US does not.
+
+**When.** `NEWS_FILER_WHEN` chooses:
+
+- `collect` (the default): headlines are sent to TypeSafe as they are
+  collected, while the War Monitor is collecting for an opted-in theater.
+  After each collection pass that stores new items, the unfiled ones are
+  filed in the background. This costs a few US cents a day, under the daily
+  cap below. Filing never blocks, slows or fails collection; its errors are
+  recorded, not thrown.
+- `refresh`: filing happens only at the start of a manual Refresh, before
+  the digest chooses its items.
+
+Either way an item is sent to Jev at most once. An item whose call failed is
+tried again at the next opportunity, three attempts in all. At most four
+requests run at a time. A 429 or 529 is retried three times with growing
+waits (1.5, 3 and 6 seconds). A 401 or 403 stops the batch; in `collect`
+mode filing then waits 30 minutes before trying again.
+
+**Fail open.** A headline that is not filed (filing off, failed, over
+budget) is treated as kept and reaches the digest as before. A filing
+failure never fails a Refresh.
+
+**What filing changes.** A set-aside headline is never sent to the digest
+model, and it does not count as new or waiting: not for “Nothing new since
+the last digest”, and not for the left-over count. It stays in the store and
+the Raw feed until it ages out, quieter, marked “Set aside by the filer ·
+92%” (one minus the keep probability). A kept headline shows its area, and
+any second area, in its meta line. Among the headlines left, the digest's
+order (starred sources first, then the newest) and its 400-item cap are
+unchanged. The digest line adds “· N set aside by Jev”, and each digest run
+records `setAside` (headlines left out by filing) and `filedThisRun`.
+
+**Budget.** `NEWS_FILER_DAILY_BUDGET_USD` (default 0.25) caps filing spend
+per local calendar day, across theaters. The price is 0.042 US dollars per
+million input tokens; output is free. Before each batch the remaining budget
+is checked at an estimate of 1,000 input tokens a headline: as many
+headlines as fit are filed and the rest stay unfiled (so kept). The day's
+requests, input tokens and cost are kept in the theater's item cache. When
+filing is on but failing or over budget, the panel says so in plain words
+under the source health line.
+
+The key and the request and response bodies are never logged or sent to the
+browser. The server logs one line per batch with counts and cost.
+
 ## Digest
 
 The digest runs only on an explicit Refresh: the panel button, the
@@ -244,6 +326,7 @@ Bounds are enforced in code after parsing.
 
 When more than 400 items are waiting, starred sources go first. The rest stay
 undigested for the next Refresh, and the run records how many were left out.
+Headlines the filer set aside are never sent (see [Filing](#filing)).
 
 **Validation:**
 
@@ -550,15 +633,21 @@ usual vantage point, not any one article.
 | `NEWS_DIGEST_DAILY_BUDGET_USD` | `2.00`  | Perplexity daily spend cap.                                                                                               |
 | `RELIEFWEB_APPNAME`            | unset   | Turns on the ReliefWeb source.                                                                                 |
 | `NEWS_GDELT_FILES`             | off     | `on` reads GDELT outlets from the 15-minute files instead of the DOC 2.0 search API (about 514 MB a day).      |
+| `TYPESAFE_API_KEY` | unset | Turns on [Filing](#filing) with Jev. Server-side only. |
+| `NEWS_FILER` | `jev` with a key, else `off` | `off` turns filing off. |
+| `NEWS_FILER_WHEN` | `collect` | `collect` files headlines as they are collected; `refresh` limits filing to manual Refresh. |
+| `NEWS_FILER_MODEL` | `jev-1.14.0` | The Jev model. |
+| `NEWS_FILER_DAILY_BUDGET_USD` | `0.25` | Filing spend cap per local calendar day. |
+| `GEV_CONNECT_ATTEMPT_TIMEOUT_MS` | `2500` | How long the local server gives each connection attempt (Node's default is 250 ms, which fails working hosts on slow mobile links). |
 
 Sources live in `public/news/sources.json`. The theater lives in
 `public/news/theaters/<id>.json`: a short scope note (`brief`; it names the
 fronts, not the parties or sides), categories, perspective groups, GDELT
-terms, gazetteer, and the Brief's actors, drivers and tracks. Two optional
-flags: `situationBrief: false` turns the Brief off for the theater, and
-`prompt: true` on gazetteer rows limits the place names sent to the digest
-model to those rows, by name (see [World theater](#world-theater)). Both are
-validated at load. An unknown folder, kind, transport or category, a
+terms, gazetteer, and the Brief's actors, drivers and tracks. Three optional
+flags: `situationBrief: false` turns the Brief off for the theater,
+`filing: true` turns on [Filing](#filing), and `prompt: true` on gazetteer
+rows limits the place names sent to the digest model to those rows, by name
+(see [World theater](#world-theater)). All are validated at load. An unknown folder, kind, transport or category, a
 duplicate id, or an ambiguous gazetteer spelling throws. So does an actor
 with a type or role outside the lists (types: state, armed-group,
 institution, population; roles: party, mediator, institution, affected,
@@ -576,7 +665,11 @@ whom is never written into the actor list.
   - `brief`, `briefRun` and `briefStatus` (how many digests the brief is
     behind and whether Retry brief applies);
   - the theater's actors, drivers and tracks;
-  - budget and digest state.
+  - budget and digest state;
+  - `filing`: whether filing is on, its model, `when`, whether a key is set
+    (never the key), whether the theater opted in, today's requests, tokens
+    and cost, the budget, whether it is used up, and the last error. Items
+    carry their `filing` when filed.
 
   If `rev` matches, it returns `{unchanged: true}`.
 
@@ -587,7 +680,7 @@ whom is never written into the actor list.
   the digest's rate limit. 409 unless the latest brief failed or was skipped
   for budget. When Perplexity is selected, 429 means the budget cannot cover it. See
   [Situation Brief](#situation-brief).
-- `GET /api/news/status`: selected provider, Claude readiness or Perplexity key status, and collection health per theater.
+- `GET /api/news/status`: selected provider, Claude readiness or Perplexity key status, filing readiness, and collection health per theater.
 
 ## Code
 
@@ -596,6 +689,7 @@ whom is never written into the actor list.
 | Registry, gazetteer matcher    | `server/providers/news/registry.js`, `geocode.js`                            |
 | Fetchers                       | `server/providers/news/fetchers/`                                            |
 | Item store, collector, routes  | `server/providers/news/store.js`, `collector.js`, `index.js`                 |
+| Filing: areas, Jev, runner     | `server/providers/news/filing/areas.js`, `jev.js`, `index.js`                |
 | Digest call and validation     | `server/providers/news/digest/runner.js`                                     |
 | Brief call and checks          | `server/providers/news/digest/brief.js`                                      |
 | Actor roles over time (pure)   | `server/providers/news/digest/actors.js`                                     |
@@ -681,7 +775,8 @@ labels, the Situation panel) except the Brief, which is off for it.
 - **Two theaters.** Iran · Israel · US and World.
 - **World collects more than one Refresh digests.** About 900 items can be
   waiting; each Refresh sends 400 (starred sources first, then the newest),
-  and the rest wait for the next one or age out after 72 hours.
+  and the rest wait for the next one or age out after 72 hours. With
+  [Filing](#filing) on, set-aside headlines no longer take any of the 400.
   High-volume feeds (TASS, The Hindu, SCMP) take more of the 400 places
   than quiet ones.
 - **Unchecked feeds.** The Iran · Israel · US feed URLs were taken from
