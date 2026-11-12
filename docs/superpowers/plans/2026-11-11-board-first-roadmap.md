@@ -2,9 +2,9 @@
 
 Date: 2026-11-11. Status: direction agreed with the owner on 2026-11-11 (section 5). Decisions 7
 to 25, section 8.1 and section 9 were added the same day, after a second review on the owner's
-machine with live data, and stage 3 was rewritten to follow them. Decisions 26 to 28 followed on
-2026-11-12; the Jev filer of decision 26 is the first thing built and waits in pull request 25
-(section 8.2). Builds on
+machine with live data, and stage 3 was rewritten to follow them. Decisions 26 to 29 followed on
+2026-11-12; the Jev filer of decision 26 is the first thing built and is merged (pull request 25,
+section 8.2). Section 10 gives the order of building and the state of each piece. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
 what the first review could not see and section 8.1 what the second one found.
@@ -203,8 +203,9 @@ The 13 rules in the World Board spec stay. These are added.
 
 Five stages and one track that runs beside them. Each stage follows the method already used for
 the World Board: a spec, a build prompt, one pull request per numbered item, a review, fix rounds.
-Sizes are relative guesses, not measurements. For scale, the World Board itself took six phase
-pull requests, four fix rounds and a follow-up.
+Decision 29 changes who builds: Claude, one piece to a fresh session (section 10). Sizes are
+relative guesses, not measurements. For scale, the World Board itself took six phase pull
+requests, four fix rounds and a follow-up.
 
 ### Stage 0: agree the look first (small)
 
@@ -295,9 +296,10 @@ Pakistan? What do the hatched areas mean?
 ### Stage 3: what is happening (large)
 
 This stage is the difference between a reference board and a replacement for the news. It was
-rewritten on 2026-11-11 to follow decisions 7 to 22. Section 9 lists what is still open. R8 and R9
-come first, so that the sources counted are the sources that work. Decisions 23 and 24 came after
-the rewrite; once their shape is agreed (section 9.4) they change items 3.1 and 3.4.
+rewritten on 2026-11-11 to follow decisions 7 to 22. Section 9 lists what is still open. R8 is
+merged (section 8.2) and R9 comes first, so that the sources counted are the sources that work.
+Decisions 23 and 24 came after the rewrite; once their shape is agreed (section 9.4) they change
+items 3.1 and 3.4.
 
 **3.1 One stream of events, shown in Today.** The parts exist and are separate: the board's turn
 changes, its live condition flags, chokepoint status, War Monitor's stories, and hazards from the
@@ -426,7 +428,7 @@ below are the likeliest parts of it; which it absorbs is open (section 9.5).
 | R5   | Acceptance. The fixture harness covers each new screen; the live fact checks keep running; the picture check from 1.6 gates every pull request.                                                                                                                                                                        | Every stage           |
 | R6   | Docs and name. A README for this app. Spec headers that still say "not built" corrected. KNOWN-ISSUES entries for the fork's features. The new name, Global Eye View, in the title, the README and the package, with the MIT notice and credit to the original kept.                                                   | End of stage 1        |
 | R7   | The Telegram question left open in the World Board spec (section 13.5): its 2026 terms and War Monitor's collector.                                                                                                                                                                                                    | Before stage 3.7      |
-| R8   | Connection allowance. Raise the time Node allows each connection attempt, set once at server start. On the owner's connection the default fails sources that work (section 8.1). Then count again which sources deliver.                                                                                               | Before R2 is measured |
+| R8   | Connection allowance. Raise the time Node allows each connection attempt, set once at server start. On the owner's connection the default fails sources that work (section 8.1). Then count again which sources deliver. Merged in pull request 25; the recount is in section 8.2.                                     | Before R2 is measured |
 | R9   | Source survey. Candidate news APIs, feeds, named YouTube channels and X accounts, each with its terms, its cost in money and in megabytes a day on the owner's connection, and the three outlet facts of decision 14. The owner reviews the list before it is adopted (decision 21).                                   | Before stage 3        |
 | R10  | Fast figures for the bars. For each Condition bar, the monthly, weekly or daily figures and the named trackers that exist, each with its coverage, its release rhythm and its terms (decision 25). This is the "live data sources" topic the owner set aside.                                                          | Before 2.6            |
 
@@ -538,6 +540,15 @@ Added on 2026-11-12, after the test of section 9.4:
     and layers as the camera for a story (4.2 and 4.6); then watchposts, where layers act as
     sensors that feed the alert levels (4.7).
 
+Added on 2026-11-12, on how the rest is built:
+
+29. **Claude builds the rest, one piece at a time.** Each piece is built in a fresh Claude
+    session and lands as one pull request, merged only when the owner asks. Codex built the World
+    Board; from here Claude does. The session plans, reviews, runs the gates and does the git
+    work; as with the Jev filer, an Opus subagent writes the code. The reason is measured: the
+    planning conversation re-read about 370,000 tokens at each step on average, while the
+    subagent built the Jev filer in 21 minutes. Section 10 keeps the order and the state.
+
 ## 6. Risks
 
 - **Stage 1 is bigger than it looks.** Most of its lines are in panels the owner did not write.
@@ -623,9 +634,13 @@ search was run and nothing was downloaded for the board.
 
 The app was not started, to spare the owner's mobile data, so nothing here was seen on the globe.
 
-- **The Jev filer and the connection allowance (R8) are in pull request 25,** not merged. GitHub
-  runs no automatic checks on the owner's fork: the check workflow is registered but has never
-  run, so a pull request rests on the gates run locally.
+- **The Jev filer and the connection allowance (R8) were merged into main that day,** as pull
+  request 25. In a live run before the merge, 39 of the World theater's 42 feeds answered with
+  the allowance, against 25 the day before, and 794 headlines were filed for about 3 US cents.
+  The digest reading filed headlines, and the filer's `refresh` mode, are covered by unit tests
+  only until the Claude sign-in is renewed. GitHub runs no automatic checks on the owner's fork:
+  the check workflow is registered but has never run, so a pull request rests on the gates run
+  locally.
 - **The owner's new keys work.** Flights: the account signs in. Cesium: terrain, aerial imagery
   and 3D cities open. OpenAI: the key is accepted, and the summary line would call it at most
   once every 15 seconds while the view changes. Ships: the key is accepted.
@@ -817,6 +832,22 @@ Raised on 2026-11-12 and not yet answered.
   straits show as unknown until an answer comes.
 - **Whether to switch on GitHub's automatic checks** on the owner's fork, so that each pull
   request is also tested on a clean machine.
+
+## 10. Building it
+
+Decision 29 sets how: one piece, one fresh Claude session, one pull request, merged when the owner
+asks. This table is the order and the state. The session that finishes a piece updates its row,
+the status line at the top of this file and the owner's status page.
+
+| Order  | Piece                                                                                                               | State on 2026-11-12                        |
+| ------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                  |
+| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Next. It starts on the owner's word        |
+| 2      | Costume off, board on: the first pull request of section 7                                                          | Not started. It does not wait for the mock |
+| 3      | The frame (1.2), built to the approved mock                                                                         | Waits for piece 1                          |
+| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Not started. It needs no restyle           |
+| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Not started                                |
+| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock       |
 
 ## Appendix A: the original's ornament and tools
 
