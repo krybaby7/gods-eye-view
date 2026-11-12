@@ -9,15 +9,18 @@ import { retryBriefState } from './situationBriefModel.js';
 import {
   citedItems,
   degradedSources,
+  filingProblem,
   filterRawItems,
   folderCounts,
   formatDigestLine,
   formatElapsed,
   formatSituationTime,
   itemDigestState,
+  itemFilingNote,
   listOnlyCount,
   rawFilterOptions,
   refreshState,
+  setAsideCount,
   tabCounts,
   verificationLabel,
 } from './situationPanelModel.js';
@@ -324,5 +327,84 @@ test('the normalized Claude snapshot and outcomes carry plan usage and complete 
       snapshot().budget,
     ),
     /¢|Cost|budget/,
+  );
+});
+
+test('the Raw feed shows a kept item’s areas and a set-aside item’s share', () => {
+  assert.equal(itemFilingNote(item('a')), null);
+  assert.deepEqual(
+    itemFilingNote(
+      item('b', { filing: { keep: true, area: 'diplomacy', area2: 'energy' } }),
+    ),
+    { setAside: false, text: 'Diplomacy, Energy' },
+  );
+  assert.deepEqual(
+    itemFilingNote(
+      item('c', { filing: { keep: true, area: 'military', area2: null } }),
+    ),
+    { setAside: false, text: 'Military' },
+  );
+  assert.deepEqual(
+    itemFilingNote(
+      item('d', { filing: { keep: false, keepProbability: 0.08 } }),
+    ),
+    { setAside: true, text: 'Set aside by the filer · 92%' },
+  );
+  assert.deepEqual(
+    itemFilingNote(
+      item('e', { filing: { keep: false, keepProbability: null } }),
+    ),
+    { setAside: true, text: 'Set aside by the filer' },
+  );
+});
+
+test('the digest line counts items set aside by Jev, only when there are some', () => {
+  const aside = item('x', { filing: { keep: false, keepProbability: 0.1 } });
+  const kept = item('y', { filing: { keep: true, area: 'energy' } });
+  assert.equal(setAsideCount([aside, kept, item('z')]), 1);
+  assert.equal(
+    setAsideCount([{ ...aside, digestedAt: '2026-10-26T14:00:00Z' }]),
+    0,
+  );
+  const base = snapshot();
+  assert.ok(!formatDigestLine(base, NOW, UTC).includes('set aside'));
+  const line = formatDigestLine(
+    { ...base, items: [...base.items, aside, aside, kept] },
+    NOW,
+    UTC,
+  );
+  assert.match(line, / · 2 set aside by Jev · /);
+  assert.match(
+    formatDigestLine({ ...base, lastDigest: null, items: [aside] }, NOW, UTC),
+    /^No digest yet · 1 items collected · 1 set aside by Jev/,
+  );
+});
+
+test('filing problems are said in plain words, only when filing is on for the theater', () => {
+  const on = { enabled: true, theaterOptedIn: true, budgetUsd: 0.25 };
+  assert.equal(filingProblem(null), '');
+  assert.equal(filingProblem({ ...on, enabled: false, exhausted: true }), '');
+  assert.equal(
+    filingProblem({ ...on, theaterOptedIn: false, exhausted: true }),
+    '',
+  );
+  assert.equal(filingProblem(on), '');
+  assert.match(
+    filingProblem({ ...on, exhausted: true }),
+    /^Filing paused: today's \$0\.25 filing budget is used up/,
+  );
+  assert.match(
+    filingProblem({ ...on, lastError: { code: 'auth' } }),
+    /TypeSafe refused the key/,
+  );
+  assert.equal(
+    filingProblem({
+      ...on,
+      lastError: {
+        code: 'http_500',
+        message: '3 of 9 headlines could not be filed (http_500)',
+      },
+    }),
+    'Filing failing: 3 of 9 headlines could not be filed (http_500). Unfiled headlines still reach the digest.',
   );
 });

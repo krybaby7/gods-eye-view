@@ -31,12 +31,21 @@ import { weatherProxy } from './weather.js';
 import { firePerimetersProxy } from './firePerimeters.js';
 import { cycloneProxy } from './cyclones.js';
 import { windProxy } from './wind.js';
+import { applyConnectAttemptTimeout } from './common/connect-timeout.js';
+
+let connectAllowanceApplied = false;
 
 /**
  * Construct the local provider plugins in their established order.
  * `realtime` configures the voice session token endpoint.
  */
 function localProviderPlugins({ realtime, world } = {}) {
+  // Once, where the providers are created: a longer allowance per
+  // connection attempt (GEV_CONNECT_ATTEMPT_TIMEOUT_MS) for slow links.
+  if (!connectAllowanceApplied) {
+    connectAllowanceApplied = true;
+    applyConnectAttemptTimeout();
+  }
   const searchContext = createSearchContext();
   const searchAgents = createSearchAgents();
   return [

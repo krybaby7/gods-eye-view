@@ -76,6 +76,20 @@
   color: var(--text-secondary);
 }
 
+.situation-filing-problem {
+  font-size: 11px;
+}
+
+/* The filer's area or set-aside note: quiet text in the item's meta line. */
+.situation-item-filing {
+  opacity: 0.8;
+}
+
+/* Set aside by the filer: still listed, but quieter than kept items. */
+.situation-item-set-aside {
+  opacity: 0.6;
+}
+
 .situation-notice:empty {
   display: none;
 }

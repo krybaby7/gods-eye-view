@@ -2,6 +2,7 @@
   "id": "world",
   "name": "World",
   "situationBrief": false,
+  "filing": true,
   "brief": [
     "The theater covers political news worldwide: elections, referendums and transfers of power; governments, parliaments and courts; protests and unrest; armed conflict; diplomacy, summits and sanctions; coups and attempted coups; and humanitarian crises caused by conflict or politics. Who takes part, and in what role, is read from the stories, not from this note. Governments, militaries, armed groups and state-controlled media speak as participants in the events they are part of.",
     "Items come from global wires and broadcasters, national and regional outlets on every continent, several state-controlled outlets, the UN, a rights group and conflict analysts, in several languages. Make one story per event. Sport, business, culture, science and weather items belong in no story unless they turn political. Many outlets repeat the same statement; treat repetitions as one source. Place each story at the most specific place the items name."

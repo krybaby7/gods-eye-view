@@ -357,10 +357,14 @@ export function validateNewsTheater(doc, sourcesById) {
     typeof doc.situationBrief !== 'boolean'
   )
     fail(`theater ${id} situationBrief must be true or false`);
+  // Filing (Jev keep-or-set-aside and area) is opt-in per theater.
+  if (doc.filing !== undefined && typeof doc.filing !== 'boolean')
+    fail(`theater ${id} filing must be true or false`);
   return Object.freeze({
     id,
     name: doc.name,
     situationBrief: doc.situationBrief !== false,
+    filing: doc.filing === true,
     brief: Object.freeze(brief),
     sourceIds: Object.freeze(sourceIds),
     categories: Object.freeze(categories),

@@ -11,11 +11,13 @@ import {
   SITUATION_FOLDER_LABELS,
   citedItems,
   degradedSources,
+  filingProblem,
   filterRawItems,
   folderCounts,
   formatDigestLine,
   formatSituationTime,
   itemDigestState,
+  itemFilingNote,
   listOnlyCount,
   rawFilterOptions,
   refreshState,
@@ -223,6 +225,10 @@ export function createSituationPanel({
   });
   const digestLine = h('p', { className: 'situation-digest-line' });
   const degradedLine = h('details', { className: 'situation-degraded' });
+  const filingLine = h('p', {
+    className: 'situation-filing-problem panel-surface-error',
+    hidden: true,
+  });
   const notice = h('p', {
     className: 'situation-notice',
     role: 'status',
@@ -240,6 +246,7 @@ export function createSituationPanel({
     reasonLine,
     digestLine,
     degradedLine,
+    filingLine,
     notice,
   );
 
@@ -292,6 +299,9 @@ export function createSituationPanel({
         ),
       );
     }
+    const problem = filingProblem(snapshot.filing);
+    filingLine.textContent = problem;
+    filingLine.hidden = !problem;
     const outcome = snapshot.digest?.outcome;
     notice.textContent = outcome?.summary || '';
     notice.classList.toggle(
@@ -420,9 +430,13 @@ export function createSituationPanel({
     const original = item.titleOriginal && item.titleOriginal !== item.title;
     const showing = showOriginal.has(item.id) && original;
     const state = itemDigestState(item);
+    const filing = itemFilingNote(item);
     return h(
       'li',
-      { className: 'situation-item', 'data-item-id': item.id },
+      {
+        className: `situation-item${filing?.setAside ? ' situation-item-set-aside' : ''}`,
+        'data-item-id': item.id,
+      },
       h(
         'p',
         { className: 'situation-item-title' },
@@ -443,6 +457,12 @@ export function createSituationPanel({
         ]
           .filter(Boolean)
           .join(' · '),
+        filing
+          ? h('span', {
+              className: 'situation-item-filing',
+              text: ` · ${filing.text}`,
+            })
+          : null,
       ),
       h(
         'p',
@@ -842,6 +862,8 @@ export function createSituationPanel({
           item.id,
           item.digestedAt,
           item.storyId,
+          item.filing?.keep ?? null,
+          item.filing?.area ?? null,
           showOriginal.has(item.id),
         ]),
     ]);
