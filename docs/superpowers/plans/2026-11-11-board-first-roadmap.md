@@ -4,8 +4,8 @@ Date: 2026-11-11. Status: direction agreed with the owner on 2026-11-11 (section
 to 25, section 8.1 and section 9 were added the same day, after a second review on the owner's
 machine with live data, and stage 3 was rewritten to follow them. Decisions 26 to 29 followed on
 2026-11-12; the Jev filer of decision 26 is the first thing built and is merged (pull request 25,
-section 8.2). The stage 0 mock was shown to the owner on 2026-11-12 and waits for their approval
-(sections 8.3 and 10). Section 10 gives the order of building and the state of each piece. Builds on
+section 8.2). The owner approved the stage 0 mock on 2026-11-12 (decisions 30 and 31, section 8.3
+and Appendix D). Section 10 gives the order of building and the state of each piece. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
 what the first review could not see and section 8.1 what the second one found.
@@ -220,7 +220,8 @@ here, and more, because this changes every screen.
 - One page of the design tokens: colours with their meanings, the type scale, spacing, panel and
   button shapes.
 
-Done when the owner has approved the mock. Stage 1 builds to it.
+Done when the owner has approved the mock. Stage 1 builds to it. The owner approved it on
+2026-11-12 (decision 30); Appendix D holds its token values and what it settles.
 
 ### Stage 1: the board becomes the app (large, the biggest stage)
 
@@ -237,7 +238,8 @@ stop drawing across panels. The sheet becomes wide enough to read and shows cont
 first.
 
 **1.3 One look.** Extend the existing tokens into a full set: named colours for status, relation
-types and data ramps; a type scale; spacing; elevation. Replace the hard-coded colours in the
+types and data ramps; a type scale; spacing; elevation. Appendix D holds the set the owner approved
+with the mock. Replace the hard-coded colours in the
 board's later stylesheets. Then move every original panel onto the same components, one panel per
 pull request, in this order: layer list, weather, cameras, street level, recent imagery, radio,
 context, settings and keys, welcome, and the aircraft cockpit last.
@@ -550,6 +552,18 @@ Added on 2026-11-12, on how the rest is built:
     planning conversation re-read about 370,000 tokens at each step on average, while the
     subagent built the Jev filer in 21 minutes. Section 10 keeps the order and the state.
 
+Added on 2026-11-12, when the owner approved the stage 0 mock:
+
+30. **The mock is the look of the app.** The owner approved the stage 0 mock as it stood after an
+    independent review: six screens, the page of design tokens and the board on how news is
+    filed. Stage 1 builds to it. Appendix D holds the token values and what the mock settles, and
+    the mock itself stays the picture to build to (section 10).
+31. **News is filed under the twelve areas.** The approved mock files every story under one or
+    two of the twelve Strength areas, as the filer already does, and a fixed table puts each
+    story under a Condition bar on a country sheet. This is read from the approval of the mock,
+    which showed both ways and recommended this one. The owner did not answer the question apart
+    from that approval, and was told how it was read.
+
 ## 6. Risks
 
 - **Stage 1 is bigger than it looks.** Most of its lines are in panels the owner did not write.
@@ -691,9 +705,9 @@ a decision in section 5 or is dropped.
 - **Order of building.** Proposed and not answered: "who is telling this" first, then coverage in
   both directions on the country sheet, then news outlets in the Ownership view. Stage 3 is
   written in that order.
-- **How the lines and marks look** is for the stage 0 mock: the lines from a story to its
-  outlets' homes, the story count on a country, and how a state-run outlet, a private one and one
-  in exile differ at a glance.
+- **How the lines and marks look** was left to the stage 0 mock and is settled by it (decision
+  30, Appendix D): the lines from a story to its outlets' homes, the story count on a country,
+  and how a state-run outlet, a private one and one in exile differ at a glance.
 
 ### 9.2 X and Grok (decision 20)
 
@@ -750,10 +764,10 @@ a decision in section 5 or is dropped.
   theater, each of which has a home: armed conflict in Military, elections in Government,
   protests in Society, diplomacy and sanctions in Diplomacy, humanitarian news in Food or People,
   rights in Society or Government. A fixed table says which areas feed each of the six Condition
-  bars. Whether twelve areas or the six bars is the better list is for the stage 0 mock. The mock
-  shows the same stories filed both ways. Proposed there, and not yet answered: the twelve areas,
-  because the filer already uses them and diplomacy and energy have no bar of their own, with the
-  fixed table putting each story under a bar on a country sheet.
+  bars. Whether twelve areas or the six bars is the better list was for the stage 0 mock. The
+  mock showed the same stories filed both ways, and decision 31 takes the twelve areas: the filer
+  already uses them, and diplomacy and energy have no bar of their own. The fixed table is in
+  Appendix D as the mock showed it, and is reviewed when stage 3 is built.
 - **What filing gives.** On a country sheet each bar and area lists its stories under its number.
   The lens becomes the filter: choosing Strength and then Energy leaves only energy stories on
   the globe and in Today, with no separate category control. Code can rank by it and say so, as
@@ -872,19 +886,19 @@ the status line at the top of this file and the owner's status page.
 | Order  | Piece                                                                                                               | State on 2026-11-12                        |
 | ------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                  |
-| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Shown on 2026-11-12. Waits for approval    |
+| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)    |
 | 2      | Costume off, board on: the first pull request of section 7                                                          | Not started. It does not wait for the mock |
-| 3      | The frame (1.2), built to the approved mock                                                                         | Waits for the approval of piece 1          |
+| 3      | The frame (1.2), built to the approved mock                                                                         | Not started. Unblocked by decision 30      |
 | 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Not started. It needs no restyle           |
 | Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Not started                                |
 | Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock       |
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
-holds eight boards: the six screens of stage 0, the page of design tokens and the open question of
-section 9.4. Every screen is drawn over a capture of the owner's saved board (section 8.3). The
-token values are in the artifact's style sheet, `project/gev.css`. The owner has not approved it
-yet, so nothing in it binds. On approval the session records it here, copies the token values into
-this repository where the session building the frame will find them, and unblocks piece 3.
+holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
+is filed (decision 31). Every screen is drawn over a capture of the owner's saved board (section
+8.3). The owner approved it on 2026-11-12 (decision 30). Appendix D holds its token values and what
+it settles. Its boards and its style sheet, `project/gev.css`, stay in the artifact: the session
+that builds the frame reads them from there and gives the builder the pictures and the style sheet.
 
 ## Appendix A: the original's ornament and tools
 
@@ -968,3 +982,136 @@ appears to be unused; the README's layer table omits nine layers.
   through `server/providers/local.js`.
 - **Acceptance.** `scripts/qa-world.mjs --fixtures` with `scripts/qa-world.phase-*.mjs`;
   `scripts/world-fact-check.mjs`.
+
+## Appendix D: the approved look (stage 0 mock, decision 30)
+
+Copied from the mock's style sheet on the day of approval. A name says what a value is for, so a
+light set can be added later under the same names (decision 6). Where a comment says "the app's
+own", the value is unchanged from today's code.
+
+```css
+:root {
+  /* Surfaces. surface-0 and surface-1 are the app's own --bg-dark and --menu-bg. */
+  --surface-space: #05070b; /* behind the globe */
+  --surface-0: #0a0a0f; /* wells and inputs */
+  --surface-1: #12121c; /* bars, Today and the sheet */
+  --surface-2: #1b1c28; /* cards and hovered rows */
+  --surface-3: #262838; /* selected and pressed */
+  --line-soft: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  /* Text on surface-1: 15.4, 8.5 and 5.5 to 1. text-3 is not used on surface-3. */
+  --text-1: #e8eaed;
+  --text-2: #aab0bb;
+  --text-3: #868c99;
+  /* One accent, the app's own, with its glow dropped. */
+  --accent: #00d4ff;
+  --accent-dim: rgba(0, 212, 255, 0.15);
+  --on-accent: #04222b;
+  /* Score ramp: the board's five stops, the app's own. */
+  --ramp-0: #c2410c;
+  --ramp-25: #f08c3a;
+  --ramp-50: #d9c58f;
+  --ramp-75: #4aa8d8;
+  --ramp-100: #1d6fd1;
+  --unknown-hatch: repeating-linear-gradient(
+    135deg,
+    rgba(185, 219, 223, 0.4) 0 1px,
+    rgba(10, 18, 25, 0.55) 1px 5px
+  );
+  /* Alert level, four steps (decision 25). */
+  --alert-calm: #8b97a8;
+  --alert-watch: #e6c453;
+  --alert-strained: #f0935a;
+  --alert-crisis: #ff5d6c;
+  /* Relations and live objects: the app's own colours, now named. */
+  --rel-war: #db474f;
+  --rel-sanctions: #e8933f;
+  --rel-ally: #3da1ea;
+  --rel-rival: #b25ec5;
+  --rel-partner: #3eaf97;
+  --rel-neutral: #949faf;
+  --live-civil: #22e0ff;
+  --live-military: #ffb347;
+  --live-sea: #3fe0c8;
+  --live-space: #bda4ff;
+  /* Shape, depth and motion: the app's own values. Spacing is new. */
+  --radius-panel: 16px;
+  --radius-control: 10px;
+  --radius-chip: 6px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.38);
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Frame, at a window 1366 wide or more. Below that: Today 300, sheet 420. */
+  --frame-bar: 52px;
+  --frame-today: 340px;
+  --frame-sheet: 460px;
+  --frame-rail: 48px;
+  --font-sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+}
+```
+
+| Type    | Face and weight    | Size / line | Used for                                           |
+| ------- | ------------------ | ----------- | -------------------------------------------------- |
+| display | Inter 600          | 24 / 30     | The name on a sheet                                |
+| title   | Inter 600          | 18 / 24     | A panel or section title                           |
+| heading | Inter 600          | 15 / 20     | A row or story title                               |
+| body    | Inter 400          | 14 / 21     | Reading text                                       |
+| small   | Inter 400          | 13 / 19     | The smallest size a sentence is set in             |
+| caption | Inter 500          | 12 / 16     | Labels, periods and sources. Nothing is smaller    |
+| figure  | JetBrains Mono 600 | 15 / 20     | Scores                                             |
+| code    | JetBrains Mono 500 | 12 / 18     | Codes, such as a series code or a transponder code |
+
+Sentence case everywhere, capitals only in codes, and monospace for figures and codes only.
+
+What the mock settles, beyond the values:
+
+- **The frame is solid, not glass.** The top and bottom bars and the two columns are opaque. The
+  globe has its own region between them, so nothing on it draws across a panel. Only menus and
+  hover cards float. Today folds to a rail. One status line over the globe keeps the coordinates,
+  the eye altitude, the time and the imagery credit.
+- **The bars.** Top: the name, the date and the turn, a pill counting what is new since the last
+  visit, one search box, three gauges each with its period and source, refresh and the menu.
+  Bottom: the lens switch (Overview, Strength, Energy), the legend with its period and sources,
+  the data age switch, Layers, Presets, zoom and voice.
+- **Band words for a score:** Very weak from 0 to 19, Weak 20 to 39, Midrange 40 to 59, Solid 60
+  to 79, Strong 80 to 100. A bar takes the ramp colour of its score, as the country does on the
+  globe.
+- **Three edges for a claim.** Solid is a fact (measured, documented, declared, observed). Dotted
+  is someone's reading (assessed, AI analysis, allegation, hypothesis). Dashed is a forecast or
+  an estimate (a source's forecast, a source's own estimate, an estimate, a scenario). A bar is
+  solid when measured, dashed when forecast or estimated and hatched when unknown. Story labels,
+  data states (stale, draft, low confidence) and area tags are plain chips with no edge.
+- **Alert level:** four steps of rising height and a word (Calm, Watch, Strained, Crisis), drawn
+  beside the bar it belongs to.
+- **On the globe.** A country shows its name, not its code, with a count of its alerts
+  (triangle) and of its stories (page), and a corner dot for what is new. An armed conflict
+  between states recorded by UCDP is a solid red line. The selected story's place is a ring. A
+  story is a dot, dashed when the model placed it.
+- **Who is telling it (section 9.1).** White lines run from the story's place to each outlet's
+  home. The weight says where the outlet stands: thick from inside the country, medium from the
+  state of a party, thin from outside. A party's outlets count as inside when the story happens
+  in its own country. The mark at the end says who stands behind the outlet: a filled square is
+  state-run, a hollow square state-funded, a circle private, a diamond a party's own channel,
+  and a dashed ring adds "in exile". There is no colour, so no side is singled out (decision 9).
+  An outlet's three facts are always three labels, with "not recorded yet" where none is held.
+- **The country sheet.** Four tabs and More: Overview, Condition, Strength and Relations, with
+  Exposure, Assets, People, News and Stakes under More. The line above the name counts alerts
+  and stories. Overview holds the six bars, who runs it, the alert, partners, rivals and
+  conflicts, the largest dependency and "Live here". On the Condition tab each row shows its band
+  word, period, source and state. An opened row adds the reading against the world, the reading
+  against its own past and "Why this number".
+- **The layers menu.** The eight groups of Appendix B, and the presets are those eight groups, so
+  today's Conflict and Signals buttons fold into them. Each row says its state in plain words.
+- **The filing table (decision 31),** as the mock showed it and to be reviewed when stage 3 is
+  built: Government takes Government and Diplomacy; Security takes Military; Services takes
+  People, Logistics and Technology; Households takes Economy, Food and Energy; Fiscal takes
+  Fiscal; Society takes Society and Culture.
+- **Not drawn, and still open:** an outlet's own sheet with slant in its four kinds, a trend
+  (section 8.3) and a light set.
