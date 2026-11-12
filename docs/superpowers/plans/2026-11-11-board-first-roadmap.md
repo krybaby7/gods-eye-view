@@ -1,9 +1,9 @@
 # Board-first app: roadmap from World Board feature to finished product
 
-Date: 2026-11-11. Status: direction agreed with the owner on 2026-11-11 (section 5); nothing is
-built. Decisions 7 to 25, section 8.1 and section 9 were added the same day (decision 26 the
-day after), after a second review
-on the owner's machine with live data, and stage 3 was rewritten to follow them. Builds on
+Date: 2026-11-11. Status: direction agreed with the owner on 2026-11-11 (section 5). Decisions 7
+to 25, section 8.1 and section 9 were added the same day, after a second review on the owner's
+machine with live data, and stage 3 was rewritten to follow them. Decisions 26 and 27 followed on
+2026-11-12; the Jev filer of decision 26 is the first thing being built. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
 what the first review could not see and section 8.1 what the second one found.
@@ -513,6 +513,9 @@ Added on 2026-11-12, after the test of section 9.4:
     only, never fails a Refresh if Jev fails, shows every filing in the Raw feed and runs under a
     daily cap. It also carries the connection allowance of R8, which Jev needs on the owner's
     connection.
+27. **Jev files headlines as they are collected.** It runs on the collection timers while the
+    War Monitor is collecting, not only on Refresh. Decision 4 is about Claude and still holds.
+    Filing costs a few US cents a day and stays under the daily cap.
 
 ## 6. Risks
 
@@ -703,11 +706,11 @@ a decision in section 5 or is dropped.
     twice. 300 requests cost about 1.2 US cents and took 0.3 seconds each. Every mark that was
     run is met. Claude was not run: on the scored run even a perfect Claude would lead by 4.8
     points, inside the mark, though the second run was a point lower, so that margin is thin.
-    Adopted on 2026-11-12 (decision 26). Open: whether it files as headlines are collected or
-    only on Refresh. The build supports both and starts with Refresh.
-- **A timed filer.** If the test passes, filing could run on the collection timers, because it is
-  not Claude (decision 4) and costs cents. The Overview would then show fresh counts by area
-  without a Refresh, which answers the thin code-only Today of section 8.1. Open.
+    Adopted on 2026-11-12 (decision 26), filing as headlines are collected (decision 27).
+- **What timed filing opens up (decision 27).** Each headline has its area within minutes of
+  being collected, without a Refresh. Counting headlines per country for the Overview still needs
+  a place for each one, which today only the digest gives. Proposed next step: match headline
+  text against the gazetteer in code. That would answer the thin code-only Today of section 8.1.
 
 ### 9.5 The agent (decision 12)
 
