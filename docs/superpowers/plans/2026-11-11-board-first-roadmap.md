@@ -2,7 +2,7 @@
 
 Date: 2026-11-11. Status: direction agreed with the owner on 2026-11-11 (section 5). Decisions 7
 to 25, section 8.1 and section 9 were added the same day, after a second review on the owner's
-machine with live data, and stage 3 was rewritten to follow them. Decisions 26 and 27 followed on
+machine with live data, and stage 3 was rewritten to follow them. Decisions 26 to 28 followed on
 2026-11-12; the Jev filer of decision 26 is the first thing being built. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
@@ -358,6 +358,9 @@ Done when:
 
 ### Stage 4: board and live layers joined (medium)
 
+Decision 28 sets the order: "Live here" (4.2) and layers as the camera for a story (4.6) first,
+then watchposts (4.7). Zoom tiers (4.3) come with the frame.
+
 **4.1 Live objects open in the sheet.** An aircraft, ship, earthquake, fire or camera uses the
 same sheet as a country, with a link up to the country it is in. Earthquakes, satellites and
 cables appear to have labels only today, with no detail card.
@@ -378,6 +381,18 @@ environment variables only.
 original repo's mapped sites (installations, dams, data centres, cables) share one presentation
 and one group. News outlets join as holdings: a country's Ownership view shows the foreign-owned
 outlets it hosts and the outlets its entities own abroad (decisions 14 and 19).
+
+**4.6 Layers as the camera for a story.** A story, a situation or an alert carries the layers
+that show it. Opening it flies there and switches them on: ships for a strait, fires and recent
+satellite imagery for a strike or a flood. The layers are labelled "live now". They show the
+place; they are never offered as proof of the story (spec rule 9).
+
+**4.7 Watchposts.** About thirty places that matter, taken from what the app already lists: the
+chokepoints and the news gazetteer's hotspots. At each one, code counts ships, flights and fires
+against that place's own normal and sets the alert level by written rules (decision 25): "Hormuz:
+3 tankers today, 40 is normal". With the owner's ships key, a strait's own count could stand in
+for the chokepoint traffic that waits on IMF permission. It needs the server running all day (R1)
+to learn what is normal, and a place with poor coverage shows as unknown, never as quiet.
 
 ### Stage 5: Claude's jobs (medium)
 
@@ -516,6 +531,9 @@ Added on 2026-11-12, after the test of section 9.4:
 27. **Jev files headlines as they are collected.** It runs on the collection timers while the
     War Monitor is collecting, not only on Refresh. Decision 4 is about Claude and still holds.
     Filing costs a few US cents a day and stays under the daily cap.
+28. **The live layers come in by three routes, in this order.** First "Live here" on every sheet
+    and layers as the camera for a story (4.2 and 4.6); then watchposts, where layers act as
+    sensors that feed the alert levels (4.7).
 
 ## 6. Risks
 
@@ -748,6 +766,28 @@ every country. Decision 25 sets the direction. Still open:
 - **The spec.** Decision 25 changes how the World Board spec defines an indicator, a bar's score
   and the live condition flags (its sections 4.2, 4.5 and 8.3). It needs a dated revision before
   2.6 is built.
+
+### 9.7 Live layers and providers
+
+Raised on 2026-11-12 and not yet answered.
+
+- **Which layers earn a place on the main screen.** Proposed: ships, flights, fires, hazards,
+  cables and installations, and recent satellite imagery serve the goal. Cameras, street
+  photographs, traffic, transit and radio stay in the City preset, off the main screen.
+- **Providers the owner does not have yet,** by what they would add: a NASA FIRMS key (active
+  fires); an HDX app identifier (food-crisis phases and food prices, for the Households bar); an
+  ElectionGuide token (the election calendar, for the Government alert level); a ReliefWeb app
+  name (humanitarian reports for news and searches); approval for IODA (internet outages, for the
+  Services alert level, its licence still unconfirmed); a Grok or X key (decision 20). The Google
+  Maps, street-photograph, road-traffic and London-camera keys are not worth getting for this
+  goal. They belong in the survey of R10.
+- **Launch Library 2** needs no token: it is free up to 15 requests an hour and the app asks at
+  most four times an hour. The app uses only its launches. Proposed uses: launches per country in
+  the last year as a fresh figure for the Technology area; launch sites with their counts as
+  board assets; upcoming launches and events as dated items in Today.
+- **The owner's new keys** (ships, flights through an account, Cesium, OpenAI) have not been
+  tried in the running app. With an OpenAI key set, the summary line at the top left calls OpenAI
+  by itself while the app is open; Appendix A already drops that call.
 
 ## Appendix A: the original's ornament and tools
 
