@@ -8,7 +8,6 @@ import {
   reduceLoadingFeedback,
   reduceTrafficSyncFeedback,
 } from '../loadingFeedback.js';
-import { setSplitFlapText, disposeSplitFlap } from '../splitFlap.js';
 export class ShellFeedback {
   constructor({ readLayers }) {
     this.readLayers = readLayers;
@@ -72,14 +71,12 @@ export class ShellFeedback {
       now,
     );
     const presentation = this._trafficSyncFeedbackState;
-    // setSplitFlapText carries the same unchanged-text guard internally, and
-    // the flap keeps textContent equal to the settled label throughout, so
-    // this stays a no-op on the repeat ticks exactly as it did before.
-    if (presentation.label)
-      setSplitFlapText(this._trafficSyncLabel, presentation.label, {
-        // Completion is a timing signal, not another animated loading stage.
-        immediate: !presentation.busy,
-      });
+    // Unchanged labels are skipped so the repeat ticks write nothing.
+    if (
+      presentation.label &&
+      this._trafficSyncLabel.textContent !== presentation.label
+    )
+      this._trafficSyncLabel.textContent = presentation.label;
     // Written on every change INCLUDING the empty settled value — the reducer
     // clears the progress number once the sync lands, and a truthiness guard
     // here would strand the last "..." beside the settled label.
@@ -126,12 +123,10 @@ export class ShellFeedback {
       return;
     }
     this._globalLoadingStatus.dataset.state = presentation.state;
-    // Split-flap the LABEL only ("LOADING LIVE DATA" -> "LOAD COMPLETE").
-    // setSplitFlapText is a no-op when the text is unchanged, which matters
-    // here: this runs on every 60 ms and 500 ms tick. The detail line is the
-    // live layer roster inside an ellipsised, width-capped span — flapping a
-    // list that churns as layers join would be noise, not delight.
-    setSplitFlapText(this._globalLoadingLabel, presentation.label);
+    // This runs on every 60 ms and 500 ms tick, so an unchanged label is
+    // left alone.
+    if (this._globalLoadingLabel.textContent !== presentation.label)
+      this._globalLoadingLabel.textContent = presentation.label;
     this._globalLoadingDetail.textContent = presentation.detail;
   }
 
@@ -216,8 +211,6 @@ export class ShellFeedback {
         this._loadingVisibilityHandler,
       );
     this._loadingVisibilityHandler = null;
-    disposeSplitFlap(this._globalLoadingLabel);
-    disposeSplitFlap(this._trafficSyncLabel);
     this._toast?.classList.remove('visible');
     if (this._globalLoadingStatus) this._globalLoadingStatus.hidden = true;
   }

@@ -14,6 +14,7 @@ import {
   LAYER_STATE_TOKEN_RESERVATIONS,
   REGISTERED_LAYER_IDS,
   SHARE_TRACKING_RESTORE_POLICIES,
+  FIRST_START_LAYER_IDS,
   createDefaultLayerState,
   decodeLayerStateParams,
   encodeLayerStateParams,
@@ -2800,4 +2801,45 @@ test('explicit provider switches reach durable state without adopting unrelated 
   } finally {
     coordinator.destroy();
   }
+});
+
+test('a first start turns the World Board on without saving it; saved and shared state win', async () => {
+  // Roadmap piece 2: with empty storage the board is on. It is not written to
+  // storage — only an explicit user, voice or tool change is — so the share link
+  // describes what is on screen while saved preferences stay the visitor's own.
+  // Layer-state tokens name layers in links; turning a default on needs none.
+  assert.deepEqual([...FIRST_START_LAYER_IDS], ['world']);
+  const enabledLayers = (manager) =>
+    REGISTERED_LAYER_IDS.filter((id) => manager.isEnabled(id));
+
+  const storage = memoryStorage();
+  const fresh = productionManager();
+  const first = new LayerStateCoordinator(fresh, shareSink(), { storage });
+  await first.start();
+  assert.equal(first.source, 'defaults');
+  assert.deepEqual(enabledLayers(fresh), ['world'], 'the board and nothing live or paid');
+  assert.deepEqual(first.getDurableState().enabledLayerIds, ['world']);
+  assert.deepEqual(storage.writes, [], 'a first start saves nothing');
+  first.destroy();
+
+  const savedOff = productionManager();
+  const local = new LayerStateCoordinator(savedOff, shareSink(), {
+    storage: memoryStorage(serializeStoredLayerState(createDefaultLayerState())),
+  });
+  await local.start();
+  assert.equal(local.source, 'local');
+  assert.deepEqual(enabledLayers(savedOff), [], 'saved layer state is kept as it was');
+  local.destroy();
+
+  const shared = productionManager();
+  const share = new LayerStateCoordinator(shared, shareSink(), { storage: memoryStorage() });
+  await share.start({ shareLayerState: createDefaultLayerState() });
+  assert.deepEqual(enabledLayers(shared), [], 'a share link carries its own layers');
+  share.destroy();
+
+  const legacy = productionManager();
+  const legacyShare = new LayerStateCoordinator(legacy, shareSink(), { storage: memoryStorage() });
+  await legacyShare.start({ allowLocalState: false });
+  assert.deepEqual(enabledLayers(legacy), [], 'a historical link keeps the layers its author saw');
+  legacyShare.destroy();
 });

@@ -1,6 +1,5 @@
 import { LayerLifecycle } from '../data/lifecycle.js';
 import { LayerPresentation } from './layerPresentation.js';
-import { createCyberSonarScene } from '../cyberSonarScene.js';
 import { LENSES } from '../lenses/catalog.js';
 import { createLensBar } from '../ui/lensBar.js';
 import { lensLayerSnapshots } from './lensLayers.js';
@@ -80,7 +79,6 @@ export function createApplicationData({
   });
   defer(() => styleManager.setLensShortcutHandler?.(null));
   styleManager.attachDataManager(dataManager);
-  defer(createCyberSonarScene(viewer, dataManager));
 
   return { dataManager, catalog, presentation, lensBar };
 }

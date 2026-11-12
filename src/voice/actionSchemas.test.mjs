@@ -21,13 +21,7 @@ const stable = (value) =>
 
 test('the complete Realtime tool payload pins the manifest-generated layer release', () => {
   const digest = createHash('sha256')
-    .update(
-      JSON.stringify(
-        stable(
-          GEV_REALTIME_TOOLS.filter((tool) => tool.name !== 'set_cyber_sonar'),
-        ),
-      ),
-    )
+    .update(JSON.stringify(stable(GEV_REALTIME_TOOLS)))
     .digest('hex');
   assert.equal(
     digest,
@@ -41,7 +35,8 @@ test('the complete Realtime tool payload pins the manifest-generated layer relea
     // the Situation panel to set_panel_open and the refresh_news tool.
     // Search Layers adds its manifest entry, panel and ask_globe action.
     // World Board adds its layer enum values and alias.
-    '75a20310792fbdde289995a1b9c20ddb654ce06c02b87f5df766a642bf831b15',
+    // Costume off removes the Cyber HUD layout value from set_hud.
+    'cee6cf5c426366498803935762a72836850a180beff0c73a031908ef9031e28f',
   );
 });
 
@@ -100,12 +95,7 @@ test('metadata cannot add tools, fields, types or enum values', () => {
 test('all legacy action arguments are byte-identical after removing the deliberate additions', () => {
   const legacy = structuredClone(GEV_ACTION_SCHEMAS).filter(
     (tool) =>
-      ![
-        'next_satellite_pass',
-        'set_cyber_sonar',
-        'refresh_news',
-        'ask_globe',
-      ].includes(tool.name),
+      !['next_satellite_pass', 'refresh_news', 'ask_globe'].includes(tool.name),
   );
   // Layer enums are generated from the voice layer manifest and pinned by
   // layerManifest.test.mjs; the two shipped right-rail panels are additive.
@@ -150,9 +140,6 @@ test('all legacy action arguments are byte-identical after removing the delibera
     delete center.properties[axis].minimum;
     delete center.properties[axis].maximum;
   }
-  // Cyber adds one HUD layout.
-  const hud = property('set_hud').layout;
-  hud.enum = hud.enum.filter((layout) => layout !== 'cyber');
   // Derived by applying the same removals to the 4b56d0e9 actionSchemas.
   assert.equal(
     createHash('sha256').update(JSON.stringify(legacy)).digest('hex'),

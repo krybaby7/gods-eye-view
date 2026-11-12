@@ -17,7 +17,7 @@ import {
   profileForDensity,
   viewScaleForAltitude,
 } from './detectionPolicy.js';
-import { KEYHOLE_OUTSIDE_OPACITY_DEFAULT } from '../celestialRing.js';
+import { KEYHOLE_OUTSIDE_OPACITY_DEFAULT } from '../keyholeGeometry.js';
 
 const indexHtml = expandApplicationHtml(fs.readFileSync(new URL('../../index.html', import.meta.url), 'utf8'));
 

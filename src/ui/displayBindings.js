@@ -68,7 +68,7 @@ export class DisplayBindings {
       documentRef: document,
       searchInput: this._locationSearch,
       actions: {
-        setStyle: (style) => this.setStyle(style, { userInitiated: true }),
+        setStyle: (style) => this.setStyle(style),
         toggleLens: (hotkey) => this._lensShortcutHandler?.(hotkey),
         dismissSearch: () => {
           if (this._locationSearch.classList.contains('expanded')) {
@@ -109,12 +109,6 @@ export class DisplayBindings {
         scopeFeatherSlider: this._scopeFeatherSlider,
         hudLayout: this._hudLayoutSelect,
         hudButton: this._hudBtn,
-        sonarButton: this._cyberSonarBtn,
-        sonarRingsSlider: this._cyberSonarRings,
-        sonarRangeSlider: this._cyberSonarRange,
-        sonarIntensitySlider: this._cyberSonarIntensity,
-        sonarOpacitySlider: this._cyberSonarOpacity,
-        sonarSectorSlider: this._cyberSonarSector,
         cleanViewButton: this._cleanViewBtn,
         cleanViewExitButton: this._cleanViewExitBtn,
         densitySlider: this._detectionDensitySlider,
@@ -126,7 +120,7 @@ export class DisplayBindings {
         modelModeButtons: this._models3dBtn ? this._models3dModeBtns : [],
       },
       actions: {
-        setStyle: (style) => this.setStyle(style, { userInitiated: true }),
+        setStyle: (style) => this.setStyle(style),
         toggleBloom: () => {
           this.shareLinkManager?.claimRestoreLane?.('visual');
           this._setBloomEnabled(!this.bloomEnabled);
@@ -164,7 +158,7 @@ export class DisplayBindings {
         },
         setHudLayout: (value) => {
           this.shareLinkManager?.claimRestoreLane?.('visual');
-          this._setHudVariant(value, { applyVisualDefaults: true });
+          this._setHudVariant(value);
         },
         toggleCleanView: () => this.toggleCleanView(),
         exitCleanView: () => this.toggleCleanView(false),
@@ -202,14 +196,6 @@ export class DisplayBindings {
           this._updateHudButtonState();
           this._syncShareState();
         },
-        toggleSonar: () => this._setCyberSonarEnabled(),
-        setSonarRings: (value) => this._setCyberSonarSetting('rings', value),
-        setSonarRange: (value) => this._setCyberSonarSetting('range', value),
-        setSonarIntensity: (value) =>
-          this._setCyberSonarSetting('intensity', value),
-        setSonarOpacity: (value) =>
-          this._setCyberSonarSetting('opacity', value),
-        setSonarSector: (value) => this._setCyberSonarSetting('sector', value),
         cycleDetection: () => {
           this.shareLinkManager?.claimRestoreLane?.('visual');
           this.claimDetection();

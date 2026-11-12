@@ -23,7 +23,6 @@ export function createApplicationControls({
         operations.requests.regional.getBrief(...args),
       ...catalogControlServices(catalog),
     },
-    requestServices: operations.requests,
     mapStackController,
     placeSearch,
   });

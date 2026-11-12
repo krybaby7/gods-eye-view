@@ -1202,17 +1202,11 @@ try {
   });
 
   await check(
-    'Cyber theme preserves bar and narrow screens scroll within the row',
+    'The bar fits on desktop and narrow screens scroll within the row',
     async () => {
-      await page.evaluate(() =>
-        window.__godsEyeView.styleManager.setHudLayout('cyber'),
-      );
-      await page.waitForFunction(
-        () => document.documentElement.dataset.uiTheme === 'cyber',
-      );
       await settleFrames();
-      await shot('lens-cyber');
-      const desktopCyber = await page.evaluate(() => {
+      await shot('lens-desktop');
+      const desktop = await page.evaluate(() => {
         const row = document.querySelector('#lens-bar .lens-buttons');
         const button = row.querySelector('[data-lens-id="signals"]');
         const box = button.getBoundingClientRect();
@@ -1228,13 +1222,10 @@ try {
         };
       });
       assert.ok(
-        desktopCyber.rowScroll <= desktopCyber.rowWidth + 1,
-        JSON.stringify(desktopCyber),
+        desktop.rowScroll <= desktop.rowWidth + 1,
+        JSON.stringify(desktop),
       );
-      assert.ok(
-        desktopCyber.lastPointerReachable,
-        JSON.stringify(desktopCyber),
-      );
+      assert.ok(desktop.lastPointerReachable, JSON.stringify(desktop));
       for (const viewport of [
         { width: 720, height: 480 },
         { width: 390, height: 600 },

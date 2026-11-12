@@ -1,5 +1,4 @@
 import * as Cesium from 'cesium';
-import { cyberSonarBaseAlpha } from '../../cyberSonar.js';
 import { selectModelEligible } from '../../data/modelEligibility.js';
 import { civilAircraftModelSpec } from './modelSpec.js';
 import { CLASS_SCALE_2D } from '../../data/aircraftClass.js';
@@ -123,7 +122,7 @@ export function createRendering({
     const isCockpitNear =
       isCockpitContact && flightState._cockpitNearContacts.has(icao24);
     if (isCockpitContact && !isCockpitNear) {
-      const freshnessAlpha = cyberSonarBaseAlpha(bb);
+      const freshnessAlpha = bb.color?.alpha ?? 1;
       bb.image = cockpitContactDotImage();
       bb.width = COCKPIT_CONTACT_SIZE_PX;
       bb.height = COCKPIT_CONTACT_SIZE_PX;
@@ -145,7 +144,7 @@ export function createRendering({
     bb.height = icao24 === flightState._trackedIcao ? 24 : 20;
     bb.scale = _fleetBillboardScale(icao24, meta?.klass) * limbScale;
     bb.scaleByDistance = _normalBillboardScaleByDistance();
-    bb.color = _fleetBillboardColor(icao24).withAlpha(cyberSonarBaseAlpha(bb));
+    bb.color = _fleetBillboardColor(icao24).withAlpha(bb.color?.alpha ?? 1);
   }
 
   /**

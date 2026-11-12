@@ -100,25 +100,3 @@ export function resolveCockpitUtilityLayout({
     ),
   };
 }
-
-/** Shared Cyber panel slot, with footer controls above the lower frame (83vh). */
-export function resolveCyberCockpitPanelLane({
-  viewportHeight,
-  top,
-  launcherHeight = 60,
-  signalHeight = 44,
-  contactHeight = 64,
-}) {
-  const gap = 8;
-  const footerHeight = Math.max(
-    contactHeight + gap,
-    launcherHeight + signalHeight + gap * 2,
-  );
-  const bottom = viewportHeight * 0.82;
-  const panelHeight = Math.max(120, bottom - top - footerHeight);
-  return {
-    panelHeight,
-    utilityHeight: panelHeight + gap + launcherHeight,
-    signalTop: top + panelHeight + launcherHeight + gap * 2,
-  };
-}

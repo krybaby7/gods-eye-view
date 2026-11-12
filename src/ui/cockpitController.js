@@ -2,8 +2,6 @@
 import {
   readAircraftInfo,
   dispatchCockpitModeChanged,
-  toggleTrackedTr3b,
-  syncTr3bToggle,
   syncEntry,
   navigateContext,
   _adoptTrackedEntity,
@@ -79,8 +77,6 @@ export class CockpitViewController {
     this.surfaceFallback = false;
     this.lastCompassSignature = '';
     this.entry = document.getElementById('cockpit-entry');
-    this.tr3bToggle = document.getElementById('tr3b-toggle');
-    this._tr3bSignature = null;
     this.mapViewButton = document.getElementById('map-view-switch');
     this.resetGlobeButton = document.getElementById('cockpit-reset-globe');
     this.hud = document.getElementById('cockpit-hud');
@@ -236,7 +232,6 @@ export class CockpitViewController {
       }),
     );
     this._listen(this.entry, 'click', () => this.enter());
-    this._listen(this.tr3bToggle, 'click', () => this.toggleTrackedTr3b());
     this._listen(this.mapViewButton, 'click', () => this.exit());
     this._listen(this.visionPrevious, 'click', () => this.cycleVisionMode(-1));
     this._listen(this.visionCurrent, 'click', () => this.cycleVisionMode(1));
@@ -306,12 +301,6 @@ export class CockpitViewController {
   }
   dispatchCockpitModeChanged(active, info) {
     return dispatchCockpitModeChanged.call(this, active, info);
-  }
-  toggleTrackedTr3b() {
-    return toggleTrackedTr3b.call(this);
-  }
-  syncTr3bToggle(info) {
-    return syncTr3bToggle.call(this, info);
   }
   syncEntry() {
     return syncEntry.call(this);

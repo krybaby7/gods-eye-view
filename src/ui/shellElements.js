@@ -2,7 +2,6 @@
 export function readShellElements(document = globalThis.document) {
   return {
     _rightPanelStack: document.getElementById('right-context-rail'),
-    _styleIndicator: document.getElementById('active-style-name'),
     _sliderPanel: document.getElementById('param-slider-panel'),
     _sliderContainer: document.getElementById('param-sliders'),
     _ppToggles: document.getElementById('pp-toggles'),
@@ -17,21 +16,6 @@ export function readShellElements(document = globalThis.document) {
     _hudBtn: document.getElementById('hud-toggle'),
     _hudLayoutRow: document.getElementById('hud-layout-row'),
     _hudLayoutSelect: document.getElementById('hud-layout-select'),
-    _cyberSonarBtn: document.getElementById('cyber-sonar-toggle'),
-    _cyberSonarRings: document.getElementById('cyber-sonar-rings'),
-    _cyberSonarRingsValue: document.getElementById('cyber-sonar-rings-value'),
-    _cyberSonarRange: document.getElementById('cyber-sonar-range'),
-    _cyberSonarRangeValue: document.getElementById('cyber-sonar-range-value'),
-    _cyberSonarIntensity: document.getElementById('cyber-sonar-intensity'),
-    _cyberSonarIntensityValue: document.getElementById(
-      'cyber-sonar-intensity-value',
-    ),
-    _cyberSonarOpacity: document.getElementById('cyber-sonar-opacity'),
-    _cyberSonarOpacityValue: document.getElementById(
-      'cyber-sonar-opacity-value',
-    ),
-    _cyberSonarSector: document.getElementById('cyber-sonar-sector'),
-    _cyberSonarSectorValue: document.getElementById('cyber-sonar-sector-value'),
     _detectionSliderRow: document.getElementById('detection-slider-row'),
     _detectionDensitySlider: document.getElementById(
       'detection-density-slider',

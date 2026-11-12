@@ -1938,7 +1938,6 @@ body.cockpit-mode #view-switcher button {
 body.cockpit-mode
   :is(
     #title-bar,
-    #style-indicator,
     #top-center-actions,
     #globe-navigation,
     #traffic-sync-chip,
@@ -1977,45 +1976,16 @@ body.cockpit-mode #right-context-rail {
   display: none !important;
 }
 
-/* Keep the user's intelligence HUD text available in first person. It stays
-   subordinate to the visor instruments and occupies the four peripheral
-   corridors, leaving the optical center, context rails, and heading tape free. */
+/* Keep the status line available in first person, subordinate to the visor
+   instruments and clear of the optical centre and heading tape. */
 body.cockpit-mode #intel-hud.active {
   z-index: 146;
   opacity: 0.72;
   visibility: visible;
 }
-body.cockpit-mode #intel-hud .hud-top-left,
-body.cockpit-mode #intel-hud .hud-bottom-left {
-  left: clamp(18px, 3vw, 44px);
-  transform: scale(0.78);
-  transform-origin: left center;
-}
-body.cockpit-mode #intel-hud .hud-top-right,
-body.cockpit-mode #intel-hud .hud-bottom-right {
+body.cockpit-mode #intel-hud .hud-status {
   right: clamp(18px, 3vw, 44px);
-  transform: scale(0.78);
-  transform-origin: right center;
-}
-body.cockpit-mode #intel-hud .hud-top-left,
-body.cockpit-mode #intel-hud .hud-top-right {
-  top: clamp(104px, 13vh, 138px);
-}
-body.cockpit-mode #intel-hud .hud-bottom-left,
-body.cockpit-mode #intel-hud .hud-bottom-right {
   bottom: clamp(84px, 11vh, 118px);
-}
-body.cockpit-mode #intel-hud .hud-summary-wrap {
-  max-width: min(34vw, 380px);
-}
-body.cockpit-mode #intel-hud .hud-summary {
-  font-size: 9px;
-}
-body.cockpit-mode #intel-hud .hud-left-edge {
-  left: 22px;
-}
-body.cockpit-mode #intel-hud .hud-right-edge {
-  right: 22px;
 }
 
 @media (max-width: 760px) {

@@ -949,6 +949,17 @@ export function createDefaultLayerState() {
   };
 }
 
+/** Layers a first start turns on (nothing saved, no link): the World Board. */
+export const FIRST_START_LAYER_IDS = Object.freeze(['world']);
+
+/** The durable state of a first start: the defaults with the board on. */
+export function createFirstStartLayerState() {
+  return {
+    ...createDefaultLayerState(),
+    enabledLayerIds: [...FIRST_START_LAYER_IDS],
+  };
+}
+
 /** Sanitize and canonicalize an externally supplied layer-state object. */
 export function normalizeLayerState(candidate) {
   const input = candidate && typeof candidate === 'object' ? candidate : {};

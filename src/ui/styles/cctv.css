@@ -11,19 +11,6 @@
   max-height: calc(100vh - 24px);
 }
 
-#cctv-panel .panel-glow {
-  position: absolute;
-  inset: -18px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(0, 212, 255, 0.16) 0%,
-    transparent 65%
-  );
-  filter: blur(16px);
-  opacity: 0.25;
-  pointer-events: none;
-}
-
 .cctv-panel-inner {
   position: relative;
   background: var(--glass-bg);

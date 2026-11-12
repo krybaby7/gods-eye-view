@@ -282,10 +282,9 @@ test('Cockpit owns a focused shared Display portal and compact Radio controls', 
     css,
     /@media \(max-width: 720px\)\s*\{[\s\S]*?#top-center-actions\s*\{[\s\S]*?right:\s*16px;[\s\S]*?left:\s*auto;[\s\S]*?transform:\s*none;/,
   );
-  assert.match(css, /@media \(max-width: 720px\)\s*\{[\s\S]*?#style-indicator\s*\{\s*display:\s*none;/);
   assert.match(
     css,
-    /@media \(max-width: 520px\)\s*\{[\s\S]*?#title-bar h1 > span:last-child,[\s\S]*?#title-bar \.subtitle\s*\{\s*display:\s*none;/,
+    /@media \(max-width: 520px\)\s*\{[\s\S]*?#title-bar h1 > span:last-child\s*\{\s*display:\s*none;/,
   );
   assert.match(css, /body\.ui-clean-view #top-center-actions/);
   assert.match(css, /body\.recording-mode #top-center-actions/);
@@ -613,16 +612,10 @@ test('Cockpit panel corridors reserve the owned topline readouts', () => {
   );
   assert.match(
     signalLayout,
-    /resolveCockpitUtilityAnchor\(\{[\s\S]*?recBottom: recBounds \? recBounds\.bottom : 0,[\s\S]*?signalTop: signalBounds\.top,[\s\S]*?stripHeight: utilityBounds\.height,/,
-    'the strip hangs off the REC readout and is clamped by the briefing card it shares the margin with',
+    /resolveCockpitUtilityAnchor\(\{[\s\S]*?recBottom: 0,[\s\S]*?signalTop: signalBounds\.top,[\s\S]*?stripHeight: utilityBounds\.height,/,
+    'the REC readout is gone, so the strip anchors to its own floor and is clamped by the briefing card it shares the margin with',
   );
-  assert.match(signalLayout, /#intel-hud \.hud-top-right/);
-  assert.match(
-    signalLayout,
-    /const recBounds = isRenderedOnScreen\(recReadout\)\s*\? recReadout\.getBoundingClientRect\(\)\s*: null;/,
-    'HUD Off retires the Intel HUD with visibility/opacity, which leaves the REC '
-      + 'readout a rect — a rect test alone would anchor the strip to an invisible readout',
-  );
+  assert.doesNotMatch(signalLayout, /hud-top-right|recReadout/);
   assert.match(
     isRenderedOnScreen.toString(),
     /function isRenderedOnScreen\(element\) \{[\s\S]*?style\.display === 'none'\s*\|\|\s*style\.visibility === 'hidden'\s*\|\|\s*Number\(style\.opacity\) === 0[\s\S]*?rect\.width > 0 && rect\.height > 0;/,

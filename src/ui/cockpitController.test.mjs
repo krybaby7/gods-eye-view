@@ -46,7 +46,6 @@ test('Cockpit subscriptions are released once and retained actions cannot restar
     assert.equal(env.callbacks.size, 0);
     assert.equal(owner.enter(), false);
     assert.equal(owner.navigateContext(1), false);
-    assert.equal(owner.toggleTrackedTr3b(), false);
     assert.equal(owner.update(), false);
     assert.equal(owner.active, false);
   } finally {

@@ -4,7 +4,7 @@ import * as render from '../../renderGovernor.js';
 import * as context from '../../data/contextStore.js';
 import * as picking from '../../data/pickRegistry.js';
 import { registerWorldOverlayPaintLane } from '../../overlays/worldOverlay.js';
-import { keyholeLabelAlphaFromGeometry } from '../../celestialRing.js';
+import { keyholeLabelAlphaFromGeometry } from '../../keyholeGeometry.js';
 import { refreshTrackedReadout } from '../../data/trackedReadout.js';
 
 /** Construct one layer using the application scene owners and a supplied source. */

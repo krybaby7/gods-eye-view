@@ -53,20 +53,6 @@
   pointer-events: auto;
 }
 
-.first-run-scanline {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(54, 220, 255, 0.8),
-    transparent
-  );
-  box-shadow: 0 0 1rem rgba(54, 220, 255, 0.45);
-  pointer-events: none;
-}
-
 .first-run-header,
 .first-run-footer {
   display: flex;

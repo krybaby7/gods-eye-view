@@ -20,7 +20,7 @@ import {
 import {
   getKeyholeFadeTuning,
   keyholeLabelAlphaFromGeometry,
-} from '../celestialRing.js';
+} from '../keyholeGeometry.js';
 import { registerWorldOverlayPaintLane } from '../overlays/worldOverlay.js';
 import {
   DETECTION_STYLE,
@@ -48,12 +48,6 @@ import {
   viewScaleForAltitude,
 } from './detectionPolicy.js';
 import { detectionBracketOpacity } from './detectionPresentation.js';
-import {
-  createCyberSonarSampler,
-  cyberSonarFrameDelay,
-  isCyberContactSonarActive as isCyberSonarActive,
-  isCyberContactThemeActive as isCyberMapThemeActive,
-} from '../cyberSonar.js';
 
 /**
  * @module detection
@@ -212,8 +206,6 @@ let _lastRenderMs = 0;
 let _lastPaintMs = 0;
 let _lastSolveMs = 0;
 let _throttleSkipCount = 0;
-let _lastCyberSonarPaintAt = Number.NEGATIVE_INFINITY;
-let _cyberSonarRenderTimer = null;
 /** @type {Function|null} External callback invoked when the detection mode changes */
 let _onModeChange = null;
 /** @type {{surface:HTMLCanvasElement|null,setActive:Function,requestPaint:Function,unregister:Function}|null} */
@@ -333,7 +325,6 @@ export function initDetection(viewer, layers, onModeChange) {
 
 /** Release the host lane and all retained detection runtime state. */
 export function destroyDetection() {
-  _clearCyberSonarRenderTimer();
   if (_cockpitModeListener && typeof window !== 'undefined') {
     window.removeEventListener(
       'gev:cockpit-mode-changed',
@@ -371,25 +362,6 @@ export function destroyDetection() {
   _lastPaintMs = 0;
   _lastSolveMs = 0;
   _throttleSkipCount = 0;
-  _lastCyberSonarPaintAt = Number.NEGATIVE_INFINITY;
-}
-
-function _clearCyberSonarRenderTimer() {
-  if (_cyberSonarRenderTimer != null) {
-    globalThis.clearTimeout?.(_cyberSonarRenderTimer);
-    _cyberSonarRenderTimer = null;
-  }
-}
-
-function _scheduleCyberSonarRender(nowMs) {
-  if (_cyberSonarRenderTimer != null || !globalThis.setTimeout) return;
-  const delay = cyberSonarFrameDelay(_lastCyberSonarPaintAt, nowMs);
-  _cyberSonarRenderTimer = globalThis.setTimeout(() => {
-    _cyberSonarRenderTimer = null;
-    if (isCyberSonarActive()) {
-      governorRequestRender('cyber-sonar-cadence');
-    }
-  }, delay);
 }
 
 /**
@@ -710,18 +682,7 @@ function _applyModeState() {
 function _shouldPaintDetectionLane(frame) {
   if (_mode === MODE_OFF || _suspended) return false;
   const layoutChanged = frame.layoutRevision !== _hostLayoutRevision;
-  const nowMs = Number.isFinite(frame.timestamp) ? frame.timestamp : _nowMs();
   _frameCount++;
-  if (isCyberSonarActive()) {
-    const sonarDelay = cyberSonarFrameDelay(_lastCyberSonarPaintAt, nowMs);
-    if (!layoutChanged && sonarDelay > 0) {
-      _scheduleCyberSonarRender(nowMs);
-      return false;
-    }
-  } else {
-    _clearCyberSonarRenderTimer();
-    _lastCyberSonarPaintAt = Number.NEGATIVE_INFINITY;
-  }
   // The skip and the follow-up request come from ONE decision, so the valve
   // cannot drop a frame without handing its request forward — see
   // `detectionPaintSkipDecision`. (Skipping is a deferral, never a cancellation:
@@ -769,13 +730,6 @@ function _paintDetectionLane(frame) {
   _lastSolveMs = result.solveMs || 0;
   _lastPaintMs = Math.max(0, _lastRenderMs - _lastSolveMs);
   const nowMs = Number.isFinite(frame.timestamp) ? frame.timestamp : _nowMs();
-  if (isCyberSonarActive() && _lastDiagnostics?.visibleCount > 0) {
-    _lastCyberSonarPaintAt = nowMs;
-    _scheduleCyberSonarRender(nowMs);
-  } else {
-    _clearCyberSonarRenderTimer();
-    _lastCyberSonarPaintAt = Number.NEGATIVE_INFINITY;
-  }
   if (_lastDiagnostics) {
     _lastDiagnostics.frameTotalMs = _lastRenderMs;
     _lastDiagnostics.paintMs = _lastPaintMs;
@@ -1043,8 +997,7 @@ function _stashCallout(entry, acquireFade, keyhole) {
     placement.centerY,
     keyhole,
   );
-  const alpha =
-    acquireFade * temporalAlpha * radialAlpha * (candidate.sonarFactor ?? 1);
+  const alpha = acquireFade * temporalAlpha * radialAlpha;
   if (alpha <= 0.001) return;
 
   let row = _calloutPool[_calloutCount];
@@ -1194,7 +1147,6 @@ function _materializeCandidate(
     keyholeAlpha,
     placements,
     color: obj._candidateColor,
-    sonarFactor: obj._candidateSonarFactor ?? 1,
     // Costed here rather than in the object sweep: the sweep walks every
     // observation in view, while this runs only for callouts that actually
     // placed — a budgeted handful per frame.
@@ -1229,9 +1181,6 @@ function _drawOverlay(frame) {
   // with every arbiter call in this function — so the frame that paints an
   // animation's final state is the same frame that ends its demand.
   const now = Number.isFinite(frame.timestamp) ? frame.timestamp : _nowMs();
-  const sonarActive = isCyberSonarActive();
-  const cyberMapActive = isCyberMapThemeActive();
-  const sonarSampler = createCyberSonarSampler(width, height, now);
   const bracketPresentationOpacity = detectionBracketOpacity(_cockpitActive);
   const shouldSolve =
     _labelSolveDirty || now - _lastLabelSolveAt >= LABEL_SOLVE_INTERVAL_MS;
@@ -1414,16 +1363,11 @@ function _drawOverlay(frame) {
     // The bracket follows the same linear radial keyhole fade as its callout.
     const color = colorFor(resolveTier(obj));
     const keyholeAlpha = keyholeLabelAlphaFromGeometry(sx, sy, keyhole);
-    const sonarFactor =
-      sonarActive && !obj.skipLabel ? sonarSampler.at(sx, sy) : 1;
-    const sonarLabelFactor = sonarSampler.label(sonarFactor);
-    const admissionAlpha = detectionBracketAlpha(
+    const bracketAlpha = detectionBracketAlpha(
       obj.type,
       keyholeAlpha,
       keyholeOutsideOpacity,
-      cyberMapActive,
     );
-    const bracketAlpha = admissionAlpha * sonarFactor;
     if (bracketAlpha > 0) {
       const transit = obj.tier?.startsWith('transit_');
       (transit ? appendTransitBracket : appendCornerBracket)(
@@ -1461,15 +1405,13 @@ function _drawOverlay(frame) {
 
     obj._cohortSourceId = sourceId;
     obj._cohortPriority = _semanticPriority(obj);
-    obj._cohortBand =
-      admissionAlpha >= 0.999 ? 8 : Math.floor(admissionAlpha * 8);
+    obj._cohortBand = bracketAlpha >= 0.999 ? 8 : Math.floor(bracketAlpha * 8);
     obj._cohortHash = stableIdentityHash(layerId, sourceId);
     obj._candidateScreenX = sx;
     obj._candidateScreenY = sy;
     obj._candidateHalfW = halfW;
     obj._candidateHalfH = halfH;
     obj._candidateColor = color;
-    obj._candidateSonarFactor = sonarLabelFactor;
     obj._candidatePrimary = primary;
     obj._candidateMicro = micro;
 

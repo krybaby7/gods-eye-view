@@ -7,6 +7,9 @@ const CYAN = Cesium.Color.fromCssColorString('#00d4ff');
 const HATCH_BASE = Cesium.Color.fromCssColorString('#172b3e');
 const HATCH_LINE = Cesium.Color.fromCssColorString('#a4b4bd');
 const LABEL_MIN_KM2 = 850_000;
+// Half the country-code badge (54 x 24 px), for testing it against panels.
+const LABEL_HALF_WIDTH_PX = 27;
+const LABEL_HALF_HEIGHT_PX = 12;
 
 function groundPolygon(hierarchy, id, colored) {
   return new Cesium.GeometryInstance({
@@ -164,6 +167,8 @@ export function createWorldGeometry(scene, shapes, countries) {
   let labelAlpha = -1;
   let active = true;
   let previousCamera;
+  let previousCoverRevision = 0;
+  const labelWindow = new Cesium.Cartesian2();
   const occluder = new Cesium.EllipsoidalOccluder(Cesium.Ellipsoid.WGS84);
 
   function removeOutline(outline) {
@@ -280,23 +285,45 @@ export function createWorldGeometry(scene, shapes, countries) {
       );
     },
 
-    cullLabels(camera) {
+    cullLabels(camera, cover = null) {
       if (!labels.show) return;
       const position = camera.positionWC;
       const in3D = scene.mode === Cesium.SceneMode.SCENE3D;
+      // A panel that opened or moved re-culls even under a still camera.
+      const coverRevision = cover ? cover.refresh() : 0;
       if (
         in3D &&
         previousCamera &&
+        coverRevision === previousCoverRevision &&
         Cesium.Cartesian3.equalsEpsilon(position, previousCamera, 0, 1)
       )
         return;
+      previousCoverRevision = coverRevision;
       previousCamera = in3D
         ? Cesium.Cartesian3.clone(position, previousCamera)
         : undefined;
       occluder.cameraPosition = position;
       for (let i = 0; i < labels.length; i++) {
         const label = labels.get(i);
-        label.show = !in3D || occluder.isPointVisible(label.position);
+        let show = !in3D || occluder.isPointVisible(label.position);
+        if (show && cover) {
+          // The codes are drawn on the globe, beneath see-through panels, so
+          // one under a panel would read through it: hide it instead.
+          const at = Cesium.SceneTransforms.worldToWindowCoordinates(
+            scene,
+            label.position,
+            labelWindow,
+          );
+          show =
+            !at ||
+            !cover.covers(
+              at.x,
+              at.y,
+              LABEL_HALF_WIDTH_PX,
+              LABEL_HALF_HEIGHT_PX,
+            );
+        }
+        label.show = show;
       }
     },
 

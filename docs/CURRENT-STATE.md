@@ -41,7 +41,7 @@ those sources can report their own availability.
 `scripts/qa-lenses.mjs` exercises the running app with deterministic transport
 fixtures, using narrow CDP request patterns so geometry-worker scripts load
 normally. It checks source skips without activation, layer persistence on a
-plain URL, hotkeys, shared-layer rules, Cyber and narrow-screen pointer access.
+plain URL, hotkeys, shared-layer rules and narrow-screen pointer access.
 It also measures matched-view rendering only after wind geometry and weather
 tiles are ready. `--full-hazards` includes fixture FIRMS data; `--skip-performance`
 runs behavior separately from the recorded renderer measurement. See the
@@ -145,58 +145,34 @@ lists at 25 rows by default. Voice offers the same queries next to its app
 actions: the session lists them, and the browser runs them through the same
 catalog, loaded on first use. See [tools and the MCP server](TOOLS.md).
 
-## Cyber HUD — September 30, 2026
+## Costume off, board on — November 12, 2026
 
-Display > HUD > Layout includes Cyber, also available through the HUD voice
-action and shared visual state. An explicit first transition into Cyber selects
-FLIR with Ironbow 0.42. An explicit switch back to another HUD layout restores
-the visual preset used before Cyber; restored links and scenes remain
-authoritative. The skin uses shared red/slate panel treatments in map and cockpit,
-with compact 200px collapsed controls and wider expanded panels. Other HUD
-layouts retain their existing presentation.
-Chamfered panel expand/collapse controls use an inset keyboard-focus outline and
-red hover border in both map and cockpit, so clipping does not hide the highlight.
+The HUD costume is gone: classification banners, random mission and sensor
+numbers, REC, orbit/pass readouts, band strips, corner brackets, the tagline,
+the title glow, the logo that followed the pointer and the pulsing loader logo,
+the ACTIVE STYLE readout, panel glows, scan-line bars, split-flap text, the
+TR-3B reclassify button and the Cyber skin with its sonar. The title keeps its
+text and logo, plainly.
 
-Cyber's map-side right rail opens one panel at a time while keeping collapsed
-launchers available. Display, CCTV and Context scroll their contents inside fixed
-headers and decorative frames. The narrow-screen rail remains scrollable to reach
-each panel. Radio retains the shared nested Context player and compact
-header disclosure, without relocating playback controls on theme changes.
+The intelligence HUD (`src/hud.js`) is one quiet status line in the bottom
+right, above the globe controls: a plain place name (nearest known point or
+region, no AI call), latitude/longitude, MGRS, altitude above mean sea level and
+UTC time, with the selected vessel's AIS line above it. Minimal drops altitude
+and the vessel line. The HUD no longer calls `/api/openai/hud-summary`; the
+route stays because the brief tool (`src/tools/queries/brief.js`) still uses it.
+A stored or shared `hud=cyber` falls back to Tactical, and `set_cyber_sonar` is
+no longer a voice tool.
 
-Voice help/error popups and Location/Visual Presets pins extend beyond their
-Cyber frames without being clipped: the shapes decorate non-interactive
-pseudo-elements. The lower-left telemetry card leaves room for attribution's
-full logo row. New panels can use the [shared surface contract](panel-surfaces.md)
-for theme tokens, rail input and a fixed header with a bounded scroll body.
-The contract is intentionally future-facing and opt-in; its first production
-adopter will land after this change. Existing owners still control disclosure,
-persistence and placement, while small-screen rail popup clipping and other
-integration limits remain documented in the contract.
+The scope vignette and the sun/moon ring are off by default and their toggles
+still work. Keyhole geometry lives in `src/keyholeGeometry.js`; the ring module
+only draws the ring. The right rail's one-panel rule, which only Cyber used,
+lives in `src/ui/railSinglePanel.js` and is off.
 
-On desktop, Cyber raises the left rail so it clears the lower coordinate card.
-`layoutRightPanelRail` reads that rendered top as its measured `baseTop`, which
-keeps the right rail aligned. Cockpit retains its separate rail placement for
-its visor layout.
-
-Sonar has one contact-highlighting method. Native Cesium points, billboards and
-labels are treated in GPU draw commands without replacing their positions,
-identities or pick commands. Model and canvas/DOM overlays retain their own
-rendering paths. Sonar OFF stops the sweep while retaining Cyber's neutral
-contact treatment. Reduced motion disables the animated sweep; cockpit and
-hidden HUD states do not apply the map treatment. If the native shader is not
-supported, native contacts remain available and Display reports the limitation.
-No CSS scene-dimming fallback or effect selector is exposed.
-
-The Sonar controls adjust rings, range, power, opacity and sector. Sweep opacity
-affects detection painting rather than label cohort admission. Theme exit and
-renderer teardown release the derived GPU resources and restore owned model
-colors without replacing newer layer-owned color changes.
-
-The `set_cyber_sonar` voice action adjusts the same controls without switching
-themes or enabling omitted settings. State readback distinguishes configured
-settings from active map/contact effects. Sonar settings are session-only and
-return to their defaults on reload. Sliders accept integer values matching the
-action's ranges.
+With empty storage and no link the World Board starts on. Only its visibility
+is restored and nothing is written to storage until the visitor chooses; saved
+and shared layer state win. The board's country codes hide when they would sit
+under a panel (`src/overlays/panelCover.js`), the status line is capped clear of
+the World legend, and the lens bar sits below the plain title.
 
 Wind appears in the Weather group before Utilities. The surface-weather prototype
 uses keyless NOAA GFS or ECMWF IFS forecasts on an approximately 1° display grid.
@@ -4389,26 +4365,16 @@ are omitted rather than framing the wrong part of the globe.
 
 ### TR-3B conversion Easter egg (August 2026)
 
-- With a contact tracked, CONTEXT ▸ CONTACTS shows a small 🛸 chip beside COCKPIT (`#tr3b-toggle`, gated by `CockpitView.syncTr3bToggle()` on a tracked contact — not on the cockpit entry policy). Pressing it converts that contact into a TR-3B and pressing it again restores the real aircraft. State lives in `src/data/tr3bRegistry.js`: a session-scoped module-level `Set` keyed by ICAO 24-bit address, shared across both flight layers the same way `militaryRegistry.js` is, so a conversion holds through a civil↔military handoff. It is deliberately NOT persisted (no localStorage, no share-link param, no schema change) and layer teardown deliberately leaves it intact — only a page reload clears conversions.
+- The 🛸 reclassify chip (`#tr3b-toggle`) was removed on November 12, 2026, so nothing in the UI converts a contact any more. The registry, sprites and voice spelling below remain, inert.
 - The sprite is two hidden kinds (`tr3b`, `tr3bHot`) in `src/data/aircraftIcons.js`, authored in the same 96×96 nose-up pipeline as the eight class silhouettes, so the triangle points along the display course through the existing screen-projected rotation path with `alignedAxis` still `ZERO`. They are unreachable from `classifyAircraft()`. Variant selection rides the existing `irBoost` layer param, so under NVG/FLIR/surveillance the hull stays cold and the four emitters render hot; a style switch re-images only converted contacts, never the rest of the fleet.
 - Both layers resolve every `aircraftIcon()` call through a local `_iconKind()` shim (identity for unconverted contacts), so no refresh path — poll reconciler, two-tier raster swap, presentation pass, tracked entity — can revert a conversion.
 - The class label follows the conversion across every surface that reports one: tracked card, cockpit/`getTrackedInfo`, Contacts, and the analyst record's `aircraftClass` (`tr3b`, the style-independent id, so a query answers the same in FLIR as in Normal). Callsign, flight level, speed, and route stay live-feed truth.
 - A converted contact is billboard-only. It is excluded from model eligibility at SELECTION time, so it never consumes a `MODEL_MAX` cap slot, with the handoff guard and the tracked-model regime guard kept as defence. The billboard stays shown, so the contact keeps satisfying the `getNearby` / `getDetectableObjects` visibility guards and still works in Contacts and Cockpit.
 - Regression surface: `src/data/tr3bRegistry.test.mjs`.
 
-### Split-flap status chips (August 2026)
+### Status chip labels
 
-- The three status chips flip their LABELS over character by character when the text changes, like a departure board: `#global-loading-label` ("LOADING LIVE DATA" → "LOAD COMPLETE"), `#traffic-sync-label`, and `#cctv-sync-label` ("loading frames" → "camera grid ready"). All three route through `setSplitFlapText()` in `src/splitFlap.js`; there is no other writer of those three elements. The progress counters (`#*-sync-progress`, `#global-loading-detail`) are deliberately left as plain `textContent` — they tick several times a second, and flapping them reads as a slot machine.
-- `#global-loading-label` doubles as the universal top-center status banner, so anything routed through `_showGlobalStatusNotice()` flaps as well — in particular the share-link restore notices, of which "Shared military flight could not be restored — feed unavailable" is the longest at 63 characters. That needs no special case: `planSplitFlap()` compresses the stagger to hold the 620 ms budget (26 ms → 6.9 ms per column at that length), every column is reserved for the whole cascade, and `element.textContent` is the complete notice at every instant, so the `aria-live` region announces the whole sentence rather than a fragment. A notice deferred minutes past boot is equally safe: `ensureHost()` re-validates the shell on every call, and the long-lived `Text` node is never replaced.
-- **DOM text is the truth, and its node NEVER moves — do not "fix" this.** The first call upgrades a chip label into a permanent shell (`ensureHost`): a `.gev-flap-text` span holding one long-lived `Text` node, plus an `aria-hidden` `.gev-flap-cells` sibling. After that the ONLY text operation for the life of the chip is `node.data = next`. Nothing is reparented, so the label is never transiently empty and the `aria-live` region never sees a removal/reinsertion pair it could announce twice. `element.textContent` is the settled string at every instant, because the cells carry no text at all: both glyphs are CSS generated content (`::before` from `data-flap-prev` = outgoing, `::after` from `data-flap-next` = incoming), which never reaches `textContent`. This keeps QA pins honest and lets `_updateTrafficSyncChip`'s own `textContent !==` guard keep working. The shell is built on a tick where the text is NOT changing, so no real label change ever carries a structural mutation.
-- **No animation loop, and exactly ONE `setTimeout` per change.** CSS `animation`/`transition` only, triggered once per text change and staggered through a per-cell `--gev-flap-delay`. The single timer is the settle that strips the cells; the width ease ends on a `transitionend`/`transitioncancel` listener, never a second timer. Idle cost is zero, there is no periodic work, and nothing requests a Cesium render or takes a render-governor hold. `setSplitFlapText` is a no-op on unchanged text, which is required — the chips are repainted by a 60 ms and a 500 ms ticker.
-- **Only what was visible flaps away.** An interrupted cascade (A→B cut short by C) derives each column's outgoing glyph from `visibleGlyphs()` — what that column is actually SHOWING at that instant, which for a column whose stagger has not elapsed is still A, not the pending B. `FLAP_TURN_RATIO` must track the `gev-flap-out`/`gev-flap-in` keyframe crossover in style.css.
-- **Columns never renumber mid-cascade — do not "optimise" this away.** For the whole cascade the board keeps one column per index of the LONGER string, each holding its own width; a column the new string does not reach flaps to a BLANK in place (`data-flap-next=" "`) rather than collapsing. Collapsing stacks the absolutely-positioned outgoing glyphs on one x AND lets a later glyph slide into an earlier column, which makes `visibleGlyphs()` lie and the interrupt rule flap the wrong glyph away. Pinned by "a cleared column holds its place instead of letting later glyphs slide left".
-- Length changes are eased, never snapped, and the ease is placed so it never fights the flaps (`.gev-flap-sizing`): a GROWING label reserves its columns as the cells go in and eases at the START; a SHRINKING one holds full width for the whole cascade and eases at SETTLEMENT.
-- Accessibility: the cells sit in an `aria-hidden` wrapper and the settled string is real text in the a11y tree, so the `aria-live` chips announce the label once per change rather than character fragments. No `aria-label` is used — ARIA prohibits naming a generic `<span>`. Because the text node is permanent and only its data changes, a label update is a single `characterData` mutation and settlement is none — node churn in a live region can double-announce.
-- A chip hidden by clean-UI, recording mode, or an un-`.visible` (`opacity: 0`) traffic/CCTV chip swaps instantly instead of animating where nobody can see it; `prefers-reduced-motion: reduce` does the same.
-- Kill switch: `SPLIT_FLAP_ENABLED` in `src/splitFlap.js`. Set it `false` and every chip returns to a plain instant swap with no other change.
-- Regression surface: `src/splitFlap.test.mjs`.
+- The split-flap animation (`src/splitFlap.js`) was removed on November 12, 2026. Chip labels change in place, and each writer skips an unchanged label so the repeating ticks write nothing.
 
 ### Panoptic Detection + Tracked Readout (June 2026)
 
@@ -4478,7 +4444,7 @@ are omitted rather than framing the wrong part of the globe.
 - The desktop right rail (`#right-context-rail`) owns `DISPLAY`, `CCTV`, its active parameter controls, and `GLOBAL CONTEXT` as one fixed responsive stack in that order. Its compact buttons use the same 176 px width as the left accordion and one consistent 50 px height, share the left stack's 52 px edge inset and measured top baseline across HUD variants, then constrain themselves against visible HUD/chrome rectangles and the remaining vertical corridor. `DISPLAY` is no longer draggable and legacy saved coordinates are ignored.
 - The right rail is labeled **DISPLAY** (formerly "MOVE") and groups, in order, HUD, DETECT, Bloom, Sharpen, 3D, Clean-UI (HUD + DETECT promoted to the top). Its expanded controls retain the same compact 176 px width as the right-side tabs instead of growing to the wider Context detail-card width. It starts expanded on first run and respects the user's later `v6` collapse choice. Collapses/expands with directional chevrons (`◀` collapsed, `▶` expanded).
 - Display and Context use matching 330 px expanded widths and matching compact tab dimensions. The parameter panel is part of Display's expanded content. DISPLAY may remain open beside one contextual panel; CCTV and Context are mutually exclusive. In Tactical HUD, expanding CCTV or Context hides the other contextual launcher while DISPLAY remains independently available. The most recently opened right-rail panel owns the constrained lane even when it appears later in DOM order; passive restoration and automatic disclosure do not replace that explicit owner. Minimal and other HUD layouts retain the collapsed launchers; when their active panel exceeds the measured corridor, the rail reserves sibling heights and gaps and scrolls the active panel internally.
-- At 720px and below both panel stacks (`#left-panel-stack`, `#right-context-rail`) go edge-to-edge and scroll vertically. Every hosted panel's decorative `.panel-glow` is pinned to its panel box there (`inset: 0` in `src/ui/styles/responsive.css`): on desktop the glow overhangs the panel by 18–20 px as harmless paint, but inside a scroll container that overhang is scrollable overflow on both axes and drew a horizontal scrollbar band plus a vertical scrollbar that scrolled nothing but glow whenever CCTV, Context, Data Layers or Scenes was expanded. The glow's blur is ink overflow and never scrolls, so the look is unchanged. Do not fix this by clipping the stacks: `overflow-x: clip` would also clip the Context radio popover and would not remove the vertical scrollbar. Pinned by `src/ui/panelRails.test.mjs` against every `(max-width: 720px)` block in the flattened stylesheet.
+- At 720px and below both panel stacks (`#left-panel-stack`, `#right-context-rail`) go edge-to-edge and scroll vertically. The decorative panel glows that once overhung the panels are gone, so nothing scrolls but content.
 - `STYLE PRESETS` and `LOCATIONS` start collapsed, expand on intentional hover/click, and auto-collapse after hover leave delay.
 - Collapsed mini-status indicators show active style and active location/landmark.
 - Detection mode is user-controlled and should persist when switching styles. Since 2026-08-22 it also STARTS on — Dense @ 75% for every style on a first run, Normal included — as a `GLOBAL_POST_DEFAULTS` baseline that does NOT set `_detectionUserOverridden`. Exception (unchanged): selecting a military style (CRT/NVG/FLIR) auto-enables the same Dense preset, but only until the user manually changes detection this session (`_detectionUserOverridden` gate), after which style switches never touch it.
