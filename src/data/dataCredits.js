@@ -321,6 +321,15 @@ export const DATA_CREDITS = [
       'Headlines and stories are reporting, not verified incidents or risk rankings.',
   },
   {
+    key: 'war-monitor-filing',
+    html:
+      'War monitor headline filing (optional): Jev by ' +
+      '<a href="https://docs.typesafe.ai" target="_blank" rel="noopener">TypeSafe</a>. ' +
+      'The outlet id, headline and snippet are sent to TypeSafe for filing; ' +
+      '<a href="https://docs.typesafe.ai/legal" target="_blank" rel="noopener">TypeSafe’s terms</a> apply. ' +
+      'A filing says which area a headline concerns and whether it belongs in a world-affairs digest, never whether it is true.',
+  },
+  {
     key: 'austin-cctv',
     html:
       'CCTV cameras &amp; frames: City of Austin, TX — ' +

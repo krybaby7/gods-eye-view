@@ -99,6 +99,7 @@ function item(id, sourceId, folder, kind, perspective, title, extra = {}) {
     transport: 'rss',
     digestedAt: extra.digested ? iso(30) : null,
     storyId: extra.storyId ?? null,
+    ...(extra.filing && { filing: extra.filing }),
   };
 }
 
@@ -749,6 +750,49 @@ export function worldSnapshot() {
       'Hong Kong court hears appeal',
       { theater: 'world' },
     ),
+    // Filed by Jev: one kept with two areas, one set aside.
+    item(
+      'w-filed',
+      'bbcworld',
+      'reporting',
+      'independent',
+      'international-public',
+      'Parliament passes fuel subsidy reform',
+      {
+        theater: 'world',
+        age: 20,
+        filing: {
+          keep: true,
+          keepProbability: 0.94,
+          area: 'government',
+          area2: 'energy',
+          areaProbability: 0.58,
+          model: 'jev-1.14.0',
+          filedAt: iso(19),
+        },
+      },
+    ),
+    item(
+      'w-aside',
+      'bbcworld',
+      'reporting',
+      'independent',
+      'international-public',
+      'Football: capital derby ends level',
+      {
+        theater: 'world',
+        age: 21,
+        filing: {
+          keep: false,
+          keepProbability: 0.08,
+          area: null,
+          area2: null,
+          areaProbability: 0.71,
+          model: 'jev-1.14.0',
+          filedAt: iso(20),
+        },
+      },
+    ),
   ];
   const s = (id, title, category, location, itemIds, extra = {}) =>
     story(id, title, category, location, itemIds, {
@@ -933,7 +977,19 @@ export function worldSnapshot() {
       running: false,
       startedAt: null,
       disabledReason: null,
-      undigestedCount: 1,
+      undigestedCount: 2,
+    },
+    filing: {
+      enabled: true,
+      provider: 'jev',
+      model: 'jev-1.14.0',
+      when: 'collect',
+      keyConfigured: true,
+      theaterOptedIn: true,
+      today: { requests: 2, inputTokens: 1600, costUsd: 0.0000672 },
+      budgetUsd: 0.25,
+      exhausted: false,
+      lastError: null,
     },
   };
 }
@@ -2137,7 +2193,7 @@ async function main() {
           );
           assert.match(
             s.digestLine,
-            /^Digest \d\d:\d\d · 10 stories from 13 items · 1 unassigned · last run 47¢ · budget \$1\.17 left$/,
+            /^Digest \d\d:\d\d · 10 stories from 13 items · 1 unassigned · 1 set aside by Jev · last run 47¢ · budget \$1\.17 left$/,
           );
           await shot(page, '21-world-stories');
           // The model-placed pin and the corroborated story read as such.
@@ -2180,7 +2236,7 @@ async function main() {
               ]),
           );
           assert.equal(folders.length, 7);
-          assert.deepEqual(folders[0], ['Reporting 6', 'true']);
+          assert.deepEqual(folders[0], ['Reporting 8', 'true']);
           assert.equal(
             (
               await page.$$eval(
@@ -2188,7 +2244,49 @@ async function main() {
                 (rows) => rows.map((row) => row.dataset.itemId),
               )
             ).length,
-            6,
+            8,
+          );
+          // Filing: a kept item shows its areas, a set-aside one its share,
+          // quieter; no filing problem is reported.
+          const filed = await page.$$eval(
+            '#situation-tabpanel-raw .situation-item',
+            (rows) =>
+              Object.fromEntries(
+                rows.map((row) => [
+                  row.dataset.itemId,
+                  {
+                    filing:
+                      row.querySelector('.situation-item-filing')
+                        ?.textContent ?? null,
+                    meta: row.querySelector('.situation-item-meta')
+                      ?.textContent,
+                    setAside: row.classList.contains(
+                      'situation-item-set-aside',
+                    ),
+                    opacity: Number(getComputedStyle(row).opacity),
+                  },
+                ]),
+              ),
+          );
+          assert.equal(filed['w-filed'].filing, ' · Government, Energy');
+          assert.match(filed['w-filed'].meta, /Government, Energy$/);
+          assert.equal(filed['w-filed'].setAside, false);
+          assert.equal(
+            filed['w-aside'].filing,
+            ' · Set aside by the filer · 92%',
+          );
+          assert.equal(filed['w-aside'].setAside, true);
+          assert.ok(
+            filed['w-aside'].opacity < filed['w-filed'].opacity,
+            'the set-aside item is quieter',
+          );
+          assert.equal(filed['w-scmp'].filing, null, 'unfiled: no note');
+          assert.equal(
+            await page.$eval(
+              '#situation-panel .situation-filing-problem',
+              (n) => n.hidden,
+            ),
+            true,
           );
           await shot(page, '23-world-raw-feed');
           await page.click('#situation-tab-stories');

@@ -40,6 +40,25 @@ export const NEWS_ACTOR_ROLES = Object.freeze([
   'external',
 ]);
 const ACTOR_TYPES = ['state', 'armed-group', 'institution', 'population'];
+/**
+ * The filer's twelve areas (the board's Strength slots S1 to S12) and their
+ * labels; the server's list is server/providers/news/filing/areas.js and a
+ * test keeps the two equal.
+ */
+export const NEWS_FILING_AREA_LABELS = Object.freeze({
+  economy: 'Economy',
+  fiscal: 'Fiscal',
+  government: 'Government',
+  people: 'People',
+  society: 'Society',
+  military: 'Military',
+  energy: 'Energy',
+  food: 'Food',
+  logistics: 'Logistics',
+  technology: 'Technology',
+  diplomacy: 'Diplomacy',
+  culture: 'Culture',
+});
 const FALLBACK_CATEGORY_COLOR = '#94a3b8';
 
 const text = (value, max = 600) =>
@@ -68,6 +87,34 @@ function safeUrl(value) {
   }
 }
 
+const probabilityOrNull = (value) =>
+  Number.isFinite(value) && value >= 0 && value <= 1 ? value : null;
+const areaOrNull = (value) =>
+  typeof value === 'string' && Object.hasOwn(NEWS_FILING_AREA_LABELS, value)
+    ? value
+    : null;
+
+/**
+ * The filer's answer on an item: kept or set aside, and its area. Which area
+ * a headline concerns and whether it belongs in a world-affairs digest,
+ * never whether it is true. Null when the item was not filed.
+ */
+function normalizeFiling(raw) {
+  if (!raw || typeof raw !== 'object' || typeof raw.keep !== 'boolean')
+    return null;
+  const area = areaOrNull(raw.area);
+  const area2 = areaOrNull(raw.area2);
+  return {
+    keep: raw.keep,
+    keepProbability: probabilityOrNull(raw.keepProbability),
+    area,
+    area2: area2 && area2 !== area ? area2 : null,
+    areaProbability: probabilityOrNull(raw.areaProbability),
+    model: textOrNull(raw.model, 40),
+    filedAt: isoOrNull(raw.filedAt),
+  };
+}
+
 function normalizeItem(raw) {
   if (!raw || typeof raw.id !== 'string' || typeof raw.title !== 'string')
     return null;
@@ -88,6 +135,7 @@ function normalizeItem(raw) {
     digestedAt: isoOrNull(raw.digestedAt),
     storyId: textOrNull(raw.storyId, 64),
     transport: text(raw.transport, 32),
+    filing: normalizeFiling(raw.filing),
     primarySource:
       primary && typeof primary === 'object'
         ? {
@@ -393,6 +441,7 @@ export function normalizeNewsSnapshot(payload) {
   const budget = payload.budget || {};
   const digest = payload.digest || {};
   const briefStatus = payload.briefStatus || {};
+  const filing = payload.filing || {};
   return {
     revision: String(payload.revision || ''),
     retrievedAt: isoOrNull(payload.retrievedAt),
@@ -484,6 +533,30 @@ export function normalizeNewsSnapshot(payload) {
       startedAt: isoOrNull(digest.startedAt),
       disabledReason: textOrNull(digest.disabledReason, 200),
       undigestedCount: finiteOrNull(digest.undigestedCount) ?? 0,
+    },
+    // Filing readiness; the server never sends the key.
+    filing: {
+      enabled: filing.enabled === true,
+      provider: text(filing.provider, 16),
+      model: text(filing.model, 40),
+      when: filing.when === 'refresh' ? 'refresh' : 'collect',
+      keyConfigured: filing.keyConfigured === true,
+      theaterOptedIn: filing.theaterOptedIn === true,
+      today: {
+        requests: finiteOrNull(filing.today?.requests) ?? 0,
+        inputTokens: finiteOrNull(filing.today?.inputTokens) ?? 0,
+        costUsd: finiteOrNull(filing.today?.costUsd) ?? 0,
+      },
+      budgetUsd: finiteOrNull(filing.budgetUsd),
+      exhausted: filing.exhausted === true,
+      lastError:
+        filing.lastError && typeof filing.lastError === 'object'
+          ? {
+              code: text(filing.lastError.code, 32) || 'error',
+              message: textOrNull(filing.lastError.message, 200),
+              at: isoOrNull(filing.lastError.at),
+            }
+          : null,
     },
   };
 }

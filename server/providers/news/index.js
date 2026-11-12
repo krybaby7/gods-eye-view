@@ -16,6 +16,7 @@ import { prepareBrief, runBrief } from './digest/brief.js';
 import { applyActorUpdates, effectiveActors } from './digest/actors.js';
 import { mergeDigest, storyByItem, unassignedItems } from './digest/stories.js';
 import { assignHotspots } from './hotspots.js';
+import { createFilingRunner, filingSettings } from './filing/index.js';
 import { newsCoverage } from '../../../src/layers/news/coverage.js';
 import {
   createDigestStore,
@@ -42,6 +43,12 @@ import {
  * brief; POST /api/news/brief (Retry brief) reruns it only after a failure.
  * Brief runs share the run log and the Perplexity daily budget. A theater
  * with `situationBrief: false` (World) runs no brief and offers no retry.
+ *
+ * Filing: in a theater with `filing: true` (World), Jev files each headline
+ * as kept or set aside and into one of the board's twelve areas, once, as it
+ * is collected (NEWS_FILER_WHEN=collect, the default) or at the start of a
+ * Refresh (NEWS_FILER_WHEN=refresh). Set-aside items never reach the digest
+ * model. Filing fails open and never blocks collection or the digest.
  *
  * Routes:
  *   GET  /api/news?theater=&rev=  → items, stories, lastRun, sources, budget,
@@ -76,6 +83,8 @@ function roundUsd(value) {
  *   digestRunner?: typeof runDigest,
  *   briefRunner?: typeof runBrief,
  *   claudeOptions?: Parameters<typeof createClaudeNewsModel>[0],
+ *   filingSleep?: (ms: number) => Promise<void>,
+ *   log?: (line: string) => void,
  * }} [options]
  */
 export function createNewsService(options = {}) {
@@ -91,9 +100,13 @@ export function createNewsService(options = {}) {
     digestRunner = runDigest,
     briefRunner = runBrief,
     claudeOptions,
+    filingSleep,
+    log,
   } = options;
   /** @type {Map<string, Promise<object>>} */
   const contexts = new Map();
+  /** Contexts that finished loading (filing sums their usage synchronously). */
+  const readyContexts = new Set();
   let theaterList = null;
   let stopped = false;
   let runSerial = 0;
@@ -160,7 +173,11 @@ export function createNewsService(options = {}) {
         if (!file.endsWith('.json') || !THEATER_ID.test(id)) continue;
         try {
           const { theater } = await loadNewsRegistry({ theaterId: id, root });
-          list.push({ id: theater.id, name: theater.name });
+          list.push({
+            id: theater.id,
+            name: theater.name,
+            filing: theater.filing,
+          });
         } catch (error) {
           console.warn(`[news] theater ${id} skipped:`, error?.message);
         }
@@ -195,11 +212,80 @@ export function createNewsService(options = {}) {
       queue: gdeltQueue,
       gdeltFiles,
       timers,
-      onUpdate: () => {
+      onUpdate: (outcome) => {
+        ctx.healthRevision++;
+        // Collect mode: file new headlines, detached; never awaited here.
+        if (
+          outcome?.added > 0 &&
+          ctx.registry.theater.filing &&
+          filingSettings(env).when === 'collect'
+        )
+          void ctx.filing.fileNow({ fromCollect: true });
+      },
+    });
+    ctx.filing = createFilingRunner({
+      store,
+      env,
+      fetchImpl,
+      now,
+      sleep: filingSleep,
+      spentToday: filingSpentToday,
+      log,
+      onChange: () => {
         ctx.healthRevision++;
       },
     });
+    readyContexts.add(ctx);
     return ctx;
+  }
+
+  /** Filing spend on the local day of `nowMs`, across every theater. */
+  function filingSpentToday(nowMs) {
+    let spent = 0;
+    for (const ctx of readyContexts)
+      spent += ctx.store.filingUsage(nowMs).costUsd;
+    return spent;
+  }
+
+  /** Filing usage today across every theater. */
+  function filingToday(nowMs) {
+    const today = { requests: 0, inputTokens: 0, costUsd: 0 };
+    for (const ctx of readyContexts) {
+      const usage = ctx.store.filingUsage(nowMs);
+      today.requests += usage.requests;
+      today.inputTokens += usage.inputTokens;
+      today.costUsd += usage.costUsd;
+    }
+    today.costUsd = Math.round(today.costUsd * 1e7) / 1e7;
+    return today;
+  }
+
+  /**
+   * Filing readiness for the snapshot and status. The key is never exposed,
+   * only whether one is set.
+   * @param {?object} ctx Theater context, or null for the server-wide view.
+   */
+  function filingState(ctx) {
+    const settings = filingSettings(env);
+    const today = filingToday(now());
+    let lastError = ctx ? ctx.filing.lastError() : null;
+    if (!ctx)
+      for (const each of readyContexts) {
+        const error = each.filing.lastError();
+        if (error && (!lastError || error.at > lastError.at)) lastError = error;
+      }
+    return {
+      enabled: settings.enabled,
+      provider: 'jev',
+      model: settings.model,
+      when: settings.when,
+      keyConfigured: settings.keyConfigured,
+      ...(ctx && { theaterOptedIn: ctx.registry.theater.filing }),
+      today,
+      budgetUsd: settings.budgetUsd,
+      exhausted: today.costUsd >= settings.budgetUsd,
+      lastError,
+    };
   }
 
   /** Resolve a theater context, or null for an unknown theater. */
@@ -270,7 +356,7 @@ export function createNewsService(options = {}) {
     const reason = busyReason();
     if (reason) return reason;
     if (!claude && budgetState.exhausted) return 'over_budget';
-    if (!ctx.store.undigested().length) return 'nothing_new';
+    if (!ctx.store.waiting().length) return 'nothing_new';
     return null;
   }
 
@@ -408,7 +494,8 @@ export function createNewsService(options = {}) {
       theater: withActors(ctx),
       sourcesById,
       openStories: previous,
-      newItems: ctx.store.undigested(),
+      // Items the filer set aside never reach the digest model.
+      newItems: ctx.store.waiting(),
       knownItemIds: new Set(itemsById.keys()),
       nowMs,
       fetchImpl,
@@ -643,7 +730,7 @@ export function createNewsService(options = {}) {
           drivers: theater.drivers,
           tracks: theater.tracks,
         },
-        theaters: await listTheaters(),
+        theaters: (await listTheaters()).map(({ id, name }) => ({ id, name })),
         items,
         citations,
         // Bubble grouping is computed per request: the stored digest is
@@ -666,8 +753,9 @@ export function createNewsService(options = {}) {
           phase: ctx.inFlight?.phase ?? null,
           startedAt: ctx.inFlight?.startedAt ?? null,
           disabledReason: disabledReason(ctx, budgetState, status),
-          undigestedCount: ctx.store.undigested().length,
+          undigestedCount: ctx.store.waiting().length,
         },
+        filing: filingState(ctx),
       };
     },
 
@@ -709,7 +797,29 @@ export function createNewsService(options = {}) {
         theater: ctx.theaterId,
         startedAt: new Date(startedMs).toISOString(),
       };
-      if (!ctx.store.undigested().length) {
+      // Refresh mode: file unfiled items before choosing them. The slot is
+      // held meanwhile, so a second Refresh gets 409. A failure only leaves
+      // items unfiled (kept): it never fails the digest.
+      let filedThisRun = 0;
+      if (
+        ctx.registry.theater.filing &&
+        filingSettings(env).when === 'refresh' &&
+        filingSettings(env).enabled
+      ) {
+        ctx.inFlight = { startedAt: base.startedAt, phase: 'filing' };
+        try {
+          filedThisRun = (await ctx.filing.fileNow()).filed;
+        } catch {
+          /* fail open */
+        } finally {
+          ctx.inFlight = null;
+        }
+        const busyAfter = busyReason();
+        if (busyAfter) return busyResponse(busyAfter);
+      }
+      base.setAside = ctx.store.setAside().length;
+      base.filedThisRun = filedThisRun;
+      if (!ctx.store.waiting().length) {
         const run = {
           ...base,
           status: 'skipped',
@@ -861,6 +971,11 @@ export function createNewsService(options = {}) {
             : 0,
           lastRun: ctx ? ctx.digest.lastRun() : null,
           digestRunning: Boolean(ctx?.inFlight),
+          filing: {
+            theaterOptedIn:
+              (await listTheaters()).find((t) => t.id === id)?.filing === true,
+            lastError: ctx ? ctx.filing.lastError() : null,
+          },
           sources: {
             total: health.length,
             ok: health.filter((h) => h.ok).length,
@@ -874,6 +989,7 @@ export function createNewsService(options = {}) {
       }
       return {
         keyConfigured: Boolean(apiKey()),
+        filing: filingState(null),
         digest: {
           agent,
           provider: claude ? 'Claude plan' : DIGEST_PROVIDER,
@@ -893,6 +1009,12 @@ export function createNewsService(options = {}) {
         const ctx = await pending.catch(() => null);
         ctx?.collector.stop();
       }
+    },
+
+    /** Resolves when no filing batch is running for the theater (tests). */
+    async filingIdle(theaterId) {
+      const ctx = await context(theaterId);
+      await ctx?.filing.idle();
     },
   };
 }
