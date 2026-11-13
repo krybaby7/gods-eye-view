@@ -148,3 +148,39 @@ test('slot aggregation uses weighted coverage and the oldest available period', 
     null,
   );
 });
+
+test('keeps one stored score per period for a trend, and none from one period', async () => {
+  const { scoreCountries } = await import('./scores.js');
+  const registry = {
+    countries,
+    indicators: [
+      indicator('C1'),
+      indicator('C2'),
+      indicator('S1'),
+      indicator('S1', { id: 'S1b' }),
+    ],
+  };
+  const { FIN } = scoreCountries(
+    registry,
+    [
+      observation('C1', 40, '2021'),
+      observation('C1', 55, '2023', { method: 'source-estimate' }),
+      observation('C1', 50, '2023', { retrievedAt: '2025-01-01T00:00:00Z' }),
+      observation('C1', 70, '2024', { method: 'source-forecast' }),
+      observation('C2', 30, '2024'),
+      observation('S1', 10, '2022'),
+      observation('S1', 20, '2023'),
+      observation('S1b', 20, '2023'),
+    ],
+    asOf,
+  );
+  assert.deepEqual(FIN.slots.C1.history, [
+    { period: '2021', score: 40, method: 'observed' },
+    { period: '2023', score: 55, method: 'source-estimate' },
+    { period: '2024', score: 70, method: 'source-forecast' },
+  ]);
+  assert.equal(FIN.slots.C1.score, 70);
+  assert.equal('history' in FIN.slots.C2, false);
+  // A slot that mixes several figures is never given a trend.
+  assert.equal('history' in FIN.slots.S1, false);
+});
