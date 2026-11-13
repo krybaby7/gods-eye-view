@@ -7,7 +7,11 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { expandApplicationHtml } from '../../build/application-html.js';
 import {
+  FRAME_GLOBE_MIN_WIDTH,
+  FRAME_NARROW_QUERY,
+  FRAME_SHARED_QUERY,
   FRAME_PRESETS_STORAGE_KEY,
+  FRAME_SHEET_TABS_SHOWN,
   FRAME_TODAY_OPEN_MIN_WIDTH,
   FRAME_TODAY_STORAGE_KEY,
   createFrame,
@@ -331,13 +335,13 @@ test('the top bar shows the date, the refresh day and only the gauges the board 
   assert.equal(h.node('frame-gauges').hidden, true);
   snapshot = {
     enabled: true,
-    turn: { number: 6, endedAt: '2026-11-11T18:00:00Z', changes: [] },
+    turn: { number: 2, endedAt: '2026-03-04T12:00:00Z', changes: [] },
     features: {
       fred: {
         series: {
           MCOILBRENTEU: [
-            { month: '2026-09', value: 114.1 },
-            { month: '2026-10', value: 123.93 },
+            { month: '2026-01', value: 100 },
+            { month: '2026-02', value: 110 },
           ],
         },
       },
@@ -345,7 +349,7 @@ test('the top bar shows the date, the refresh day and only the gauges the board 
   };
   for (const listener of listeners) listener();
   assert.equal(h.node('frame-board-status').hidden, false);
-  assert.equal(h.node('frame-refreshed').textContent, 'Refreshed 11 Nov');
+  assert.equal(h.node('frame-refreshed').textContent, 'Refreshed 4 Mar');
   const gauges = h.node('frame-gauges');
   assert.equal(gauges.hidden, false);
   assert.deepEqual(
@@ -417,7 +421,11 @@ test('destroy hands the window back and asks for a render', (t) => {
 });
 
 // Nothing overlaps at 1280x720, 1440x900 and 1920x1080: the regions follow
-// from the tokens, with the narrower columns below 1366 px.
+// from the tokens, with the narrower columns below 1366 px. This is the
+// arithmetic; the same three sizes are measured in a real browser, with the
+// original floating panels, by the step "The frame’s regions and the original
+// panels do not overlap at three window sizes" in scripts/qa-world.phase-1.mjs
+// (run by `node scripts/qa-world.mjs --fixtures`).
 function token(name, css = foundation) {
   return Number(css.match(new RegExp(`${name}: (\\d+)px;`))?.[1]);
 }
@@ -509,10 +517,187 @@ test('nothing overlaps at 1280x720, 1440x900 and 1920x1080, open or folded, with
         }
         const globe = list.find(({ name }) => name === 'globe');
         assert.ok(
-          globe.w >= 480,
-          `the globe keeps at least 480 px at ${width}x${height} (${globe.w})`,
+          globe.w >= FRAME_GLOBE_MIN_WIDTH,
+          `the globe keeps at least ${FRAME_GLOBE_MIN_WIDTH} px at ${width}x${height} (${globe.w})`,
         );
       }
     }
   }
+});
+
+test('Today folds when the window narrows to a phone, without remembering it', (t) => {
+  withObservers(t);
+  const listeners = [];
+  const query = {
+    matches: false,
+    addEventListener: (type, listener) => listeners.push(listener),
+  };
+  const h = harness({
+    ids: FRAME_IDS,
+    saved: { [FRAME_TODAY_STORAGE_KEY]: 'open' },
+  });
+  const frame = h.create({
+    window: {
+      innerWidth: 1440,
+      matchMedia: (text) =>
+        text === FRAME_NARROW_QUERY
+          ? query
+          : { matches: false, addEventListener() {} },
+    },
+  });
+  t.after(() => frame.destroy());
+  assert.equal(h.document.body.dataset.today, 'open');
+  h.renders.length = 0;
+  query.matches = true; // as a real MediaQueryList does before it fires
+  for (const listener of listeners) listener({ matches: true });
+  assert.equal(h.document.body.dataset.today, 'folded', 'narrowing folds it');
+  assert.deepEqual(h.renders, ['frame-today']);
+  assert.equal(
+    h.store.get(FRAME_TODAY_STORAGE_KEY),
+    'open',
+    'the choice is kept for wide windows',
+  );
+  // Loading already narrow folds it too, whatever was remembered.
+  const narrow = harness({
+    ids: FRAME_IDS,
+    saved: { [FRAME_TODAY_STORAGE_KEY]: 'open' },
+  });
+  const b = narrow.create({
+    window: {
+      innerWidth: 390,
+      matchMedia: () => ({ matches: true, addEventListener() {} }),
+    },
+  });
+  t.after(() => b.destroy());
+  assert.equal(narrow.document.body.dataset.today, 'folded');
+  // On a phone an open Today covers the globe instead of squeezing it.
+  assert.match(
+    frameCss,
+    /@media \(max-width: 720px\)[\s\S]*body\.gev-frame\[data-today='open'\] \{\s*--frame-left: 0px;/,
+  );
+});
+
+test('below the shared width Today and the sheet take turns, and a remembered open does not win', (t) => {
+  const { mutations } = withObservers(t);
+  const shared = { matches: true, listeners: [] };
+  shared.addEventListener = (type, listener) => shared.listeners.push(listener);
+  const media = (text) =>
+    text === FRAME_SHARED_QUERY
+      ? shared
+      : { matches: false, addEventListener() {} };
+  // Loading with a sheet open and Today remembered open: Today folds.
+  const h = harness({
+    ids: [...FRAME_IDS, 'world-sheet-close'],
+    saved: { [FRAME_TODAY_STORAGE_KEY]: 'open' },
+  });
+  const sheet = h.node('world-character-sheet');
+  const frame = h.create({ window: { innerWidth: 900, matchMedia: media } });
+  t.after(() => frame.destroy());
+  assert.equal(h.document.body.dataset.sheet, 'open');
+  assert.equal(h.document.body.dataset.today, 'folded');
+  assert.equal(h.store.get(FRAME_TODAY_STORAGE_KEY), 'open', 'not remembered');
+  // Opening Today closes the sheet.
+  let closed = 0;
+  h.node('world-sheet-close').addEventListener('click', () => {
+    closed++;
+    sheet.hidden = true;
+    mutations.find((item) => item.target === sheet).callback();
+  });
+  h.node('frame-today-open').click();
+  assert.equal(closed, 1);
+  assert.equal(h.document.body.dataset.today, 'open');
+  assert.equal(h.document.body.dataset.sheet, 'closed');
+  // Opening the sheet folds Today.
+  sheet.hidden = false;
+  mutations.find((item) => item.target === sheet).callback();
+  assert.equal(h.document.body.dataset.today, 'folded');
+  // On a wide window both stay open.
+  shared.matches = false;
+  h.node('frame-today-open').click();
+  assert.equal(closed, 1, 'a wide window keeps the sheet');
+  assert.equal(h.document.body.dataset.today, 'open');
+  assert.equal(h.document.body.dataset.sheet, 'open');
+  // Narrowing with both open folds Today.
+  shared.matches = true;
+  for (const listener of shared.listeners) listener({ matches: true });
+  assert.equal(h.document.body.dataset.today, 'folded');
+  // The shared width is where Today, the sheet and a usable globe still fit.
+  const max = Number(FRAME_SHARED_QUERY.match(/(\d+)px/)[1]);
+  const media1365 =
+    frameCss.match(/@media \(max-width: 1365px\) \{\s*:root \{([\s\S]*?)\}/)?.[1] ?? '';
+  assert.equal(
+    max + 1,
+    token('--frame-today', media1365) +
+      token('--frame-sheet', media1365) +
+      FRAME_GLOBE_MIN_WIDTH,
+  );
+});
+
+function fakeTab(id, selected = false) {
+  const node = fakeElement(`world-tab-${id}`);
+  node.setAttribute('role', 'tab');
+  node.setAttribute('aria-selected', String(selected));
+  node.dataset.worldTab = id;
+  node.textContent = id[0].toUpperCase() + id.slice(1);
+  return node;
+}
+
+test('the sheet shows its first four tabs and the rest under More, in the board’s order', (t) => {
+  const { mutations } = withObservers(t);
+  const h = harness({
+    ids: [
+      ...FRAME_IDS,
+      'world-sheet-tabs',
+      'frame-sheet-more',
+      'frame-sheet-more-menu',
+    ],
+  });
+  const list = h.node('world-sheet-tabs');
+  // An Overview tab added first by the board simply moves the others along.
+  const ids = [
+    'overview',
+    'condition',
+    'strength',
+    'exposure',
+    'leverage',
+    'relations',
+    'assets',
+  ];
+  list.children = ids.map((id, i) => fakeTab(id, i === 0));
+  const frame = h.create();
+  t.after(() => frame.destroy());
+  assert.equal(FRAME_SHEET_TABS_SHOWN, 4);
+  assert.deepEqual(
+    list.children
+      .filter((node) => !node.hidden)
+      .map((node) => node.dataset.worldTab),
+    ['overview', 'condition', 'strength', 'exposure'],
+  );
+  const more = h.node('frame-sheet-more');
+  const menu = h.node('frame-sheet-more-menu');
+  assert.equal(more.hidden, false);
+  assert.equal(more.textContent, 'More ›');
+  assert.deepEqual(
+    menu.children.map((item) => item.dataset.frameTab),
+    ['leverage', 'relations', 'assets'],
+  );
+  // Opening More and choosing a tab clicks the board's own tab.
+  let chosen = '';
+  list.children[5].addEventListener('click', () => (chosen = 'relations'));
+  more.click();
+  assert.equal(menu.hidden, false);
+  assert.equal(more.getAttribute('aria-expanded'), 'true');
+  menu.children[1].click();
+  assert.equal(chosen, 'relations');
+  assert.equal(menu.hidden, true, 'the menu closes');
+  // The board selects it: More takes its name, so the choice stays in view.
+  list.children[0].setAttribute('aria-selected', 'false');
+  list.children[5].setAttribute('aria-selected', 'true');
+  mutations.find((item) => item.target === list).callback();
+  assert.equal(more.textContent, 'Relations ›');
+  assert.equal(more.dataset.selected, 'true');
+  // Four tabs or fewer: no More at all.
+  list.children = list.children.slice(0, 4);
+  mutations.find((item) => item.target === list).callback();
+  assert.equal(more.hidden, true);
 });

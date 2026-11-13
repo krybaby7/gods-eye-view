@@ -18,6 +18,7 @@ const LEFT_STACK_OBSTACLE_SELECTOR = [
   '#traffic-sync-chip',
   '#cctv-sync-chip',
   '#intel-hud .hud-status',
+  '#key-setup-chip',
   '#cockpit-context',
   '#cesium-credits .cesium-credit-logoContainer',
   '#cesium-credits .cesium-credit-textContainer',

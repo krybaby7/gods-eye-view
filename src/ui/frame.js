@@ -2,6 +2,17 @@ import { frameDate, refreshedLabel, worldGauges } from './frameGauges.js';
 
 /** Window width below which Today starts folded to its rail. */
 export const FRAME_TODAY_OPEN_MIN_WIDTH = 1100;
+/** At this width and below Today folds, and opens over the globe. */
+export const FRAME_NARROW_QUERY = '(max-width: 720px)';
+/**
+ * Below this width Today (300 px) and the sheet (420 px) cannot both stand
+ * beside a usable globe, which needs at least FRAME_GLOBE_MIN_WIDTH: opening
+ * one folds the other.
+ */
+export const FRAME_GLOBE_MIN_WIDTH = 460;
+export const FRAME_SHARED_QUERY = '(max-width: 1179px)';
+/** Sheet tabs shown before "More ›" (the mock and Appendix D show four). */
+export const FRAME_SHEET_TABS_SHOWN = 4;
 export const FRAME_TODAY_STORAGE_KEY = 'gev.frame.today';
 export const FRAME_PRESETS_STORAGE_KEY = 'gev.frame.presets';
 
@@ -77,6 +88,19 @@ export function createFrame({
         ? 'open'
         : 'folded',
   );
+  // A window that is, or becomes, phone-narrow folds Today, whatever was
+  // remembered: an open column would squeeze the globe to nothing. Below the
+  // shared width Today and the sheet take turns. Neither fold is remembered,
+  // so a wide window later still gets the viewer's choice.
+  const narrow = window?.matchMedia?.(FRAME_NARROW_QUERY);
+  const shared = window?.matchMedia?.(FRAME_SHARED_QUERY);
+  const sheetOpen = () => body.dataset.sheet === 'open';
+  function keepGlobe() {
+    if (body.dataset.today !== 'open') return;
+    if (narrow?.matches || (shared?.matches && sheetOpen())) setToday('folded');
+  }
+  for (const query of [narrow, shared])
+    query?.addEventListener?.('change', keepGlobe, { signal });
   fold?.addEventListener(
     'click',
     () => setToday('folded', { persist: true, focus: true }),
@@ -84,7 +108,11 @@ export function createFrame({
   );
   open?.addEventListener(
     'click',
-    () => setToday('open', { persist: true, focus: true }),
+    () => {
+      // Opening Today where both cannot fit closes the sheet.
+      if (shared?.matches && sheetOpen()) find('world-sheet-close')?.click();
+      setToday('open', { persist: true, focus: true });
+    },
     { signal },
   );
 
@@ -94,14 +122,113 @@ export function createFrame({
     const next = sheet && !sheet.hidden ? 'open' : 'closed';
     if (body.dataset.sheet === next) return;
     body.dataset.sheet = next;
+    // Opening the sheet where both cannot fit folds Today.
+    if (next === 'open') keepGlobe();
     layout('sheet');
   }
   syncSheet();
+  keepGlobe();
   if (sheet && typeof MutationObserver !== 'undefined') {
     const observer = new MutationObserver(syncSheet);
     observer.observe(sheet, { attributes: true, attributeFilter: ['hidden'] });
     observers.push(observer);
   }
+
+  // ── The sheet's tabs: the first few, the rest under "More ›" ──
+  // The board decides which tabs exist and in what order; the frame only
+  // decides how many show before More (the mock's four).
+  const tabList = find('world-sheet-tabs');
+  const more = find('frame-sheet-more');
+  const moreMenu = find('frame-sheet-more-menu');
+  function setMoreOpen(state) {
+    if (!more || !moreMenu) return;
+    more.setAttribute('aria-expanded', String(state));
+    moreMenu.hidden = !state;
+  }
+  function syncTabs() {
+    if (!tabList || !more || !moreMenu) return;
+    const all = [...tabList.children].filter(
+      (node) => node.getAttribute?.('role') === 'tab',
+    );
+    const rest = all.slice(FRAME_SHEET_TABS_SHOWN);
+    all.forEach((node, i) => {
+      const hide = i >= FRAME_SHEET_TABS_SHOWN;
+      if (node.hidden !== hide) node.hidden = hide;
+    });
+    more.hidden = rest.length === 0;
+    const chosen = rest.find(
+      (node) => node.getAttribute('aria-selected') === 'true',
+    );
+    // A chosen tab under More names the button, so the choice stays visible.
+    more.textContent = `${chosen ? chosen.textContent : 'More'} ›`;
+    more.dataset.selected = String(Boolean(chosen));
+    moreMenu.replaceChildren(
+      ...rest.map((tab) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.setAttribute('role', 'menuitem');
+        item.textContent = tab.textContent;
+        item.dataset.frameTab = tab.dataset.worldTab ?? tab.id;
+        if (tab === chosen) item.setAttribute('aria-current', 'true');
+        item.addEventListener('click', () => {
+          setMoreOpen(false);
+          tab.click();
+          more.focus();
+        });
+        return item;
+      }),
+    );
+    if (!rest.length) setMoreOpen(false);
+  }
+  setMoreOpen(false);
+  syncTabs();
+  if (tabList && typeof MutationObserver !== 'undefined') {
+    const observer = new MutationObserver(syncTabs);
+    observer.observe(tabList, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['aria-selected'],
+    });
+    observers.push(observer);
+  }
+  more?.addEventListener(
+    'click',
+    () => {
+      const opening = moreMenu?.hidden ?? false;
+      setMoreOpen(opening);
+      if (opening) moreMenu.querySelector('button')?.focus();
+    },
+    { signal },
+  );
+  moreMenu?.addEventListener(
+    'keydown',
+    (event) => {
+      const items = [...moreMenu.querySelectorAll('button')];
+      const at = items.indexOf(document.activeElement);
+      if (event.key === 'Escape') {
+        setMoreOpen(false);
+        more.focus();
+      } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const step = event.key === 'ArrowDown' ? 1 : -1;
+        items[(at + step + items.length) % items.length]?.focus();
+      } else return;
+    },
+    { signal },
+  );
+  document.addEventListener?.(
+    'pointerdown',
+    (event) => {
+      if (
+        moreMenu &&
+        !moreMenu.hidden &&
+        !more.parentElement?.contains(event.target)
+      )
+        setMoreOpen(false);
+    },
+    { signal },
+  );
 
   // A resize, a media query or a mode that gives the globe the whole window
   // changes the canvas without passing through the setters above.

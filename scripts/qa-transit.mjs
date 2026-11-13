@@ -127,6 +127,19 @@ check(
 );
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Click a canvas point (Cesium's pixels). The frame insets the canvas in the
+ * window, so its left and top are added before the mouse moves there.
+ */
+async function clickCanvas(page, point) {
+  const rect = await page.evaluate(() => {
+    const { left, top } =
+      window.__godsEyeView.viewer.scene.canvas.getBoundingClientRect();
+    return { left, top };
+  });
+  await page.mouse.click(point.x + rect.left, point.y + rect.top);
+}
+
 /** Hex → [r,g,b]. */
 const rgbOf = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 const rgbDistance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -518,7 +531,7 @@ try {
         return seen[skip] || null;
       }, attempt);
       if (!target) break;
-      await page.mouse.click(target.x, target.y);
+      await clickCanvas(page, target);
       await wait(900);
       selected = await page.evaluate(() => {
         const app = window.__godsEyeView;
@@ -748,7 +761,7 @@ try {
         );
         const clickTarget = rendered[0];
         if (clickTarget) {
-          await page.mouse.click(clickTarget.x, clickTarget.y);
+          await clickCanvas(page, clickTarget);
           await wait(100);
           const picked = await page.evaluate((key) => {
             const state = window.__godsEyeView.dataManager.layers
@@ -782,7 +795,7 @@ try {
       await selectStyle(page, 'thermal', { 'WHOT/BHOT': 0, Ironbow: 0 });
       const target = (await sampleRendered(page))[0];
       if (target) {
-        await page.mouse.click(target.x, target.y);
+        await clickCanvas(page, target);
         await wait(800);
         const underFlir = await page.evaluate((key) => {
           const layer =
@@ -1579,7 +1592,7 @@ try {
         target.pickKey === target.key,
         JSON.stringify(target),
       );
-      await page.mouse.click(target.x, target.y);
+      await clickCanvas(page, target);
       await wait(600);
       anchor = await page.evaluate(
         async (key, durationMs) => {

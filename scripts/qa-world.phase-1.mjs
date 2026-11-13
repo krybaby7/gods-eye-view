@@ -16,6 +16,7 @@ export default async function phase1({
   pickCountry,
   checkRows,
   layout,
+  frameLayout,
   lens,
   area,
   slot,
@@ -243,6 +244,56 @@ export default async function phase1({
       await layout(390, 844);
       await page.setViewport(desktop);
     },
+  );
+
+  await step(
+    'The frame’s regions and the original panels do not overlap at three window sizes',
+    async () => {
+      const today = () => page.evaluate(() => document.body.dataset.today);
+      const setToday = async (state) => {
+        if ((await today()) === state) return;
+        await page.click(
+          state === 'open' ? '#frame-today-open' : '#frame-today-fold',
+        );
+        await page.waitForFunction(
+          (state) => document.body.dataset.today === state,
+          wait,
+          state,
+        );
+      };
+      const before = await today();
+      try {
+        // India is selected, so the sheet is open.
+        for (const [width, height] of [
+          [1280, 720],
+          [1440, 900],
+          [1920, 1080],
+        ]) {
+          await page.setViewport({ width, height, deviceScaleFactor: 1 });
+          await setToday('open');
+          await frameLayout(width, height, 'today-open-sheet-open');
+          await setToday('folded');
+          await frameLayout(width, height, 'today-folded-sheet-open');
+        }
+        await page.click('#world-sheet-close');
+        await page.waitForFunction(
+          () => document.body.dataset.sheet === 'closed',
+          wait,
+        );
+        await setToday('open');
+        await frameLayout(1280, 720, 'today-open-sheet-closed');
+      } finally {
+        // Leave the page as the next steps expect it, pass or fail.
+        await page.setViewport(desktop);
+        await setToday(before);
+        if (
+          (await page.evaluate(() => document.body.dataset.sheet)) !== 'open'
+        )
+          await pickCountry(81.7, 21.2, 'IND');
+      }
+    },
+    // A layout failure is reported without stopping the board's other checks.
+    { fatal: false },
   );
 
   await step(

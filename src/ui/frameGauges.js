@@ -93,34 +93,74 @@ function foodGauge(features) {
   };
 }
 
-/** Alerts are the board's live condition flags that are not cleared. */
+/**
+ * The live condition feeds that can set a flag, with the short name the
+ * gauge shows. These are the feeds with a rule in
+ * server/providers/world/conditionEvents.js (a test keeps the two in step).
+ * Feeds such as live-fao carry a banner and never a flag, so they say
+ * nothing about how many alerts there are.
+ */
+export const ALERT_FEEDS = {
+  'live-coups': 'coups',
+  'live-gdacs': 'GDACS',
+  'live-gdelt': 'GDELT',
+  'live-fx': 'FX',
+  'live-imf-cpi': 'IMF CPI',
+  'live-unhcr': 'UNHCR',
+  'live-ucdp-saved': 'UCDP',
+  'live-ucdp-token': 'UCDP',
+  'live-debt-dsa': 'debt DSA',
+  'live-electionguide': 'ElectionGuide',
+  'live-hdx': 'HDX',
+  'live-ioda': 'IODA',
+};
+
+/** A flag feed counts once it has loaded: it holds its flag list and is not stale or failed. */
+function loadedAlertFeeds(features) {
+  return Object.keys(ALERT_FEEDS).filter((id) => {
+    const data = features?.[id];
+    return (
+      Array.isArray(data?.flags) &&
+      !data.staleSince &&
+      !(data.error && !data.lastGoodAt)
+    );
+  });
+}
+
+/**
+ * Alerts are the active flags of the loaded live condition feeds: not
+ * cleared, stale or out of recent data.
+ */
 export function activeAlerts(features) {
-  return Object.values(features ?? {})
-    .flatMap((data) => data?.flags ?? [])
+  return loadedAlertFeeds(features)
+    .flatMap((id) => features[id].flags)
     .filter(
       (flag) =>
         flag &&
-        flag.status !== 'cleared' &&
+        (flag.status ?? 'active') === 'active' &&
         (flag.sourceId !== 'live-ucdp-saved' ||
           Number.isSafeInteger(flag.recordedDeaths)),
     );
 }
 
 function alertsGauge(features, turn) {
-  // Without a live feed on record the count is unknown, not zero.
-  if (!Object.keys(features ?? {}).some((id) => id.startsWith('live-')))
-    return null;
+  // Until a feed that can carry flags has loaded, the count is unknown, not zero.
+  const feeds = loadedAlertFeeds(features);
+  if (!feeds.length) return null;
   const day = dayLabel(turn?.endedAt);
   if (!day) return null;
   const alerts = activeAlerts(features);
   const countries = new Set(alerts.map(({ iso3 }) => iso3).filter(Boolean));
+  const names = [...new Set(feeds.map((id) => ALERT_FEEDS[id]))];
+  const source =
+    names.length <= 2 ? names.join(', ') : `${names.length} live feeds`;
   return {
     id: 'alerts',
     label: 'Alerts',
     value: String(alerts.length),
     change: null,
-    caption: `in ${countries.size} ${countries.size === 1 ? 'country' : 'countries'} · ${day}`,
-    title: 'Live condition alerts on the board, not cleared',
+    caption: `in ${countries.size} ${countries.size === 1 ? 'country' : 'countries'} · ${day} · ${source}`,
+    title: `Active condition flags from the live feeds: ${names.join(', ')}`,
   };
 }
 

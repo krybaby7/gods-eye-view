@@ -213,6 +213,26 @@ async function changeLens(selector, legend) {
   assert.match(await text('#world-legend'), /Unknown or disputed/i);
 }
 
+// The frame's sheet shows its first four tabs and puts the rest under
+// "More ›", so a later tab is chosen from that menu, as a person would.
+async function selectTab(id) {
+  const shown = await page.$eval(tab(id), (node) => !node.hidden);
+  if (shown) {
+    await page.click(tab(id));
+    return;
+  }
+  await page.click('#frame-sheet-more');
+  await page.waitForSelector('#frame-sheet-more-menu:not([hidden])', wait);
+  await page.click(`#frame-sheet-more-menu [data-frame-tab="${id}"]`);
+  await page.waitForFunction(
+    (selector) =>
+      document.querySelector(selector)?.getAttribute('aria-selected') ===
+      'true',
+    wait,
+    tab(id),
+  );
+}
+
 async function pickCountry(lon, lat, iso3) {
   const handle = await page.waitForFunction(
     ({ lon, lat, iso3 }) => {
@@ -305,7 +325,7 @@ async function checkHatchPixels(filename) {
 }
 
 async function checkRows(section, expected) {
-  await page.click(tab(section));
+  await selectTab(section);
   const rows = await page.$$eval('[data-world-slot]', (buttons) =>
     buttons.map((button) => ({
       slot: button.dataset.worldSlot,
@@ -463,6 +483,142 @@ async function layout(width, height) {
   );
 }
 
+/** The globe keeps at least this width beside Today and the sheet (frame.js). */
+const FRAME_GLOBE_MIN_WIDTH = 460;
+
+/**
+ * Measure the frame's regions and the original floating panels in the real
+ * page at one window size, once the layout has settled. Fails on any overlap
+ * between two regions, between a region and a panel, or between two panels,
+ * and on a globe narrower than FRAME_GLOBE_MIN_WIDTH.
+ */
+async function frameLayout(width, height, label) {
+  await page.setViewport({ width, height, deviceScaleFactor: 1 });
+  const data = await page.evaluate(
+    async ({ width, height }) => {
+      const shown = (element) => {
+        if (!element) return false;
+        const style = getComputedStyle(element);
+        return (
+          style.display !== 'none' &&
+          style.visibility === 'visible' &&
+          Number(style.opacity) > 0 &&
+          element.getClientRects().length > 0
+        );
+      };
+      const box = (name, element) => {
+        const { left, top, right, bottom } = element.getBoundingClientRect();
+        return { name, left, top, right, bottom };
+      };
+      const read = () => {
+        const regions = [
+          ['top bar', '#frame-top'],
+          ['bottom bar', '#frame-bottom'],
+          ['Today', '#frame-today'],
+          ['rail', '#frame-rail'],
+          ['sheet', '#frame-sheet'],
+        ]
+          .map(([name, selector]) => [name, document.querySelector(selector)])
+          .filter(([, element]) => shown(element))
+          .map(([name, element]) => box(name, element));
+        const panels = [
+          '#data-panel',
+          '#right-context-rail > [data-panel-id]',
+          '#command-dock',
+          '#globe-navigation',
+          '#lens-bar',
+          '#key-setup-chip',
+          '#world-hover',
+        ]
+          .flatMap((selector) => [...document.querySelectorAll(selector)])
+          .filter(shown)
+          .map((element) =>
+            box(
+              element.id ||
+                element.dataset.panelId ||
+                element.className ||
+                'panel',
+              element,
+            ),
+          )
+          .filter(({ right, left, bottom, top }) => right > left && bottom > top);
+        const globe = box('globe', document.getElementById('cesiumContainer'));
+        return { regions, panels, globe };
+      };
+      const stable = await new Promise((resolve, reject) => {
+        let previous;
+        let since;
+        let samples = 0;
+        let frame;
+        const deadline = setTimeout(() => {
+          cancelAnimationFrame(frame);
+          reject(new Error(`The frame did not settle at ${width}×${height}`));
+        }, 10_000);
+        function sample(now) {
+          if (innerWidth === width && innerHeight === height) {
+            const current = read();
+            const key = JSON.stringify(current);
+            if (key !== previous) {
+              previous = key;
+              since = now;
+              samples = 0;
+            }
+            if (++samples >= 3 && now - since >= 250) {
+              clearTimeout(deadline);
+              resolve(current);
+              return;
+            }
+          } else previous = undefined;
+          frame = requestAnimationFrame(sample);
+        }
+        frame = requestAnimationFrame(sample);
+      });
+      const overlaps = [];
+      const meet = (a, b) =>
+        Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
+        Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+      const { regions, panels, globe } = stable;
+      regions.forEach((a, i) =>
+        regions.slice(i + 1).forEach((b) => {
+          if (meet(a, b)) overlaps.push(`${a.name} / ${b.name}`);
+        }),
+      );
+      for (const a of regions)
+        if (meet(a, globe)) overlaps.push(`${a.name} / globe`);
+      for (const panel of panels) {
+        for (const region of regions)
+          if (meet(panel, region)) overlaps.push(`${panel.name} / ${region.name}`);
+      }
+      panels.forEach((a, i) =>
+        panels.slice(i + 1).forEach((b) => {
+          if (meet(a, b)) overlaps.push(`${a.name} / ${b.name}`);
+        }),
+      );
+      return {
+        today: document.body.dataset.today,
+        sheet: document.body.dataset.sheet,
+        globeWidth: Math.round(globe.right - globe.left),
+        overlaps,
+        ...stable,
+      };
+    },
+    { width, height },
+  );
+  report.frameLayouts ??= [];
+  report.frameLayouts.push({ width, height, label, ...data });
+  await shot(`frame-${width}x${height}-${label}`);
+  assert.deepEqual(
+    data.overlaps,
+    [],
+    `Overlap at ${width}×${height} (${label}, Today ${data.today}, sheet ${data.sheet})`,
+  );
+  assert.ok(
+    data.globeWidth >= FRAME_GLOBE_MIN_WIDTH,
+    `The globe is ${data.globeWidth} px at ${width}×${height} (${label}); it needs ${FRAME_GLOBE_MIN_WIDTH}`,
+  );
+  return data;
+}
+
 try {
   await fs.mkdir(evidence, { recursive: true });
   browser = await puppeteer.launch({
@@ -563,9 +719,11 @@ try {
       pickCountry,
       checkRows,
       layout,
+      frameLayout,
       lens,
       area,
       tab,
+      selectTab,
       slot,
       wait,
       desktop,

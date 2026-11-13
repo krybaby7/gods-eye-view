@@ -24,6 +24,11 @@ import {
   geoidHeight,
 } from './data/geoid.js';
 import { DEFAULT_HUD_LAYOUT, normalizeHudLayout } from './hudLayouts.js';
+import {
+  formatEyeAltitude,
+  formatLatLon,
+  formatUtcClock,
+} from './hudFormat.js';
 
 /** Text colour per shader mode, so the line stays legible under NVG/FLIR/CRT. */
 const HUD_COLORS = {
@@ -111,9 +116,9 @@ export class IntelHUD {
         <div id="hud-ais-vessel" class="hud-ais-vessel">AIS: --</div>
         <div class="hud-status-line">
           <span id="hud-place" class="hud-place"></span>
-          <span id="hud-latlon">--°--'--"N ---°--'--"W</span>
+          <span id="hud-latlon"></span>
           <span id="hud-mgrs" hidden>MGRS: ---</span>
-          <span id="hud-alt">ALT: --m</span>
+          <span id="hud-alt"></span>
           <span id="hud-time"></span>
         </div>
       </div>
@@ -163,24 +168,10 @@ export class IntelHUD {
     }, 250);
   }
 
-  /**
-   * Format the current wall-clock time as a UTC Zulu string.
-   * @returns {string} Timestamp in `YYYY-MM-DD HH:MM:SSZ` format.
-   */
-  _formatUTC() {
-    const now = new Date();
-    const y = now.getUTCFullYear();
-    const mo = String(now.getUTCMonth() + 1).padStart(2, '0');
-    const d = String(now.getUTCDate()).padStart(2, '0');
-    const h = String(now.getUTCHours()).padStart(2, '0');
-    const mi = String(now.getUTCMinutes()).padStart(2, '0');
-    const s = String(now.getUTCSeconds()).padStart(2, '0');
-    return `${y}-${mo}-${d} ${h}:${mi}:${s}Z`;
-  }
-
+  /** Show the current time as "18:02 UTC". */
   _updateTime() {
     const el = document.getElementById('hud-time');
-    if (el) el.textContent = this._formatUTC();
+    if (el) el.textContent = formatUtcClock(new Date());
   }
 
   /**
@@ -235,9 +226,7 @@ export class IntelHUD {
     }
 
     const llEl = document.getElementById('hud-latlon');
-    const latDMS = this._toDMS(latDeg, 'lat');
-    const lonDMS = this._toDMS(lonDeg, 'lon');
-    if (llEl) llEl.textContent = `${latDMS} ${lonDMS}`;
+    if (llEl) llEl.textContent = formatLatLon(latDeg, lonDeg);
 
     // Altitude — reported as height above MEAN SEA LEVEL. `altM` is the raw
     // ellipsoidal camera height, which reads far below zero wherever the geoid
@@ -247,7 +236,7 @@ export class IntelHUD {
     const altEl = document.getElementById('hud-alt');
     const geoidN = this._geoidUndulationM(latDeg, lonDeg);
     const altMslM = ellipsoidalToMslDisplayM(altM, geoidN);
-    if (altEl) altEl.textContent = `ALT: ${Math.round(altMslM)}m`;
+    if (altEl) altEl.textContent = formatEyeAltitude(altMslM);
 
     this._latestMetrics = { latDeg, lonDeg, altM, altMslM };
 
@@ -276,31 +265,6 @@ export class IntelHUD {
     const easting = coords.slice(0, half);
     const northing = coords.slice(half);
     return `${zone} ${square} ${easting} ${northing}`;
-  }
-
-  /**
-   * Convert a decimal-degree value to a degrees-minutes-seconds string.
-   * @param {number} decimal - Coordinate in decimal degrees.
-   * @param {'lat'|'lon'} type - Axis selector; controls hemisphere letter
-   *   and zero-padding width (2 digits for lat, 3 for lon).
-   * @returns {string} Formatted DMS string, e.g. `"38°53'23.10"N"`.
-   */
-  _toDMS(decimal, type) {
-    const abs = Math.abs(decimal);
-    const deg = Math.floor(abs);
-    const minFloat = (abs - deg) * 60;
-    const min = Math.floor(minFloat);
-    const sec = ((minFloat - min) * 60).toFixed(2);
-
-    let dir;
-    if (type === 'lat') dir = decimal >= 0 ? 'N' : 'S';
-    else dir = decimal >= 0 ? 'E' : 'W';
-
-    const degStr =
-      type === 'lon'
-        ? String(deg).padStart(3, '0')
-        : String(deg).padStart(2, '0');
-    return `${degStr}°${String(min).padStart(2, '0')}'${String(sec).padStart(5, '0')}"${dir}`;
   }
 
   /**

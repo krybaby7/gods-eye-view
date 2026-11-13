@@ -79,7 +79,9 @@ body.gev-frame {
   z-index: 150;
 }
 
-.frame-region :is(button, input) {
+/* Zero specificity: it only replaces the browser's own button and input type,
+   so the sheet's content (the Overview line, .world-control) keeps its sizes. */
+:where(.frame-region) :where(button, input) {
   font: inherit;
   color: inherit;
 }
@@ -448,6 +450,22 @@ body.gev-frame {
   }
 }
 
+/* Every lens's legend fits the 52 px bar: the Diplomacy classes (a 3-column
+   grid with margins in world-phase-3.css, about 69 px tall) run as one row. */
+.frame-legend {
+  max-height: 100%;
+  overflow: hidden;
+}
+
+body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
+  #world-legend
+  #world-legend-stops {
+  display: flex;
+  gap: 4px 10px;
+  margin: 0;
+  overflow: hidden;
+}
+
 #world-legend-note {
   overflow: hidden;
   font: var(--type-caption);
@@ -585,20 +603,91 @@ body.gev-frame {
 
 /* A card shows no country tabs and no country condition. */
 #world-character-sheet:has(#world-country-content[hidden])
-  :is(#world-sheet-tabs, #world-hp-label, #world-hp-track) {
+  :is(#frame-sheet-tabbar, #world-hp-label, #world-hp-track) {
   display: none;
 }
 
-/* One row of tabs. The tab mechanism owns which tabs exist; the row scrolls
-   rather than wraps, so a tab added later still fits. */
-.frame-tabs {
+/* One row: the first tabs, then "More ›" for the rest (frame.js decides how
+   many; the tab mechanism decides which tabs exist and in what order). */
+.frame-tabbar {
   display: flex;
   flex: none;
+  align-items: stretch;
   gap: 18px;
   padding: 0 16px;
-  overflow-x: auto;
   border-bottom: 1px solid var(--line-soft);
-  scrollbar-width: none;
+}
+
+.frame-tabs {
+  display: flex;
+  flex: 0 1 auto;
+  gap: 18px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.frame-tabs [role='tab'][hidden] {
+  display: none;
+}
+
+.frame-more {
+  position: relative;
+  display: flex;
+  flex: none;
+}
+
+.frame-more-btn {
+  margin-bottom: -1px;
+  padding: 8px 0 9px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-2);
+  font: 500 13px/19px var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.frame-more-btn[hidden] {
+  display: none;
+}
+
+.frame-more-btn[data-selected='true'] {
+  border-bottom-color: var(--accent);
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.frame-more-menu {
+  top: calc(100% + 6px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: 4px;
+}
+
+.frame-more-menu[hidden] {
+  display: none;
+}
+
+.frame-more-menu button {
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-1);
+  font: 500 13px/19px var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+
+.frame-more-menu button:is(:hover, :focus-visible) {
+  background: var(--surface-3);
+}
+
+.frame-more-menu button[aria-current='true'] {
+  font-weight: 600;
 }
 
 .frame-tabs .world-control {
@@ -728,14 +817,91 @@ body.gev-frame .hud-status-line {
 }
 
 body.gev-frame :is(#hud-latlon, #hud-mgrs, #hud-alt, #hud-time) {
+  flex: none;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
+/* When MGRS is on or the credit is wide, the place name gives way first,
+   then MGRS and the coordinates; altitude and the time always stay. */
 body.gev-frame .hud-place {
+  flex: 0 1000 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+body.gev-frame #hud-mgrs {
+  flex: 0 10 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.gev-frame #hud-latlon {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The board's hover readout stays inside the globe's region, above the
+   frame's regions, so it never slides under Today, the sheet or a bar. */
+body.gev-frame #world-hover {
+  z-index: 155;
+  max-width: min(
+    290px,
+    calc(100vw - var(--frame-left) - var(--frame-right) - 16px)
+  );
+  transform: translate(
+    clamp(
+      calc(var(--frame-left) + 8px),
+      var(--world-hover-x),
+      calc(100vw - var(--frame-right) - 100% - 8px)
+    ),
+    clamp(
+      calc(var(--frame-top) + 8px),
+      var(--world-hover-y),
+      calc(100dvh - var(--frame-bottom) - var(--frame-status) - 100% - 8px)
+    )
+  );
+}
+
+/* The expanded street-level viewer opens inside the globe's region, so its
+   toolbar is never under the top bar. */
+body.gev-frame:not(.cockpit-mode, .recording-mode, .ui-clean-view, .ui-embed)
+  .sl-viewer-wrap-expanded {
+  top: calc(var(--frame-top) + 12px);
+  right: calc(var(--frame-right) + 12px);
+  bottom: calc(var(--frame-bottom) + var(--frame-status) + 12px);
+  left: calc(var(--frame-left) + 12px);
+}
+
+/* The imagery split lines stand in the globe's region, not through the bars;
+   imagerySplit.js places them in window pixels on the canvas's cut. */
+body.gev-frame:not(.cockpit-mode, .recording-mode, .ui-clean-view, .ui-embed)
+  :is(#recent-imagery-split-line, #bhote-koshi-split-line) {
+  top: var(--frame-top);
+  bottom: var(--frame-bottom);
+}
+
+/* The traffic and camera sync chips centre on the globe and stack under the
+   loading status (frame-top + 60 px) with the spacing they had before, so
+   none covers another. */
+body.gev-frame :is(#traffic-sync-chip, #cctv-sync-chip) {
+  top: calc(var(--frame-top) + 98px);
+  left: var(--frame-globe-centre);
+}
+
+body.gev-frame #cctv-sync-chip {
+  top: calc(var(--frame-top) + 132px);
+}
+
+/* The key setup chip sits in the globe's region above the status line. */
+body.gev-frame #key-setup-chip {
+  left: calc(var(--frame-left) + 12px);
+  right: auto;
+  bottom: calc(var(--frame-bottom) + var(--frame-status) + 12px);
 }
 
 body.gev-frame .hud-ais-vessel {
@@ -805,6 +971,17 @@ body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(
 
   .frame-sheet {
     width: 100vw;
+  }
+
+  /* Today folds when the window gets this narrow (frame.js); opened from
+     the rail it covers the globe too, with the globe keeping the width. */
+  body.gev-frame[data-today='open'] {
+    --frame-left: 0px;
+  }
+
+  .frame-today {
+    width: min(var(--frame-today), 100vw);
+    z-index: 160;
   }
 
   body.gev-frame #left-panel-stack {

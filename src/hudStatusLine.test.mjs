@@ -145,15 +145,16 @@ test('the status line holds the place, coordinates, MGRS, altitude and UTC time'
     }
     assert.ok(page.hud.innerHTML.includes('id="hud-ais-vessel"'), 'the vessel line is kept');
     hud.show();
-    assert.match(page.text('hud-latlon'), /^37°36'57\.60"N 122°22'04\.80"W$/);
+    // Degrees and minutes, as the mock writes them (Appendix D).
+    assert.equal(page.text('hud-latlon'), "37°37'N 122°22'W");
     // MGRS is optional (roadmap 1.2, Appendix A): off until the viewer asks.
     assert.equal(page.sink('hud-mgrs').hidden, true, 'MGRS starts hidden');
     assert.equal(page.text('hud-mgrs'), '', 'and is not worked out while hidden');
     hud.setMgrsVisible(true, { persist: false });
     assert.equal(page.sink('hud-mgrs').hidden, false);
     assert.equal(page.text('hud-mgrs'), 'MGRS: 10S EG 5577 6339');
-    assert.match(page.text('hud-alt'), /^ALT: \d+m$/);
-    assert.match(page.text('hud-time'), /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$/);
+    assert.match(page.text('hud-alt'), /^Eye altitude [\d,]+ (?:m|km)$/);
+    assert.match(page.text('hud-time'), /^\d{2}:\d{2} UTC$/);
     assert.match(page.text('hud-place'), /^NEAR .+\(SAN FRANCISCO\)$/, 'near a catalogued landmark');
   } finally {
     hud?.destroy();

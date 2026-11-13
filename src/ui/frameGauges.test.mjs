@@ -2,7 +2,9 @@
 // is left out (never zero), and each one names its period and source.
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { CONDITION_FLAG_SOURCES } from '../../server/providers/world/conditionEvents.js';
 import {
+  ALERT_FEEDS,
   activeAlerts,
   dayLabel,
   formatChange,
@@ -81,28 +83,78 @@ test('food reads the FAO banner with its month', () => {
   assert.equal(food.caption, 'Food price index · Oct 2026 · FAO');
 });
 
-test('alerts count live flags not cleared, and are unknown without a live feed', () => {
+test('the alert feeds are exactly the feeds with a flag rule', () => {
+  assert.deepEqual(
+    Object.keys(ALERT_FEEDS).sort(),
+    [...CONDITION_FLAG_SOURCES].sort(),
+  );
+  assert.equal('live-fao' in ALERT_FEEDS, false);
+});
+
+test('alerts are unknown until a feed that can carry flags has loaded', () => {
   const turn = { endedAt: '2026-11-11T18:00:00Z' };
   assert.deepEqual(
     worldGauges({ turn, features: { fred: { flags: [{ iso3: 'FRA' }] } } }),
     [],
     'no live feed on record: the count is unknown, so not shown',
   );
+  assert.deepEqual(
+    worldGauges({
+      turn,
+      features: { 'live-fao': { flags: [], banner: {} } },
+    }).map(({ id }) => id),
+    [],
+    'FAO loaded alone never carries flags: unknown, not zero',
+  );
+  assert.deepEqual(
+    worldGauges({
+      turn,
+      features: {
+        'live-gdacs': { flags: [{ iso3: 'PHL' }], staleSince: '2026-11-10' },
+        'live-gdelt': { flags: [], error: 'fetch failed', lastGoodAt: null },
+      },
+    }),
+    [],
+    'a stale feed and a feed that never loaded do not make the count known',
+  );
+  const [none] = worldGauges({
+    turn,
+    features: { 'live-gdacs': { flags: [] } },
+  });
+  assert.equal(none.value, '0', 'a loaded flag feed with no flags is a true 0');
+  assert.equal(none.caption, 'in 0 countries · 11 Nov · GDACS');
+});
+
+test('alerts count only active flags from the loaded live condition feeds', () => {
+  const turn = { endedAt: '2026-11-11T18:00:00Z' };
   const features = {
-    'live-a': {
+    fred: { flags: [{ iso3: 'FRA' }] },
+    'live-fao': { flags: [{ iso3: 'ITA' }] },
+    'live-gdacs': {
       flags: [
         { iso3: 'SDN' },
-        { iso3: 'SDN' },
+        { iso3: 'SDN', status: 'active' },
         { iso3: 'MLI', status: 'cleared' },
+        { iso3: 'TCD', status: 'stale' },
+        { iso3: 'NER', status: 'no-recent-data' },
+      ],
+    },
+    'live-ucdp-saved': {
+      flags: [
         { iso3: 'YEM', sourceId: 'live-ucdp-saved' },
         { iso3: 'UKR', sourceId: 'live-ucdp-saved', recordedDeaths: 3 },
       ],
     },
+    'live-coups': { flags: [{ iso3: 'BFA' }] },
   };
-  assert.equal(activeAlerts(features).length, 3);
+  assert.equal(activeAlerts(features).length, 4);
   const [alerts] = worldGauges({ turn, features });
-  assert.equal(alerts.value, '3');
-  assert.equal(alerts.caption, 'in 2 countries · 11 Nov');
+  assert.equal(alerts.value, '4');
+  assert.equal(alerts.caption, 'in 3 countries · 11 Nov · 3 live feeds');
+  assert.equal(
+    alerts.title,
+    'Active condition flags from the live feeds: coups, GDACS, UCDP',
+  );
   assert.deepEqual(
     worldGauges({ features }),
     [],

@@ -57,7 +57,13 @@
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>
         </button>
       </header>
-      <div id="world-sheet-tabs" class="frame-tabs" role="tablist" aria-label="Sheet sections"></div>
+      <div id="frame-sheet-tabbar" class="frame-tabbar">
+        <div id="world-sheet-tabs" class="frame-tabs" role="tablist" aria-label="Sheet sections"></div>
+        <div class="frame-more">
+          <button id="frame-sheet-more" class="frame-more-btn" type="button" aria-haspopup="menu" aria-controls="frame-sheet-more-menu" aria-expanded="false" hidden>More ›</button>
+          <div id="frame-sheet-more-menu" class="frame-popup frame-more-menu" role="menu" aria-label="More sections" hidden></div>
+        </div>
+      </div>
       <div id="world-sheet-body" class="frame-sheet-body" data-rail-scroller>
         <section id="world-card-content" hidden></section>
         <div id="world-country-content">
