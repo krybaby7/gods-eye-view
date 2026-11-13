@@ -1,0 +1,1116 @@
+/* ── The frame (roadmap 1.2, built to the approved mock) ──────────────────
+   Five solid regions: the top bar, Today on the left (folding to a rail), the
+   globe, one sheet on the right and the bottom bar. The globe's canvas is
+   sized to the region the four edges leave, so nothing drawn on the globe can
+   reach under a column or a bar. src/ui/frame.js sets body.gev-frame and the
+   data-today / data-sheet attributes; every edge below follows from them.
+   Cockpit, recording and the clean view give the whole window back to the
+   globe, as before. */
+
+@media (max-width: 1365px) {
+  :root {
+    --frame-today: 300px;
+    --frame-sheet: 420px;
+  }
+}
+
+body.gev-frame {
+  --frame-top: var(--frame-bar);
+  --frame-bottom: var(--frame-bar);
+  --frame-left: var(--frame-today);
+  --frame-right: 0px;
+  /* The original floating panels keep to the globe's region. */
+  --left-stack-x: calc(var(--frame-left) + var(--space-3));
+  --right-rail-x: calc(var(--frame-right) + var(--space-3));
+  --frame-globe-centre: calc(
+    var(--frame-left) + (100vw - var(--frame-left) - var(--frame-right)) / 2
+  );
+}
+
+body.gev-frame[data-today='folded'] {
+  --frame-left: var(--frame-rail);
+}
+
+body.gev-frame[data-sheet='open'] {
+  --frame-right: var(--frame-sheet);
+}
+
+body.gev-frame:is(.cockpit-mode, .recording-mode, .ui-clean-view, .ui-embed) {
+  --frame-top: 0px;
+  --frame-bottom: 0px;
+  --frame-left: 0px;
+  --frame-right: 0px;
+}
+
+body:not(.gev-frame) .frame-region,
+body.gev-frame:is(.cockpit-mode, .recording-mode, .ui-clean-view, .ui-embed)
+  .frame-region,
+body.gev-frame:not([data-today='folded']) #frame-rail,
+body.gev-frame[data-today='folded'] #frame-today,
+body.gev-frame:not([data-sheet='open']) #frame-sheet {
+  display: none !important;
+}
+
+/* ── The globe's region ── */
+body.gev-frame :is(#cesiumContainer, #world-overlay-root) {
+  inset: var(--frame-top) var(--frame-right) var(--frame-bottom)
+    var(--frame-left);
+  width: auto;
+  height: auto;
+}
+
+body.gev-frame {
+  background: var(--surface-space);
+}
+
+/* ── Shared parts ── */
+.frame-region {
+  position: fixed;
+  z-index: 120;
+  box-sizing: border-box;
+  background: var(--surface-1);
+  color: var(--text-1);
+  font: var(--type-body);
+}
+
+/* The bars stack above the globe's floating chrome (the dock is 145), so the
+   turn list and the area chips that open from them are never covered. */
+.frame-region.frame-bar {
+  z-index: 150;
+}
+
+/* A hidden part of the frame is not shown, whatever display its class gives
+   it: the browser's own [hidden] rule loses to any author rule, and a control
+   with nothing behind it is not shown (decision 32). */
+.frame-region[hidden],
+.frame-region [hidden] {
+  display: none !important;
+}
+
+/* Zero specificity: it only replaces the browser's own button and input type,
+   so the sheet's content (the Overview line, .world-control) keeps its sizes. */
+:where(.frame-region) :where(button, input) {
+  font: inherit;
+  color: inherit;
+}
+
+.frame-grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.frame-sep {
+  flex: none;
+  width: 1px;
+  height: 24px;
+  background: var(--line-soft);
+}
+
+.frame-caption {
+  font: var(--type-caption);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.frame-title {
+  margin: 0;
+  font: var(--type-title);
+}
+
+.frame-display {
+  margin: 0;
+  font: var(--type-display);
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.frame-iconbtn,
+.frame-btn,
+.frame-seg button,
+.frame-pill {
+  cursor: pointer;
+}
+
+.frame-iconbtn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-2);
+}
+
+.frame-iconbtn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.frame-iconbtn:hover,
+.frame-btn:hover {
+  border-color: var(--line-strong);
+  color: var(--text-1);
+}
+
+.frame-iconbtn:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.frame-iconbtn[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.frame-btn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  font: 500 13px/19px var(--font-sans);
+  white-space: nowrap;
+}
+
+.frame-btn[aria-expanded='true'] {
+  border-color: var(--line-strong);
+  background: var(--surface-3);
+}
+
+.frame-seg {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-control);
+  background: var(--surface-0);
+}
+
+.frame-seg button {
+  height: 28px;
+  min-height: 0;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-2);
+  font: 500 13px/19px var(--font-sans);
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.frame-seg button:is([aria-pressed='true'], [aria-selected='true']) {
+  background: var(--surface-3);
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.frame-popup {
+  position: absolute;
+  z-index: 130;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-pop);
+  color: var(--text-1);
+  font: var(--type-small);
+}
+
+/* ── Top and bottom bars ── */
+.frame-bar {
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: var(--frame-bar);
+  padding: 0 var(--space-4);
+}
+
+.frame-top {
+  top: 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.frame-bottom {
+  bottom: 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.frame-brand {
+  font: var(--type-heading);
+  white-space: nowrap;
+}
+
+.frame-gauge {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.frame-gauge-main {
+  font: 500 13px/18px var(--font-sans);
+  color: var(--text-1);
+}
+
+.frame-gauge-caption {
+  font: var(--type-caption);
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.frame-figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.frame-figure.frame-change {
+  color: var(--text-2);
+}
+
+.frame-board-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.frame-board-status[hidden],
+.frame-gauges[hidden] {
+  display: none;
+}
+
+.frame-turn {
+  position: relative;
+  flex: none;
+}
+
+.frame-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font: 600 12px/16px var(--font-sans);
+  white-space: nowrap;
+}
+
+.frame-pill::after {
+  content: '▾';
+}
+
+.frame-pill[aria-expanded='true']::after {
+  content: '▴';
+}
+
+#world-turn-changes {
+  top: calc(100% + 8px);
+  left: 0;
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(50dvh, 360px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+}
+
+.frame-progress {
+  min-width: 0;
+  overflow: hidden;
+  font: var(--type-caption);
+  color: var(--text-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.frame-progress.panel-surface-error {
+  color: var(--alert-crisis);
+}
+
+.frame-gauges {
+  display: flex;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* Lens, legend and the board's tools in the bottom bar. */
+.frame-lens {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+}
+
+.frame-lens[hidden],
+.frame-legend[hidden] {
+  display: none;
+}
+
+.frame-areas {
+  bottom: calc(100% + 10px);
+  left: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: max-content;
+  max-width: min(560px, calc(100vw - 32px));
+}
+
+.frame-areas[hidden] {
+  display: none;
+}
+
+.frame-areas .world-control {
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-chip);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font: 500 12px/16px var(--font-sans);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.frame-areas .world-control[aria-pressed='true'] {
+  border-color: var(--line-strong);
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+
+/* The legend's marks (title, ramp and stops or the classes with their
+   swatches, and the unknown key) wrap onto as many lines of the 52 px bar as
+   they need, each mark whole; more than the bar holds closes them up to the
+   dense line, and marks that still do not fit leave the bar whole, from the
+   last back (frameLegend.js measures). The note takes the line left, cut
+   with an ellipsis, and goes when none is left; whatever is left out or cut
+   is read whole in the popover behind the info button. */
+.frame-legend {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  align-self: center;
+  min-width: 0;
+  /* The bar's height less its border and a pixel of air either side. */
+  max-height: calc(var(--frame-bar) - 4px);
+  overflow: hidden;
+  font: 500 12px/15px var(--font-sans);
+  color: var(--text-2);
+  pointer-events: none;
+}
+
+.frame-legend[data-dense] {
+  line-height: 12px;
+}
+
+.frame-legend-row {
+  display: block;
+  flex: none;
+  margin: 0;
+}
+
+#world-legend-stops,
+body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
+  #world-legend
+  #world-legend-stops {
+  display: inline;
+  margin: 0;
+}
+
+.frame-legend-row > *,
+#world-legend-stops > span {
+  margin-right: 10px;
+}
+
+/* A stop or class is one unbreakable box: it moves to the next line whole
+   (the board writes the stops with no spaces between them, so only a box
+   gives the line a place to break), or leaves the bar whole (data-out, set
+   by frameLegend.js when the bar has no room for it). */
+#world-legend-title,
+#world-legend-stops > span {
+  white-space: nowrap;
+}
+
+#world-legend-stops > span {
+  display: inline-block;
+}
+
+.frame-legend #world-legend-stops > [data-out] {
+  display: none;
+}
+
+#world-legend-title {
+  color: var(--text-1);
+}
+
+.frame-legend .world-legend-ramp {
+  display: inline-block;
+  width: 116px;
+  height: 8px;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+.frame-legend .world-legend-unknown {
+  display: inline;
+  white-space: nowrap;
+}
+
+.frame-legend .world-legend-unknown .world-hatch {
+  display: inline-block;
+  width: 22px;
+  height: 9px;
+  margin-right: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+/* Below 1366 px the bar is tight: the lens buttons and the ramp narrow and
+   the "Lens" caption goes. */
+@media (max-width: 1365px) {
+  .frame-lens > .frame-caption {
+    display: none;
+  }
+
+  .frame-lens .frame-seg button {
+    padding: 0 8px;
+  }
+
+  .frame-legend .world-legend-ramp {
+    width: 72px;
+  }
+}
+
+#world-legend-note {
+  display: block;
+  flex: none;
+  overflow: hidden;
+  color: var(--text-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#world-legend-note:empty,
+.frame-legend[data-note-off] #world-legend-note {
+  display: none;
+}
+
+/* Shown only when the bar cuts part of the legend, or on a phone, where the
+   bar has no room for it at all. */
+.frame-legend-whole {
+  width: 28px;
+  height: 28px;
+}
+
+.frame-legend-popup {
+  bottom: calc(100% + 8px);
+  left: 8px;
+  display: grid;
+  gap: 8px;
+  width: min(420px, calc(100vw - 16px));
+  max-height: calc(100vh - var(--frame-bar) - 16px);
+  overflow: auto;
+  color: var(--text-2);
+}
+
+.frame-legend-popup:focus {
+  outline: none;
+}
+
+.frame-legend-popup-title {
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.frame-legend-popup .frame-legend-popup-ramp {
+  display: block;
+  height: 8px;
+}
+
+.frame-legend-popup-stops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.frame-legend-popup-stops li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.frame-legend-popup-swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.frame-legend-popup .frame-legend-popup-unknown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.frame-legend-popup .frame-legend-popup-unknown .world-hatch {
+  width: 22px;
+  height: 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+}
+
+.frame-legend-popup-note {
+  margin: 0;
+  color: var(--text-3);
+}
+
+/* ── Today and the rail ── */
+.frame-column {
+  top: var(--frame-bar);
+  bottom: var(--frame-bar);
+  display: flex;
+  flex-direction: column;
+}
+
+.frame-today {
+  left: 0;
+  width: var(--frame-today);
+  border-right: 1px solid var(--line-soft);
+}
+
+.frame-rail {
+  left: 0;
+  align-items: center;
+  gap: 10px;
+  width: var(--frame-rail);
+  padding: 10px 0;
+  border-right: 1px solid var(--line-soft);
+}
+
+.frame-pane-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px 10px;
+}
+
+.frame-today-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.frame-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.frame-empty p {
+  margin: 0;
+}
+
+.frame-empty-title {
+  font: var(--type-heading);
+}
+
+.frame-empty-text {
+  font: var(--type-small);
+  color: var(--text-2);
+}
+
+/* ── The sheet: content first ── */
+.frame-sheet {
+  right: 0;
+  width: var(--frame-sheet);
+  border-left: 1px solid var(--line-soft);
+}
+
+.frame-sheet-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.frame-sheet-content[hidden] {
+  display: none;
+}
+
+.frame-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 16px 10px;
+}
+
+.frame-sheet-titles {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.frame-kind {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  font: var(--type-caption);
+  color: var(--text-2);
+}
+
+.frame-kind :empty {
+  display: none;
+}
+
+.frame-code {
+  font: var(--type-code);
+  color: var(--text-1);
+}
+
+#world-hp-label {
+  font: var(--type-caption);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+#world-hp-track {
+  max-width: 240px;
+  margin-top: 6px;
+}
+
+#world-hp-track:empty {
+  display: none;
+}
+
+/* A card shows no country tabs and no country condition. */
+#world-character-sheet:has(#world-country-content[hidden])
+  :is(#frame-sheet-tabbar, #world-hp-label, #world-hp-track) {
+  display: none;
+}
+
+/* One row: the first tabs, then "More ›" for the rest (frame.js decides how
+   many; the tab mechanism decides which tabs exist and in what order). */
+.frame-tabbar {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  gap: 18px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.frame-tabs {
+  display: flex;
+  flex: 0 1 auto;
+  gap: 18px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.frame-tabs [role='tab'][hidden] {
+  display: none;
+}
+
+.frame-more {
+  position: relative;
+  display: flex;
+  flex: none;
+}
+
+.frame-more-btn {
+  margin-bottom: -1px;
+  padding: 8px 0 9px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-2);
+  font: 500 13px/19px var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.frame-more-btn[hidden] {
+  display: none;
+}
+
+.frame-more-btn[data-selected='true'] {
+  border-bottom-color: var(--accent);
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.frame-more-menu {
+  top: calc(100% + 6px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: 4px;
+}
+
+.frame-more-menu[hidden] {
+  display: none;
+}
+
+.frame-more-menu button {
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-1);
+  font: 500 13px/19px var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+
+.frame-more-menu button:is(:hover, :focus-visible) {
+  background: var(--surface-3);
+}
+
+.frame-more-menu button[aria-current='true'] {
+  font-weight: 600;
+}
+
+.frame-tabs .world-control {
+  flex: none;
+  min-height: 0;
+  margin-bottom: -1px;
+  padding: 8px 0 9px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--text-2);
+  font: 500 13px/19px var(--font-sans);
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+#world-character-sheet .frame-tabs .world-control[aria-selected='true'] {
+  border-color: transparent;
+  border-bottom-color: var(--accent);
+  background: none;
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.frame-sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 10px 16px 16px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.frame-sheet-body .world-detail {
+  font: var(--type-small);
+}
+
+/* ── The original chrome, kept inside the globe's region ── */
+body.gev-frame #title-bar {
+  display: none;
+}
+
+body.gev-frame #top-center-actions {
+  top: calc(var(--frame-top) + var(--space-3));
+  left: var(--frame-globe-centre);
+}
+
+body.gev-frame #globe-navigation {
+  right: calc(var(--frame-right) + var(--space-4));
+  bottom: calc(var(--frame-bottom) + var(--frame-status) + var(--space-3));
+}
+
+/* With Today and the sheet both open, a globe under 1800 px of window is too
+   narrow for the dock and the navigation side by side, so the navigation
+   lifts above the dock (dock bottom 90 px, about 74 px tall, 12 px gap). */
+@media (max-width: 1799px) {
+  body.gev-frame[data-sheet='open']:not([data-today='folded'])
+    #globe-navigation {
+    bottom: calc(var(--frame-bottom) + var(--frame-status) + 98px);
+  }
+}
+
+/* Below 1366 px the globe is too narrow with the sheet open even with Today
+   folded (812 px at 1280). */
+@media (max-width: 1365px) {
+  body.gev-frame[data-sheet='open'] #globe-navigation {
+    bottom: calc(var(--frame-bottom) + var(--frame-status) + 98px);
+  }
+}
+
+/* Zoom lives in the bottom bar; the cockpit keeps its own. */
+body.gev-frame:not(.cockpit-mode) #globe-navigation .map-zoom-controls {
+  display: none;
+}
+
+/* Above the bar, the status line and the credit: 52 + 26 + 12 px, written as
+   one length so the attribution model can resolve it. */
+body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(
+    .ui-embed
+  )
+  #command-dock {
+  bottom: 90px;
+  left: var(--frame-globe-centre);
+}
+
+body.gev-frame :is(#global-loading-status, #scene-runtime) {
+  top: calc(var(--frame-top) + 60px);
+  left: var(--frame-globe-centre);
+}
+
+body.gev-frame #toast {
+  bottom: calc(var(--frame-bottom) + 96px);
+  left: var(--frame-globe-centre);
+}
+
+/* The food gauge in the top bar carries the FAO reading. */
+body.gev-frame #world-live-fao {
+  display: none;
+}
+
+/* The status line: place, coordinates, altitude and time over the bottom of
+   the globe, with the imagery credit at its right end. */
+body.gev-frame #intel-hud .hud-status {
+  right: var(--frame-right);
+  bottom: var(--frame-bottom);
+  left: var(--frame-left);
+  flex-direction: row;
+  align-items: center;
+  max-width: none;
+  height: var(--frame-status);
+  padding: 0 calc(var(--frame-credits-width, 0px) + 24px) 0 12px;
+  border-radius: 0;
+  background: rgba(5, 7, 11, 0.72);
+  font: var(--type-caption);
+  color: var(--text-2);
+  text-align: left;
+}
+
+body.gev-frame .hud-status-line {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  column-gap: 14px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* Figures and codes in monospace; the words beside them stay in the sans
+   face (Appendix D). */
+body.gev-frame :is(#hud-latlon, #hud-mgrs, .hud-reading) {
+  flex: none;
+}
+
+body.gev-frame :is(#hud-latlon, #hud-mgrs, #hud-alt, #hud-time) {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* When MGRS is on or the credit is wide, the place name gives way first,
+   then MGRS and the coordinates; altitude and the time always stay. */
+body.gev-frame .hud-place {
+  flex: 0 1000 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.gev-frame #hud-mgrs {
+  flex: 0 10 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.gev-frame #hud-latlon {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The board's hover readout stays inside the globe's region, above the
+   frame's regions, so it never slides under Today, the sheet or a bar. */
+body.gev-frame #world-hover {
+  z-index: 155;
+  max-width: min(
+    290px,
+    calc(100vw - var(--frame-left) - var(--frame-right) - 16px)
+  );
+  transform: translate(
+    clamp(
+      calc(var(--frame-left) + 8px),
+      var(--world-hover-x),
+      calc(100vw - var(--frame-right) - 100% - 8px)
+    ),
+    clamp(
+      calc(var(--frame-top) + 8px),
+      var(--world-hover-y),
+      calc(100dvh - var(--frame-bottom) - var(--frame-status) - 100% - 8px)
+    )
+  );
+}
+
+/* The expanded street-level viewer opens inside the globe's region, so its
+   toolbar is never under the top bar. */
+body.gev-frame:not(.cockpit-mode, .recording-mode, .ui-clean-view, .ui-embed)
+  .sl-viewer-wrap-expanded {
+  top: calc(var(--frame-top) + 12px);
+  right: calc(var(--frame-right) + 12px);
+  bottom: calc(var(--frame-bottom) + var(--frame-status) + 12px);
+  left: calc(var(--frame-left) + 12px);
+}
+
+/* The imagery split lines stand in the globe's region, not through the bars;
+   imagerySplit.js places them in window pixels on the canvas's cut. */
+body.gev-frame:not(.cockpit-mode, .recording-mode, .ui-clean-view, .ui-embed)
+  :is(#recent-imagery-split-line, #bhote-koshi-split-line) {
+  top: var(--frame-top);
+  bottom: var(--frame-bottom);
+}
+
+/* The traffic and camera sync chips centre on the globe and stack under the
+   loading status (frame-top + 60 px) with the spacing they had before, so
+   none covers another. */
+body.gev-frame :is(#traffic-sync-chip, #cctv-sync-chip) {
+  top: calc(var(--frame-top) + 98px);
+  left: var(--frame-globe-centre);
+}
+
+body.gev-frame #cctv-sync-chip {
+  top: calc(var(--frame-top) + 132px);
+}
+
+/* The key setup chip sits in the globe's region above the status line. */
+body.gev-frame #key-setup-chip {
+  left: calc(var(--frame-left) + 12px);
+  right: auto;
+  bottom: calc(var(--frame-bottom) + var(--frame-status) + 12px);
+}
+
+body.gev-frame .hud-ais-vessel {
+  position: absolute;
+  bottom: calc(100% + var(--space-2));
+  left: 12px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--map-readout-bg);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+}
+
+/* The required imagery credit. Its offset is a plain length, the height of
+   the bottom bar (--frame-bar), so the attribution model in
+   creditAttribution.test.mjs can resolve it. */
+body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(
+    .ui-embed
+  )
+  #cesium-credits {
+  right: calc(var(--frame-right) + 12px);
+  bottom: 52px;
+  left: auto;
+  max-width: calc(100vw - var(--frame-left) - var(--frame-right) - 24px);
+  font: 500 12px/26px var(--font-sans);
+  color: var(--text-2);
+  text-shadow: none;
+}
+
+/* ── Narrow windows ── */
+@media (max-width: 720px) {
+  body.gev-frame .frame-brand,
+  body.gev-frame .frame-gauges,
+  body.gev-frame .frame-sep,
+  body.gev-frame .frame-legend {
+    display: none;
+  }
+
+  /* On a phone the lens row takes the bar and scrolls sideways; zoom (pinch
+     does it) and the presets switch step aside to make the room. */
+  body.gev-frame
+    :is(#frame-presets, .frame-zoom, .frame-lens > .frame-caption) {
+    display: none;
+  }
+
+  body.gev-frame .frame-lens {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  body.gev-frame .frame-lens .frame-seg {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  body.gev-frame .frame-lens .frame-seg button {
+    flex: none;
+    padding: 0 8px;
+  }
+
+  /* The sheet covers the globe instead of squeezing it. */
+  body.gev-frame[data-sheet='open'] {
+    --frame-right: 0px;
+  }
+
+  .frame-sheet {
+    width: 100vw;
+  }
+
+  /* Today folds when the window gets this narrow (frame.js); opened from
+     the rail it covers the globe too, with the globe keeping the width. */
+  body.gev-frame[data-today='open'] {
+    --frame-left: 0px;
+  }
+
+  .frame-today {
+    width: min(var(--frame-today), 100vw);
+    z-index: 160;
+  }
+
+  body.gev-frame #left-panel-stack {
+    top: calc(var(--frame-top) + 8px);
+    left: calc(var(--frame-left) + 8px);
+    right: 8px;
+  }
+
+  body.gev-frame #right-context-rail {
+    left: calc(var(--frame-left) + 8px);
+    right: 8px;
+  }
+}

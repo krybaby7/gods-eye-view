@@ -213,6 +213,26 @@ async function changeLens(selector, legend) {
   assert.match(await text('#world-legend'), /Unknown or disputed/i);
 }
 
+// The frame's sheet shows its first four tabs and puts the rest under
+// "More ›", so a later tab is chosen from that menu, as a person would.
+async function selectTab(id) {
+  const shown = await page.$eval(tab(id), (node) => !node.hidden);
+  if (shown) {
+    await page.click(tab(id));
+    return;
+  }
+  await page.click('#frame-sheet-more');
+  await page.waitForSelector('#frame-sheet-more-menu:not([hidden])', wait);
+  await page.click(`#frame-sheet-more-menu [data-frame-tab="${id}"]`);
+  await page.waitForFunction(
+    (selector) =>
+      document.querySelector(selector)?.getAttribute('aria-selected') ===
+      'true',
+    wait,
+    tab(id),
+  );
+}
+
 async function pickCountry(lon, lat, iso3) {
   const handle = await page.waitForFunction(
     ({ lon, lat, iso3 }) => {
@@ -267,11 +287,17 @@ async function pickCountry(lon, lat, iso3) {
 
 async function checkHatchPixels(filename) {
   const size = 36;
-  const viewport = page.viewport();
+  // The camera looks at the centre of the globe's canvas, which the frame
+  // insets from the window's edges, so sample there rather than mid-window.
+  const canvas = await page.evaluate(() => {
+    const { left, top, width, height } =
+      window.__godsEyeView.viewer.scene.canvas.getBoundingClientRect();
+    return { left, top, width, height };
+  });
   const { data, info } = await sharp(path.join(evidence, filename))
     .extract({
-      left: Math.floor((viewport.width - size) / 2),
-      top: Math.floor((viewport.height - size) / 2),
+      left: Math.floor(canvas.left + (canvas.width - size) / 2),
+      top: Math.floor(canvas.top + (canvas.height - size) / 2),
       width: size,
       height: size,
     })
@@ -299,7 +325,7 @@ async function checkHatchPixels(filename) {
 }
 
 async function checkRows(section, expected) {
-  await page.click(tab(section));
+  await selectTab(section);
   const rows = await page.$$eval('[data-world-slot]', (buttons) =>
     buttons.map((button) => ({
       slot: button.dataset.worldSlot,
@@ -412,8 +438,12 @@ async function layout(width, height) {
           }
         }
       const chips = document.querySelector('#world-areas');
+      // On a phone the lens row in the frame's bottom bar scrolls sideways,
+      // like the area chips: a button is reachable once scrolled into view.
+      const lenses = document.querySelector('#world-lens-bar .frame-seg');
       const controls = [...document.querySelectorAll('#world-lens-bar button')];
       const scrollLeft = chips.scrollLeft;
+      const lensScrollLeft = lenses?.scrollLeft ?? 0;
       const clippedChips = [];
       const unreachable = [];
       function canReach(button) {
@@ -424,7 +454,10 @@ async function layout(width, height) {
       }
       for (const button of controls) {
         if (!button.getClientRects().length) continue;
-        if (chips.contains(button) && !canReach(button)) {
+        if (
+          (chips.contains(button) || lenses?.contains(button)) &&
+          !canReach(button)
+        ) {
           clippedChips.push(button.textContent.trim());
           button.scrollIntoView({
             inline: 'nearest',
@@ -435,6 +468,7 @@ async function layout(width, height) {
         if (!canReach(button)) unreachable.push(button.textContent.trim());
       }
       chips.scrollLeft = scrollLeft;
+      if (lenses) lenses.scrollLeft = lensScrollLeft;
       return { rects, overlaps, clippedChips, unreachable };
     },
     { width, height },
@@ -447,6 +481,295 @@ async function layout(width, height) {
     [],
     `Covered World Board controls at ${width}×${height}`,
   );
+}
+
+/** The globe keeps at least this width beside Today and the sheet (frame.js). */
+const FRAME_GLOBE_MIN_WIDTH = 460;
+
+/**
+ * Measure the frame's regions and the original floating panels in the real
+ * page at one window size, once the layout has settled. Fails on any overlap
+ * between two regions, between a region and a panel, or between two panels,
+ * and on a globe narrower than FRAME_GLOBE_MIN_WIDTH.
+ */
+/**
+ * Opens the whole legend from its info button and checks that the popover
+ * holds every mark and the full note, stays inside the window, and closes on
+ * Escape with focus back on the button.
+ */
+async function legendPopover(legend, where) {
+  await page.click('#frame-legend-whole');
+  await page.waitForSelector('#frame-legend-popup:not([hidden])', wait);
+  const popover = await page.evaluate(() => {
+    const popup = document.getElementById('frame-legend-popup');
+    const { left, top, right, bottom } = popup.getBoundingClientRect();
+    return {
+      text: popup.textContent.replace(/\s+/g, ' ').trim(),
+      box: { left, top, right, bottom },
+      inside:
+        left >= 0 && top >= 0 && right <= innerWidth && bottom <= innerHeight,
+      scrolls: popup.scrollHeight > popup.clientHeight + 1,
+    };
+  });
+  await shot(`legend-popover-${legend.lens}-${where.replace(/[^\w]+/g, '-')}`);
+  await page.keyboard.press('Escape');
+  const closed = await page.evaluate(
+    () =>
+      document.getElementById('frame-legend-popup').hidden &&
+      document.activeElement?.id === 'frame-legend-whole',
+  );
+  assert.ok(
+    popover.inside,
+    `The ${legend.lens} legend's popover leaves the window at ${where}: ${JSON.stringify(popover.box)}`,
+  );
+  for (const part of [...legend.marks, legend.noteText].filter(Boolean))
+    assert.ok(
+      popover.text.includes(part.replace(/\s+/g, ' ')),
+      `The ${legend.lens} legend's popover lacks "${part}" at ${where}: ${popover.text}`,
+    );
+  assert.ok(
+    closed,
+    `The ${legend.lens} legend's popover did not close on Escape with focus back at ${where}`,
+  );
+  return popover;
+}
+
+async function frameLayout(width, height, label) {
+  await page.setViewport({ width, height, deviceScaleFactor: 1 });
+  const data = await page.evaluate(
+    async ({ width, height }) => {
+      const shown = (element) => {
+        if (!element) return false;
+        const style = getComputedStyle(element);
+        return (
+          style.display !== 'none' &&
+          style.visibility === 'visible' &&
+          Number(style.opacity) > 0 &&
+          element.getClientRects().length > 0
+        );
+      };
+      const box = (name, element) => {
+        const { left, top, right, bottom } = element.getBoundingClientRect();
+        return { name, left, top, right, bottom };
+      };
+      const read = () => {
+        const regions = [
+          ['top bar', '#frame-top'],
+          ['bottom bar', '#frame-bottom'],
+          ['Today', '#frame-today'],
+          ['rail', '#frame-rail'],
+          ['sheet', '#frame-sheet'],
+        ]
+          .map(([name, selector]) => [name, document.querySelector(selector)])
+          .filter(([, element]) => shown(element))
+          .map(([name, element]) => box(name, element));
+        const panels = [
+          '#data-panel',
+          '#right-context-rail > [data-panel-id]',
+          '#command-dock',
+          '#globe-navigation',
+          '#lens-bar',
+          '#key-setup-chip',
+          '#world-hover',
+        ]
+          .flatMap((selector) => [...document.querySelectorAll(selector)])
+          .filter(shown)
+          .map((element) =>
+            box(
+              element.id ||
+                element.dataset.panelId ||
+                element.className ||
+                'panel',
+              element,
+            ),
+          )
+          .filter(
+            ({ right, left, bottom, top }) => right > left && bottom > top,
+          );
+        const globe = box('globe', document.getElementById('cesiumContainer'));
+        return { regions, panels, globe };
+      };
+      const stable = await new Promise((resolve, reject) => {
+        let previous;
+        let since;
+        let samples = 0;
+        let frame;
+        const deadline = setTimeout(() => {
+          cancelAnimationFrame(frame);
+          reject(new Error(`The frame did not settle at ${width}×${height}`));
+        }, 10_000);
+        function sample(now) {
+          if (innerWidth === width && innerHeight === height) {
+            const current = read();
+            const key = JSON.stringify(current);
+            if (key !== previous) {
+              previous = key;
+              since = now;
+              samples = 0;
+            }
+            if (++samples >= 3 && now - since >= 250) {
+              clearTimeout(deadline);
+              resolve(current);
+              return;
+            }
+          } else previous = undefined;
+          frame = requestAnimationFrame(sample);
+        }
+        frame = requestAnimationFrame(sample);
+      });
+      const overlaps = [];
+      const meet = (a, b) =>
+        Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
+        Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+      const { regions, panels, globe } = stable;
+      regions.forEach((a, i) =>
+        regions.slice(i + 1).forEach((b) => {
+          if (meet(a, b)) overlaps.push(`${a.name} / ${b.name}`);
+        }),
+      );
+      for (const a of regions)
+        if (meet(a, globe)) overlaps.push(`${a.name} / globe`);
+      for (const panel of panels) {
+        for (const region of regions)
+          if (meet(panel, region))
+            overlaps.push(`${panel.name} / ${region.name}`);
+      }
+      panels.forEach((a, i) =>
+        panels.slice(i + 1).forEach((b) => {
+          if (meet(a, b)) overlaps.push(`${a.name} / ${b.name}`);
+        }),
+      );
+      // A part of the frame with the hidden attribute is not drawn, whatever
+      // display its class gives it.
+      const hiddenShown = [
+        ...document.querySelectorAll(
+          '.frame-region[hidden], .frame-region [hidden], #world-hover[hidden], #lens-bar[hidden]',
+        ),
+      ]
+        .filter((element) => getComputedStyle(element).display !== 'none')
+        .map((element) => element.id || element.className || element.tagName);
+      // The legend explains every colour on the globe: its marks (title,
+      // stops or classes, the Unknown key) are never cut; the note is whole
+      // or the info button that opens the whole legend is shown.
+      const legendBox = document.getElementById('world-legend');
+      const legend = shown(legendBox)
+        ? (() => {
+            const frame = legendBox.getBoundingClientRect();
+            const within = (rect) =>
+              rect.top >= frame.top - 1 &&
+              rect.bottom <= frame.bottom + 1 &&
+              rect.left >= frame.left - 1 &&
+              rect.right <= frame.right + 1;
+            const marks = [
+              document.getElementById('world-legend-title'),
+              ...document.getElementById('world-legend-stops').children,
+              legendBox.querySelector('.world-legend-unknown'),
+            ].filter((node) => node?.textContent.trim());
+            const note = document.getElementById('world-legend-note');
+            const noteText = note.textContent.replace(/\s+/g, ' ').trim();
+            const noteRects = [...note.getClientRects()];
+            return {
+              lens:
+                document
+                  .querySelector('#world-lens-bar [aria-pressed="true"]')
+                  ?.getAttribute('data-world-lens') ?? null,
+              text: legendBox.textContent.replace(/\s+/g, ' ').trim(),
+              width: Math.round(legendBox.clientWidth),
+              dense: legendBox.hasAttribute('data-dense'),
+              marks: marks.map((node) => node.textContent.trim()),
+              // A mark is whole in the bar or not drawn at all; only a
+              // stop may be left out, never the title or the Unknown key.
+              marksCut: marks
+                .filter((node) => {
+                  const rects = [...node.getClientRects()];
+                  return rects.length > 0 && !rects.every(within);
+                })
+                .map((node) => node.textContent.trim()),
+              marksOut: marks
+                .filter((node) => !node.getClientRects().length)
+                .map((node) => node.textContent.trim()),
+              keysOut: [
+                document.getElementById('world-legend-title'),
+                legendBox.querySelector('.world-legend-unknown'),
+              ]
+                .filter((node) => {
+                  const rects = [...node.getClientRects()];
+                  return !rects.length || !rects.every(within);
+                })
+                .map((node) => node.textContent.trim()),
+              noteText,
+              noteWhole:
+                !noteText ||
+                (noteRects.length > 0 &&
+                  noteRects.every(within) &&
+                  note.scrollWidth <= note.clientWidth + 1),
+              button: shown(document.getElementById('frame-legend-whole')),
+            };
+          })()
+        : null;
+      return {
+        today: document.body.dataset.today,
+        sheet: document.body.dataset.sheet,
+        globeWidth: Math.round(globe.right - globe.left),
+        overlaps,
+        hiddenShown,
+        legend,
+        ...stable,
+      };
+    },
+    { width, height },
+  );
+  report.frameLayouts ??= [];
+  report.frameLayouts.push({ width, height, label, ...data });
+  await shot(`frame-${width}x${height}-${label}`);
+  assert.deepEqual(
+    data.overlaps,
+    [],
+    `Overlap at ${width}×${height} (${label}, Today ${data.today}, sheet ${data.sheet})`,
+  );
+  assert.deepEqual(
+    data.hiddenShown,
+    [],
+    `Hidden parts of the frame drawn at ${width}×${height} (${label})`,
+  );
+  if (data.legend) {
+    assert.deepEqual(
+      data.legend.marksCut,
+      [],
+      `The ${data.legend.lens} legend's marks are cut at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
+    );
+    assert.deepEqual(
+      data.legend.keysOut,
+      [],
+      `The ${data.legend.lens} legend's title or Unknown key is not whole at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
+    );
+    assert.ok(
+      !data.legend.marksOut.length || data.legend.button,
+      `The ${data.legend.lens} legend leaves out marks with no way to read them at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
+    );
+    // Only Ownership's marks (four sentences) are too long for the bar
+    // today; every other lens's marks fit and must all be in it.
+    if (data.legend.lens !== 'ownership')
+      assert.deepEqual(
+        data.legend.marksOut,
+        [],
+        `The ${data.legend.lens} legend leaves out marks that should fit at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
+      );
+    assert.ok(
+      data.legend.noteWhole || data.legend.button,
+      `The ${data.legend.lens} legend's note is cut with no way to read it at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
+    );
+    if (data.legend.button)
+      data.legend.popover = await legendPopover(
+        data.legend,
+        `${width}×${height} (${label})`,
+      );
+  }
+  assert.ok(
+    data.globeWidth >= FRAME_GLOBE_MIN_WIDTH,
+    `The globe is ${data.globeWidth} px at ${width}×${height} (${label}); it needs ${FRAME_GLOBE_MIN_WIDTH}`,
+  );
+  return data;
 }
 
 try {
@@ -549,9 +872,12 @@ try {
       pickCountry,
       checkRows,
       layout,
+      frameLayout,
+      legendPopover,
       lens,
       area,
       tab,
+      selectTab,
       slot,
       wait,
       desktop,

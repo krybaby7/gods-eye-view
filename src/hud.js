@@ -24,6 +24,11 @@ import {
   geoidHeight,
 } from './data/geoid.js';
 import { DEFAULT_HUD_LAYOUT, normalizeHudLayout } from './hudLayouts.js';
+import {
+  formatEyeAltitude,
+  formatLatLon,
+  formatUtcClock,
+} from './hudFormat.js';
 
 /** Text colour per shader mode, so the line stays legible under NVG/FLIR/CRT. */
 const HUD_COLORS = {
@@ -42,6 +47,17 @@ const MILITARY_STYLES = new Set(['retro', 'surveillance', 'thermal']);
  * the 4 Hz telemetry tick off the EGM96 grid without a visible step.
  */
 const HUD_GEOID_CELL_DEG = 0.01;
+
+/** Where the viewer's choice to show MGRS on the status line is kept. */
+export const HUD_MGRS_STORAGE_KEY = 'gev.hud.mgrs';
+
+function readMgrsSetting() {
+  try {
+    return globalThis.localStorage?.getItem(HUD_MGRS_STORAGE_KEY) === 'on';
+  } catch {
+    return false;
+  }
+}
 
 /** Flattened list of all city POIs for nearest-point lookups. */
 const NEARBY_POINTS = Object.values(CITY_POIS).flatMap((city) =>
@@ -100,14 +116,45 @@ export class IntelHUD {
         <div id="hud-ais-vessel" class="hud-ais-vessel">AIS: --</div>
         <div class="hud-status-line">
           <span id="hud-place" class="hud-place"></span>
-          <span id="hud-latlon">--°--'--"N ---°--'--"W</span>
-          <span id="hud-mgrs">MGRS: ---</span>
-          <span id="hud-alt">ALT: --m</span>
-          <span id="hud-time"></span>
+          <span id="hud-latlon"></span>
+          <span id="hud-mgrs" hidden>MGRS: ---</span>
+          <span class="hud-reading hud-alt-reading">Eye altitude <span id="hud-alt"></span></span>
+          <span class="hud-reading hud-time-reading"><span id="hud-time"></span> UTC</span>
         </div>
       </div>
     `;
     this._el.dataset.variant = this._variant;
+
+    // MGRS is optional on the status line (roadmap Appendix A): off unless
+    // the viewer turned it on in Display, and remembered.
+    const toggle = document.getElementById('hud-mgrs-toggle');
+    toggle?.addEventListener('click', () => this.setMgrsVisible(!this._mgrs));
+    this.setMgrsVisible(readMgrsSetting(), { persist: false });
+  }
+
+  /**
+   * Show or hide the MGRS reference on the status line.
+   * @param {boolean} visible
+   * @param {{persist?: boolean}} [options]
+   */
+  setMgrsVisible(visible, { persist = true } = {}) {
+    this._mgrs = Boolean(visible);
+    const span = document.getElementById('hud-mgrs');
+    if (span) span.hidden = !this._mgrs;
+    const toggle = document.getElementById('hud-mgrs-toggle');
+    toggle?.setAttribute('aria-pressed', String(this._mgrs));
+    toggle?.classList.toggle('active', this._mgrs);
+    if (persist) {
+      try {
+        globalThis.localStorage?.setItem(
+          HUD_MGRS_STORAGE_KEY,
+          this._mgrs ? 'on' : 'off',
+        );
+      } catch {
+        /* the choice lasts for this visit */
+      }
+    }
+    if (this._mgrs && this._visible) this._updateCameraData();
   }
 
   /** Start the clock and the camera telemetry tick; both stop in {@link destroy}. */
@@ -121,24 +168,10 @@ export class IntelHUD {
     }, 250);
   }
 
-  /**
-   * Format the current wall-clock time as a UTC Zulu string.
-   * @returns {string} Timestamp in `YYYY-MM-DD HH:MM:SSZ` format.
-   */
-  _formatUTC() {
-    const now = new Date();
-    const y = now.getUTCFullYear();
-    const mo = String(now.getUTCMonth() + 1).padStart(2, '0');
-    const d = String(now.getUTCDate()).padStart(2, '0');
-    const h = String(now.getUTCHours()).padStart(2, '0');
-    const mi = String(now.getUTCMinutes()).padStart(2, '0');
-    const s = String(now.getUTCSeconds()).padStart(2, '0');
-    return `${y}-${mo}-${d} ${h}:${mi}:${s}Z`;
-  }
-
+  /** Show the current time, "18:02" beside its "UTC". */
   _updateTime() {
     const el = document.getElementById('hud-time');
-    if (el) el.textContent = this._formatUTC();
+    if (el) el.textContent = formatUtcClock(new Date());
   }
 
   /**
@@ -182,7 +215,7 @@ export class IntelHUD {
     const latDeg = Cesium.Math.toDegrees(cartographic.latitude);
     const altM = cartographic.height;
 
-    const mgrsEl = document.getElementById('hud-mgrs');
+    const mgrsEl = this._mgrs ? document.getElementById('hud-mgrs') : null;
     if (mgrsEl) {
       try {
         // 4 = 10 m precision. Format: 18SUJ23370716 → 18S UJ 2337 0716
@@ -193,9 +226,7 @@ export class IntelHUD {
     }
 
     const llEl = document.getElementById('hud-latlon');
-    const latDMS = this._toDMS(latDeg, 'lat');
-    const lonDMS = this._toDMS(lonDeg, 'lon');
-    if (llEl) llEl.textContent = `${latDMS} ${lonDMS}`;
+    if (llEl) llEl.textContent = formatLatLon(latDeg, lonDeg);
 
     // Altitude — reported as height above MEAN SEA LEVEL. `altM` is the raw
     // ellipsoidal camera height, which reads far below zero wherever the geoid
@@ -205,7 +236,7 @@ export class IntelHUD {
     const altEl = document.getElementById('hud-alt');
     const geoidN = this._geoidUndulationM(latDeg, lonDeg);
     const altMslM = ellipsoidalToMslDisplayM(altM, geoidN);
-    if (altEl) altEl.textContent = `ALT: ${Math.round(altMslM)}m`;
+    if (altEl) altEl.textContent = formatEyeAltitude(altMslM);
 
     this._latestMetrics = { latDeg, lonDeg, altM, altMslM };
 
@@ -237,48 +268,23 @@ export class IntelHUD {
   }
 
   /**
-   * Convert a decimal-degree value to a degrees-minutes-seconds string.
-   * @param {number} decimal - Coordinate in decimal degrees.
-   * @param {'lat'|'lon'} type - Axis selector; controls hemisphere letter
-   *   and zero-padding width (2 digits for lat, 3 for lon).
-   * @returns {string} Formatted DMS string, e.g. `"38°53'23.10"N"`.
-   */
-  _toDMS(decimal, type) {
-    const abs = Math.abs(decimal);
-    const deg = Math.floor(abs);
-    const minFloat = (abs - deg) * 60;
-    const min = Math.floor(minFloat);
-    const sec = ((minFloat - min) * 60).toFixed(2);
-
-    let dir;
-    if (type === 'lat') dir = decimal >= 0 ? 'N' : 'S';
-    else dir = decimal >= 0 ? 'E' : 'W';
-
-    const degStr =
-      type === 'lon'
-        ? String(deg).padStart(3, '0')
-        : String(deg).padStart(2, '0');
-    return `${degStr}°${String(min).padStart(2, '0')}'${String(sec).padStart(5, '0')}"${dir}`;
-  }
-
-  /**
    * Return a coarse geographic region label based on lat/lon bounding boxes.
    * @param {number} lat - Latitude in decimal degrees.
    * @param {number} lon - Longitude in decimal degrees.
-   * @returns {string} Region name (e.g. `"EUROPE"`, `"NORTHERN OCEANIC GRID"`).
+   * @returns {string} Region name in sentence case (e.g. `"Europe"`, `"Northern oceanic grid"`).
    */
   _regionLabel(lat, lon) {
-    if (lat > 72) return 'ARCTIC';
-    if (lat < -60) return 'ANTARCTIC';
+    if (lat > 72) return 'Arctic';
+    if (lat < -60) return 'Antarctic';
     if (lat >= 5 && lat <= 83 && lon >= -170 && lon <= -50)
-      return 'NORTH AMERICA';
+      return 'North America';
     if (lat >= -60 && lat <= 15 && lon >= -90 && lon <= -30)
-      return 'SOUTH AMERICA';
-    if (lat >= 34 && lat <= 72 && lon >= -25 && lon <= 45) return 'EUROPE';
-    if (lat >= -35 && lat <= 38 && lon >= -20 && lon <= 55) return 'AFRICA';
-    if (lat >= 5 && lat <= 80 && lon >= 45 && lon <= 180) return 'ASIA';
-    if (lat >= -50 && lat <= 5 && lon >= 110 && lon <= 180) return 'OCEANIA';
-    return lat >= 0 ? 'NORTHERN OCEANIC GRID' : 'SOUTHERN OCEANIC GRID';
+      return 'South America';
+    if (lat >= 34 && lat <= 72 && lon >= -25 && lon <= 45) return 'Europe';
+    if (lat >= -35 && lat <= 38 && lon >= -20 && lon <= 55) return 'Africa';
+    if (lat >= 5 && lat <= 80 && lon >= 45 && lon <= 180) return 'Asia';
+    if (lat >= -50 && lat <= 5 && lon >= 110 && lon <= 180) return 'Oceania';
+    return lat >= 0 ? 'Northern oceanic grid' : 'Southern oceanic grid';
   }
 
   /**

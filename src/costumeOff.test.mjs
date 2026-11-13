@@ -136,30 +136,24 @@ test('the scope vignette and the sun and moon ring start off', () => {
   assert.match(display, /id="celestial-toggle"/);
 });
 
-test('overlap (a): the status line is anchored right and never reaches the legend', () => {
-  const overlays = read('./ui/styles/overlays.css');
-  const status = ruleBody(overlays, '#intel-hud .hud-status');
-  assert.match(status, /right: 36px;/);
-  assert.doesNotMatch(status, /\bleft:/, 'only the right edge anchors the line');
-  const reserve = Number(status.match(/max-width: calc\(100vw - (\d+)px\)/)?.[1]);
-  const world = read('./ui/styles/world-panel.css');
-  const legend = ruleBody(world, '#world-legend');
-  assert.match(legend, /left: var\(--left-stack-x\);/);
-  const legendWidth = Number(legend.match(/width: min\((\d+)px/)?.[1]);
-  const stackX = Number(read('./ui/styles/foundation.css').match(/--left-stack-x: (\d+)px;/)?.[1]);
-  // The line's left edge is at least (reserve - 36) from the viewport's left;
-  // the legend's right edge is stackX + legendWidth. Keep a 12px gap.
-  assert.ok(reserve - 36 >= stackX + legendWidth + 12, `reserve ${reserve}px clears the legend`);
+// Rewritten for the frame (roadmap 1.2): the legend and the lens bar left the
+// globe for the bottom bar, so the old pixel reserves no longer apply. What
+// keeps them apart now is where each one lives.
+test('overlap (a): the legend is in the bottom bar and the status line stands on it', () => {
+  const footer = html.match(/<footer id="frame-bottom"[\s\S]*?<\/footer>/)?.[0] ?? '';
+  assert.match(footer, /id="world-legend"/, 'the legend is part of the bottom bar');
+  const frame = read('./ui/styles/frame.css');
+  const status = ruleBody(frame, 'body.gev-frame #intel-hud .hud-status');
+  assert.match(status, /bottom: var\(--frame-bottom\);/, 'the line sits on top of the bar');
+  assert.match(status, /left: var\(--frame-left\);/);
+  assert.match(status, /right: var\(--frame-right\);/, 'and spans only the globe');
 });
 
-test('overlap (b): with the banner gone the lens bar clears the plain title', () => {
-  const foundation = read('./ui/styles/foundation.css');
-  const titleTop = Number(ruleBody(foundation, '#title-bar').match(/top: (\d+)px;/)?.[1]);
-  const logoWidth = Number(ruleBody(foundation, '#title-bar .title-logo').match(/width: (\d+)px;/)?.[1]);
-  // The logo is the tallest thing in the title row: its aspect is 775 / 520.
-  const titleBottom = titleTop + (logoWidth * 520) / 775;
-  const lensTop = Number(ruleBody(read('./ui/styles/world-panel.css'), '#world-lens-bar').match(/top: (\d+)px;/)?.[1]);
-  assert.ok(lensTop >= titleBottom + 12, `lens bar top ${lensTop}px clears the title bottom ${titleBottom}px`);
+test('overlap (b): the lens bar is in the bottom bar and the old title is hidden in the frame', () => {
+  const footer = html.match(/<footer id="frame-bottom"[\s\S]*?<\/footer>/)?.[0] ?? '';
+  assert.match(footer, /id="world-lens-bar"/);
+  const frame = read('./ui/styles/frame.css');
+  assert.match(ruleBody(frame, 'body.gev-frame #title-bar'), /display: none;/);
   assert.doesNotMatch(html, /hud-top-left|hud-top-bar/, 'nothing else sits at the top');
 });
 

@@ -83,6 +83,114 @@ test('the board hides its country codes under the cover, wired from the app laye
   assert.match(geometry, /cover\.covers\(/);
   const layer = readFileSync(new URL('../layers/world/index.js', import.meta.url), 'utf8');
   assert.match(layer, /geometry\.cullLabels\(camera, cover\)/);
+  assert.match(layer, /cover\?\.watch\?\.\(requestRender, lifecycle\.signal\)/, 'a layout change asks for a frame');
   const app = readFileSync(new URL('../app/layers/world.js', import.meta.url), 'utf8');
   assert.match(app, /createPanelCover\(\)/);
+});
+
+// The frame (roadmap 1.2) closes the three gaps the costume-off review found.
+function canvasDocument(canvasRect, elements) {
+  const canvas = element(canvasRect);
+  return {
+    canvas,
+    documentRef: {
+      getElementById: (id) => (id === 'cesiumContainer' ? canvas : null),
+      querySelectorAll: () => elements,
+    },
+  };
+}
+
+test('rects are measured in the canvas’s own space, where Cesium puts the codes', () => {
+  // The globe region starts 340 px in and 52 px down: Today and the top bar.
+  const { documentRef } = canvasDocument(
+    { left: 340, top: 52, width: 1100, height: 770 },
+    [element({ left: 352, top: 64, width: 280, height: 300 })],
+  );
+  const cover = createPanelCover({ documentRef, now: () => 0 });
+  cover.refresh();
+  assert.equal(
+    cover.covers(20, 20),
+    true,
+    'the layer list starts 12 px into the canvas',
+  );
+  assert.equal(
+    cover.covers(360, 70),
+    false,
+    'viewport coordinates would wrongly hit it',
+  );
+});
+
+test('watch asks for a frame when chrome or the globe region resizes, and invalidate skips the throttle', (t) => {
+  const observers = [];
+  globalThis.ResizeObserver = class {
+    constructor(callback) {
+      this.callback = callback;
+      this.targets = [];
+      observers.push(this);
+    }
+    observe(target) {
+      this.targets.push(target);
+    }
+    disconnect() {
+      this.disconnected = true;
+    }
+  };
+  t.after(() => delete globalThis.ResizeObserver);
+  const panel = element({ left: 400, top: 100, width: 200, height: 200 });
+  const { documentRef, canvas } = canvasDocument(
+    { left: 340, top: 52, width: 1100, height: 770 },
+    [panel],
+  );
+  const windowRef = new EventTarget();
+  let clock = 0;
+  const cover = createPanelCover({ documentRef, windowRef, now: () => clock });
+  const controller = new AbortController();
+  let frames = 0;
+  cover.watch(() => frames++, controller.signal);
+  const [observer] = observers;
+  assert.ok(observer.targets.includes(canvas), 'the globe region is watched');
+  assert.ok(observer.targets.includes(panel), 'each panel is watched');
+
+  const first = cover.refresh();
+  // The panel folds inside the throttle window: the observer clears the wait.
+  panel.getBoundingClientRect = () => ({
+    left: 400,
+    top: 100,
+    width: 200,
+    height: 40,
+  });
+  clock += 10;
+  observer.callback();
+  assert.equal(frames, 1, 'a size change asks the idle globe for a frame');
+  assert.notEqual(
+    cover.refresh(),
+    first,
+    'and the next frame measures at once',
+  );
+
+  windowRef.dispatchEvent(new Event('resize'));
+  assert.equal(frames, 2, 'a window resize does too');
+
+  controller.abort();
+  assert.equal(observer.disconnected, true);
+  windowRef.dispatchEvent(new Event('resize'));
+  assert.equal(frames, 2, 'nothing after the board is switched off');
+});
+
+test('turning in place or resizing the globe re-culls the codes, not only moving', () => {
+  const geometry = readFileSync(
+    new URL('../layers/world/geometry.js', import.meta.url),
+    'utf8',
+  );
+  const cull = geometry.slice(
+    geometry.indexOf('cullLabels(camera'),
+    geometry.indexOf('occluder.cameraPosition'),
+  );
+  assert.match(
+    cull,
+    /equalsEpsilon\(\s*camera\.directionWC,\s*previousDirection/,
+  );
+  assert.match(cull, /equalsEpsilon\(\s*camera\.upWC,\s*previousUp/);
+  assert.match(cull, /width === previousWidth/);
+  assert.match(cull, /height === previousHeight/);
 });

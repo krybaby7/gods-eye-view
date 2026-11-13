@@ -107,7 +107,7 @@ export default async function phase2({
   changeLens,
   pickCountry,
   lens,
-  tab,
+  selectTab,
   wait,
 }) {
   if (useModel) {
@@ -135,7 +135,7 @@ export default async function phase2({
         ]) {
           await camera(lon, lat, 7_500_000);
           await pickCountry(lon, lat, iso);
-          await page.click(tab('exposure'));
+          await selectTab('exposure');
           await page.click('#world-sheet-content details summary');
           const content = await text('#world-sheet-content');
           assert.match(
@@ -229,7 +229,7 @@ export default async function phase2({
         );
       }, wait);
       await pickCountry(81.7, 21.2, 'IND');
-      await page.click(tab('exposure'));
+      await selectTab('exposure');
       assert.match(
         await text('#world-sheet-content'),
         /Net energy imports.*33% · 2024/s,
@@ -242,7 +242,7 @@ export default async function phase2({
     async () => {
       await camera(137, 35, 7_500_000);
       await pickCountry(138.3, 36.2, 'JPN');
-      await page.click(tab('exposure'));
+      await selectTab('exposure');
       const content = await text('#world-sheet-content');
       assert.match(
         content,
@@ -327,7 +327,7 @@ export default async function phase2({
       await page.click('#world-sheet-close');
       await camera(48, 24, 7_000_000);
       await pickCountry(45.8, 23.3, 'SAU');
-      await page.click(tab('leverage'));
+      await selectTab('leverage');
       assert.match(
         await text('#world-sheet-content'),
         /Leverage.*Japan.*India/s,

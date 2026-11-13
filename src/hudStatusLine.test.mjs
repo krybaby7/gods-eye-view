@@ -88,6 +88,7 @@ function installPage({ latDeg = 37.616, lonDeg = -122.368, height = 900 } = {}) 
     viewer,
     moveEnd,
     text: (id) => sink(id).textContent,
+    sink,
     restore() {
       if (previousDocument === undefined) delete globalThis.document;
       else globalThis.document = previousDocument;
@@ -144,11 +145,22 @@ test('the status line holds the place, coordinates, MGRS, altitude and UTC time'
     }
     assert.ok(page.hud.innerHTML.includes('id="hud-ais-vessel"'), 'the vessel line is kept');
     hud.show();
-    assert.match(page.text('hud-latlon'), /^37°36'57\.60"N 122°22'04\.80"W$/);
+    // Degrees and minutes, as the mock writes them (Appendix D).
+    assert.equal(page.text('hud-latlon'), "37°37'N 122°22'W");
+    // MGRS is optional (roadmap 1.2, Appendix A): off until the viewer asks.
+    assert.equal(page.sink('hud-mgrs').hidden, true, 'MGRS starts hidden');
+    assert.equal(page.text('hud-mgrs'), '', 'and is not worked out while hidden');
+    hud.setMgrsVisible(true, { persist: false });
+    assert.equal(page.sink('hud-mgrs').hidden, false);
     assert.equal(page.text('hud-mgrs'), 'MGRS: 10S EG 5577 6339');
-    assert.match(page.text('hud-alt'), /^ALT: \d+m$/);
-    assert.match(page.text('hud-time'), /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$/);
-    assert.match(page.text('hud-place'), /^NEAR .+\(SAN FRANCISCO\)$/, 'near a catalogued landmark');
+    // The figures alone are set in their spans (monospace in the frame); the
+    // words "Eye altitude" and "UTC" stand outside them in the sans face.
+    assert.match(page.text('hud-alt'), /^-?[\d,]+ (?:m|km)$/);
+    assert.match(page.text('hud-time'), /^\d{2}:\d{2}$/);
+    assert.ok(line.includes('Eye altitude <span id="hud-alt"></span>'), 'the altitude reads "Eye altitude 9,000 km"');
+    assert.ok(line.includes('<span id="hud-time"></span> UTC'), 'the time reads "18:02 UTC"');
+    // Sentence case, capitals only where the names have them (Appendix D).
+    assert.match(page.text('hud-place'), /^Near .+\(San Francisco\)$/, 'near a catalogued landmark');
   } finally {
     hud?.destroy();
     page.restore();
@@ -161,7 +173,7 @@ test('away from any landmark the place is the plain region name', () => {
   try {
     hud = new IntelHUD(page.viewer);
     hud.show();
-    assert.equal(page.text('hud-place'), 'EUROPE');
+    assert.equal(page.text('hud-place'), 'Europe');
   } finally {
     hud?.destroy();
     page.restore();
@@ -195,6 +207,7 @@ test('the place name never calls a model', () => {
 
 test('every HUD layout shows the same quiet line; Minimal drops altitude and the vessel', () => {
   const css = readFileSync(new URL('./ui/styles/overlays.css', import.meta.url), 'utf8');
-  assert.match(css, /#intel-hud\[data-variant='minimal'\] :is\(#hud-alt, \.hud-ais-vessel\)/);
+  // The whole altitude reading goes, its words with its figure.
+  assert.match(css, /#intel-hud\[data-variant='minimal'\] :is\(\.hud-alt-reading, \.hud-ais-vessel\)/);
   assert.doesNotMatch(css, /text-shadow|hud-bracket|hud-corner/, 'no glow and no brackets');
 });

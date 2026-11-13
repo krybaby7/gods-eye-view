@@ -161,7 +161,6 @@ export default {
     {
       id: 'relations',
       label: 'Relations',
-      order: 40,
       render: renderRelationsTab,
     },
   ],

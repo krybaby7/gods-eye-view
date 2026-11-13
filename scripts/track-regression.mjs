@@ -1687,7 +1687,13 @@ async function main() {
       const h1HeightBefore = await evalPage(() => window.__godsEyeView.viewer.camera.positionCartographic.height);
       // Trusted mouse click through the browser event pipeline → the layer's
       // ScreenSpaceEventHandler LEFT_CLICK path (the exact H1 code path).
-      await page.mouse.click(h1ClickPoint.x, h1ClickPoint.y);
+      // h1ClickPoint is in canvas pixels (scene.pick's); the frame insets the
+      // canvas, so its left and top are added for the window-space click.
+      const h1CanvasRect = await evalPage(() => {
+        const { left, top } = window.__godsEyeView.viewer.scene.canvas.getBoundingClientRect();
+        return { left, top };
+      });
+      await page.mouse.click(h1ClickPoint.x + h1CanvasRect.left, h1ClickPoint.y + h1CanvasRect.top);
       const h1Heights = await page.evaluate(async (frames) => {
         const v = window.__godsEyeView.viewer;
         const heights = [];

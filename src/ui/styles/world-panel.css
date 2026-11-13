@@ -1,12 +1,12 @@
+/* World Board content. Where its parts sit (the lens bar and legend in the
+   bottom bar, the turn in the top bar, the sheet in the right column) is the
+   frame's, in frame.css. */
 .world-board-hud,
-#world-character-sheet {
-  --world-accent: #00d4ff;
-  --world-active: rgba(0, 212, 255, 0.15);
-  --world-hatching: repeating-linear-gradient(
-    135deg,
-    rgba(185, 219, 223, 0.4) 0 1px,
-    rgba(10, 18, 25, 0.55) 1px 5px
-  );
+#world-character-sheet,
+#frame-bottom {
+  --world-accent: var(--accent);
+  --world-active: var(--accent-dim);
+  --world-hatching: var(--unknown-hatch);
 }
 
 .world-board-hud[data-panel-surface] {
@@ -14,24 +14,6 @@
   z-index: 105;
   font-family: var(--font-sans);
   gap: 5px;
-}
-
-#world-lens-bar {
-  top: 96px;
-  left: 50%;
-  width: max-content;
-  max-width: calc(100vw - 24px);
-  padding: 7px;
-  transform: translateX(-50%);
-}
-
-.world-lens-row,
-.world-lens-options,
-#world-sheet-tabs,
-#world-areas:not([hidden]) {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
 }
 
 .world-control,
@@ -42,100 +24,26 @@
   text-transform: uppercase;
 }
 
-:is(#world-lens-bar, #world-character-sheet)
+#world-character-sheet
   .world-control:is([aria-pressed='true'], [aria-selected='true']) {
   border-color: var(--world-accent);
   background: var(--world-active);
 }
 
-#world-areas:not([hidden]) {
-  flex-wrap: nowrap;
-  max-width: min(760px, calc(100vw - 40px));
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  scrollbar-width: thin;
-  padding-top: 5px;
-  border-top: 1px solid var(--glass-border);
-}
-
-#world-areas .world-control {
-  flex: 0 0 auto;
-}
-
-#world-areas .world-control,
-#world-sheet-tabs .world-control {
-  padding-inline: 5px;
-  font-size: 9px;
-}
-
 #world-progress {
-  max-width: 42ch;
   overflow-wrap: anywhere;
-}
-
-#world-turn:not([hidden]) {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  list-style: none;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-#world-turn::after {
-  content: '▾';
-}
-
-#world-turn[aria-expanded='true']::after {
-  content: '▴';
-}
-
-#world-turn-changes {
-  top: calc(100% + 5px);
-  right: 0;
-  width: min(330px, calc(100vw - 24px));
-  max-height: min(42dvh, 320px);
-  overflow: auto;
-  overscroll-behavior: contain;
-  background: var(--bg-dark);
-  overflow-wrap: anywhere;
-  font-family: var(--font-sans);
-}
-
-#world-legend {
-  bottom: max(118px, calc(env(safe-area-inset-bottom) + 118px));
-  left: var(--left-stack-x);
-  width: min(246px, calc(100vw - 24px));
-  padding: 8px 10px;
-  gap: 4px;
-  pointer-events: none;
 }
 
 .world-legend-ramp {
   height: 6px;
   border-radius: 99px;
-  background: linear-gradient(
-    90deg,
-    #c2410c,
-    #f08c3a,
-    #d9c58f,
-    #4aa8d8,
-    #1d6fd1
-  );
-}
-
-#world-legend-stops {
-  display: flex;
-  justify-content: space-between;
-  font-size: 9px;
-  letter-spacing: 0;
+  background: var(--ramp);
 }
 
 .world-legend-unknown {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
 }
 
 .world-legend-unknown .world-hatch {
@@ -163,21 +71,6 @@
   color: var(--world-accent);
 }
 
-#world-character-sheet {
-  --panel-expanded-width: 330px;
-  --panel-collapsed-width: 150px;
-}
-
-#world-character-sheet > [data-panel-surface] {
-  gap: 5px;
-  padding: 9px;
-  font-family: var(--font-sans);
-}
-
-#world-character-sheet.collapsed :is(#world-sheet-code, #world-sheet-close) {
-  display: none;
-}
-
 .world-badge,
 .world-slot-id {
   color: var(--world-accent);
@@ -188,21 +81,6 @@
   border: 1px solid var(--glass-border);
   border-radius: 3px;
   padding: 3px 4px;
-}
-
-#world-sheet-name {
-  margin: 0;
-}
-
-#world-sheet-close {
-  width: 28px;
-  min-height: 26px;
-  padding: 2px;
-  font-size: 15px;
-}
-
-#world-hp-track {
-  margin-top: 4px;
 }
 
 .world-score-track,
@@ -234,14 +112,6 @@
 #world-coverage,
 #world-no-data {
   margin-block: 6px;
-}
-
-#world-sheet-tabs {
-  margin-block: 9px;
-}
-
-#world-sheet-tabs .world-control {
-  min-height: 26px;
 }
 
 .world-slot + .world-slot {
@@ -325,59 +195,4 @@
 
 body.cockpit-mode :is(.world-board-hud, #world-character-sheet) {
   display: none !important;
-}
-
-@media (max-width: 720px) {
-  #world-lens-bar {
-    top: max(60px, calc(env(safe-area-inset-top) + 53px));
-  }
-
-  .world-lens-row .world-control {
-    padding-inline: 5px;
-    font-size: 9px;
-  }
-
-  body:not(.ui-clean-view, .recording-mode, .cockpit-mode):has(
-      #world-lens-bar:not([hidden])
-    )
-    #left-panel-stack {
-    top: max(70px, calc(var(--world-lens-bottom, 105px) + 8px));
-  }
-
-  #world-legend {
-    left: 16px;
-    bottom: max(81px, calc(env(safe-area-inset-bottom) + 81px));
-    width: min(288px, calc(100vw - 32px));
-    padding: 3px 8px;
-    gap: 2px 6px;
-  }
-
-  #world-legend:not([hidden]) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  #world-legend
-    :is(.world-legend-ramp, #world-legend-stops, #world-legend-note) {
-    grid-column: 1 / -1;
-  }
-
-  .world-legend-unknown {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  #world-legend :is(.world-legend-unknown, #world-legend-note) {
-    font-size: 9px;
-  }
-
-  #world-turn-changes {
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  #world-character-sheet > [data-panel-surface] {
-    max-height: min(48dvh, 380px);
-  }
 }

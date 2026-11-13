@@ -16,6 +16,8 @@ export default async function phase1({
   pickCountry,
   checkRows,
   layout,
+  frameLayout,
+  legendPopover,
   lens,
   area,
   slot,
@@ -246,6 +248,137 @@ export default async function phase1({
   );
 
   await step(
+    'The frame’s regions and the original panels do not overlap at three window sizes',
+    async () => {
+      const today = () => page.evaluate(() => document.body.dataset.today);
+      const setToday = async (state) => {
+        if ((await today()) === state) return;
+        await page.click(
+          state === 'open' ? '#frame-today-open' : '#frame-today-fold',
+        );
+        await page.waitForFunction(
+          (state) => document.body.dataset.today === state,
+          wait,
+          state,
+        );
+      };
+      const before = await today();
+      const legendFailures = [];
+      try {
+        // India is selected, so the sheet is open.
+        for (const [width, height] of [
+          [1280, 720],
+          [1440, 900],
+          [1920, 1080],
+        ]) {
+          await page.setViewport({ width, height, deviceScaleFactor: 1 });
+          await setToday('open');
+          await frameLayout(width, height, 'today-open-sheet-open');
+          await setToday('folded');
+          await frameLayout(width, height, 'today-folded-sheet-open');
+          // Each lens's legend in the full-width bottom bar, with Today open
+          // and folded and the sheet open: the marks whole, and the note
+          // whole or the whole legend behind the info button.
+          const pressed = await page.$eval(
+            '#world-lens-bar [aria-pressed="true"]',
+            (node) => node.dataset.worldLens,
+          );
+          const lensIds = await page.$$eval(
+            '#world-lens-bar [data-world-lens]',
+            (nodes) => nodes.map((node) => node.dataset.worldLens),
+          );
+          try {
+            for (const state of ['open', 'folded']) {
+              await setToday(state);
+              for (const id of lensIds) {
+                await page.click(lens(id));
+                await page.waitForFunction(
+                  (selector) =>
+                    document
+                      .querySelector(selector)
+                      ?.getAttribute('aria-pressed') === 'true',
+                  wait,
+                  lens(id),
+                );
+                // Every lens is measured at every size before the step fails.
+                try {
+                  await frameLayout(
+                    width,
+                    height,
+                    `legend-${id}-today-${state}`,
+                  );
+                } catch (error) {
+                  legendFailures.push(error.message);
+                }
+              }
+            }
+          } finally {
+            await page.click(lens(pressed));
+          }
+        }
+        // On a phone the bar has no room for the legend: the info button is
+        // the way to it, and its popover stays inside the window.
+        await page.setViewport({
+          width: 390,
+          height: 844,
+          deviceScaleFactor: 1,
+        });
+        for (const id of ['ownership', 'diplomacy', 'strength']) {
+          if (!(await page.$(lens(id)))) continue;
+          await page.$eval(lens(id), (node) => node.click());
+          try {
+            const phone = await page.evaluate(() => {
+              const button = document.getElementById('frame-legend-whole');
+              const stops = document.getElementById('world-legend-stops');
+              return {
+                lens:
+                  document
+                    .querySelector('#world-lens-bar [aria-pressed="true"]')
+                    ?.getAttribute('data-world-lens') ?? null,
+                button: button.getClientRects().length > 0,
+                marks: [
+                  document.getElementById('world-legend-title').textContent,
+                  ...[...stops.children].map((node) => node.textContent),
+                  'Unknown or disputed',
+                ].filter(Boolean),
+                noteText: document
+                  .getElementById('world-legend-note')
+                  .textContent.replace(/\s+/g, ' ')
+                  .trim(),
+              };
+            });
+            assert.ok(phone.button, `No legend button on a phone for ${id}`);
+            await legendPopover(phone, '390×844 (phone)');
+          } catch (error) {
+            legendFailures.push(error.message);
+          }
+        }
+        await page.setViewport({
+          width: 1280,
+          height: 720,
+          deviceScaleFactor: 1,
+        });
+        await page.click('#world-sheet-close');
+        await page.waitForFunction(
+          () => document.body.dataset.sheet === 'closed',
+          wait,
+        );
+        await setToday('open');
+        await frameLayout(1280, 720, 'today-open-sheet-closed');
+        assert.deepEqual(legendFailures, []);
+      } finally {
+        // Leave the page as the next steps expect it, pass or fail.
+        await page.setViewport(desktop);
+        await setToday(before);
+        if ((await page.evaluate(() => document.body.dataset.sheet)) !== 'open')
+          await pickCountry(81.7, 21.2, 'IND');
+      }
+    },
+    // A layout failure is reported without stopping the board's other checks.
+    { fatal: false },
+  );
+
+  await step(
     'Disable and re-enable without extra turns or new geometry',
     async () => {
       await toggleWorld();
@@ -258,6 +391,15 @@ export default async function phase1({
           !window.worldQa.solid.show &&
           !window.worldQa.hatch.show,
         wait,
+      );
+      // Refresh and the turn pill go with the board: nothing dead is shown.
+      assert.deepEqual(
+        await page.$$eval('#world-refresh, #world-turn', (nodes) =>
+          nodes
+            .filter((node) => node.getClientRects().length > 0)
+            .map((node) => node.id),
+        ),
+        [],
       );
       await shot('layer-off');
       await toggleWorld();

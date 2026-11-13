@@ -16,14 +16,14 @@ test('the NEAR bound is metro scale, not continental', () => {
   assert.equal(NEAR_POI_MAX_KM, 150);
 });
 
-test('a landmark under the camera reads NEAR, without a distance', () => {
+test('a landmark under the camera reads Near, in sentence case, without a distance', () => {
   assert.equal(
     composePlaceName({ ...ALCATRAZ, distKm: 2.4 }, 'NORTH AMERICA'),
-    'NEAR ALCATRAZ ISLAND (SAN FRANCISCO)',
+    'Near Alcatraz Island (San Francisco)',
   );
   assert.equal(
     composePlaceName({ ...LINCOLN, distKm: 0.6 }, 'NORTH AMERICA'),
-    'NEAR LINCOLN MEMORIAL (WASHINGTON DC)',
+    'Near Lincoln Memorial (Washington DC)',
   );
 });
 
@@ -36,9 +36,9 @@ test('the field failures fall through to the region', () => {
 
 test('the boundary is pinned on both sides, inclusive at the bound', () => {
   const at = composePlaceName({ ...LINCOLN, distKm: NEAR_POI_MAX_KM }, 'NORTH AMERICA');
-  assert.match(at, /^NEAR LINCOLN MEMORIAL/, 'exactly at the bound still reads NEAR');
+  assert.match(at, /^Near Lincoln Memorial/, 'exactly at the bound still reads NEAR');
   const justUnder = composePlaceName({ ...LINCOLN, distKm: NEAR_POI_MAX_KM - 0.1 }, 'NORTH AMERICA');
-  assert.match(justUnder, /^NEAR LINCOLN MEMORIAL/);
+  assert.match(justUnder, /^Near Lincoln Memorial/);
   const justOver = composePlaceName({ ...LINCOLN, distKm: NEAR_POI_MAX_KM + 0.1 }, 'NORTH AMERICA');
   assert.equal(justOver, 'NORTH AMERICA', 'one step past the bound falls through');
 });
@@ -59,5 +59,5 @@ test('hud.js composes its place name through this helper', () => {
   assert.equal(has(/import \{ composePlaceName \} from '\.\/hudLocality\.js';/), true);
   assert.equal(has(/placeEl\.textContent = composePlaceName\(/), true);
   assert.equal(has(/distKm < 2500/), false, 'the continental bound must not come back');
-  assert.equal(has(/NEAR \$\{/), false, 'NEAR is composed in hudLocality.js, not re-inlined');
+  assert.equal(has(/Near \$\{/), false, 'Near is composed in hudLocality.js, not re-inlined');
 });

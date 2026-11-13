@@ -60,7 +60,12 @@ export function createScreenAnnotationRenderer(
 ) {
   injectStyles();
   const { layer, svg, defs } = buildOverlay();
-  document.body.appendChild(layer);
+  // The drawing is in canvas pixels with a canvas-sized viewBox, so the layer
+  // lives on the globe's own container and matches the canvas. Since the
+  // frame the canvas is inset in the window, and a window-sized layer would
+  // shift and scale every mark. The container has no z-index of its own, so
+  // the layer's z-index still stacks against the page as before.
+  (viewer.container ?? document.body).appendChild(layer);
 
   const scene = viewer.scene;
   const occluder = new Cesium.EllipsoidalOccluder(
@@ -852,7 +857,7 @@ function injectStyles() {
   const style = document.createElement('style');
   style.id = 'gev-screen-whiteboard-styles';
   style.textContent = `
-  .gev-screen-whiteboard { position: fixed; inset: 0; pointer-events: none; z-index: 90; }
+  .gev-screen-whiteboard { position: absolute; inset: 0; pointer-events: none; z-index: 90; }
   .gev-screen-whiteboard-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
   /* No CSS opacity transition here on purpose: group opacity is driven per-frame in JS
      (the 260ms fade-in via computeAlpha, and the tracked-entity z-order ease). A CSS
