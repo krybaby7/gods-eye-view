@@ -5,11 +5,12 @@ Date: 2026-11-11. Status: direction agreed with the owner on 2026-11-11 (section
 with live data, and stage 3 was rewritten to follow them. Decisions 26 to 29 followed on 2026-11-12;
 the Jev filer of decision 26 is the first thing built and is merged (pull request 25, section 8.2).
 The owner approved the stage 0 mock on 2026-11-12 (decisions 30 and 31, section 8.3 and Appendix D).
-Piece 2, costume off and board on, was built unattended on 2026-11-12 as pull request 26 and waits
-on the owner's review. Section 10 gives the order of building and the state of each piece. Builds on
-`docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
-hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
-what the first review could not see and section 8.1 what the second one found.
+Piece 2, costume off and board on, was built unattended on 2026-11-12 and merged on 2026-11-13 as
+pull request 26, after an independent review. Section 10 gives the order of building and the state
+of each piece. Builds on `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board
+spec, whose rules still hold) and on a review of the code, the docs and the running app on main at
+7fb39f6. Section 8 says what the first review could not see and section 8.1 what the second one
+found.
 
 ## 0. Shape in one paragraph
 
@@ -231,7 +232,8 @@ banners, the random mission numbers, REC, the orbit and band strips, the corner 
 tagline, the title glow, the logo that follows the pointer, the "ACTIVE STYLE" readout, the panel
 glows, the scan-line bars, the flip-board text effect and the "TR-3B" joke button. Retire the
 Cyber skin and its sonar. Turn the scope vignette off by default. Keep the real readouts
-(coordinates, altitude, time) in one quiet status line. Appendix A lists every item.
+(coordinates, altitude, time) in one quiet status line. Appendix A lists every item. Merged as pull
+request 26 on 2026-11-13 (section 10).
 
 **1.2 The frame.** Build the five regions of 3.1. The board is on at first start. Its lens bar,
 legend, refresh and turn controls move out of the layer list and into the frame. Country labels
@@ -884,22 +886,45 @@ Decision 29 sets how: one piece, one fresh Claude session, one pull request, mer
 asks. This table is the order and the state. The session that finishes a piece updates its row,
 the status line at the top of this file and the owner's status page.
 
-| Order  | Piece                                                                                                               | State on 2026-11-12                          |
+| Order  | Piece                                                                                                               | State on 2026-11-13                          |
 | ------ | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                    |
 | 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)      |
-| 2      | Costume off, board on: the first pull request of section 7                                                          | Built as pull request 26; waits on the owner |
-| 3      | The frame (1.2), built to the approved mock                                                                         | Not started. Unblocked by decision 30        |
+| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13      |
+| 3      | The frame (1.2), built to the approved mock                                                                         | Not started. Next (decision 30 unblocked it) |
 | 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Not started. It needs no restyle             |
 | Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Not started                                  |
 | Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock         |
 
-**Piece 2, costume off and board on.** Pull request 26, branch `feat/costume-off`, worktree
-`gev-costume-off` beside the main folder (left for the review). All five gates and the four fixture
-QA scripts passed; the before and after captures are in that worktree under
-`qa-artifacts/costume-off/`. Left as follow-ups: the TR-3B aircraft registry and sprites, now
-unreachable; `qa-cockpit-utility.mjs` and `qa-ui-disposal.mjs`, which still use the removed parts;
-and a look at the country-code cover with imagery on.
+**Piece 2, costume off and board on.** Merged on 2026-11-13 as pull request 26 (merge commit
+`c9c6beee`), on the owner's word. Before the merge a separate agent ran the five gates again and
+they passed (7,057 tests: 7,047 passing, none failing, 10 skipped), and four reviewers read the
+change, each serious finding checked by a second reader. The four fixture QA scripts were not run
+again: they start a server, and a server with every key blanked still fetches the free headline
+feeds and tries the traffic cameras by itself, which uses the owner's mobile data. The review found
+nothing that breaks the app. It left these, none of them built:
+
+- **For the frame (piece 3).** The country codes are hidden under a panel only when the globe draws
+  a frame. With the camera still, a panel that opens or closes asks for no frame, so the codes stay
+  as they were until the globe moves, and turning the camera in place is not checked again
+  (`src/overlays/panelCover.js`, and `cullLabels` in `src/layers/world/geometry.js`). At 720 px and
+  narrower the legend still sits a few pixels over the status line. MGRS is always shown; Appendix A
+  makes it optional. None of this has been seen in the running app with imagery on.
+- **QA scripts outside the gate list.** `qa-ui-disposal.mjs` and `qa-cockpit-utility.mjs` now fail
+  on the removed parts. `qa-radio.mjs`, `qa-view-target-prewarm.mjs` and `qa-perf.mjs` still measure
+  or mention them without failing.
+- **Tests.** Three guards went with the Cyber tests and have no test now: aircraft labels at full
+  strength under the infrared boost, a military style preset setting the layout back to Tactical,
+  and the single writer of the location readouts.
+- **Small.** A saved layer state that cannot be read, or that comes from an older version, counts as
+  a first start, so the board comes on. The on-screen tag for a stale live feed went with the
+  summary line; the layer list still shows it. The TR-3B registry and its sprites, and the Cyber
+  settings of the cockpit strip, can no longer be reached. `docs/CURRENT-STATE.md` still describes
+  removed parts in the present tense.
+
+The before and after captures, and the two scripts that took them (`start-server.mjs` and
+`capture.mjs`), are in the main folder under `qa-artifacts/costume-off/`, not committed. The
+worktree and its local branch are removed.
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
