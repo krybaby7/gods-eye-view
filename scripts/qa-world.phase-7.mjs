@@ -9,6 +9,8 @@ export default async function phase7({
   pickCountry,
   tab,
   slot,
+  toggleWorld,
+  waitSettled,
 }) {
   const selectedTab = () =>
     page.$eval('[data-world-tab][aria-selected="true"]', (node) =>
@@ -27,6 +29,12 @@ export default async function phase7({
   await step(
     'A selected country opens on the Overview with six lines',
     async () => {
+      // Phase 6 ends with the board switched off.
+      const on = await page.evaluate(() =>
+        window.__godsEyeView?.dataManager?.isEffectivelyEnabled('world'),
+      );
+      if (!on) await toggleWorld();
+      await waitSettled(true);
       await camera(104, 33, 8_000_000);
       await pickCountry(104, 33, 'CHN');
       await camera(82, 22, 9_000_000);
