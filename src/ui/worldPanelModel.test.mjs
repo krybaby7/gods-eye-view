@@ -123,3 +123,27 @@ test('the country turn list includes source notices and selected country changes
     '6 observations loaded',
   );
 });
+
+test('every sheet row carries its band, caption and words', () => {
+  const sheet = countrySheet(snapshot, 'USA');
+  const row = sheet.rows.find(({ slot }) => slot === 'C5');
+  assert.equal(row.indicator, 'condition.debt');
+  assert.equal(row.caption, '2026 · IMF DataMapper · forecast · stale');
+  assert.equal(row.words.band, 'Very weak');
+  assert.equal(row.words.kind.kind, 'forecast');
+  assert.match(
+    row.words.meaning,
+    /^General government gross debt was 130\.8% of GDP in 2026, forecast, now stale;/,
+  );
+  assert.equal(
+    row.words.world.sentence,
+    'No other country has a figure to compare with.',
+  );
+  assert.equal(
+    row.words.trend.sentence,
+    'Earlier years are not stored yet, so no trend is drawn.',
+  );
+  const unknown = sheet.rows.find(({ slot }) => slot === 'C1');
+  assert.equal(unknown.words.band, 'Unknown');
+  assert.equal(unknown.caption, 'No published period · World Bank · unknown');
+});
