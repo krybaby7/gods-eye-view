@@ -5,8 +5,12 @@ import {
   worldTurn,
 } from './worldPanelModel.js';
 import { worldPhases } from '../layers/world/phaseRegistry.js';
+import { scoreColor } from '../layers/world/model.js';
+import { renderOverviewTab } from './worldOverview.js';
+import { renderScoreWords } from './worldScoreWords.js';
 
 const baseTabs = [
+  ['overview', 'Overview'],
   ['condition', 'Condition'],
   ['strength', 'Strength'],
   ['exposure', 'Exposure', 2],
@@ -22,10 +26,16 @@ const tabsById = new Map(
     { id, label, phase, order: order * 10 },
   ]),
 );
+tabsById.set('overview', {
+  ...tabsById.get('overview'),
+  order: -10,
+  render: renderOverviewTab,
+});
 for (const tab of phases('tabs')) {
   tabsById.set(tab.id, { ...tabsById.get(tab.id), ...tab });
 }
 const tabsInOrder = [...tabsById.values()].sort((a, b) => a.order - b.order);
+const firstTab = tabsInOrder[0].id;
 const cards = new Map(phases('cards').map((card) => [card.type, card]));
 
 function element(document, tag, className, content) {
@@ -50,16 +60,19 @@ function scoreText(score) {
   return score === null ? 'Unknown' : `${Math.round(score)} / 100`;
 }
 
-function scoreBar(document, score) {
+function scoreBar(document, score, kind) {
   const track = element(
     document,
     'span',
     score === null ? 'world-score-track world-hatch' : 'world-score-track',
   );
   track.setAttribute('aria-hidden', 'true');
+  if (kind === 'forecast' || kind === 'estimate')
+    track.classList.add('world-claim-dashed');
   if (score !== null) {
     const fill = element(document, 'span', 'world-score-fill');
     fill.style.width = `${Math.min(100, Math.max(0, score))}%`;
+    fill.style.background = `rgb(${scoreColor(score).join(' ')})`;
     track.append(fill);
   }
   return track;
@@ -69,6 +82,7 @@ function explanation(document, row) {
   const why = element(document, 'div', 'world-why');
   why.id = `world-why-${row.slot}`;
   why.hidden = true;
+  if (row.words) why.append(renderScoreWords(document, row));
   const title = element(document, 'strong', 'world-kicker', 'Why this number');
   const source = element(
     document,
@@ -116,18 +130,21 @@ function slotRow(document, row, expanded) {
   toggle.setAttribute('aria-expanded', String(expanded));
   toggle.setAttribute('aria-controls', why.id);
   const heading = element(document, 'span', 'world-row-heading');
+  const figure = element(document, 'span', 'world-row-figure');
+  if (row.words && row.score !== null)
+    figure.append(element(document, 'span', 'world-row-band', row.words.band));
+  figure.append(
+    element(document, 'span', 'world-row-score', scoreText(row.score)),
+  );
   heading.append(
     element(document, 'span', 'world-slot-id', row.slot),
     element(document, 'strong', '', row.area),
-    element(document, 'span', 'world-row-score', scoreText(row.score)),
+    figure,
   );
-  const details =
-    `${row.measure} · ${row.value ?? 'No published value'}` +
-    (row.period ? ` [${row.period}]` : '') +
-    ` · ${row.source}`;
+  const details = `${row.measure} · ${row.value ?? 'No published value'} · ${row.caption ?? row.source}`;
   toggle.append(
     heading,
-    scoreBar(document, row.score),
+    scoreBar(document, row.score, row.words?.kind.kind),
     element(document, 'span', 'world-detail', details),
   );
   if (row.flags.length) {
@@ -185,7 +202,7 @@ export function createWorldPanel({
   const events = new AbortController();
   const { signal } = events;
   let previous = {};
-  let tab = 'condition';
+  let tab = firstTab;
   let sheetModel = null;
   let currentSnapshot;
   let areaButtons = [];
@@ -198,6 +215,12 @@ export function createWorldPanel({
     snapshot: currentSnapshot,
     sheetModel,
     openCard,
+    tabs: tabsInOrder.map(({ id, label }) => ({ id, label })),
+    selectTab: (id) => {
+      if (!tabsById.has(id)) return;
+      selectTab(id);
+      tabs.querySelector(`[data-world-tab="${id}"]`)?.focus();
+    },
     getDetail: (country, lens, options) =>
       layer.getDetail(country, lens, options),
   });
@@ -342,7 +365,7 @@ export function createWorldPanel({
     }
     cardContent.replaceChildren();
     if (selectionChanged) {
-      tab = 'condition';
+      tab = firstTab;
       find('world-sheet-body').scrollTop = 0;
     }
     const { iso3, name, coverage, condition, disputed, hasData } = sheetModel;

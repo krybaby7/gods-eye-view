@@ -637,3 +637,57 @@ test('local provider registration serves both Vite server modes', async (t) => {
   assert.equal(typeof plugin.configureServer, 'function');
   assert.equal(typeof plugin.configurePreviewServer, 'function');
 });
+
+test('a board saved before slots carried history shows its stored trend at once', async (t) => {
+  const { createWorldService } = await import('./index.js');
+  const { scoreCountries } = await import('./scores.js');
+  const { createWorldStore } = await import('./store.js');
+  const { cacheDir } = await setup(t);
+  const trendRegistry = {
+    ...registry,
+    indicators: [
+      {
+        id: 'condition.stability',
+        slot: 'C1',
+        section: 'condition',
+        anchors: { a: 0, b: 100 },
+        staleAfterMonths: 120,
+        frequency: 'annual',
+        source: 'worldbank',
+      },
+    ],
+  };
+  const reading = (value, period) => ({
+    iso3: 'USA',
+    indicator: 'condition.stability',
+    value,
+    period,
+    retrievedAt: '2026-01-01T00:00:00Z',
+    method: 'observed',
+  });
+  const observations = [reading(40, '2017'), reading(55, '2025')];
+  const asOf = '2026-11-11T00:00:00.000Z';
+  const countries = scoreCountries(trendRegistry, observations, asOf);
+  // The board as an older build saved it: the same scores, no history.
+  delete countries.USA.slots.C1.history;
+  await createWorldStore({ cacheDir }).write({
+    board: { asOf, revision: 1, countries, features: {} },
+    observations,
+    turns: [{ number: 1, asOf, changes: [], newObservations: 2 }],
+    lastCheckedAt: { worldbank: asOf },
+  });
+  const service = createWorldService({
+    cacheDir,
+    loadRegistry: async () => trendRegistry,
+    adapters: {},
+  });
+  const snapshot = await service.snapshot();
+  assert.equal(
+    snapshot.countries.USA.slots.C1.score,
+    countries.USA.slots.C1.score,
+  );
+  assert.deepEqual(snapshot.countries.USA.slots.C1.history, [
+    { period: '2017', score: 40, method: 'observed' },
+    { period: '2025', score: 55, method: 'observed' },
+  ]);
+});
