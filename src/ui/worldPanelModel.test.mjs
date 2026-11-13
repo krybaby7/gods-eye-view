@@ -133,7 +133,7 @@ test('every sheet row carries its band, caption and words', () => {
   assert.equal(row.words.kind.kind, 'forecast');
   assert.match(
     row.words.meaning,
-    /^General government gross debt was 130\.8% of GDP in 2026, forecast, now stale;/,
+    /^General government gross debt is forecast by the source at 130\.8% of GDP for 2026, now stale;/,
   );
   assert.equal(
     row.words.world.sentence,

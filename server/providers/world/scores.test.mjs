@@ -184,3 +184,75 @@ test('keeps one stored score per period for a trend, and none from one period', 
   // A slot that mixes several figures is never given a trend.
   assert.equal('history' in FIN.slots.S1, false);
 });
+
+test('history keeps the newest twelve periods in order, with gaps, months and aliases', async () => {
+  const { scoreCountries } = await import('./scores.js');
+  const registry = {
+    countries,
+    indicators: [indicator('C1'), indicator('C2', { frequency: 'monthly' })],
+  };
+  const years = Array.from({ length: 14 }, (_, i) => String(2000 + i * 2));
+  const { FIN, KOS } = scoreCountries(
+    registry,
+    [
+      // Out of order on purpose; every second year is missing.
+      ...years.reverse().map((year, i) => observation('C1', i, year)),
+      observation('C2', 10, '2026-09'),
+      observation('C2', 20, '2026-10'),
+      observation('C1', 30, '2020', { iso3: 'XKX' }),
+      observation('C1', 35, '2024', { iso3: 'XKX' }),
+    ],
+    asOf,
+  );
+  const periods = FIN.slots.C1.history.map(({ period }) => period);
+  assert.equal(periods.length, 12);
+  assert.deepEqual(periods, [
+    '2004',
+    '2006',
+    '2008',
+    '2010',
+    '2012',
+    '2014',
+    '2016',
+    '2018',
+    '2020',
+    '2022',
+    '2024',
+    '2026',
+  ]);
+  assert.equal(FIN.slots.C1.history.at(-1).score, FIN.slots.C1.score);
+  assert.deepEqual(
+    FIN.slots.C2.history.map(({ period }) => period),
+    ['2026-09', '2026-10'],
+  );
+  // Kosovo's figures are published under the World Bank's XKX code.
+  assert.deepEqual(
+    KOS.slots.C1.history.map(({ period, score }) => [period, score]),
+    [
+      ['2020', 30],
+      ['2024', 35],
+    ],
+  );
+});
+
+test('a saved board gains history only where the stored reading still matches', async () => {
+  const { scoreCountries, withStoredHistory } = await import('./scores.js');
+  const registry = { countries, indicators: [indicator('C1')] };
+  const rows = [observation('C1', 40, '2017'), observation('C1', 55, '2025')];
+  const saved = scoreCountries(registry, rows, asOf);
+  delete saved.FIN.slots.C1.history;
+  const restored = withStoredHistory(saved, registry, rows, asOf);
+  assert.equal(restored.FIN.slots.C1.history.length, 2);
+  assert.equal(restored.FIN.slots.C1.score, saved.FIN.slots.C1.score);
+  assert.equal('history' in saved.FIN.slots.C1, false);
+  // A saved score that no longer matches the observations keeps no history.
+  const changed = structuredClone(saved);
+  changed.FIN.slots.C1.score = 12;
+  assert.equal(
+    'history' in withStoredHistory(changed, registry, rows, asOf).FIN.slots.C1,
+    false,
+  );
+  // Without a usable date or registry, the saved board is left as it is.
+  assert.equal(withStoredHistory(saved, registry, rows, undefined), saved);
+  assert.equal(withStoredHistory(saved, {}, rows, asOf), saved);
+});

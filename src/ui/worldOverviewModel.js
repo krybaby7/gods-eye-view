@@ -6,11 +6,12 @@ import {
   energyGates,
   isMinorImporter,
 } from '../layers/world/energy.js';
-import { liveFlags, liveFlagStatus } from '../layers/world/events.js';
+import { liveFlags } from '../layers/world/events.js';
 import { countryPeople } from '../layers/world/peopleModel.js';
 import {
   classifyDiplomacy,
   currentRelations,
+  isDocumentedRivalry,
   relationPeers,
 } from '../layers/world/relations.js';
 import { bandWord, periodText, standouts } from './worldWords.js';
@@ -116,25 +117,35 @@ export function leadershipLine(snapshot, sheetModel) {
 }
 
 export function standoutLine(sheetModel) {
-  const { sentence, target } = standouts(sheetModel.rows);
-  return { id: 'standouts', title: 'What stands out', text: sentence, target };
+  const { sentence, target, kind } = standouts(sheetModel.rows);
+  return {
+    id: 'standouts',
+    title: 'What stands out',
+    text: sentence,
+    target,
+    // A named forecast or estimate is marked in look as well as in words.
+    ...(kind === 'estimate' && {
+      caption: 'Includes a forecast or an estimate',
+      kind: 'estimate',
+    }),
+  };
 }
 
+// Only a flag whose evidence is current is an alert. A flag whose evidence
+// has expired, or whose source is stale, is not counted or shown here.
 export function alertLine(snapshot, sheetModel) {
   const flags = liveFlags(snapshot, sheetModel.iso3).filter(
-    ({ status }) => status !== 'cleared',
+    ({ status }) => status == null || status === 'active',
   );
   const base = { id: 'alerts', title: 'Alerts', target: 'condition' };
   if (!flags.length)
     return {
       ...base,
-      text: 'No live alerts for this country in the loaded sources.',
+      text: 'No current alerts for this country in the loaded sources.',
       count: 0,
     };
   const described = flags.map((flag) =>
-    [flag.label, flag.sourceName, flag.date, liveFlagStatus(flag)]
-      .filter(Boolean)
-      .join(' · '),
+    [flag.label, flag.sourceName, flag.date].filter(Boolean).join(' · '),
   );
   const shown = described.slice(0, 2).join('. ');
   const rest = described.length - 2;
@@ -175,13 +186,21 @@ export function relationsLine(snapshot, sheetModel, now = Date.now()) {
   const peers = [
     ...new Set(rows.flatMap((row) => relationPeers(row, selected))),
   ].filter((id) => names.has(id));
-  const byClass = (kind) =>
-    peers
-      .filter((id) => classifyDiplomacy(selected, id, rows, now) === kind)
-      .map((id) => names.get(id))
-      .sort((a, b) => a.localeCompare(b));
-  const war = byClass('at-war');
-  const rivals = byClass('rival');
+  const war = peers
+    .filter((id) => classifyDiplomacy(selected, id, rows, now) === 'at-war')
+    .map((id) => names.get(id))
+    .sort((a, b) => a.localeCompare(b));
+  // Rivals come from the documented rivalry rows themselves, as alliances do,
+  // so a rival who also sanctions the country or fights it is still named.
+  const rivals = [
+    ...new Set(
+      rows
+        .filter(isDocumentedRivalry)
+        .flatMap((row) => relationPeers(row, selected))
+        .filter((id) => names.has(id))
+        .map((id) => names.get(id)),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
   const parts = [
     war.length && `Armed conflict in the past 90 days with ${list(war)}.`,
     alliances.length && `Allied through ${shortList(alliances)}.`,
@@ -205,12 +224,21 @@ export function dependencyLine(snapshot, sheetModel) {
   const model = snapshot.features?.['energy-dependencies'];
   if (!model)
     return { ...base, text: 'Energy trade routes are not loaded yet.' };
+  // Never claim an absence the loaded model cannot show.
+  if (model.mode !== 'modelled' && model.mode !== 'fixture')
+    return {
+      ...base,
+      text:
+        model.mode === 'pending'
+          ? 'The energy route model is not built yet. A Refresh builds it.'
+          : 'The energy route model is not available, so no dependency can be named.',
+      caption: model.label ?? model.reason ?? null,
+    };
   if (isMinorImporter(snapshot, iso3))
     return {
       ...base,
       text: `${sheetModel.name} imports too little energy for the route model to name a dependency.`,
-      caption: 'Draft floor',
-      kind: 'estimate',
+      caption: 'Draft threshold',
     };
   const caption =
     model.mode === 'fixture' ? 'Synthetic fixture data' : model.label;
@@ -243,13 +271,19 @@ export function dependencyLine(snapshot, sheetModel) {
       kind: 'estimate',
     };
   }
-  return {
-    ...base,
-    text: exposure
-      ? 'The route model assigns no energy imports through the monitored chokepoints.'
-      : 'No energy dependency is recorded for this country in the loaded sources.',
-    caption: caption ?? null,
-  };
+  let text;
+  if (Array.isArray(exposure) && !exposure.length)
+    text =
+      'The route model assigns no energy imports through the monitored chokepoints.';
+  else if (exposure?.length)
+    text = `The route model holds no import share for ${sheetModel.name}'s routes.`;
+  else if (model.mode === 'modelled' && model.energyExposure)
+    // The compact model keeps every importer's exposure, so a missing entry
+    // is what the model holds, not something still loading.
+    text = `The route model finds no seaborne energy imports for ${sheetModel.name}.`;
+  else
+    text = `The route model holds no energy trade rows for ${sheetModel.name}.`;
+  return { ...base, text, caption: caption ?? null };
 }
 
 export function overviewLines(snapshot, sheetModel, now = Date.now()) {

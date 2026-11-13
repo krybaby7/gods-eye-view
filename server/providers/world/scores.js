@@ -132,6 +132,38 @@ function medianYear(readings) {
   );
 }
 
+// A board saved before slots carried history gets it from the stored
+// observations, without touching any score: history is added only where the
+// fresh reading matches the saved one.
+export function withStoredHistory(countries, registry, observations, asOf) {
+  if (
+    !countries ||
+    !Array.isArray(observations) ||
+    !Array.isArray(registry?.countries) ||
+    !Array.isArray(registry?.indicators) ||
+    !Number.isFinite(Date.parse(asOf))
+  )
+    return countries;
+  const fresh = scoreCountries(registry, observations, asOf);
+  return Object.fromEntries(
+    Object.entries(countries).map(([iso3, country]) => {
+      const slots = country?.slots;
+      if (!slots) return [iso3, country];
+      const next = Object.fromEntries(
+        Object.entries(slots).map(([id, slot]) => {
+          const match = fresh[iso3]?.slots?.[id];
+          const same =
+            match?.history &&
+            match.score === slot.score &&
+            match.period === slot.period;
+          return [id, same ? { ...slot, history: match.history } : slot];
+        }),
+      );
+      return [iso3, { ...country, slots: next }];
+    }),
+  );
+}
+
 export function scoreCountries({ countries, indicators }, observations, asOf) {
   const day = new Date(asOf).toISOString().slice(0, 10);
   const definitions = Map.groupBy(indicators, ({ slot }) => slot);

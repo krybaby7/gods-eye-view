@@ -73,9 +73,12 @@ const large = new Intl.NumberFormat('en-GB', {
   maximumFractionDigits: 1,
 });
 
+// The band of the score as shown: a score is shown rounded, so it is banded
+// rounded too, and 19.6 shown as 20 reads Weak, never Very weak.
 export function bandWord(score) {
   if (!Number.isFinite(score)) return 'Unknown';
-  return BANDS.find(([floor]) => score >= floor)?.[1] ?? 'Very weak';
+  const shown = Math.round(score);
+  return BANDS.find(([floor]) => shown >= floor)?.[1] ?? 'Very weak';
 }
 
 export function periodText(period) {
@@ -160,7 +163,6 @@ export function meaningSentence(indicator, entry = {}) {
     method: entry.observation?.method,
     stale: entry.stale,
   });
-  const notes = [kind.label, kind.stale && 'now stale'].filter(Boolean);
   const period = periodText(entry.period);
   const figure = figureText(value, indicator.unit);
   const a = anchorValue(indicator, indicator.anchors.a);
@@ -171,11 +173,20 @@ export function meaningSentence(indicator, entry = {}) {
     `on the board's scale ${figureText(zero, indicator.unit)} or ` +
     `${worse ? 'more' : 'less'} scores 0 and ` +
     `${figureText(hundred, indicator.unit)} or ${worse ? 'less' : 'more'} scores 100`;
-  const reading =
-    figure === null
-      ? `${label} scores ${Math.round(entry.score)} of 100`
-      : `${label} was ${figure}${period ? ` in ${period}` : ''}`;
-  return `${reading}${notes.length ? `, ${notes.join(', ')}` : ''}; ${scale}.`;
+  // A forecast and a source's own estimate never read as a measurement.
+  const kindWords = {
+    forecast: ' on a forecast by the source',
+    estimate: " on the source's own estimate",
+  };
+  let reading;
+  if (figure === null)
+    reading = `${label} scores ${Math.round(entry.score)} of 100${kindWords[kind.kind] ?? ''}`;
+  else if (kind.kind === 'forecast')
+    reading = `${label} is forecast by the source at ${figure}${period ? ` for ${period}` : ''}`;
+  else if (kind.kind === 'estimate')
+    reading = `${label} is estimated by the source at ${figure}${period ? ` for ${period}` : ''}`;
+  else reading = `${label} was ${figure}${period ? ` in ${period}` : ''}`;
+  return `${reading}${kind.stale ? ', now stale' : ''}; ${scale}.`;
 }
 
 function slotScore(country, slot) {
@@ -212,10 +223,14 @@ export function worldComparison(snapshot, indicator, iso3) {
     'Scores lower',
   ];
   const total = `of the ${others.length} other ${others.length === 1 ? 'country' : 'countries'} with a figure`;
+  const level = others.length - below - above;
   const sentence =
-    below >= above
-      ? `${better} than ${below} ${total}.`
-      : `${worse} than ${above} ${total}.`;
+    below === 0 && above === 0
+      ? `Level with all ${others.length} other ${others.length === 1 ? 'country' : 'countries'} with a figure.`
+      : (below >= above
+          ? `${better} than ${below} ${total}`
+          : `${worse} than ${above} ${total}`) +
+        (level ? `, and level with ${level}.` : '.');
   return { sentence, position: below / others.length };
 }
 
@@ -242,11 +257,14 @@ export function trendReading(entry = {}, figures = 1) {
   }
   const first = history[0];
   const last = history.at(-1);
-  const points = last.score - first.score;
-  const rounded = Math.round(Math.abs(points));
+  // The change is worked out from the two numbers the sentence shows.
+  const then = Math.round(first.score);
+  const now = Math.round(last.score);
+  const points = now - then;
+  const rounded = Math.abs(points);
   const years = (periodEnd(last.period) - periodEnd(first.period)) / YEAR_MS;
   const since = periodText(first.period);
-  const span = `(${Math.round(first.score)} then, ${Math.round(last.score)} now), across ${history.length} stored periods.`;
+  const span = `(${then} then, ${now} now), across ${history.length} stored periods.`;
   let sentence =
     rounded < 1
       ? `About level since ${since} ${span}`
@@ -293,6 +311,23 @@ export function scoreWords(snapshot, indicator, iso3) {
   };
 }
 
+function claimOf(row) {
+  return row.words?.kind?.kind ?? 'measured';
+}
+
+// Says in words when a named score is a forecast or the source's estimate.
+function claimNote(rows) {
+  const kinds = new Set(rows.map(claimOf));
+  const notes = [
+    kinds.has('forecast') && 'a forecast',
+    kinds.has('estimate') && "the source's own estimate",
+  ].filter(Boolean);
+  if (!notes.length) return '';
+  return rows.length === 1
+    ? ` (${notes[0]})`
+    : ` (${notes.join(' and ')} among them)`;
+}
+
 function names(rows) {
   const list = rows.map(({ area }) => area.toLowerCase());
   return list.length < 3
@@ -313,22 +348,31 @@ export function standouts(rows) {
   const strongest = known.filter(({ score }) => Math.round(score) === top);
   const weakest = known.filter(({ score }) => Math.round(score) === bottom);
   const parts = [
-    `Strongest: ${names(strongest)}, ${bandWord(top).toLowerCase()} at ${top}.`,
+    `Strongest: ${names(strongest)}, ${bandWord(top).toLowerCase()} at ${top}${claimNote(strongest)}.`,
     top === bottom
       ? 'Every published score is the same, so none is weakest.'
-      : `Weakest: ${names(weakest)}, ${bandWord(bottom).toLowerCase()} at ${bottom}.`,
+      : `Weakest: ${names(weakest)}, ${bandWord(bottom).toLowerCase()} at ${bottom}${claimNote(weakest)}.`,
   ];
-  const moving = known
-    .filter(({ words }) => Number.isFinite(words?.trend?.change?.perYear))
+  const named = top === bottom ? strongest : [...strongest, ...weakest];
+  const withTrend = known.filter(({ words }) =>
+    Number.isFinite(words?.trend?.change?.points),
+  );
+  // Only an area that moved a whole point or more can be the fastest.
+  const moved = withTrend
+    .filter(
+      ({ words }) =>
+        Math.abs(words.trend.change.points) >= 1 &&
+        Number.isFinite(words.trend.change.perYear),
+    )
     .sort(
       (a, b) =>
         Math.abs(b.words.trend.change.perYear) -
         Math.abs(a.words.trend.change.perYear),
     );
-  const fastest = moving[0];
-  if (!fastest || Math.round(Math.abs(fastest.words.trend.change.points)) < 1) {
+  const fastest = moved[0];
+  if (!fastest) {
     parts.push(
-      moving.length
+      withTrend.length
         ? 'No area has moved by a point or more across its stored periods.'
         : 'No area has two stored periods yet, so none is picked as moving fastest.',
     );
@@ -339,5 +383,11 @@ export function standouts(rows) {
       `Moving fastest: ${fastest.area.toLowerCase()}, ${rounded} ${rounded === 1 ? 'point' : 'points'} ${points > 0 ? 'better' : 'worse'} than in ${periodText(since)}.`,
     );
   }
-  return { sentence: parts.join(' '), target: weakest[0].section };
+  return {
+    sentence: parts.join(' '),
+    target: weakest[0].section,
+    kind: named.some((row) => claimOf(row) !== 'measured')
+      ? 'estimate'
+      : 'measured',
+  };
 }

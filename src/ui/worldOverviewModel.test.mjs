@@ -136,7 +136,7 @@ test('who runs it reads the recorded officeholders with date and source', () => 
 test('the standout line opens the tab of the weakest area', () => {
   const line = standoutLine(sheet);
   assert.equal(line.target, 'condition');
-  assert.match(line.text, /^Strongest: security and control, strong at 97\./);
+  assert.match(line.text, /^Strongest: security and control, strong at 97/);
   assert.match(line.text, /none is picked as moving fastest\.$/);
 });
 
@@ -159,26 +159,61 @@ test('alerts list live flags with source and date, never cleared ones', () => {
             status: 'stale',
             staleSince: '2026-11-09',
           },
-          { iso3: 'IND', label: 'Third', sourceName: 'X', date: '2026-11-01' },
+          {
+            iso3: 'IND',
+            label: 'Third',
+            sourceName: 'X',
+            date: '2026-11-01',
+            status: 'active',
+          },
+          {
+            iso3: 'IND',
+            label: 'Fourth',
+            sourceName: 'Y',
+            date: '2026-11-02',
+          },
           { iso3: 'PAK', label: 'Elsewhere' },
         ],
-        inactiveFlags: [{ iso3: 'IND', label: 'Old', status: 'cleared' }],
+        inactiveFlags: [
+          { iso3: 'IND', label: 'Old', status: 'cleared' },
+          { iso3: 'IND', label: 'Expired', status: 'no-recent-data' },
+        ],
       },
     },
   };
   const line = alertLine(snapshot, sheet);
+  // The stale and the expired flags are neither counted nor shown.
   assert.equal(line.title, '3 alerts');
   assert.equal(line.count, 3);
   assert.equal(
     line.text,
-    'Red GDACS flood alert · GDACS · 2026-11-08. INR down 20% · Frankfurter · 2026-11-08 · Stale since 2026-11-09. And 1 more.',
+    'Red GDACS flood alert · GDACS · 2026-11-08. Third · X · 2026-11-01. And 1 more.',
+  );
+  assert.doesNotMatch(line.text, /INR|Expired|Old/);
+  const expiredOnly = alertLine(
+    {
+      features: {
+        'live-gdacs': {
+          flags: [{ iso3: 'IND', label: 'Stale one', status: 'stale' }],
+          inactiveFlags: [
+            { iso3: 'IND', label: 'Expired', status: 'no-recent-data' },
+          ],
+        },
+      },
+    },
+    sheet,
+  );
+  assert.equal(expiredOnly.count, 0);
+  assert.equal(expiredOnly.title, 'Alerts');
+  assert.equal(
+    expiredOnly.text,
+    'No current alerts for this country in the loaded sources.',
   );
   const quiet = alertLine({ features: {} }, sheet);
   assert.equal(quiet.count, 0);
-  assert.equal(quiet.title, 'Alerts');
   assert.equal(
     quiet.text,
-    'No live alerts for this country in the loaded sources.',
+    'No current alerts for this country in the loaded sources.',
   );
 });
 
@@ -238,11 +273,57 @@ test('allies, rivals and recent armed conflict come only from documented relatio
   assert.equal(line.target, 'relations');
   assert.equal(
     line.text,
-    'Armed conflict in the past 90 days with Pakistan. Allied through The Quad. Rivals: China.',
+    'Armed conflict in the past 90 days with Pakistan. Allied through The Quad. Rivals: China and Pakistan.',
   );
   assert.equal(
     relationsLine({ countryIndex, features: {} }, sheet, now).text,
     'No alliance, rivalry or armed conflict is documented in the loaded sources.',
+  );
+});
+
+test('a rival who also sanctions the country is still named', () => {
+  const now = Date.parse('2026-11-10T00:00:00Z');
+  const cuba = { ...sheet, iso3: 'CUB', name: 'Cuba' };
+  const snapshot = {
+    countryIndex: [...countryIndex, { iso3: 'CUB', name: 'Cuba' }],
+    features: {
+      'relations-curated': {
+        relations: [
+          {
+            id: 'rivalry-usa-cub',
+            type: 'rivalry',
+            from: 'USA',
+            to: 'CUB',
+            sources: ['s1', 's2'],
+          },
+          {
+            id: 'tiar',
+            type: 'alliance',
+            from: 'TIAR',
+            to: 'TIAR',
+            participants: ['USA', 'CUB'],
+            inactiveParticipants: ['CUB'],
+            instrument: 'Rio Treaty',
+          },
+        ],
+      },
+      'relations-sanctions-ofac': {
+        relations: [
+          {
+            id: 'ofac-cuba',
+            type: 'sanctions',
+            scope: 'state',
+            from: 'USA',
+            to: 'CUB',
+            programme: 'CUBA',
+          },
+        ],
+      },
+    },
+  };
+  assert.equal(
+    relationsLine(snapshot, cuba, now).text,
+    'Rivals: United States.',
   );
 });
 
@@ -273,17 +354,64 @@ test('the largest dependency is modelled and says so', () => {
   assert.equal(line.kind, 'estimate');
   assert.equal(line.target, 'exposure');
   assert.match(line.caption, /^Modelled/);
-  assert.match(
-    dependencyLine(modelled, { ...sheet, iso3: 'JPN', name: 'Japan' }).text,
-    /imports too little energy/,
-  );
+  const minor = dependencyLine(modelled, {
+    ...sheet,
+    iso3: 'JPN',
+    name: 'Japan',
+  });
+  assert.match(minor.text, /imports too little energy/);
+  // A draft threshold is a data state: a plain caption, not a dashed edge.
+  assert.equal(minor.caption, 'Draft threshold');
+  assert.equal(minor.kind, undefined);
   assert.equal(
     dependencyLine(modelled, { ...sheet, iso3: 'CHN', name: 'China' }).text,
     'The route model assigns no energy imports through the monitored chokepoints.',
   );
+  // The compact model keeps every importer's exposure, so a country it leaves
+  // out is one the model finds no seaborne imports for.
   assert.equal(
     dependencyLine(modelled, { ...sheet, iso3: 'PAK', name: 'Pakistan' }).text,
-    'No energy dependency is recorded for this country in the loaded sources.',
+    'The route model finds no seaborne energy imports for Pakistan.',
+  );
+  // A model that is not built yet never reads as an absence.
+  const pending = dependencyLine(
+    {
+      features: {
+        'energy-dependencies': {
+          mode: 'pending',
+          period: '2024',
+          label: 'Refresh to rebuild energy exposure',
+          rebuildRequired: true,
+        },
+      },
+    },
+    sheet,
+  );
+  assert.equal(
+    pending.text,
+    'The energy route model is not built yet. A Refresh builds it.',
+  );
+  assert.equal(pending.caption, 'Refresh to rebuild energy exposure');
+  assert.equal(
+    dependencyLine(
+      {
+        features: {
+          'energy-dependencies': { mode: 'unavailable', reason: 'No BACI' },
+        },
+      },
+      sheet,
+    ).text,
+    'The energy route model is not available, so no dependency can be named.',
+  );
+  assert.equal(
+    dependencyLine(
+      {
+        countryIndex,
+        features: { 'energy-dependencies': { mode: 'fixture' } },
+      },
+      sheet,
+    ).text,
+    'The route model holds no energy trade rows for India.',
   );
   const fixture = {
     countryIndex,
@@ -310,6 +438,54 @@ test('the largest dependency is modelled and says so', () => {
   assert.equal(
     dependencyLine({ features: {} }, sheet).text,
     'Energy trade routes are not loaded yet.',
+  );
+});
+
+test('a band word in the Overview follows the rounded score it is shown with', () => {
+  const rounded = {
+    ...sheet,
+    condition: { score: 19.6, label: 'Society' },
+    rows: [conditionRow('C6', 'Societal cooperation', 19.6)],
+  };
+  const line = conditionLine(rounded);
+  assert.equal(line.bars[0].band, 'Weak');
+  assert.equal(
+    line.text,
+    'Weakest bar: Society, weak at 20. 1 of 1 bars have a figure.',
+  );
+});
+
+test('the standout line marks a named forecast in words and in look', () => {
+  const measured = standoutLine({
+    ...sheet,
+    rows: [
+      conditionRow('C3', 'Essential services', 90),
+      // A forecast that is neither strongest nor weakest marks nothing.
+      conditionRow('C4', 'Household security', 50, 'forecast'),
+      conditionRow('C6', 'Societal cooperation', 24),
+    ],
+  });
+  assert.equal(measured.kind, undefined);
+  assert.equal(measured.caption, undefined);
+  const line = standoutLine(sheet);
+  assert.equal(line.kind, 'estimate');
+  const forecastWeakest = standoutLine({
+    ...sheet,
+    rows: [
+      conditionRow('C3', 'Essential services', 90),
+      conditionRow('C4', 'Household security', 12, 'forecast'),
+    ],
+  });
+  assert.match(
+    forecastWeakest.text,
+    /Weakest: household security, very weak at 12 \(a forecast\)\./,
+  );
+  assert.equal(forecastWeakest.kind, 'estimate');
+  assert.equal(forecastWeakest.caption, 'Includes a forecast or an estimate');
+  // The strongest here (97) is the source's own estimate.
+  assert.match(
+    line.text,
+    /^Strongest: security and control, strong at 97 \(the source's own estimate\)\./,
   );
 });
 

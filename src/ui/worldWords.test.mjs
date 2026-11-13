@@ -26,7 +26,12 @@ test('band words follow the approved ranges and unknown is never a band', () => 
   assert.equal(bandWord(0), 'Very weak');
   assert.equal(bandWord(19.4), 'Very weak');
   assert.equal(bandWord(20), 'Weak');
-  assert.equal(bandWord(39.9), 'Weak');
+  assert.equal(bandWord(39.4), 'Weak');
+  // The band follows the rounded score that is shown beside it.
+  assert.equal(bandWord(19.6), 'Weak');
+  assert.equal(bandWord(39.9), 'Midrange');
+  assert.equal(bandWord(79.9), 'Strong');
+  assert.equal(bandWord(-0.4), 'Very weak');
   assert.equal(bandWord(40), 'Midrange');
   assert.equal(bandWord(59), 'Midrange');
   assert.equal(bandWord(60), 'Solid');
@@ -91,7 +96,31 @@ test('the meaning sentence reads the stored value against the published scale', 
       period: '2025',
       observation: { value: 2.08, method: 'source-estimate' },
     }),
-    "Political polarisation was 2.08 in 2025, the source's own estimate; on the board's scale 3.94 or more scores 0 and −3.81 or less scores 100.",
+    "Political polarisation is estimated by the source at 2.08 for 2025; on the board's scale 3.94 or more scores 0 and −3.81 or less scores 100.",
+  );
+  assert.equal(
+    meaningSentence(byId('condition.inflation'), {
+      score: 96,
+      period: '2026',
+      observation: { value: 3.1, method: 'source-forecast' },
+    }),
+    "Inflation, average consumer prices is forecast by the source at 3.1% for 2026; on the board's scale 30% or more scores 0 and 2% or less scores 100.",
+  );
+  assert.equal(
+    meaningSentence(polarisation, {
+      score: 24,
+      observation: { method: 'source-forecast' },
+    }),
+    "Political polarisation scores 24 of 100 on a forecast by the source; on the board's scale 3.94 or more scores 0 and −3.81 or less scores 100.",
+  );
+  assert.match(
+    meaningSentence(polarisation, {
+      score: 24,
+      period: '2019',
+      stale: true,
+      observation: { value: 2.08, method: 'source-estimate' },
+    }),
+    /^Political polarisation is estimated by the source at 2\.08 for 2019, now stale;/,
   );
   assert.equal(
     meaningSentence(gdp, {
@@ -108,7 +137,7 @@ test('the meaning sentence reads the stored value against the published scale', 
       period: '2026-10',
       observation: { value: 0.3, method: 'source-forecast' },
     }),
-    /in Oct 2026, forecast; on the board's scale 999 deaths per million people or more scores 0 and 0 deaths per million people or less scores 100\.$/,
+    /is forecast by the source at 0\.3 deaths per million people for Oct 2026; on the board's scale 999 deaths per million people or more scores 0 and 0 deaths per million people or less scores 100\.$/,
   );
   assert.equal(
     meaningSentence(polarisation, { score: null }),
@@ -181,6 +210,33 @@ test('the world comparison counts only other states with a figure', () => {
   );
 });
 
+test('a tie reads as level, never as "than 0"', () => {
+  const tied = (scores) => ({
+    countries: Object.fromEntries(
+      scores.map((score, i) => [
+        `C${i}`,
+        { kind: 'state', slots: { C6: { score } } },
+      ]),
+    ),
+  });
+  assert.equal(
+    worldComparison(tied([50, 50, 50]), polarisation, 'C0').sentence,
+    'Level with all 2 other countries with a figure.',
+  );
+  assert.equal(
+    worldComparison(tied([50, 50]), polarisation, 'C0').sentence,
+    'Level with all 1 other country with a figure.',
+  );
+  assert.equal(
+    worldComparison(tied([50, 50, 40, 60, 60]), polarisation, 'C0').sentence,
+    'More polarised than 2 of the 4 other countries with a figure, and level with 1.',
+  );
+  assert.equal(
+    worldComparison(tied([50, 50, 40, 40]), polarisation, 'C0').sentence,
+    'Less polarised than 2 of the 3 other countries with a figure, and level with 1.',
+  );
+});
+
 test('no trend is drawn without two stored periods, and none is invented', () => {
   const none = 'Earlier years are not stored yet, so no trend is drawn.';
   assert.deepEqual(trendReading({ score: 40 }), {
@@ -243,6 +299,47 @@ test('a trend reads only the stored periods and says what kind each figure is', 
   );
 });
 
+test('the change in a trend agrees with the two numbers it shows', () => {
+  // 49.6 then 50.4 is shown as 50 and 50, so it is level, not 1 point.
+  const level = trendReading({
+    score: 50.4,
+    history: [
+      { period: '2020', score: 49.6, method: 'observed' },
+      { period: '2024', score: 50.4, method: 'observed' },
+    ],
+  });
+  assert.equal(
+    level.sentence,
+    'About level since 2020 (50 then, 50 now), across 2 stored periods.',
+  );
+  assert.equal(level.change.points, 0);
+  // 49.4 then 50.6 is shown as 49 and 51, so it is 2 points.
+  assert.match(
+    trendReading({
+      score: 50.6,
+      history: [
+        { period: '2020', score: 49.4, method: 'observed' },
+        { period: '2024', score: 50.6, method: 'observed' },
+      ],
+    }).sentence,
+    /^2 points better than in 2020 \(49 then, 51 now\)/,
+  );
+  // Gaps between stored periods are spanned, not filled in.
+  const gaps = trendReading({
+    score: 60,
+    history: [
+      { period: '2010', score: 50, method: 'observed' },
+      { period: '2018', score: 70, method: 'observed' },
+      { period: '2024', score: 60, method: 'observed' },
+    ],
+  });
+  assert.equal(
+    gaps.sentence,
+    '10 points better than in 2010 (50 then, 60 now), across 3 stored periods.',
+  );
+  assert.ok(Math.abs(gaps.change.perYear - 10 / 14) < 0.01);
+});
+
 test('every score gets a band, a meaning, a comparison and a trend', () => {
   const words = scoreWords(snapshot, polarisation, 'IND');
   assert.equal(words.band, 'Weak');
@@ -259,11 +356,11 @@ test('every score gets a band, a meaning, a comparison and a trend', () => {
   assert.equal(scoreWords(snapshot, polarisation, 'ATA').band, 'Unknown');
 });
 
-const row = (area, section, score, trend = null) => ({
+const row = (area, section, score, trend = null, kind = 'measured') => ({
   area,
   section,
   score,
-  words: { trend: { change: trend } },
+  words: { kind: { kind }, trend: { change: trend } },
 });
 
 test('the standouts name strongest and weakest and pick a fastest only from a trend', () => {
@@ -282,6 +379,7 @@ test('the standouts name strongest and weakest and pick a fastest only from a tr
       sentence:
         'Strongest: essential services, strong at 90. Weakest: societal cooperation and energy, weak at 24. No area has two stored periods yet, so none is picked as moving fastest.',
       target: 'condition',
+      kind: 'measured',
     },
   );
   assert.equal(
@@ -307,5 +405,62 @@ test('the standouts name strongest and weakest and pick a fastest only from a tr
       }),
     ]).sentence,
     /No area has moved by a point or more across its stored periods\.$/,
+  );
+});
+
+test('a small fast move never hides a large slow one', () => {
+  const result = standouts([
+    row('Security and control', 'condition', 50, {
+      points: 0,
+      since: '2026-09',
+      perYear: 4.7,
+    }),
+    row('Rule of law', 'strength', 60, {
+      points: 10,
+      since: '2015',
+      perYear: 1,
+    }),
+  ]);
+  assert.match(
+    result.sentence,
+    /Moving fastest: rule of law, 10 points better than in 2015\.$/,
+  );
+  // Of the areas that moved a point or more, the fastest per year wins.
+  assert.match(
+    standouts([
+      row('Energy', 'strength', 50, { points: 2, since: '2025', perYear: 2 }),
+      row('Food', 'strength', 60, { points: 10, since: '2015', perYear: 1 }),
+    ]).sentence,
+    /Moving fastest: energy, 2 points better than in 2025\.$/,
+  );
+});
+
+test('a forecast or an estimate named as strongest or weakest says so', () => {
+  const result = standouts([
+    row('Essential services', 'condition', 90),
+    row('Household security', 'condition', 12, null, 'forecast'),
+    row('Societal cooperation', 'condition', 40, null, 'estimate'),
+  ]);
+  assert.match(
+    result.sentence,
+    /^Strongest: essential services, strong at 90\. Weakest: household security, very weak at 12 \(a forecast\)\./,
+  );
+  assert.equal(result.kind, 'estimate');
+  assert.match(
+    standouts([
+      row('Energy', 'strength', 80, null, 'estimate'),
+      row('Food', 'strength', 80, null, 'forecast'),
+      row('Fiscal', 'strength', 20),
+    ]).sentence,
+    /^Strongest: energy and food, strong at 80 \(a forecast and the source's own estimate among them\)\./,
+  );
+  // An estimate that is neither strongest nor weakest does not mark the line.
+  assert.equal(
+    standouts([
+      row('Energy', 'strength', 80),
+      row('Food', 'strength', 50, null, 'estimate'),
+      row('Fiscal', 'strength', 20),
+    ]).kind,
+    'measured',
   );
 });

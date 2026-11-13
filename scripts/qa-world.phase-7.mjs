@@ -82,8 +82,16 @@ export default async function phase7({
         byId.standouts.text,
         /No area has two stored periods yet, so none is picked as moving fastest\./,
       );
-      assert.match(byId.alerts.text, /alert/i);
-      assert.match(byId.dependency.text, /energy|Energy/);
+      // Phase 6 ends with its GDACS and FX flags cleared.
+      assert.match(
+        byId.alerts.text,
+        /^Alerts\s*No current alerts for this country in the loaded sources\./,
+      );
+      // The phase 2 fixture: 8 of India's 80 units of energy imports.
+      assert.match(
+        byId.dependency.text,
+        /About 10% of India's energy imports come from Saudi Arabia\.\s*Synthetic fixture data/,
+      );
       await shot('india-overview');
     },
   );
