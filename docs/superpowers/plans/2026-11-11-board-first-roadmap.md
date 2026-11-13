@@ -6,11 +6,12 @@ with live data, and stage 3 was rewritten to follow them. Decisions 26 to 29 fol
 the Jev filer of decision 26 is the first thing built and is merged (pull request 25, section 8.2).
 The owner approved the stage 0 mock on 2026-11-12 (decisions 30 and 31, section 8.3 and Appendix D).
 Piece 2, costume off and board on, was built unattended on 2026-11-12 and merged on 2026-11-13 as
-pull request 26, after an independent review. Section 10 gives the order of building and the state
-of each piece. Builds on `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board
-spec, whose rules still hold) and on a review of the code, the docs and the running app on main at
-7fb39f6. Section 8 says what the first review could not see and section 8.1 what the second one
-found.
+pull request 26, after an independent review. Piece 4, words for numbers and the Overview tab, was
+merged the same day as pull request 27 under decision 33. Section 10 gives the order of building
+and the state of each piece. Builds on `docs/superpowers/specs/2026-11-08-world-board-design.md`
+(the World Board spec, whose rules still hold) and on a review of the code, the docs and the
+running app on main at 7fb39f6. Section 8 says what the first review could not see and section 8.1
+what the second one found.
 
 ## 0. Shape in one paragraph
 
@@ -276,7 +277,8 @@ already keeps every past value, so trends need no new data.
 
 **2.2 An Overview tab, first.** Who runs the country; the three things that stand out (strongest,
 weakest, moving fastest); current alerts; main allies and rivals; the largest dependency. Six
-lines, each opening the tab that holds the detail.
+lines, each opening the tab that holds the detail. Items 2.1 and 2.2 were merged as pull request 27
+on 2026-11-13 (section 10).
 
 **2.3 Ways in.** Search. A table of all countries, sortable by any area. Side-by-side comparison
 of two countries. Keyboard selection. Share links that keep the lens and the selection.
@@ -912,15 +914,15 @@ asks. Decision 33 lets a reviewed piece be merged without asking until the app i
 table is the order and the state. The session that finishes a piece updates its row, the status
 line at the top of this file and the owner's status page.
 
-| Order  | Piece                                                                                                               | State on 2026-11-13                          |
-| ------ | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                    |
-| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)      |
-| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13      |
-| 3      | The frame (1.2), built to the approved mock                                                                         | Being built since 2026-11-13 (`feat/frame`)  |
-| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Being built since 2026-11-13, beside piece 3 |
-| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Not started                                  |
-| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock         |
+| Order  | Piece                                                                                                               | State on 2026-11-13                         |
+| ------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                   |
+| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)     |
+| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13     |
+| 3      | The frame (1.2), built to the approved mock                                                                         | Being built since 2026-11-13 (`feat/frame`) |
+| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13     |
+| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Not started                                 |
+| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock        |
 
 **Piece 2, costume off and board on.** Merged on 2026-11-13 as pull request 26 (merge commit
 `c9c6beee`), on the owner's word. Before the merge a separate agent ran the five gates again and
@@ -961,6 +963,32 @@ pieces share the country sheet and split it like this. The frame owns the contai
 the templates, where the sheet sits, its width, the look of the tab bar and the layout rules of
 `world-panel.css`. Words for numbers owns the content: the code that writes the words, the rows and
 the Overview tab. Whichever is merged second is first brought up to date with the other.
+
+**Piece 4, words for numbers and the Overview tab.** Merged on 2026-11-13 as pull request 27 (merge
+commit `e3371087`), under decision 33. Every score now has a band word, a sentence, a reading
+against the world and a reading against its own past. A selected country opens on an Overview of six
+lines, each opening the tab that holds its detail, and a Condition row opens to the world, its past
+and "Why this number". The server keeps up to 12 stored periods for each figure so a trend can be
+drawn, and a saved board shows them without a Refresh.
+
+Two readers read the change and a second reader checked each serious finding. They found two faults
+that made a sentence say something false, and lesser ones: all were fixed, and the fixes were read
+again by independent readers. Before the merge, on the final commit `fb3de856` and with nothing else
+running on the PC, the five gates passed at the first run (7,087 tests: 7,077 passing, none failing,
+10 skipped) and the World Board fixture run passed all 24 steps against a server with no keys, up
+for six minutes. After the merge the tree of `main` equals the tree of that commit. Not checked: the
+running app with the owner's saved board and keys, and the news, searches and lenses browser runs,
+which this piece does not touch. The review left these, none of them built:
+
+- The Overview's Condition line still says "weakest bar", which 2.6 lists among the words to rename.
+- A stored history is dropped without a word when its figure no longer matches the board, which
+  happens if an anchor or a transform in `public/world/indicators.json` changes before a Refresh.
+  The sheet then says earlier years are not stored when they are (`withStoredHistory` in
+  `server/providers/world/scores.js`).
+- If one indicator ever stored both a yearly and a month-12 period, the trend's "now" could differ
+  from the bar beside it. No current source does.
+- The whole history travels in every snapshot, not only with an opened country: about 0.2 MB more
+  on the wire for each load once sources hold 12 periods.
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
