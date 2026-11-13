@@ -25,10 +25,16 @@ export default async function phase1({
   await step(
     'Enable World Board and persist the automatic first turn',
     async () => {
-      await toggleWorld();
-      await page.waitForSelector('#world-progress:not([hidden])', {
-        visible: true,
-      });
+      // Since pull request 26 a first start opens on the board by itself.
+      const onAtStart = await page.evaluate(() =>
+        window.__godsEyeView?.dataManager?.isEffectivelyEnabled('world'),
+      );
+      if (!onAtStart) {
+        await toggleWorld();
+        await page.waitForSelector('#world-progress:not([hidden])', {
+          visible: true,
+        });
+      }
       await waitSettled(true);
       await camera(82, 22, 9_000_000);
       await page.waitForFunction(() => {
