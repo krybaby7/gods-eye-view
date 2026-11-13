@@ -10,6 +10,8 @@ const LABEL_MIN_KM2 = 850_000;
 // Half the country-code badge (54 x 24 px), for testing it against panels.
 const LABEL_HALF_WIDTH_PX = 27;
 const LABEL_HALF_HEIGHT_PX = 12;
+// A turn of about a hundredth of a degree moves a code on screen; less does not.
+const TURN_EPSILON = 1e-4;
 
 function groundPolygon(hierarchy, id, colored) {
   return new Cesium.GeometryInstance({
@@ -168,6 +170,10 @@ export function createWorldGeometry(scene, shapes, countries) {
   let active = true;
   let previousCamera;
   let previousCoverRevision = 0;
+  let previousDirection;
+  let previousUp;
+  let previousWidth = -1;
+  let previousHeight = -1;
   const labelWindow = new Cesium.Cartesian2();
   const occluder = new Cesium.EllipsoidalOccluder(Cesium.Ellipsoid.WGS84);
 
@@ -291,17 +297,42 @@ export function createWorldGeometry(scene, shapes, countries) {
       const in3D = scene.mode === Cesium.SceneMode.SCENE3D;
       // A panel that opened or moved re-culls even under a still camera.
       const coverRevision = cover ? cover.refresh() : 0;
+      // Turning in place moves every code on screen without moving the
+      // camera, and so does a globe region that changed size.
+      const width = scene.canvas?.clientWidth ?? 0;
+      const height = scene.canvas?.clientHeight ?? 0;
       if (
         in3D &&
         previousCamera &&
         coverRevision === previousCoverRevision &&
-        Cesium.Cartesian3.equalsEpsilon(position, previousCamera, 0, 1)
+        width === previousWidth &&
+        height === previousHeight &&
+        Cesium.Cartesian3.equalsEpsilon(position, previousCamera, 0, 1) &&
+        Cesium.Cartesian3.equalsEpsilon(
+          camera.directionWC,
+          previousDirection,
+          0,
+          TURN_EPSILON,
+        ) &&
+        Cesium.Cartesian3.equalsEpsilon(
+          camera.upWC,
+          previousUp,
+          0,
+          TURN_EPSILON,
+        )
       )
         return;
       previousCoverRevision = coverRevision;
+      previousWidth = width;
+      previousHeight = height;
       previousCamera = in3D
         ? Cesium.Cartesian3.clone(position, previousCamera)
         : undefined;
+      previousDirection = Cesium.Cartesian3.clone(
+        camera.directionWC,
+        previousDirection,
+      );
+      previousUp = Cesium.Cartesian3.clone(camera.upWC, previousUp);
       occluder.cameraPosition = position;
       for (let i = 0; i < labels.length; i++) {
         const label = labels.get(i);

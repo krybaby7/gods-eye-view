@@ -43,6 +43,17 @@ const MILITARY_STYLES = new Set(['retro', 'surveillance', 'thermal']);
  */
 const HUD_GEOID_CELL_DEG = 0.01;
 
+/** Where the viewer's choice to show MGRS on the status line is kept. */
+export const HUD_MGRS_STORAGE_KEY = 'gev.hud.mgrs';
+
+function readMgrsSetting() {
+  try {
+    return globalThis.localStorage?.getItem(HUD_MGRS_STORAGE_KEY) === 'on';
+  } catch {
+    return false;
+  }
+}
+
 /** Flattened list of all city POIs for nearest-point lookups. */
 const NEARBY_POINTS = Object.values(CITY_POIS).flatMap((city) =>
   city.pois.map((poi) => ({
@@ -101,13 +112,44 @@ export class IntelHUD {
         <div class="hud-status-line">
           <span id="hud-place" class="hud-place"></span>
           <span id="hud-latlon">--°--'--"N ---°--'--"W</span>
-          <span id="hud-mgrs">MGRS: ---</span>
+          <span id="hud-mgrs" hidden>MGRS: ---</span>
           <span id="hud-alt">ALT: --m</span>
           <span id="hud-time"></span>
         </div>
       </div>
     `;
     this._el.dataset.variant = this._variant;
+
+    // MGRS is optional on the status line (roadmap Appendix A): off unless
+    // the viewer turned it on in Display, and remembered.
+    const toggle = document.getElementById('hud-mgrs-toggle');
+    toggle?.addEventListener('click', () => this.setMgrsVisible(!this._mgrs));
+    this.setMgrsVisible(readMgrsSetting(), { persist: false });
+  }
+
+  /**
+   * Show or hide the MGRS reference on the status line.
+   * @param {boolean} visible
+   * @param {{persist?: boolean}} [options]
+   */
+  setMgrsVisible(visible, { persist = true } = {}) {
+    this._mgrs = Boolean(visible);
+    const span = document.getElementById('hud-mgrs');
+    if (span) span.hidden = !this._mgrs;
+    const toggle = document.getElementById('hud-mgrs-toggle');
+    toggle?.setAttribute('aria-pressed', String(this._mgrs));
+    toggle?.classList.toggle('active', this._mgrs);
+    if (persist) {
+      try {
+        globalThis.localStorage?.setItem(
+          HUD_MGRS_STORAGE_KEY,
+          this._mgrs ? 'on' : 'off',
+        );
+      } catch {
+        /* the choice lasts for this visit */
+      }
+    }
+    if (this._mgrs && this._visible) this._updateCameraData();
   }
 
   /** Start the clock and the camera telemetry tick; both stop in {@link destroy}. */
@@ -182,7 +224,7 @@ export class IntelHUD {
     const latDeg = Cesium.Math.toDegrees(cartographic.latitude);
     const altM = cartographic.height;
 
-    const mgrsEl = document.getElementById('hud-mgrs');
+    const mgrsEl = this._mgrs ? document.getElementById('hud-mgrs') : null;
     if (mgrsEl) {
       try {
         // 4 = 10 m precision. Format: 18SUJ23370716 → 18S UJ 2337 0716
