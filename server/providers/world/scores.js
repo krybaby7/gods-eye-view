@@ -48,7 +48,25 @@ function newestFirst(a, b) {
   );
 }
 
-function summarizeSlot(definitions, readings) {
+// The trend reads only what is stored: one score per period, newest vintage.
+const HISTORY_LIMIT = 12;
+
+function slotHistory(definitions, readings, periods) {
+  if (definitions.length !== 1 || readings.length !== 1) return null;
+  const byPeriod = periods.get(readings[0].key);
+  if (!byPeriod || byPeriod.size < 2) return null;
+  return [...byPeriod.values()]
+    .sort((a, b) => a.end - b.end)
+    .slice(-HISTORY_LIMIT)
+    .map(({ observation, score }) => ({
+      period: observation.period,
+      score: Math.round(score * 100) / 100,
+      method: observation.method ?? 'observed',
+    }));
+}
+
+function summarizeSlot(definitions, readings, periods) {
+  const history = slotHistory(definitions, readings, periods);
   const oldest = readings.reduce(
     (earliest, reading) =>
       !earliest || reading.end < earliest.end ? reading : earliest,
@@ -75,6 +93,7 @@ function summarizeSlot(definitions, readings) {
         indicator.criticalBelow != null &&
         score < indicator.criticalBelow,
     ),
+    ...(history && { history }),
   };
 }
 
@@ -113,6 +132,38 @@ function medianYear(readings) {
   );
 }
 
+// A board saved before slots carried history gets it from the stored
+// observations, without touching any score: history is added only where the
+// fresh reading matches the saved one.
+export function withStoredHistory(countries, registry, observations, asOf) {
+  if (
+    !countries ||
+    !Array.isArray(observations) ||
+    !Array.isArray(registry?.countries) ||
+    !Array.isArray(registry?.indicators) ||
+    !Number.isFinite(Date.parse(asOf))
+  )
+    return countries;
+  const fresh = scoreCountries(registry, observations, asOf);
+  return Object.fromEntries(
+    Object.entries(countries).map(([iso3, country]) => {
+      const slots = country?.slots;
+      if (!slots) return [iso3, country];
+      const next = Object.fromEntries(
+        Object.entries(slots).map(([id, slot]) => {
+          const match = fresh[iso3]?.slots?.[id];
+          const same =
+            match?.history &&
+            match.score === slot.score &&
+            match.period === slot.period;
+          return [id, same ? { ...slot, history: match.history } : slot];
+        }),
+      );
+      return [iso3, { ...country, slots: next }];
+    }),
+  );
+}
+
 export function scoreCountries({ countries, indicators }, observations, asOf) {
   const day = new Date(asOf).toISOString().slice(0, 10);
   const definitions = Map.groupBy(indicators, ({ slot }) => slot);
@@ -123,6 +174,7 @@ export function scoreCountries({ countries, indicators }, observations, asOf) {
     .filter(([, entries]) => entries[0].section === 'condition')
     .map(([id]) => id);
   const byEconomy = new Map();
+  const periods = new Map();
   for (const observation of observations) {
     const indicator = indicatorsById.get(observation.indicator);
     if (!indicator) continue;
@@ -131,6 +183,7 @@ export function scoreCountries({ countries, indicators }, observations, asOf) {
     if (score === null || !Number.isFinite(+end)) continue;
     const key = `${observation.iso3}:${indicator.id}`;
     const reading = {
+      key,
       observation,
       indicator,
       score,
@@ -140,6 +193,11 @@ export function scoreCountries({ countries, indicators }, observations, asOf) {
     const current = byEconomy.get(key);
     if (!current || newestFirst(reading, current) < 0)
       byEconomy.set(key, reading);
+    if (!periods.has(key)) periods.set(key, new Map());
+    const byPeriod = periods.get(key);
+    const samePeriod = byPeriod.get(observation.period);
+    if (!samePeriod || newestFirst(reading, samePeriod) < 0)
+      byPeriod.set(observation.period, reading);
   }
 
   return Object.fromEntries(
@@ -162,7 +220,7 @@ export function scoreCountries({ countries, indicators }, observations, asOf) {
       const slots = Object.fromEntries(
         [...definitions].map(([id, entries]) => [
           id,
-          summarizeSlot(entries, bySlot.get(id) ?? []),
+          summarizeSlot(entries, bySlot.get(id) ?? [], periods),
         ]),
       );
       return [

@@ -16,7 +16,7 @@ import {
   worldFeatureViews,
   worldRefreshSteps,
 } from './refreshRegistry.js';
-import { scoreCountries } from './scores.js';
+import { scoreCountries, withStoredHistory } from './scores.js';
 import { runWorldSources } from './sourceQueue.js';
 import { cleanupLegacyWorldDownloads } from './sources/legacyDownloads.js';
 import { createWorldFetch } from './sources/transport.js';
@@ -145,10 +145,24 @@ export function createWorldService({
       .then(([loadedRegistry, state, liveState]) => {
         registry = loadedRegistry;
         saved = state;
-        board = saved.board ?? {
-          asOf: now().toISOString(),
-          countries: scoreCountries(registry, [], now()),
-        };
+        // A saved board gets each figure's stored periods for its trend, so
+        // a board saved before history existed shows trends without a Refresh.
+        board = saved.board
+          ? {
+              ...saved.board,
+              countries: withStoredHistory(
+                saved.board.countries,
+                registry,
+                saved.observations,
+                saved.board.asOf,
+              ),
+            }
+          : {
+              asOf: now().toISOString(),
+              countries: scoreCountries(registry, [], now()),
+            };
+        // A failed refresh rolls back to saved.board; keep the history there.
+        if (saved.board) saved = { ...saved, board };
         live = {
           features: { ...liveState?.features },
           sources: { ...liveState?.sources },
