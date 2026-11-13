@@ -207,10 +207,18 @@ export async function installFixtures(page, origin, world, report) {
       }
     } catch (error) {
       // Navigation can cancel queued imagery, but a failed World Board
-      // interception would invalidate the acceptance results.
+      // interception would invalidate the acceptance results. The client
+      // aborts a progress poll when the board is switched off (the runner
+      // clears the layers right after the first start turns the board on)
+      // and when a manual Refresh replaces the poll, so only that abort is
+      // let through; snapshot, refresh and detail stay guarded.
+      const abandoned = /Invalid InterceptionId|Target closed/.test(
+        error.message,
+      );
       if (
-        url.pathname.startsWith('/api/world') ||
-        !/Invalid InterceptionId|Target closed/.test(error.message)
+        (url.pathname.startsWith('/api/world') &&
+          !(abandoned && url.pathname === '/api/world/progress')) ||
+        !abandoned
       )
         report.errors.push(`Fixture ${url.pathname}: ${error.message}`);
       await client

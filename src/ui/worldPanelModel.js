@@ -1,4 +1,5 @@
 export { worldLegend } from '../layers/world/lensRegistry.js';
+import { rowCaption, scoreWords } from './worldWords.js';
 
 const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 
@@ -48,7 +49,7 @@ function scoreFormula({ transform, direction, anchors: { a, b } }) {
     : formula;
 }
 
-function rowFor(country, indicator, source) {
+function rowFor(snapshot, country, indicator, source) {
   const entry = country.slots?.[indicator.slot];
   const observation = entry?.observation;
   const score = scoreOrUnknown(entry?.score);
@@ -58,8 +59,10 @@ function rowFor(country, indicator, source) {
   if (entry?.stale) flags.push('Stale');
   if (indicator.lowConfidence) flags.push('Low conf.');
   if (observation?.method === 'source-forecast') flags.push('Source forecast');
+  const sourceName = source?.name ?? indicator.source;
   return {
     slot: indicator.slot,
+    indicator: indicator.id,
     section: indicator.section,
     area: indicator.area,
     score,
@@ -72,7 +75,15 @@ function rowFor(country, indicator, source) {
     period: entry?.period ?? null,
     retrievedAt: observation?.retrievedAt ?? null,
     sourceVersion: observation?.sourceVersion ?? null,
-    source: source?.name ?? indicator.source,
+    source: sourceName,
+    caption: rowCaption({
+      period: entry?.period ?? null,
+      source: sourceName,
+      score,
+      method: observation?.method,
+      stale: entry?.stale,
+    }),
+    words: scoreWords(snapshot, indicator, country.iso3),
     sourceUrl: safeSourceUrl(observation?.url) ?? safeSourceUrl(source?.url),
     sourceCode: indicator.sourceCode,
     formula: scoreFormula(indicator),
@@ -105,7 +116,12 @@ export function countrySheet(snapshot, iso3) {
         : ''),
     hasData: coverage.known > 0,
     rows: indicators.map((indicator) =>
-      rowFor(country, indicator, sources.get(indicator.source)),
+      rowFor(
+        snapshot,
+        { ...country, iso3 },
+        indicator,
+        sources.get(indicator.source),
+      ),
     ),
   };
 }
