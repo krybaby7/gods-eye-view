@@ -230,7 +230,6 @@ export class PanelLayoutController {
         this._recentImageryPanel,
         this._situationPanel,
         this._searchesPanel,
-        document.getElementById('world-character-sheet'),
         this._streetLevelPanel,
         globalContextPanel,
         document.getElementById('radio-panel'),

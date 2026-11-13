@@ -1,7 +1,9 @@
 /**
  * @module hudFormat
  * @description The status line's readouts in the mock's form (roadmap
- * Appendix D): "22°00'N 080°00'E", "Eye altitude 9,000 km" and "18:02 UTC".
+ * Appendix D): "22°00'N 080°00'E", the figure of "Eye altitude 9,000 km"
+ * and the figure of "18:02 UTC". The words beside the figures are the status
+ * line's own, set in the sans face (monospace is for figures and codes only).
  * Pure, so the rounding and its carry can be tested without a globe.
  */
 
@@ -32,7 +34,8 @@ export function formatLatLon(latDeg, lonDeg) {
 const GROUPED = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
 
 /**
- * "Eye altitude 9,000 km" from metres above mean sea level: whole kilometres
+ * The figure of "Eye altitude 9,000 km" ("9,000 km") from metres above mean
+ * sea level: whole kilometres
  * from 1 km up, whole metres below.
  * @param {number} metres
  * @returns {string} '' when not a number.
@@ -41,14 +44,14 @@ export function formatEyeAltitude(metres) {
   if (!Number.isFinite(metres)) return '';
   const rounded = Math.round(metres);
   return Math.abs(rounded) >= 1000
-    ? `Eye altitude ${GROUPED.format(Math.round(metres / 1000))} km`
-    : `Eye altitude ${GROUPED.format(rounded)} m`;
+    ? `${GROUPED.format(Math.round(metres / 1000))} km`
+    : `${GROUPED.format(rounded)} m`;
 }
 
-/** "18:02 UTC" for a date. */
+/** "18:02", the figure of "18:02 UTC", for a date. */
 export function formatUtcClock(date) {
   if (!(date instanceof Date) || Number.isNaN(+date)) return '';
   const hours = String(date.getUTCHours()).padStart(2, '0');
   const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-  return `${hours}:${minutes} UTC`;
+  return `${hours}:${minutes}`;
 }

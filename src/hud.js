@@ -118,8 +118,8 @@ export class IntelHUD {
           <span id="hud-place" class="hud-place"></span>
           <span id="hud-latlon"></span>
           <span id="hud-mgrs" hidden>MGRS: ---</span>
-          <span id="hud-alt"></span>
-          <span id="hud-time"></span>
+          <span class="hud-reading hud-alt-reading">Eye altitude <span id="hud-alt"></span></span>
+          <span class="hud-reading hud-time-reading"><span id="hud-time"></span> UTC</span>
         </div>
       </div>
     `;
@@ -168,7 +168,7 @@ export class IntelHUD {
     }, 250);
   }
 
-  /** Show the current time as "18:02 UTC". */
+  /** Show the current time, "18:02" beside its "UTC". */
   _updateTime() {
     const el = document.getElementById('hud-time');
     if (el) el.textContent = formatUtcClock(new Date());
@@ -271,20 +271,20 @@ export class IntelHUD {
    * Return a coarse geographic region label based on lat/lon bounding boxes.
    * @param {number} lat - Latitude in decimal degrees.
    * @param {number} lon - Longitude in decimal degrees.
-   * @returns {string} Region name (e.g. `"EUROPE"`, `"NORTHERN OCEANIC GRID"`).
+   * @returns {string} Region name in sentence case (e.g. `"Europe"`, `"Northern oceanic grid"`).
    */
   _regionLabel(lat, lon) {
-    if (lat > 72) return 'ARCTIC';
-    if (lat < -60) return 'ANTARCTIC';
+    if (lat > 72) return 'Arctic';
+    if (lat < -60) return 'Antarctic';
     if (lat >= 5 && lat <= 83 && lon >= -170 && lon <= -50)
-      return 'NORTH AMERICA';
+      return 'North America';
     if (lat >= -60 && lat <= 15 && lon >= -90 && lon <= -30)
-      return 'SOUTH AMERICA';
-    if (lat >= 34 && lat <= 72 && lon >= -25 && lon <= 45) return 'EUROPE';
-    if (lat >= -35 && lat <= 38 && lon >= -20 && lon <= 55) return 'AFRICA';
-    if (lat >= 5 && lat <= 80 && lon >= 45 && lon <= 180) return 'ASIA';
-    if (lat >= -50 && lat <= 5 && lon >= 110 && lon <= 180) return 'OCEANIA';
-    return lat >= 0 ? 'NORTHERN OCEANIC GRID' : 'SOUTHERN OCEANIC GRID';
+      return 'South America';
+    if (lat >= 34 && lat <= 72 && lon >= -25 && lon <= 45) return 'Europe';
+    if (lat >= -35 && lat <= 38 && lon >= -20 && lon <= 55) return 'Africa';
+    if (lat >= 5 && lat <= 80 && lon >= 45 && lon <= 180) return 'Asia';
+    if (lat >= -50 && lat <= 5 && lon >= 110 && lon <= 180) return 'Oceania';
+    return lat >= 0 ? 'Northern oceanic grid' : 'Southern oceanic grid';
   }
 
   /**

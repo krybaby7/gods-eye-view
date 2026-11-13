@@ -151,16 +151,23 @@ function alertsGauge(features, turn) {
   if (!day) return null;
   const alerts = activeAlerts(features);
   const countries = new Set(alerts.map(({ iso3 }) => iso3).filter(Boolean));
+  // A stale, failed or unloaded feed drops out of the count, so the caption
+  // always says how many of the feeds it holds: a partial count never reads
+  // as complete.
   const names = [...new Set(feeds.map((id) => ALERT_FEEDS[id]))];
-  const source =
-    names.length <= 2 ? names.join(', ') : `${names.length} live feeds`;
+  const all = [...new Set(Object.values(ALERT_FEEDS))];
+  const missing = all.filter((name) => !names.includes(name));
   return {
     id: 'alerts',
     label: 'Alerts',
     value: String(alerts.length),
     change: null,
-    caption: `in ${countries.size} ${countries.size === 1 ? 'country' : 'countries'} · ${day} · ${source}`,
-    title: `Active condition flags from the live feeds: ${names.join(', ')}`,
+    caption: `in ${countries.size} ${countries.size === 1 ? 'country' : 'countries'} · ${day} · ${names.length} of ${all.length} feeds`,
+    title:
+      `Active condition flags from the live feeds: ${names.join(', ')}` +
+      (missing.length
+        ? `. Not counted, not loaded or stale: ${missing.join(', ')}`
+        : ''),
   };
 }
 

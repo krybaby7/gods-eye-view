@@ -541,7 +541,9 @@ async function frameLayout(width, height, label) {
               element,
             ),
           )
-          .filter(({ right, left, bottom, top }) => right > left && bottom > top);
+          .filter(
+            ({ right, left, bottom, top }) => right > left && bottom > top,
+          );
         const globe = box('globe', document.getElementById('cesiumContainer'));
         return { regions, panels, globe };
       };
@@ -587,18 +589,47 @@ async function frameLayout(width, height, label) {
         if (meet(a, globe)) overlaps.push(`${a.name} / globe`);
       for (const panel of panels) {
         for (const region of regions)
-          if (meet(panel, region)) overlaps.push(`${panel.name} / ${region.name}`);
+          if (meet(panel, region))
+            overlaps.push(`${panel.name} / ${region.name}`);
       }
       panels.forEach((a, i) =>
         panels.slice(i + 1).forEach((b) => {
           if (meet(a, b)) overlaps.push(`${a.name} / ${b.name}`);
         }),
       );
+      // A part of the frame with the hidden attribute is not drawn, whatever
+      // display its class gives it.
+      const hiddenShown = [
+        ...document.querySelectorAll(
+          '.frame-region[hidden], .frame-region [hidden], #world-hover[hidden], #lens-bar[hidden]',
+        ),
+      ]
+        .filter((element) => getComputedStyle(element).display !== 'none')
+        .map((element) => element.id || element.className || element.tagName);
+      // The legend explains every colour on the globe: nothing in it is cut.
+      const legendBox = document.getElementById('world-legend');
+      const legend = shown(legendBox)
+        ? {
+            lens:
+              document
+                .querySelector('#world-lens-bar [aria-pressed="true"]')
+                ?.getAttribute('data-world-lens') ?? null,
+            text: legendBox.textContent.replace(/\s+/g, ' ').trim(),
+            width: Math.round(legendBox.clientWidth),
+            clipped:
+              legendBox.scrollHeight > legendBox.clientHeight + 1 ||
+              legendBox.scrollWidth > legendBox.clientWidth + 1,
+            scrollHeight: legendBox.scrollHeight,
+            clientHeight: legendBox.clientHeight,
+          }
+        : null;
       return {
         today: document.body.dataset.today,
         sheet: document.body.dataset.sheet,
         globeWidth: Math.round(globe.right - globe.left),
         overlaps,
+        hiddenShown,
+        legend,
         ...stable,
       };
     },
@@ -611,6 +642,15 @@ async function frameLayout(width, height, label) {
     data.overlaps,
     [],
     `Overlap at ${width}×${height} (${label}, Today ${data.today}, sheet ${data.sheet})`,
+  );
+  assert.deepEqual(
+    data.hiddenShown,
+    [],
+    `Hidden parts of the frame drawn at ${width}×${height} (${label})`,
+  );
+  assert.ok(
+    !data.legend?.clipped,
+    `The ${data.legend?.lens} legend is cut at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
   );
   assert.ok(
     data.globeWidth >= FRAME_GLOBE_MIN_WIDTH,

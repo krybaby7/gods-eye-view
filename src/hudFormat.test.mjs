@@ -31,16 +31,16 @@ test('a hair west of the meridian that rounds to zero is not a negative zero', (
 });
 
 test('eye altitude reads in kilometres from 1 km up, grouped like the mock', () => {
-  assert.equal(formatEyeAltitude(9_000_000), 'Eye altitude 9,000 km');
-  assert.equal(formatEyeAltitude(12_345), 'Eye altitude 12 km');
-  assert.equal(formatEyeAltitude(999.4), 'Eye altitude 999 m');
-  assert.equal(formatEyeAltitude(999.6), 'Eye altitude 1 km');
-  assert.equal(formatEyeAltitude(-15), 'Eye altitude -15 m');
+  assert.equal(formatEyeAltitude(9_000_000), '9,000 km');
+  assert.equal(formatEyeAltitude(12_345), '12 km');
+  assert.equal(formatEyeAltitude(999.4), '999 m');
+  assert.equal(formatEyeAltitude(999.6), '1 km');
+  assert.equal(formatEyeAltitude(-15), '-15 m');
   assert.equal(formatEyeAltitude(NaN), '');
 });
 
 test('the clock is hours and minutes in UTC', () => {
-  assert.equal(formatUtcClock(new Date('2026-11-13T18:02:59Z')), '18:02 UTC');
-  assert.equal(formatUtcClock(new Date('2026-11-13T00:00:00Z')), '00:00 UTC');
+  assert.equal(formatUtcClock(new Date('2026-11-13T18:02:59Z')), '18:02');
+  assert.equal(formatUtcClock(new Date('2026-11-13T00:00:00Z')), '00:00');
   assert.equal(formatUtcClock(new Date(NaN)), '');
 });

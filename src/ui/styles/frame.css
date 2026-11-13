@@ -79,6 +79,14 @@ body.gev-frame {
   z-index: 150;
 }
 
+/* A hidden part of the frame is not shown, whatever display its class gives
+   it: the browser's own [hidden] rule loses to any author rule, and a control
+   with nothing behind it is not shown (decision 32). */
+.frame-region[hidden],
+.frame-region [hidden] {
+  display: none !important;
+}
+
 /* Zero specificity: it only replaces the browser's own button and input type,
    so the sheet's content (the Overview line, .world-control) keeps its sizes. */
 :where(.frame-region) :where(button, input) {
@@ -392,50 +400,65 @@ body.gev-frame {
   color: var(--text-1);
 }
 
+/* The legend runs as text in up to three lines of the 52 px bar: title,
+   ramp and stops, the unknown key, then the note, each wrapping where it
+   must, so every lens's key is read whole (the browser step measures it). */
 .frame-legend {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+  flex: 1 1 auto;
+  align-self: center;
   min-width: 0;
+  /* Three lines of 15 px, with room for the swatches' middle alignment. */
+  max-height: calc(var(--frame-bar) - 4px);
+  overflow: hidden;
+  font: 500 12px/15px var(--font-sans);
+  color: var(--text-2);
   pointer-events: none;
 }
 
-.frame-legend-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  font: var(--type-caption);
-  color: var(--text-2);
-  white-space: nowrap;
+.frame-legend-row,
+#world-legend-stops,
+body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
+  #world-legend
+  #world-legend-stops {
+  display: inline;
+  margin: 0;
+}
+
+.frame-legend-row > *,
+#world-legend-stops > span {
+  margin-right: 10px;
 }
 
 #world-legend-title {
-  font: var(--type-caption);
   color: var(--text-1);
+  white-space: nowrap;
 }
 
 .frame-legend .world-legend-ramp {
-  flex: none;
+  display: inline-block;
   width: 116px;
   height: 8px;
   border-radius: 4px;
+  vertical-align: middle;
 }
 
-#world-legend-stops {
-  display: flex;
-  gap: 8px;
+.frame-legend .world-legend-unknown {
+  display: inline;
+  white-space: nowrap;
 }
 
 .frame-legend .world-legend-unknown .world-hatch {
+  display: inline-block;
   width: 22px;
   height: 12px;
+  margin-right: 6px;
   border: 1px solid var(--line-strong);
   border-radius: 3px;
+  vertical-align: middle;
 }
 
 /* Below 1366 px the bar is tight: the lens buttons and the ramp narrow and
-   the "Lens" caption goes, so the legend's unknown key is never clipped. */
+   the "Lens" caption goes. */
 @media (max-width: 1365px) {
   .frame-lens > .frame-caption {
     display: none;
@@ -450,28 +473,8 @@ body.gev-frame {
   }
 }
 
-/* Every lens's legend fits the 52 px bar: the Diplomacy classes (a 3-column
-   grid with margins in world-phase-3.css, about 69 px tall) run as one row. */
-.frame-legend {
-  max-height: 100%;
-  overflow: hidden;
-}
-
-body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
-  #world-legend
-  #world-legend-stops {
-  display: flex;
-  gap: 4px 10px;
-  margin: 0;
-  overflow: hidden;
-}
-
 #world-legend-note {
-  overflow: hidden;
-  font: var(--type-caption);
   color: var(--text-3);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 #world-legend-note:empty {
@@ -816,8 +819,13 @@ body.gev-frame .hud-status-line {
   white-space: nowrap;
 }
 
-body.gev-frame :is(#hud-latlon, #hud-mgrs, #hud-alt, #hud-time) {
+/* Figures and codes in monospace; the words beside them stay in the sans
+   face (Appendix D). */
+body.gev-frame :is(#hud-latlon, #hud-mgrs, .hud-reading) {
   flex: none;
+}
+
+body.gev-frame :is(#hud-latlon, #hud-mgrs, #hud-alt, #hud-time) {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }

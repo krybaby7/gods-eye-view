@@ -152,7 +152,7 @@ test('a cold tick paints the readout uncorrected, and the next tick corrects it'
 
     // Tick 1 — cold. This is also the tick that requests the grid.
     hud._updateCameraData();
-    assert.match(alt(), /^Eye altitude -15 m$/, `cold readout, got ${alt()}`);
+    assert.match(alt(), /^-15 m$/, `cold readout, got ${alt()}`);
 
     // The HUD registered its own continuation on this same shared promise
     // during tick 1, and it registered first, so awaiting here means its
@@ -161,9 +161,9 @@ test('a cold tick paints the readout uncorrected, and the next tick corrects it'
     await Promise.resolve();
 
     hud._updateCameraData();
-    assert.match(alt(), /^Eye altitude 17 m$/, `corrected readout, got ${alt()}`);
+    assert.match(alt(), /^17 m$/, `corrected readout, got ${alt()}`);
     hud._updateCameraData();
-    assert.match(alt(), /^Eye altitude 17 m$/);
+    assert.match(alt(), /^17 m$/);
   } finally {
     hud?.destroy();
     env.restore();
@@ -182,13 +182,13 @@ test('the corrected readouts are the MSL datum, not a coincidence of the SFO sig
   try {
     hud = new IntelHUD(env.viewer);
     hud._updateCameraData(); // cold: requests the grid, paints uncorrected
-    assert.match(env.elements.get('hud-alt').textContent, /^Eye altitude 100 m$/);
+    assert.match(env.elements.get('hud-alt').textContent, /^100 m$/);
     await ensureGeoidReady();
     await Promise.resolve();
     hud._updateCameraData();
     assert.match(
       env.elements.get('hud-alt').textContent,
-      /^Eye altitude 54 m$/,
+      /^54 m$/,
       `100 m ellipsoidal over London is 54 m MSL, got ${env.elements.get('hud-alt').textContent}`,
     );
   } finally {

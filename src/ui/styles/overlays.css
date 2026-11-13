@@ -157,6 +157,6 @@
   display: none;
 }
 
-#intel-hud[data-variant='minimal'] :is(#hud-alt, .hud-ais-vessel) {
+#intel-hud[data-variant='minimal'] :is(.hud-alt-reading, .hud-ais-vessel) {
   display: none;
 }

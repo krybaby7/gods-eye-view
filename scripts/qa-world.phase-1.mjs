@@ -262,6 +262,7 @@ export default async function phase1({
         );
       };
       const before = await today();
+      const legendFailures = [];
       try {
         // India is selected, so the sheet is open.
         for (const [width, height] of [
@@ -274,6 +275,36 @@ export default async function phase1({
           await frameLayout(width, height, 'today-open-sheet-open');
           await setToday('folded');
           await frameLayout(width, height, 'today-folded-sheet-open');
+          // Each lens's legend, whole, in the full-width bottom bar.
+          const pressed = await page.$eval(
+            '#world-lens-bar [aria-pressed="true"]',
+            (node) => node.dataset.worldLens,
+          );
+          const lensIds = await page.$$eval(
+            '#world-lens-bar [data-world-lens]',
+            (nodes) => nodes.map((node) => node.dataset.worldLens),
+          );
+          try {
+            for (const id of lensIds) {
+              await page.click(lens(id));
+              await page.waitForFunction(
+                (selector) =>
+                  document
+                    .querySelector(selector)
+                    ?.getAttribute('aria-pressed') === 'true',
+                wait,
+                lens(id),
+              );
+              // Every lens is measured at every size before the step fails.
+              try {
+                await frameLayout(width, height, `legend-${id}`);
+              } catch (error) {
+                legendFailures.push(error.message);
+              }
+            }
+          } finally {
+            await page.click(lens(pressed));
+          }
         }
         await page.click('#world-sheet-close');
         await page.waitForFunction(
@@ -282,13 +313,12 @@ export default async function phase1({
         );
         await setToday('open');
         await frameLayout(1280, 720, 'today-open-sheet-closed');
+        assert.deepEqual(legendFailures, []);
       } finally {
         // Leave the page as the next steps expect it, pass or fail.
         await page.setViewport(desktop);
         await setToday(before);
-        if (
-          (await page.evaluate(() => document.body.dataset.sheet)) !== 'open'
-        )
+        if ((await page.evaluate(() => document.body.dataset.sheet)) !== 'open')
           await pickCountry(81.7, 21.2, 'IND');
       }
     },
@@ -309,6 +339,15 @@ export default async function phase1({
           !window.worldQa.solid.show &&
           !window.worldQa.hatch.show,
         wait,
+      );
+      // Refresh and the turn pill go with the board: nothing dead is shown.
+      assert.deepEqual(
+        await page.$$eval('#world-refresh, #world-turn', (nodes) =>
+          nodes
+            .filter((node) => node.getClientRects().length > 0)
+            .map((node) => node.id),
+        ),
+        [],
       );
       await shot('layer-off');
       await toggleWorld();

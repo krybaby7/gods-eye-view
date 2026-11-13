@@ -122,7 +122,7 @@ test('alerts are unknown until a feed that can carry flags has loaded', () => {
     features: { 'live-gdacs': { flags: [] } },
   });
   assert.equal(none.value, '0', 'a loaded flag feed with no flags is a true 0');
-  assert.equal(none.caption, 'in 0 countries · 11 Nov · GDACS');
+  assert.equal(none.caption, 'in 0 countries · 11 Nov · 1 of 11 feeds');
 });
 
 test('alerts count only active flags from the loaded live condition feeds', () => {
@@ -150,14 +150,39 @@ test('alerts count only active flags from the loaded live condition feeds', () =
   assert.equal(activeAlerts(features).length, 4);
   const [alerts] = worldGauges({ turn, features });
   assert.equal(alerts.value, '4');
-  assert.equal(alerts.caption, 'in 3 countries · 11 Nov · 3 live feeds');
+  // Three of the eleven feeds are held (UCDP's two stores are one feed), and
+  // the caption says so, so the count never reads as complete.
+  assert.equal(alerts.caption, 'in 3 countries · 11 Nov · 3 of 11 feeds');
   assert.equal(
     alerts.title,
-    'Active condition flags from the live feeds: coups, GDACS, UCDP',
+    'Active condition flags from the live feeds: coups, GDACS, UCDP. Not counted, not loaded or stale: GDELT, FX, IMF CPI, UNHCR, debt DSA, ElectionGuide, HDX, IODA',
   );
   assert.deepEqual(
     worldGauges({ features }),
     [],
     'no turn, no date, not shown',
   );
+});
+
+test('a stale or failed feed leaves the count and the caption says how many are held', () => {
+  const turn = { endedAt: '2026-11-11T18:00:00Z' };
+  const every = Object.fromEntries(
+    Object.keys(ALERT_FEEDS).map((id) => [id, { flags: [{ iso3: 'SDN' }] }]),
+  );
+  const [whole] = worldGauges({ turn, features: every });
+  // UCDP's saved and token stores are one feed: eleven feeds, eleven held.
+  assert.equal(whole.caption, 'in 1 country · 11 Nov · 11 of 11 feeds');
+  assert.equal(whole.value, String(Object.keys(ALERT_FEEDS).length));
+  assert.doesNotMatch(whole.title, /Not counted/);
+  const [partial] = worldGauges({
+    turn,
+    features: {
+      ...every,
+      'live-gdelt': { flags: [{ iso3: 'SDN' }], staleSince: '2026-11-10' },
+      'live-fx': { flags: [], error: 'timeout' },
+    },
+  });
+  assert.equal(partial.caption, 'in 1 country · 11 Nov · 9 of 11 feeds');
+  assert.equal(partial.value, String(Object.keys(ALERT_FEEDS).length - 2));
+  assert.match(partial.title, /Not counted, not loaded or stale: GDELT, FX$/);
 });

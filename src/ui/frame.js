@@ -313,7 +313,16 @@ export function createFrame({
   function renderWorld() {
     const snapshot = world?.getSnapshot?.() ?? {};
     const enabled = Boolean(snapshot.enabled);
-    if (boardStatus) boardStatus.hidden = !enabled;
+    // The turn pill and the progress line hide themselves; their holder shows
+    // while the board is on, and while it loads or reports an error on the
+    // way on, so that line can be read.
+    if (boardStatus)
+      boardStatus.hidden = !(
+        enabled ||
+        snapshot.loading ||
+        snapshot.progress ||
+        snapshot.error
+      );
     if (refresh) refresh.hidden = !enabled;
     if (snapshot.turn !== previousTurn) {
       const label = refreshedLabel(snapshot.turn);

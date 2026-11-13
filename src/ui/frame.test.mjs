@@ -344,6 +344,18 @@ test('the top bar shows the date, the refresh day and only the gauges the board 
   assert.equal(h.node('frame-board-status').hidden, true, 'no board, no turn');
   assert.equal(h.node('world-refresh').hidden, true);
   assert.equal(h.node('frame-gauges').hidden, true);
+  // Switching the board on: its loading line can be read before it is on,
+  // while Refresh, which would do nothing yet, stays away.
+  snapshot = { enabled: false, loading: true };
+  for (const listener of listeners) listener();
+  assert.equal(h.node('frame-board-status').hidden, false);
+  assert.equal(h.node('world-refresh').hidden, true);
+  snapshot = { enabled: false, error: 'The World Board could not load.' };
+  for (const listener of listeners) listener();
+  assert.equal(h.node('frame-board-status').hidden, false);
+  snapshot = { enabled: false };
+  for (const listener of listeners) listener();
+  assert.equal(h.node('frame-board-status').hidden, true);
   snapshot = {
     enabled: true,
     turn: { number: 2, endedAt: '2026-03-04T12:00:00Z', changes: [] },
@@ -683,11 +695,12 @@ test('the sheet shows Overview, Condition, Strength and Relations, the rest unde
   const menu = h.node('frame-sheet-more-menu');
   assert.equal(more.hidden, false);
   assert.equal(more.textContent, 'More ›');
-  // Appendix D lists Exposure, Assets, People, News and Stakes here. News has
-  // no tab until it is built (decision 32); Leverage is phase 2's own.
+  // Appendix D lists Exposure, Assets, People, News and Stakes here. News and
+  // Stakes have no tab until they are built (decision 32); Leverage is phase
+  // 2's own.
   assert.deepEqual(
     menu.children.map((item) => item.textContent),
-    ['Exposure', 'Leverage', 'Assets', 'People', 'Stakes'],
+    ['Exposure', 'Leverage', 'Assets', 'People'],
   );
   // Opening More and choosing a tab clicks the board's own tab.
   const assets = list.children.find(

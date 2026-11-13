@@ -11,274 +11,32 @@ import test from 'node:test';
 import { expandApplicationHtml } from '../../build/application-html.js';
 import { createFakeDocument } from '../testSupport/fakeDocument.mjs';
 import { readStylesheet } from '../testSupport/readStylesheet.mjs';
+import {
+  ancestorsOf,
+  customProperties,
+  modelNode,
+  resolveVars,
+  rules,
+  winners,
+} from '../testSupport/cssCascade.mjs';
 import { renderOverviewTab } from './worldOverview.js';
 import { worldSheetTabs } from './worldPanel.js';
+import phase2 from '../layers/world/phase-2.js';
+import phase3 from '../layers/world/phase-3.js';
+import phase4 from '../layers/world/phase-4.js';
+import phase5 from '../layers/world/phase-5.js';
+import phase6 from '../layers/world/phase-6.js';
+
+// The phases the app loads, so each Overview line is a button to its tab.
+const phaseTabs = [phase2, phase3, phase4, phase5, phase6].flatMap(
+  (phase) => phase.tabs ?? [],
+);
 
 const read = (relative) =>
   readFileSync(new URL(relative, import.meta.url), 'utf8');
 const appCss = readStylesheet(new URL('../../style.css', import.meta.url));
 const wordsCss = read('./styles/world-words.css');
 const html = expandApplicationHtml(read('../../index.html'));
-
-// ── Style sheets ──
-
-function splitTop(text, delimiter) {
-  const parts = [];
-  let depth = 0;
-  let quote = '';
-  let current = '';
-  for (const char of text) {
-    if (quote) {
-      if (char === quote) quote = '';
-    } else if (char === '"' || char === "'") quote = char;
-    else if (char === '(' || char === '[') depth += 1;
-    else if (char === ')' || char === ']') depth -= 1;
-    else if (char === delimiter && depth === 0) {
-      parts.push(current);
-      current = '';
-      continue;
-    }
-    current += char;
-  }
-  parts.push(current);
-  return parts.map((part) => part.trim()).filter(Boolean);
-}
-
-/** Style rules in source order; @media and @supports count as always on. */
-function rules(css) {
-  const src = css.replace(/\/\*[\s\S]*?\*\//g, '');
-  const out = [];
-  (function walk(from, to) {
-    let at = from;
-    while (at < to) {
-      const open = src.indexOf('{', at);
-      const semi = src.indexOf(';', at);
-      if (open < 0 || open >= to) return;
-      if (
-        semi >= 0 &&
-        semi < open &&
-        src.slice(at, semi).trim().startsWith('@')
-      ) {
-        at = semi + 1;
-        continue;
-      }
-      const head = src.slice(at, open).trim();
-      let depth = 1;
-      let close = open + 1;
-      for (; close < to && depth; close += 1) {
-        if (src[close] === '{') depth += 1;
-        else if (src[close] === '}') depth -= 1;
-      }
-      const inner = [open + 1, close - 1];
-      if (/^@(media|supports|layer)\b/.test(head)) walk(...inner);
-      else if (!head.startsWith('@')) {
-        const decls = splitTop(src.slice(...inner), ';').flatMap((text) => {
-          const colon = text.indexOf(':');
-          if (colon < 0) return [];
-          const value = text.slice(colon + 1).trim();
-          return [
-            {
-              prop: text.slice(0, colon).trim().toLowerCase(),
-              value: value.replace(/\s*!important$/i, ''),
-              important: /!important$/i.test(value),
-            },
-          ];
-        });
-        out.push({ selectors: splitTop(head, ','), decls });
-      }
-      at = close;
-    }
-  })(0, src.length);
-  return out;
-}
-
-// ── Selectors ──
-
-const STATES =
-  /^:(hover|focus|focus-visible|focus-within|active|visited|link|checked|disabled|enabled|empty|first-child|last-child|only-child|first-of-type|last-of-type|nth-child\(.*\)|nth-of-type\(.*\)|nth-last-child\(.*\)|placeholder-shown|target|open|popover-open|modal|fullscreen|-webkit-[\w-]+|-moz-[\w-]+|root|scope|default|indeterminate|invalid|valid|required|optional|read-only|read-write|lang\(.*\)|dir\(.*\)|has\(.*\))$/;
-
-/** A complex selector as compounds and the combinators between them. */
-function complex(selector) {
-  const tokens = [];
-  let depth = 0;
-  let current = '';
-  const flush = () => {
-    if (current.trim()) tokens.push(current.trim());
-    current = '';
-  };
-  for (let i = 0; i < selector.length; i += 1) {
-    const char = selector[i];
-    if (char === '(' || char === '[') depth += 1;
-    if (char === ')' || char === ']') depth -= 1;
-    if (depth === 0 && /[\s>+~]/.test(char)) {
-      flush();
-      if (char !== ' ' && char !== '\n' && char !== '\t') tokens.push(char);
-      else if (tokens.length && !['>', '+', '~', ' '].includes(tokens.at(-1)))
-        tokens.push(' ');
-      continue;
-    }
-    current += char;
-  }
-  flush();
-  const cleaned = [];
-  for (const token of tokens) {
-    if (['>', '+', '~'].includes(token) && cleaned.at(-1) === ' ')
-      cleaned.pop();
-    cleaned.push(token);
-  }
-  while (cleaned.at(-1) === ' ') cleaned.pop();
-  return cleaned;
-}
-
-/** The simple selectors of one compound. */
-function simples(compound) {
-  const out = [];
-  let i = 0;
-  while (i < compound.length) {
-    let j = i + 1;
-    if (compound[i] === '[') j = compound.indexOf(']', i) + 1;
-    else {
-      if (compound[i] === ':' && compound[i + 1] === ':') j += 1;
-      while (j < compound.length && !/[.#[:]/.test(compound[j])) {
-        if (compound[j] === '(') {
-          let depth = 1;
-          j += 1;
-          while (depth) {
-            if (compound[j] === '(') depth += 1;
-            if (compound[j] === ')') depth -= 1;
-            j += 1;
-          }
-        } else j += 1;
-      }
-    }
-    out.push(compound.slice(i, j));
-    i = j;
-  }
-  return out;
-}
-
-const argsOf = (simple) =>
-  splitTop(simple.slice(simple.indexOf('(') + 1, -1), ',');
-
-/**
- * Whether a compound matches. A state the test cannot know (hover, focus,
- * :has) counts as on where that widens what applies, and as off inside :not.
- */
-function compoundMatches(compound, el, wide) {
-  return simples(compound).every((simple) => {
-    if (simple === '*') return true;
-    if (simple.startsWith('::')) return false;
-    if (simple.startsWith('#')) return el.id === simple.slice(1);
-    if (simple.startsWith('.')) return el.classes.has(simple.slice(1));
-    if (simple.startsWith('[')) {
-      const m = /^\[([\w-]+)(?:([~^$*|]?=)['"]?([^'"\]]*)['"]?)?\]$/.exec(
-        simple,
-      );
-      assert.ok(m, `attribute selector the test cannot read: ${simple}`);
-      const value = el.attrs.get(m[1]);
-      if (value === undefined) return false;
-      if (!m[2]) return true;
-      const want = m[3];
-      return {
-        '=': value === want,
-        '~=': value.split(/\s+/).includes(want),
-        '^=': value.startsWith(want),
-        '$=': value.endsWith(want),
-        '*=': value.includes(want),
-        '|=': value === want || value.startsWith(`${want}-`),
-      }[m[2]];
-    }
-    if (/^:(is|where|matches|-webkit-any)\(/.test(simple))
-      return argsOf(simple).some((arg) => selectorMatches(arg, el, wide));
-    if (simple.startsWith(':not('))
-      return !argsOf(simple).some((arg) => selectorMatches(arg, el, !wide));
-    if (STATES.test(simple)) return wide;
-    if (simple.startsWith(':')) return wide;
-    return el.tag === simple.toLowerCase();
-  });
-}
-
-function selectorMatches(selector, el, wide = true) {
-  const parts = complex(selector);
-  const from = (index, node) => {
-    if (!compoundMatches(parts[index], node, wide)) return false;
-    if (index === 0) return true;
-    const combinator = parts[index - 1];
-    if (combinator === '>')
-      return Boolean(node.parent) && from(index - 2, node.parent);
-    if (combinator === ' ') {
-      for (let up = node.parent; up; up = up.parent)
-        if (from(index - 2, up)) return true;
-      return false;
-    }
-    // A sibling the test does not model: it may be there, sharing the parent.
-    if (!wide) return false;
-    return index - 2 === 0 || continueFrom(index - 2, node);
-  };
-  const continueFrom = (index, node) => {
-    const combinator = parts[index - 1];
-    if (combinator === '>')
-      return Boolean(node.parent) && from(index - 2, node.parent);
-    if (combinator === ' ') {
-      for (let up = node.parent; up; up = up.parent)
-        if (from(index - 2, up)) return true;
-      return false;
-    }
-    return wide;
-  };
-  return from(parts.length - 1, el);
-}
-
-function specificity(selector) {
-  const total = [0, 0, 0];
-  const add = (s) => s.forEach((n, i) => (total[i] += n));
-  for (const part of complex(selector)) {
-    if ([' ', '>', '+', '~'].includes(part)) continue;
-    for (const simple of simples(part)) {
-      if (simple === '*' || simple.startsWith(':where(')) continue;
-      if (/^:(is|matches|not|has)\(/.test(simple)) {
-        add(
-          argsOf(simple)
-            .map(specificity)
-            .reduce((a, b) => (compare(a, b) >= 0 ? a : b), [0, 0, 0]),
-        );
-      } else if (simple.startsWith('#')) total[0] += 1;
-      else if (simple.startsWith('::')) total[2] += 1;
-      else if (/^[.[:]/.test(simple)) total[1] += 1;
-      else total[2] += 1;
-    }
-  }
-  return total;
-}
-
-function compare(a, b) {
-  for (let i = 0; i < 3; i += 1) if (a[i] !== b[i]) return a[i] - b[i];
-  return 0;
-}
-
-// ── Values ──
-
-function customProperties(list) {
-  const map = new Map();
-  for (const rule of list)
-    if (rule.selectors.includes(':root'))
-      for (const { prop, value } of rule.decls)
-        if (prop.startsWith('--')) map.set(prop, value);
-  return map;
-}
-
-function resolveVars(value, vars, depth = 0) {
-  assert.ok(depth < 10, `custom properties nest too deep: ${value}`);
-  const next = value.replace(
-    /var\((--[\w-]+)(?:,\s*([^()]*))?\)/g,
-    (_, name, fallback) => {
-      const found = vars.get(name) ?? fallback;
-      assert.ok(found !== undefined, `undefined custom property ${name}`);
-      return found;
-    },
-  );
-  return next === value ? value : resolveVars(next, vars, depth + 1);
-}
 
 const KEYWORDS = new Set(['inherit', 'unset', 'revert', 'revert-layer']);
 
@@ -317,108 +75,31 @@ function apply(decl, parent, vars) {
   return { ...parent };
 }
 
+const FONT = {
+  font: ['font-size', 'font-family'],
+  'font-size': ['font-size'],
+  'font-family': ['font-family'],
+};
+
 // A browser's own type: buttons and inputs do not inherit the page's font.
-const UA = [
-  {
-    selectors: ['button', 'input', 'select', 'textarea'],
-    decls: [
-      { prop: 'font', value: '400 13.333px system-ui', important: false },
-    ],
-  },
-];
+// The browser's origin loses to any author declaration, whatever its weight.
+const UA_FONT = { size: 13.333, family: 'system-ui' };
+const UA_CONTROLS = new Set(['button', 'input', 'select', 'textarea']);
 
 function computeFonts(element, list, vars, parent) {
-  const winners = {};
-  list.forEach((rule, order) => {
-    for (const selector of rule.selectors) {
-      if (!selectorMatches(selector, element)) continue;
-      const spec = specificity(selector);
-      for (const decl of rule.decls) {
-        const props =
-          decl.prop === 'font'
-            ? ['font-size', 'font-family']
-            : ['font-size', 'font-family'].includes(decl.prop)
-              ? [decl.prop]
-              : [];
-        for (const prop of props) {
-          const best = winners[prop];
-          const beats =
-            !best ||
-            Number(decl.important) - Number(best.decl.important) > 0 ||
-            (decl.important === best.decl.important &&
-              (compare(spec, best.spec) > 0 ||
-                (compare(spec, best.spec) === 0 && order >= best.order)));
-          if (beats) winners[prop] = { decl, spec, order, selector };
-        }
-      }
-    }
-  });
-  const size = winners['font-size']
-    ? apply(winners['font-size'].decl, parent, vars).size
-    : parent.size;
-  const family = winners['font-family']
-    ? apply(winners['font-family'].decl, parent, vars).family
-    : parent.family;
-  return { size, family, by: winners['font-size']?.selector ?? 'inherited' };
-}
-
-// ── The sheet's ancestors, from the application's HTML ──
-
-function ancestorsOf(id) {
-  const VOID = new Set([
-    'area',
-    'base',
-    'br',
-    'col',
-    'embed',
-    'hr',
-    'img',
-    'input',
-    'link',
-    'meta',
-    'source',
-    'track',
-    'wbr',
-  ]);
-  const body = html
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, '');
-  const stack = [];
-  for (const m of body.matchAll(
-    /<(\/?)([a-zA-Z][\w-]*)((?:[^>"']|"[^"]*"|'[^']*')*?)(\/?)>/g,
-  )) {
-    const [, closing, rawTag, attrText, selfClosing] = m;
-    const tag = rawTag.toLowerCase();
-    if (closing) {
-      const at = stack.map((n) => n.tag).lastIndexOf(tag);
-      if (at >= 0) stack.length = at;
-      continue;
-    }
-    const attrs = new Map();
-    for (const a of attrText.matchAll(
-      /([\w:-]+)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s>]+))?/g,
-    ))
-      attrs.set(a[1].toLowerCase(), (a[2] ?? '').replace(/^["']|["']$/g, ''));
-    const node = { tag, attrs };
-    if (attrs.get('id') === id) return [...stack, node];
-    if (!selfClosing && !VOID.has(tag)) stack.push(node);
-  }
-  throw new Error(`#${id} is not in the application's HTML`);
-}
-
-function modelNode(tag, attrs, parent) {
-  const map = new Map(attrs);
-  return {
-    tag,
-    id: map.get('id') ?? '',
-    classes: new Set((map.get('class') ?? '').split(/\s+/).filter(Boolean)),
-    attrs: map,
-    parent,
-  };
+  const won = winners(element, list, FONT);
+  const base = UA_CONTROLS.has(element.tag) ? UA_FONT : parent;
+  const size = won['font-size']
+    ? apply(won['font-size'].decl, parent, vars).size
+    : base.size;
+  const family = won['font-family']
+    ? apply(won['font-family'].decl, parent, vars).family
+    : base.family;
+  return { size, family, by: won['font-size']?.selector ?? 'inherited' };
 }
 
 function sheetChain() {
-  const chain = ancestorsOf('world-sheet-content');
+  const chain = ancestorsOf(html, 'world-sheet-content');
   let parent = null;
   const nodes = [];
   for (const { tag, attrs } of chain) {
@@ -468,9 +149,14 @@ function renderedOverview() {
     document,
     snapshot: { features: {}, countryIndex: [{ iso3: 'IND', name: 'India' }] },
     sheetModel,
-    tabs: worldSheetTabs().map(({ id, label }) => ({ id, label })),
+    tabs: worldSheetTabs(phaseTabs).map(({ id, label }) => ({ id, label })),
     selectTab: () => {},
   });
+  // Every line opens its tab, so the buttons' type is what is checked.
+  assert.deepEqual(
+    panel.children.map((line) => line.tagName),
+    Array(6).fill('BUTTON'),
+  );
   return panel;
 }
 

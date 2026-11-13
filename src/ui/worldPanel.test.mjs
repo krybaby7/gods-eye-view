@@ -18,8 +18,9 @@ const phaseTabs = [phase2, phase3, phase4, phase5, phase6].flatMap(
 test('the sheet lists its tabs in the approved order, Overview first', () => {
   const tabs = worldSheetTabs(phaseTabs);
   // Appendix D: Overview, Condition, Strength, Relations, then Exposure,
-  // Assets, People, News and Stakes. News has no tab until it is built
-  // (decision 32); Leverage, which only phase 2 knows, follows Exposure.
+  // Assets, People, News and Stakes. News and Stakes have nothing to render
+  // yet, so they have no tab (decision 32); Leverage, which only phase 2
+  // knows, follows Exposure.
   assert.deepEqual(
     tabs.map(({ id }) => id),
     [
@@ -31,7 +32,6 @@ test('the sheet lists its tabs in the approved order, Overview first', () => {
       'leverage',
       'assets',
       'people',
-      'stakes',
     ],
   );
   assert.deepEqual(
@@ -41,15 +41,32 @@ test('the sheet lists its tabs in the approved order, Overview first', () => {
   // A phase supplies a listed tab's content without moving it.
   const relations = tabs.find(({ id }) => id === 'relations');
   assert.equal(relations.render, phase3.tabs[0].render);
-  const moved = worldSheetTabs([{ id: 'people', order: -100 }]);
-  assert.equal(moved[0].id, 'overview');
-  // Without the phases (plain Node) the order of the listed tabs holds.
+  const render = () => null;
+  const moved = worldSheetTabs([{ id: 'people', order: -100, render }]);
   assert.deepEqual(
-    worldSheetTabs()
-      .map(({ id }) => id)
-      .slice(0, 4),
-    ['overview', 'condition', 'strength', 'relations'],
+    moved.map(({ id }) => id),
+    ['overview', 'condition', 'strength', 'people'],
   );
+});
+
+test('a listed tab with nothing to render is not shown, until a phase renders it', () => {
+  // Without the phases only the Overview and the sheet's own rows have content.
+  assert.deepEqual(
+    worldSheetTabs().map(({ id }) => id),
+    ['overview', 'condition', 'strength'],
+  );
+  // A phase tab without a renderer adds nothing either.
+  assert.deepEqual(
+    worldSheetTabs([{ id: 'stakes' }, { id: 'news', label: 'News' }]).map(
+      ({ id }) => id,
+    ),
+    ['overview', 'condition', 'strength'],
+  );
+  // Once a phase renders Stakes, it takes its listed place, last.
+  const render = () => null;
+  const tabs = worldSheetTabs([...phaseTabs, { id: 'stakes', render }]);
+  assert.equal(tabs.at(-1).id, 'stakes');
+  assert.equal(tabs.at(-1).label, 'Stakes');
 });
 
 function panelDocument() {

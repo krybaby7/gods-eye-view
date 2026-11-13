@@ -10,31 +10,34 @@ import { renderOverviewTab } from './worldOverview.js';
 import { renderScoreWords } from './worldScoreWords.js';
 
 // The country sheet's tabs in the approved order (roadmap Appendix D): the
-// frame shows the first four and puts the rest under More. A phase supplies a
-// listed tab's content but not its place; a tab only a phase knows (Leverage)
-// keeps the order the phase gives it. News is not listed until it exists
-// (decision 32: a control with nothing behind it is not shown).
+// frame shows the first four and puts the rest under More. Condition and
+// Strength list the sheet's own rows; every other tab shows only once a phase
+// supplies what renders it, so Stakes stays out until it is built, as News
+// does (decision 32: a control with nothing behind it is not shown). A phase
+// supplies a listed tab's content but not its place; a tab only a phase knows
+// (Leverage) keeps the order the phase gives it.
 const baseTabs = [
   ['overview', 'Overview'],
-  ['condition', 'Condition'],
-  ['strength', 'Strength'],
-  ['relations', 'Relations', 3],
-  ['exposure', 'Exposure', 2],
-  ['assets', 'Assets', 4],
-  ['people', 'People', 5],
-  ['stakes', 'Stakes', 7],
+  ['condition', 'Condition', { rows: true }],
+  ['strength', 'Strength', { rows: true }],
+  ['relations', 'Relations'],
+  ['exposure', 'Exposure'],
+  ['assets', 'Assets'],
+  ['people', 'People'],
+  ['stakes', 'Stakes'],
 ];
 const phases = (key) => worldPhases.flatMap((phase) => phase[key] ?? []);
 
 /**
- * The sheet's tabs, in order, from the board's own list and the phases' tabs.
+ * The sheet's tabs that have something to show, in order, from the board's
+ * own list and the phases' tabs.
  * @param {Array<{id: string, label?: string, order?: number, render?: Function}>} phaseTabs
  */
 export function worldSheetTabs(phaseTabs = []) {
   const byId = new Map(
-    baseTabs.map(([id, label, phase], order) => [
+    baseTabs.map(([id, label, extra], order) => [
       id,
-      { id, label, phase, order: order * 10 },
+      { id, label, ...extra, order: order * 10 },
     ]),
   );
   byId.set('overview', { ...byId.get('overview'), render: renderOverviewTab });
@@ -46,7 +49,9 @@ export function worldSheetTabs(phaseTabs = []) {
       order: listed?.order ?? tab.order ?? Number.MAX_SAFE_INTEGER,
     });
   }
-  return [...byId.values()].sort((a, b) => a.order - b.order);
+  return [...byId.values()]
+    .filter((tab) => tab.rows || typeof tab.render === 'function')
+    .sort((a, b) => a.order - b.order);
 }
 
 const tabsInOrder = worldSheetTabs(phases('tabs'));
@@ -188,11 +193,7 @@ function turnList(document, turn, fallback) {
   return list;
 }
 
-export function createWorldPanel({
-  layer,
-  openSheet,
-  document = globalThis.document,
-}) {
+export function createWorldPanel({ layer, document = globalThis.document }) {
   const find = (id) => document.getElementById(id);
   const bar = find('world-lens-bar');
   const legend = find('world-legend');
@@ -248,26 +249,15 @@ export function createWorldPanel({
 
   function renderTab({ preserve = false } = {}) {
     const index = tabsInOrder.findIndex(({ id }) => id === tab);
-    const { id, label, phase, render } = tabsInOrder[index];
+    const { id, render } = tabsInOrder[index];
     tabs.querySelectorAll('button').forEach((node, i) => {
       node.setAttribute('aria-selected', String(i === index));
       node.tabIndex = i === index ? 0 : -1;
     });
     tabBody.setAttribute('aria-labelledby', `world-tab-${id}`);
-    tabBody.tabIndex = phase || render ? 0 : -1;
+    tabBody.tabIndex = render ? 0 : -1;
     if (render) {
       tabBody.replaceChildren(render(renderContext()));
-      return;
-    }
-    if (phase) {
-      tabBody.replaceChildren(
-        element(
-          document,
-          'p',
-          'world-detail',
-          `${label} arrives in phase ${phase}.`,
-        ),
-      );
       return;
     }
     const rows = sheetModel?.rows.filter((row) => row.section === tab) ?? [];
@@ -376,7 +366,6 @@ export function createWorldPanel({
       cardContent.replaceChildren(
         card.render({ ...renderContext(), id: snapshot.card.id }),
       );
-      if (sheet.classList.contains('collapsed')) openSheet?.();
       return;
     }
     cardContent.replaceChildren();
@@ -417,8 +406,6 @@ export function createWorldPanel({
         turnList(document, turn, 'No changes for this country.'),
       );
     }
-    if (selectionChanged && sheet.classList.contains('collapsed'))
-      openSheet?.();
   }
 
   function renderLens(snapshot) {
@@ -612,14 +599,6 @@ export function createWorldPanel({
     },
     { signal },
   );
-  const resize = new ResizeObserver(() => {
-    const bottom = Math.ceil(bar.getBoundingClientRect().bottom);
-    document.documentElement.style.setProperty(
-      '--world-lens-bottom',
-      `${bottom}px`,
-    );
-  });
-  resize.observe(bar);
   const unsubscribe = layer.subscribe(render);
   render();
 
@@ -627,8 +606,6 @@ export function createWorldPanel({
     destroy() {
       unsubscribe();
       events.abort();
-      resize.disconnect();
-      document.documentElement.style.removeProperty('--world-lens-bottom');
       bar.hidden = legend.hidden = hover.hidden = sheet.hidden = true;
       setTurnOpen(false);
       tabs.replaceChildren();
