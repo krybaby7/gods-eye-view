@@ -108,6 +108,24 @@ test('a display rule that beats the browser’s [hidden] is caught', () => {
     (rule) => !rule.selectors.some((selector) => selector.includes('[hidden]')),
   );
   const failures = hiddenFailures(withoutGuard).map(({ id }) => id);
-  for (const id of ['world-refresh', 'world-turn', 'frame-voice'])
+  for (const id of [
+    'world-refresh',
+    'world-turn',
+    'frame-voice',
+    // The legend's info button and its popover have display rules of their
+    // own (an icon button and a grid), so they too rest on the guard.
+    'frame-legend-whole',
+    'frame-legend-popup',
+  ])
     assert.ok(failures.includes(id), `${id} would show while hidden`);
+});
+
+test('the legend’s info button and popover are among the parts checked', () => {
+  const list = sheets.flatMap((css) => rules(css));
+  const nodes = framePage();
+  for (const id of ['frame-legend-whole', 'frame-legend-popup']) {
+    const node = nodes.find((candidate) => candidate.id === id);
+    assert.ok(node, `${id} is in the frame`);
+    assert.equal(hiddenDisplay(node, list).display, 'none');
+  }
 });

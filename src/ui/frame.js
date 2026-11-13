@@ -1,4 +1,5 @@
 import { frameDate, refreshedLabel, worldGauges } from './frameGauges.js';
+import { createFrameLegend } from './frameLegend.js';
 
 /** Window width below which Today starts folded to its rail. */
 export const FRAME_TODAY_OPEN_MIN_WIDTH = 1100;
@@ -443,6 +444,9 @@ export function createFrame({
     }
   }
 
+  // ── The legend: its marks whole in the bar, the rest one click away ──
+  const legend = createFrameLegend({ document, window, signal, observers });
+
   return {
     /** Fold Today away or open it again, as the fold and open buttons do. */
     setToday: (state) => setToday(state, { persist: true }),
@@ -452,6 +456,7 @@ export function createFrame({
       for (const observer of observers) observer.disconnect();
       for (const timer of timers) clearInterval(timer);
       for (const node of [...ownFocus.keys()]) routeFocus(node, false);
+      legend.close();
       presets?.removeAttribute('hidden');
       body.classList.remove('gev-frame');
       delete body.dataset.today;

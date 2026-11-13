@@ -400,14 +400,21 @@ body.gev-frame {
   color: var(--text-1);
 }
 
-/* The legend runs as text in up to three lines of the 52 px bar: title,
-   ramp and stops, the unknown key, then the note, each wrapping where it
-   must, so every lens's key is read whole (the browser step measures it). */
+/* The legend's marks (title, ramp and stops or the classes with their
+   swatches, and the unknown key) wrap onto as many lines of the 52 px bar as
+   they need, each mark whole; more than the bar holds closes them up to the
+   dense line, and marks that still do not fit leave the bar whole, from the
+   last back (frameLegend.js measures). The note takes the line left, cut
+   with an ellipsis, and goes when none is left; whatever is left out or cut
+   is read whole in the popover behind the info button. */
 .frame-legend {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
   align-self: center;
   min-width: 0;
-  /* Three lines of 15 px, with room for the swatches' middle alignment. */
+  /* The bar's height less its border and a pixel of air either side. */
   max-height: calc(var(--frame-bar) - 4px);
   overflow: hidden;
   font: 500 12px/15px var(--font-sans);
@@ -415,7 +422,16 @@ body.gev-frame {
   pointer-events: none;
 }
 
-.frame-legend-row,
+.frame-legend[data-dense] {
+  line-height: 12px;
+}
+
+.frame-legend-row {
+  display: block;
+  flex: none;
+  margin: 0;
+}
+
 #world-legend-stops,
 body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
   #world-legend
@@ -429,9 +445,25 @@ body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
   margin-right: 10px;
 }
 
+/* A stop or class is one unbreakable box: it moves to the next line whole
+   (the board writes the stops with no spaces between them, so only a box
+   gives the line a place to break), or leaves the bar whole (data-out, set
+   by frameLegend.js when the bar has no room for it). */
+#world-legend-title,
+#world-legend-stops > span {
+  white-space: nowrap;
+}
+
+#world-legend-stops > span {
+  display: inline-block;
+}
+
+.frame-legend #world-legend-stops > [data-out] {
+  display: none;
+}
+
 #world-legend-title {
   color: var(--text-1);
-  white-space: nowrap;
 }
 
 .frame-legend .world-legend-ramp {
@@ -450,7 +482,7 @@ body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
 .frame-legend .world-legend-unknown .world-hatch {
   display: inline-block;
   width: 22px;
-  height: 12px;
+  height: 9px;
   margin-right: 6px;
   border: 1px solid var(--line-strong);
   border-radius: 3px;
@@ -474,11 +506,90 @@ body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
 }
 
 #world-legend-note {
+  display: block;
+  flex: none;
+  overflow: hidden;
   color: var(--text-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-#world-legend-note:empty {
+#world-legend-note:empty,
+.frame-legend[data-note-off] #world-legend-note {
   display: none;
+}
+
+/* Shown only when the bar cuts part of the legend, or on a phone, where the
+   bar has no room for it at all. */
+.frame-legend-whole {
+  width: 28px;
+  height: 28px;
+}
+
+.frame-legend-popup {
+  bottom: calc(100% + 8px);
+  left: 8px;
+  display: grid;
+  gap: 8px;
+  width: min(420px, calc(100vw - 16px));
+  max-height: calc(100vh - var(--frame-bar) - 16px);
+  overflow: auto;
+  color: var(--text-2);
+}
+
+.frame-legend-popup:focus {
+  outline: none;
+}
+
+.frame-legend-popup-title {
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.frame-legend-popup .frame-legend-popup-ramp {
+  display: block;
+  height: 8px;
+}
+
+.frame-legend-popup-stops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.frame-legend-popup-stops li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.frame-legend-popup-swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.frame-legend-popup .frame-legend-popup-unknown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.frame-legend-popup .frame-legend-popup-unknown .world-hatch {
+  width: 22px;
+  height: 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+}
+
+.frame-legend-popup-note {
+  margin: 0;
+  color: var(--text-3);
 }
 
 /* ── Today and the rail ── */

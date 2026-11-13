@@ -492,6 +492,48 @@ const FRAME_GLOBE_MIN_WIDTH = 460;
  * between two regions, between a region and a panel, or between two panels,
  * and on a globe narrower than FRAME_GLOBE_MIN_WIDTH.
  */
+/**
+ * Opens the whole legend from its info button and checks that the popover
+ * holds every mark and the full note, stays inside the window, and closes on
+ * Escape with focus back on the button.
+ */
+async function legendPopover(legend, where) {
+  await page.click('#frame-legend-whole');
+  await page.waitForSelector('#frame-legend-popup:not([hidden])', wait);
+  const popover = await page.evaluate(() => {
+    const popup = document.getElementById('frame-legend-popup');
+    const { left, top, right, bottom } = popup.getBoundingClientRect();
+    return {
+      text: popup.textContent.replace(/\s+/g, ' ').trim(),
+      box: { left, top, right, bottom },
+      inside:
+        left >= 0 && top >= 0 && right <= innerWidth && bottom <= innerHeight,
+      scrolls: popup.scrollHeight > popup.clientHeight + 1,
+    };
+  });
+  await shot(`legend-popover-${legend.lens}-${where.replace(/[^\w]+/g, '-')}`);
+  await page.keyboard.press('Escape');
+  const closed = await page.evaluate(
+    () =>
+      document.getElementById('frame-legend-popup').hidden &&
+      document.activeElement?.id === 'frame-legend-whole',
+  );
+  assert.ok(
+    popover.inside,
+    `The ${legend.lens} legend's popover leaves the window at ${where}: ${JSON.stringify(popover.box)}`,
+  );
+  for (const part of [...legend.marks, legend.noteText].filter(Boolean))
+    assert.ok(
+      popover.text.includes(part.replace(/\s+/g, ' ')),
+      `The ${legend.lens} legend's popover lacks "${part}" at ${where}: ${popover.text}`,
+    );
+  assert.ok(
+    closed,
+    `The ${legend.lens} legend's popover did not close on Escape with focus back at ${where}`,
+  );
+  return popover;
+}
+
 async function frameLayout(width, height, label) {
   await page.setViewport({ width, height, deviceScaleFactor: 1 });
   const data = await page.evaluate(
@@ -606,22 +648,64 @@ async function frameLayout(width, height, label) {
       ]
         .filter((element) => getComputedStyle(element).display !== 'none')
         .map((element) => element.id || element.className || element.tagName);
-      // The legend explains every colour on the globe: nothing in it is cut.
+      // The legend explains every colour on the globe: its marks (title,
+      // stops or classes, the Unknown key) are never cut; the note is whole
+      // or the info button that opens the whole legend is shown.
       const legendBox = document.getElementById('world-legend');
       const legend = shown(legendBox)
-        ? {
-            lens:
-              document
-                .querySelector('#world-lens-bar [aria-pressed="true"]')
-                ?.getAttribute('data-world-lens') ?? null,
-            text: legendBox.textContent.replace(/\s+/g, ' ').trim(),
-            width: Math.round(legendBox.clientWidth),
-            clipped:
-              legendBox.scrollHeight > legendBox.clientHeight + 1 ||
-              legendBox.scrollWidth > legendBox.clientWidth + 1,
-            scrollHeight: legendBox.scrollHeight,
-            clientHeight: legendBox.clientHeight,
-          }
+        ? (() => {
+            const frame = legendBox.getBoundingClientRect();
+            const within = (rect) =>
+              rect.top >= frame.top - 1 &&
+              rect.bottom <= frame.bottom + 1 &&
+              rect.left >= frame.left - 1 &&
+              rect.right <= frame.right + 1;
+            const marks = [
+              document.getElementById('world-legend-title'),
+              ...document.getElementById('world-legend-stops').children,
+              legendBox.querySelector('.world-legend-unknown'),
+            ].filter((node) => node?.textContent.trim());
+            const note = document.getElementById('world-legend-note');
+            const noteText = note.textContent.replace(/\s+/g, ' ').trim();
+            const noteRects = [...note.getClientRects()];
+            return {
+              lens:
+                document
+                  .querySelector('#world-lens-bar [aria-pressed="true"]')
+                  ?.getAttribute('data-world-lens') ?? null,
+              text: legendBox.textContent.replace(/\s+/g, ' ').trim(),
+              width: Math.round(legendBox.clientWidth),
+              dense: legendBox.hasAttribute('data-dense'),
+              marks: marks.map((node) => node.textContent.trim()),
+              // A mark is whole in the bar or not drawn at all; only a
+              // stop may be left out, never the title or the Unknown key.
+              marksCut: marks
+                .filter((node) => {
+                  const rects = [...node.getClientRects()];
+                  return rects.length > 0 && !rects.every(within);
+                })
+                .map((node) => node.textContent.trim()),
+              marksOut: marks
+                .filter((node) => !node.getClientRects().length)
+                .map((node) => node.textContent.trim()),
+              keysOut: [
+                document.getElementById('world-legend-title'),
+                legendBox.querySelector('.world-legend-unknown'),
+              ]
+                .filter((node) => {
+                  const rects = [...node.getClientRects()];
+                  return !rects.length || !rects.every(within);
+                })
+                .map((node) => node.textContent.trim()),
+              noteText,
+              noteWhole:
+                !noteText ||
+                (noteRects.length > 0 &&
+                  noteRects.every(within) &&
+                  note.scrollWidth <= note.clientWidth + 1),
+              button: shown(document.getElementById('frame-legend-whole')),
+            };
+          })()
         : null;
       return {
         today: document.body.dataset.today,
@@ -648,10 +732,39 @@ async function frameLayout(width, height, label) {
     [],
     `Hidden parts of the frame drawn at ${width}×${height} (${label})`,
   );
-  assert.ok(
-    !data.legend?.clipped,
-    `The ${data.legend?.lens} legend is cut at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
-  );
+  if (data.legend) {
+    assert.deepEqual(
+      data.legend.marksCut,
+      [],
+      `The ${data.legend.lens} legend's marks are cut at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
+    );
+    assert.deepEqual(
+      data.legend.keysOut,
+      [],
+      `The ${data.legend.lens} legend's title or Unknown key is not whole at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
+    );
+    assert.ok(
+      !data.legend.marksOut.length || data.legend.button,
+      `The ${data.legend.lens} legend leaves out marks with no way to read them at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
+    );
+    // Only Ownership's marks (four sentences) are too long for the bar
+    // today; every other lens's marks fit and must all be in it.
+    if (data.legend.lens !== 'ownership')
+      assert.deepEqual(
+        data.legend.marksOut,
+        [],
+        `The ${data.legend.lens} legend leaves out marks that should fit at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
+      );
+    assert.ok(
+      data.legend.noteWhole || data.legend.button,
+      `The ${data.legend.lens} legend's note is cut with no way to read it at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
+    );
+    if (data.legend.button)
+      data.legend.popover = await legendPopover(
+        data.legend,
+        `${width}×${height} (${label})`,
+      );
+  }
   assert.ok(
     data.globeWidth >= FRAME_GLOBE_MIN_WIDTH,
     `The globe is ${data.globeWidth} px at ${width}×${height} (${label}); it needs ${FRAME_GLOBE_MIN_WIDTH}`,
@@ -760,6 +873,7 @@ try {
       checkRows,
       layout,
       frameLayout,
+      legendPopover,
       lens,
       area,
       tab,
