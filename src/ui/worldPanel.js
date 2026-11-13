@@ -9,32 +9,48 @@ import { scoreColor } from '../layers/world/model.js';
 import { renderOverviewTab } from './worldOverview.js';
 import { renderScoreWords } from './worldScoreWords.js';
 
+// The country sheet's tabs in the approved order (roadmap Appendix D): the
+// frame shows the first four and puts the rest under More. A phase supplies a
+// listed tab's content but not its place; a tab only a phase knows (Leverage)
+// keeps the order the phase gives it. News is not listed until it exists
+// (decision 32: a control with nothing behind it is not shown).
 const baseTabs = [
   ['overview', 'Overview'],
   ['condition', 'Condition'],
   ['strength', 'Strength'],
-  ['exposure', 'Exposure', 2],
   ['relations', 'Relations', 3],
+  ['exposure', 'Exposure', 2],
   ['assets', 'Assets', 4],
-  ['stakes', 'Stakes', 7],
   ['people', 'People', 5],
+  ['stakes', 'Stakes', 7],
 ];
 const phases = (key) => worldPhases.flatMap((phase) => phase[key] ?? []);
-const tabsById = new Map(
-  baseTabs.map(([id, label, phase], order) => [
-    id,
-    { id, label, phase, order: order * 10 },
-  ]),
-);
-tabsById.set('overview', {
-  ...tabsById.get('overview'),
-  order: -10,
-  render: renderOverviewTab,
-});
-for (const tab of phases('tabs')) {
-  tabsById.set(tab.id, { ...tabsById.get(tab.id), ...tab });
+
+/**
+ * The sheet's tabs, in order, from the board's own list and the phases' tabs.
+ * @param {Array<{id: string, label?: string, order?: number, render?: Function}>} phaseTabs
+ */
+export function worldSheetTabs(phaseTabs = []) {
+  const byId = new Map(
+    baseTabs.map(([id, label, phase], order) => [
+      id,
+      { id, label, phase, order: order * 10 },
+    ]),
+  );
+  byId.set('overview', { ...byId.get('overview'), render: renderOverviewTab });
+  for (const tab of phaseTabs) {
+    const listed = byId.get(tab.id);
+    byId.set(tab.id, {
+      ...listed,
+      ...tab,
+      order: listed?.order ?? tab.order ?? Number.MAX_SAFE_INTEGER,
+    });
+  }
+  return [...byId.values()].sort((a, b) => a.order - b.order);
 }
-const tabsInOrder = [...tabsById.values()].sort((a, b) => a.order - b.order);
+
+const tabsInOrder = worldSheetTabs(phases('tabs'));
+const tabsById = new Map(tabsInOrder.map((tab) => [tab.id, tab]));
 const firstTab = tabsInOrder[0].id;
 const cards = new Map(phases('cards').map((card) => [card.type, card]));
 

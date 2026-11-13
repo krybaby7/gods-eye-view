@@ -99,6 +99,10 @@ export class FakeElement extends FakeNode {
     return this.attributes.get('id') || '';
   }
 
+  set id(value) {
+    this.attributes.set('id', String(value));
+  }
+
   get title() {
     return this.attributes.get('title') || '';
   }

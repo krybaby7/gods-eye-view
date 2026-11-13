@@ -108,12 +108,21 @@ export default async function phase7({
         await page.click(tab('overview'));
         await page.click(`[data-world-overview="${id}"]`);
         assert.equal(await selectedTab(), target);
-        assert.equal(
-          await page.evaluate(() =>
-            document.activeElement?.getAttribute('data-world-tab'),
-          ),
-          target,
-        );
+        // In the frame a tab past the first four sits under More, which then
+        // takes the focus and the tab's name.
+        const focus = await page.evaluate((selector) => {
+          const node = document.activeElement;
+          return {
+            tab: node?.getAttribute('data-world-tab') ?? null,
+            more: node?.id === 'frame-sheet-more',
+            text: node?.textContent.trim(),
+            underMore: Boolean(document.querySelector(selector)?.hidden),
+          };
+        }, tab(target));
+        if (focus.underMore) {
+          assert.equal(focus.more, true);
+          assert.match(focus.text, new RegExp(`^${target}\\b`, 'i'));
+        } else assert.equal(focus.tab, target);
       }
     },
   );

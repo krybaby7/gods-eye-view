@@ -145,15 +145,38 @@ export function createFrame({
     more.setAttribute('aria-expanded', String(state));
     moreMenu.hidden = !state;
   }
+  // A tab under More is hidden and cannot take focus, yet the board focuses
+  // the tab it selects (arrow keys, an Overview line). Focus meant for such a
+  // tab goes to More, which carries that tab's name once it is chosen.
+  const ownFocus = new Map();
+  const focusMore = (options) => more.focus(options);
+  function routeFocus(node, toMore) {
+    if (toMore === ownFocus.has(node)) return;
+    if (toMore) {
+      ownFocus.set(
+        node,
+        Object.prototype.hasOwnProperty.call(node, 'focus') ? node.focus : null,
+      );
+      node.focus = focusMore;
+      return;
+    }
+    const own = ownFocus.get(node);
+    ownFocus.delete(node);
+    if (own) node.focus = own;
+    else delete node.focus;
+  }
   function syncTabs() {
     if (!tabList || !more || !moreMenu) return;
     const all = [...tabList.children].filter(
       (node) => node.getAttribute?.('role') === 'tab',
     );
     const rest = all.slice(FRAME_SHEET_TABS_SHOWN);
+    for (const node of ownFocus.keys())
+      if (!rest.includes(node)) routeFocus(node, false);
     all.forEach((node, i) => {
       const hide = i >= FRAME_SHEET_TABS_SHOWN;
       if (node.hidden !== hide) node.hidden = hide;
+      routeFocus(node, hide);
     });
     more.hidden = rest.length === 0;
     const chosen = rest.find(
@@ -419,6 +442,7 @@ export function createFrame({
       unsubscribe?.();
       for (const observer of observers) observer.disconnect();
       for (const timer of timers) clearInterval(timer);
+      for (const node of [...ownFocus.keys()]) routeFocus(node, false);
       presets?.removeAttribute('hidden');
       body.classList.remove('gev-frame');
       delete body.dataset.today;

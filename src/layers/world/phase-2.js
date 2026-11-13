@@ -11,7 +11,7 @@ export default {
   overlays: [createEnergyOverlay],
   tabs: [
     { id: 'exposure', render: renderExposure },
-    { id: 'leverage', label: 'Leverage', order: 25, render: renderLeverage },
+    { id: 'leverage', label: 'Leverage', order: 45, render: renderLeverage },
   ],
   cards: [
     { type: 'chokepoint', label: 'Chokepoint', render: renderChokepoint },

@@ -16,6 +16,17 @@ import {
   FRAME_TODAY_STORAGE_KEY,
   createFrame,
 } from './frame.js';
+import { worldSheetTabs } from './worldPanel.js';
+import phase2 from '../layers/world/phase-2.js';
+import phase3 from '../layers/world/phase-3.js';
+import phase4 from '../layers/world/phase-4.js';
+import phase5 from '../layers/world/phase-5.js';
+import phase6 from '../layers/world/phase-6.js';
+
+// The phases the app loads through Vite's glob; plain Node has none.
+const phaseTabs = [phase2, phase3, phase4, phase5, phase6].flatMap(
+  (phase) => phase.tabs ?? [],
+);
 
 const read = (relative) =>
   readFileSync(new URL(relative, import.meta.url), 'utf8');
@@ -624,7 +635,9 @@ test('below the shared width Today and the sheet take turns, and a remembered op
   // The shared width is where Today, the sheet and a usable globe still fit.
   const max = Number(FRAME_SHARED_QUERY.match(/(\d+)px/)[1]);
   const media1365 =
-    frameCss.match(/@media \(max-width: 1365px\) \{\s*:root \{([\s\S]*?)\}/)?.[1] ?? '';
+    frameCss.match(
+      /@media \(max-width: 1365px\) \{\s*:root \{([\s\S]*?)\}/,
+    )?.[1] ?? '';
   assert.equal(
     max + 1,
     token('--frame-today', media1365) +
@@ -633,16 +646,16 @@ test('below the shared width Today and the sheet take turns, and a remembered op
   );
 });
 
-function fakeTab(id, selected = false) {
+function fakeTab({ id, label }, selected = false) {
   const node = fakeElement(`world-tab-${id}`);
   node.setAttribute('role', 'tab');
   node.setAttribute('aria-selected', String(selected));
   node.dataset.worldTab = id;
-  node.textContent = id[0].toUpperCase() + id.slice(1);
+  node.textContent = label;
   return node;
 }
 
-test('the sheet shows its first four tabs and the rest under More, in the board’s order', (t) => {
+test('the sheet shows Overview, Condition, Strength and Relations, the rest under More', (t) => {
   const { mutations } = withObservers(t);
   const h = harness({
     ids: [
@@ -653,51 +666,76 @@ test('the sheet shows its first four tabs and the rest under More, in the board�
     ],
   });
   const list = h.node('world-sheet-tabs');
-  // An Overview tab added first by the board simply moves the others along.
-  const ids = [
-    'overview',
-    'condition',
-    'strength',
-    'exposure',
-    'leverage',
-    'relations',
-    'assets',
-  ];
-  list.children = ids.map((id, i) => fakeTab(id, i === 0));
+  // The board's own list, with the phases the app loads; Overview is chosen,
+  // as when a country opens.
+  list.children = worldSheetTabs(phaseTabs).map((tab, i) =>
+    fakeTab(tab, i === 0),
+  );
   const frame = h.create();
   t.after(() => frame.destroy());
   assert.equal(FRAME_SHEET_TABS_SHOWN, 4);
-  assert.deepEqual(
+  const shown = () =>
     list.children
       .filter((node) => !node.hidden)
-      .map((node) => node.dataset.worldTab),
-    ['overview', 'condition', 'strength', 'exposure'],
-  );
+      .map((node) => node.textContent);
+  assert.deepEqual(shown(), ['Overview', 'Condition', 'Strength', 'Relations']);
   const more = h.node('frame-sheet-more');
   const menu = h.node('frame-sheet-more-menu');
   assert.equal(more.hidden, false);
   assert.equal(more.textContent, 'More ›');
+  // Appendix D lists Exposure, Assets, People, News and Stakes here. News has
+  // no tab until it is built (decision 32); Leverage is phase 2's own.
   assert.deepEqual(
-    menu.children.map((item) => item.dataset.frameTab),
-    ['leverage', 'relations', 'assets'],
+    menu.children.map((item) => item.textContent),
+    ['Exposure', 'Leverage', 'Assets', 'People', 'Stakes'],
   );
   // Opening More and choosing a tab clicks the board's own tab.
+  const assets = list.children.find(
+    (node) => node.dataset.worldTab === 'assets',
+  );
   let chosen = '';
-  list.children[5].addEventListener('click', () => (chosen = 'relations'));
+  assets.addEventListener('click', () => (chosen = 'assets'));
   more.click();
   assert.equal(menu.hidden, false);
   assert.equal(more.getAttribute('aria-expanded'), 'true');
-  menu.children[1].click();
-  assert.equal(chosen, 'relations');
+  menu.children.find((item) => item.dataset.frameTab === 'assets').click();
+  assert.equal(chosen, 'assets');
   assert.equal(menu.hidden, true, 'the menu closes');
-  // The board selects it: More takes its name, so the choice stays in view.
+  // The board selects it: More takes its name, so the choice stays in view,
+  // and the four tabs in the bar stay as they were.
   list.children[0].setAttribute('aria-selected', 'false');
-  list.children[5].setAttribute('aria-selected', 'true');
+  assets.setAttribute('aria-selected', 'true');
   mutations.find((item) => item.target === list).callback();
-  assert.equal(more.textContent, 'Relations ›');
+  assert.equal(more.textContent, 'Assets ›');
   assert.equal(more.dataset.selected, 'true');
+  assert.deepEqual(shown(), ['Overview', 'Condition', 'Strength', 'Relations']);
+  assert.equal(
+    menu.children
+      .find((item) => item.dataset.frameTab === 'assets')
+      .getAttribute('aria-current'),
+    'true',
+  );
+  // The board focuses the tab it selects (arrow keys, an Overview line); a
+  // tab under More cannot take focus, so More takes it, a shown tab keeps it.
+  more.focused = false;
+  assets.focus();
+  assert.equal(more.focused, true);
+  assert.equal(assets.focused, undefined);
+  list.children[1].focus();
+  assert.equal(list.children[1].focused, true);
+  // Back to a tab in the bar: More is plain again.
+  assets.setAttribute('aria-selected', 'false');
+  list.children[1].setAttribute('aria-selected', 'true');
+  mutations.find((item) => item.target === list).callback();
+  assert.equal(more.textContent, 'More ›');
+  assert.equal(more.dataset.selected, 'false');
   // Four tabs or fewer: no More at all.
   list.children = list.children.slice(0, 4);
   mutations.find((item) => item.target === list).callback();
   assert.equal(more.hidden, true);
+  // A tab that left More takes its own focus again.
+  more.focused = false;
+  assets.focus();
+  assert.equal(assets.focused, true);
+  assert.equal(more.focused, false);
 });
