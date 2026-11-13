@@ -580,6 +580,18 @@ cloud:
     there are stories. That last reading is Claude's, and the owner was told. Each merge still
     waits for the owner's word (decision 29) unless they say otherwise.
 
+Added later on 2026-11-13, when the owner answered a question put to them that morning:
+
+33. **Reviewed work is pushed and merged without asking each time.** Asked "Until it is all built,
+    may I push and merge reviewed work without asking each time?", the owner answered "Yes, go
+    ahead". Until the app is all built, Claude merges a piece once its checks pass and an
+    independent read finds nothing that breaks it, and pushes this roadmap as it changes. For that
+    time this replaces "merged only when the owner asks" in decision 29. It covers a piece's own
+    branch, its pull request, its merge into `main` and the roadmap branch. It does not cover a
+    forced push, a push straight to `main`, or anything that costs the owner money or mobile data,
+    which is still asked first. Each merge is reported to the owner with what was checked and
+    what was not.
+
 ## 6. Risks
 
 - **Stage 1 is bigger than it looks.** Most of its lines are in panels the owner did not write.
@@ -896,8 +908,9 @@ Raised on 2026-11-12 and not yet answered.
 ## 10. Building it
 
 Decision 29 sets how: one piece, one fresh Claude session, one pull request, merged when the owner
-asks. This table is the order and the state. The session that finishes a piece updates its row,
-the status line at the top of this file and the owner's status page.
+asks. Decision 33 lets a reviewed piece be merged without asking until the app is all built. This
+table is the order and the state. The session that finishes a piece updates its row, the status
+line at the top of this file and the owner's status page.
 
 | Order  | Piece                                                                                                               | State on 2026-11-13                          |
 | ------ | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
