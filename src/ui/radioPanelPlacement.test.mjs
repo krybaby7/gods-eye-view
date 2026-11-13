@@ -29,7 +29,7 @@ function node() {
   };
 }
 
-test('all themes keep the same Radio controls nested in Context', () => {
+test('Radio controls stay nested in the Context body', () => {
   const panel = node(),
     context = node(),
     rail = node(),
@@ -59,35 +59,23 @@ test('all themes keep the same Radio controls nested in Context', () => {
     'context-radio-dock': dock,
     'context-radio-mini': mini,
   };
-  const doc = {
-    documentElement: { dataset: {} },
-    getElementById: (id) => nodes[id],
-  };
-  for (let cycle = 0; cycle < 3; cycle++) {
-    doc.documentElement.dataset.uiTheme = 'cyber';
-    syncRadioPanelPlacement(doc);
-    assert.equal(panel.parentElement, body);
-    assert.deepEqual(contextHeader.children, [dock, contextCollapse]);
-    assert.equal(mini.parentElement, dock);
-    const moves = [panel.moves, dock.moves, mini.moves];
-    syncRadioPanelPlacement(doc);
-    assert.deepEqual(
-      [panel.moves, dock.moves, mini.moves],
-      moves,
-      'no mutation feedback loop',
-    );
-    delete doc.documentElement.dataset.uiTheme;
-    syncRadioPanelPlacement(doc);
-    assert.equal(panel.parentElement, body);
-    assert.deepEqual(contextHeader.children, [dock, contextCollapse]);
-    assert.equal(mini.parentElement, dock);
-  }
-  // Recover a hierarchy left by the previous Cyber implementation without
-  // recreating the player, changing playback, or mutating collapse state.
+  const doc = { getElementById: (id) => nodes[id] };
+  syncRadioPanelPlacement(doc);
+  assert.equal(panel.parentElement, body);
+  assert.deepEqual(contextHeader.children, [dock, contextCollapse]);
+  assert.equal(mini.parentElement, dock);
+  const moves = [panel.moves, dock.moves, mini.moves];
+  syncRadioPanelPlacement(doc);
+  assert.deepEqual(
+    [panel.moves, dock.moves, mini.moves],
+    moves,
+    'no mutation feedback loop',
+  );
+  // Recover a hierarchy where Radio sat in the rail without recreating the
+  // player, changing playback, or mutating collapse state.
   rail.append(panel);
   radioHeader.insertBefore(dock, radioCollapse);
   panel.append(mini);
-  doc.documentElement.dataset.uiTheme = 'cyber';
   syncRadioPanelPlacement(doc);
   assert.equal(panel.parentElement, body);
   assert.deepEqual(contextHeader.children, [dock, contextCollapse]);
@@ -97,9 +85,6 @@ test('all themes keep the same Radio controls nested in Context', () => {
 test('placement is inert before the complete shell exists', () => {
   assert.doesNotThrow(() => syncRadioPanelPlacement(null));
   assert.doesNotThrow(() =>
-    syncRadioPanelPlacement({
-      documentElement: { dataset: { uiTheme: 'cyber' } },
-      getElementById: () => null,
-    }),
+    syncRadioPanelPlacement({ getElementById: () => null }),
   );
 });

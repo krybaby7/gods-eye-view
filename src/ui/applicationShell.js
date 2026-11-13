@@ -9,7 +9,6 @@ import { ShareRestoration } from './shareRestoration.js';
 import { DisplayBindings } from './displayBindings.js';
 import { createStateChannel } from '../app/stateChannel.js';
 import { installRenderQuality } from '../app/renderQuality.js';
-import { setSplitFlapText } from '../splitFlap.js';
 import { UiLifetime } from './uiLifetime.js';
 import { RecordingControls } from './recordingControls.js';
 import { readShellElements } from './shellElements.js';
@@ -25,10 +24,6 @@ import { bindCameraOrientationControls } from './cameraOrientationControls.js';
 import { createMapSourceControls } from './mapSource.js';
 import { STYLES } from './effects.js';
 import { isHudLayout } from '../hudLayouts.js';
-import {
-  getCyberSonarControlState,
-  setCyberSonarControls,
-} from './cyberSonarControls.js';
 
 import * as Cesium from 'cesium';
 
@@ -65,7 +60,7 @@ export class StyleManager extends ShellFacade {
    */
   constructor(
     viewer,
-    { mapStackController = null, placeSearch, services, requestServices } = {},
+    { mapStackController = null, placeSearch, services } = {},
   ) {
     super();
     const {
@@ -199,17 +194,6 @@ export class StyleManager extends ShellFacade {
         _detectionOpacityValue: this._detectionOpacityValue,
         _detectionSliderRow: this._detectionSliderRow,
         _hudBtn: this._hudBtn,
-        _cyberSonarBtn: this._cyberSonarBtn,
-        _cyberSonarRings: this._cyberSonarRings,
-        _cyberSonarRingsValue: this._cyberSonarRingsValue,
-        _cyberSonarRange: this._cyberSonarRange,
-        _cyberSonarRangeValue: this._cyberSonarRangeValue,
-        _cyberSonarIntensity: this._cyberSonarIntensity,
-        _cyberSonarIntensityValue: this._cyberSonarIntensityValue,
-        _cyberSonarOpacity: this._cyberSonarOpacity,
-        _cyberSonarOpacityValue: this._cyberSonarOpacityValue,
-        _cyberSonarSector: this._cyberSonarSector,
-        _cyberSonarSectorValue: this._cyberSonarSectorValue,
         _hudLayoutRow: this._hudLayoutRow,
         _hudLayoutSelect: this._hudLayoutSelect,
         _ppToggles: this._ppToggles,
@@ -222,7 +206,6 @@ export class StyleManager extends ShellFacade {
         _sharpenSliderValue: this._sharpenSliderValue,
         _sliderContainer: this._sliderContainer,
         _sliderPanel: this._sliderPanel,
-        _styleIndicator: this._styleIndicator,
         _styleMiniValue: this._styleMiniValue,
       },
       operations: {
@@ -347,18 +330,13 @@ export class StyleManager extends ShellFacade {
     this._lastTrafficChipUpdateAt = 0;
 
     // Intel HUD
-    this.hud = new IntelHUD(viewer, {
-      placeSearch,
-      summaryService: requestServices?.summary,
-    });
+    this.hud = new IntelHUD(viewer);
     this._recording.hud = this.hud;
     this._cockpitCoordinator = new CockpitCoordinator({
       viewer,
       services: {
         flightsLayer: services.flightsLayer,
         militaryFlightsLayer: services.militaryFlightsLayer,
-        isTr3b: services.isTr3b,
-        toggleTr3b: services.toggleTr3b,
         militaryAwarenessLayer: services.militaryAwarenessLayer,
         cachedGroundFloor: services.cachedGroundFloor,
         cachedMeshFloor: services.cachedMeshFloor,
@@ -505,12 +483,6 @@ export class StyleManager extends ShellFacade {
         _scopeFeatherSlider: this._scopeFeatherSlider,
         _hudLayoutSelect: this._hudLayoutSelect,
         _hudBtn: this._hudBtn,
-        _cyberSonarBtn: this._cyberSonarBtn,
-        _cyberSonarRings: this._cyberSonarRings,
-        _cyberSonarRange: this._cyberSonarRange,
-        _cyberSonarIntensity: this._cyberSonarIntensity,
-        _cyberSonarOpacity: this._cyberSonarOpacity,
-        _cyberSonarSector: this._cyberSonarSector,
         _cleanViewBtn: this._cleanViewBtn,
         _cleanViewExitBtn: this._cleanViewExitBtn,
         _detectionDensitySlider: this._detectionDensitySlider,
@@ -536,8 +508,6 @@ export class StyleManager extends ShellFacade {
         _applySharpenIntensity: (...args) =>
           this._applySharpenIntensity(...args),
         _setHudVariant: (...args) => this._setHudVariant(...args),
-        _setCyberSonarEnabled: (...args) => this._setCyberSonarEnabled(...args),
-        _setCyberSonarSetting: (...args) => this._setCyberSonarSetting(...args),
         _applyDetectionDensityFromUi: (...args) =>
           this._applyDetectionDensityFromUi(...args),
         _setDetectionAllocation: (...args) =>
@@ -1021,7 +991,6 @@ export class StyleManager extends ShellFacade {
         setPanelCollapsed: (...args) => this.setPanelCollapsed(...args),
         showToast: (message) => this._showToast(message),
         syncViewport: () => this._syncCctvPanelViewport(),
-        setSplitFlapText,
       },
     });
   }
@@ -1145,7 +1114,7 @@ export class StyleManager extends ShellFacade {
 
   /**
    * Switches the HUD layout variant.
-   * @param {'tactical'|'operator'|'minimal'|'cyber'} variantName - Layout variant.
+   * @param {'tactical'|'operator'|'minimal'} variantName - Layout variant.
    * @returns {{ok: boolean, layout?: string, visible?: boolean, error?: string}}
    */
   setHudLayout(variantName) {
@@ -1154,7 +1123,7 @@ export class StyleManager extends ShellFacade {
       return { ok: false, error: `Unknown HUD layout: ${variantName}` };
     }
     this.shareLinkManager?.claimRestoreLane?.('visual');
-    this._setHudVariant(variant, { applyVisualDefaults: true });
+    this._setHudVariant(variant);
     return {
       ok: true,
       layout: this.hud.getVariant(),
@@ -1270,11 +1239,6 @@ export class StyleManager extends ShellFacade {
     };
   }
 
-  /** Apply Cyber-only sonar settings through the shared visual controls. */
-  setCyberSonar(settings) {
-    return setCyberSonarControls(this, settings);
-  }
-
   /**
    * Full control-state snapshot — single source for voice read-back so the
    * agent confirms from the same state it acted on.
@@ -1287,7 +1251,6 @@ export class StyleManager extends ShellFacade {
       hud: {
         visible: !!this.hud?.visible,
         layout: this.hud?.getVariant?.() || null,
-        sonar: getCyberSonarControlState(),
       },
       detection: this.getDetectionState(),
       bloom: {
@@ -1405,12 +1368,10 @@ export class StyleManager extends ShellFacade {
    * 1. Crossfades the previous shader stage intensity to 0.
    * 2. Crossfades the new shader stage intensity to 1.
    * 3. Applies style preset defaults (bloom/sharpen/HUD) if applyPreset is true.
-   * 4. Updates button highlights, style indicator, slider panel, HUD, and detection overlay.
+   * 4. Updates button highlights, slider panel, HUD, and detection overlay.
    * @param {string} styleName - Target style ('normal'|'retro'|'surveillance'|'thermal'|'anime'|'noir'|'snow').
    * @param {object} [options]
    * @param {boolean} [options.applyPreset=true] - Whether to apply STYLE_PRESET_DEFAULTS for the new style.
-   * @param {boolean} [options.userInitiated=false] - Whether a direct user preset choice owns the Cyber exit style.
-   * @param {boolean} [options.preserveCyberRestore=false] - Whether an automatic style update keeps the Cyber entry snapshot.
    * @returns {void}
    */
   setStyle(

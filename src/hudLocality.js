@@ -1,7 +1,7 @@
 /**
  * @module hudLocality
- * @description The locality half of the HUD summary line — either "NEAR <landmark>"
- * or the "SECTOR <lat/lon>" fallback.
+ * @description The plain place name on the HUD status line — either
+ * "NEAR <landmark>" or the coarse region.
  *
  * Split out of `hud.js` purely so it is unit-testable: `hud.js` pulls in the `mgrs`
  * CommonJS package, which Vite resolves but plain Node cannot import by named export.
@@ -24,31 +24,19 @@
 export const NEAR_POI_MAX_KM = 150;
 
 /**
- * Format one hemisphere-tagged coordinate, e.g. `21.33N` / `157.80W`.
- * @param {number} value Signed decimal degrees.
- * @param {string} positive Suffix when the value is >= 0.
- * @param {string} negative Suffix when the value is < 0.
- * @returns {string}
- */
-function coordinateTag(value, positive, negative) {
-  return `${Math.abs(value).toFixed(2)}${value >= 0 ? positive : negative}`;
-}
-
-/**
- * Build the locality tag for the HUD summary line.
+ * Plain place name for the status line: `NEAR <POI> (<CITY>)` within the bound
+ * (inclusive), otherwise the coarse region. The coordinates sit beside it on
+ * the same line, so the old `SECTOR <lat> <lon>` fallback would only repeat them.
  *
  * @param {{poi: string, city: string, distKm: number}|null|undefined} nearest
- *   Closest catalogued POI with its great-circle distance, or null when the
- *   catalogue is empty.
- * @param {number} latDeg Camera latitude in decimal degrees.
- * @param {number} lonDeg Camera longitude in decimal degrees.
- * @returns {string} `NEAR <POI> (<CITY>) <N>KM` within the bound (inclusive),
- *   otherwise `SECTOR <lat> <lon>`.
+ *   Closest catalogued POI with its great-circle distance, or null.
+ * @param {string} region Coarse region label for the camera position.
+ * @returns {string}
  */
-export function composeLocalityTag(nearest, latDeg, lonDeg) {
+export function composePlaceName(nearest, region) {
   const distKm = Number(nearest?.distKm);
   if (nearest && Number.isFinite(distKm) && distKm <= NEAR_POI_MAX_KM) {
-    return `NEAR ${String(nearest.poi).toUpperCase()} (${String(nearest.city).toUpperCase()}) ${Math.round(distKm)}KM`;
+    return `NEAR ${String(nearest.poi).toUpperCase()} (${String(nearest.city).toUpperCase()})`;
   }
-  return `SECTOR ${coordinateTag(latDeg, 'N', 'S')} ${coordinateTag(lonDeg, 'E', 'W')}`;
+  return String(region || '');
 }

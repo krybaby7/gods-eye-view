@@ -8,7 +8,6 @@ import { registerDataCredits } from '../data/dataCredits.js';
 import { configureCreditKeyboardAccess } from '../creditKeyboard.js';
 import { MapStackController } from '../mapStackController.js';
 import { loadPhotorealisticTileset } from '../mapStartup.js';
-import { initLogoGaze } from '../logoGaze.js';
 import {
   uninstallRenderGovernor,
   governorRequestRender,
@@ -32,7 +31,6 @@ export async function createApplicationScene({
     requests: requestServices,
     signal,
   });
-  defer(initLogoGaze());
   const previousKey = window.__GOOGLE_MAPS_API_KEY__;
   if (googleApiKey) {
     window.__GOOGLE_MAPS_API_KEY__ = googleApiKey;

@@ -12,20 +12,12 @@ const LEFT_STACK_OBSTACLE_SELECTOR = [
   '#cockpit-hud .cockpit-topline',
   '#cockpit-hud .cockpit-topline > div',
   '#title-bar',
-  '#style-indicator',
   '#top-center-actions',
   '#world-lens-bar',
   '#world-legend',
   '#traffic-sync-chip',
   '#cctv-sync-chip',
-  '#intel-hud .hud-top-left',
-  '#intel-hud .hud-top-right',
-  '#intel-hud .hud-bottom-left',
-  '#intel-hud .hud-bottom-right',
-  '#intel-hud .hud-top-bar',
-  '#intel-hud .hud-bottom-bar',
-  '#intel-hud .hud-left-edge',
-  '#intel-hud .hud-right-edge',
+  '#intel-hud .hud-status',
   '#cockpit-context',
   '#cesium-credits .cesium-credit-logoContainer',
   '#cesium-credits .cesium-credit-textContainer',
@@ -44,20 +36,12 @@ const RIGHT_STACK_OBSTACLE_SELECTOR = [
   '#cockpit-hud .cockpit-topline',
   '#cockpit-hud .cockpit-topline > div',
   '#title-bar',
-  '#style-indicator',
   '#top-center-actions',
   '#world-lens-bar',
   '#world-legend',
   '#traffic-sync-chip',
   '#cctv-sync-chip',
-  '#intel-hud .hud-top-left',
-  '#intel-hud .hud-top-right',
-  '#intel-hud .hud-bottom-left',
-  '#intel-hud .hud-bottom-right',
-  '#intel-hud .hud-top-bar',
-  '#intel-hud .hud-bottom-bar',
-  '#intel-hud .hud-left-edge',
-  '#intel-hud .hud-right-edge',
+  '#intel-hud .hud-status',
   '#cockpit-context',
   '#cockpit-signal-stream',
   '#cesium-credits .cesium-credit-logoContainer',
@@ -347,9 +331,7 @@ export class PanelLayoutController {
       this._leftStackResizeObserver.observe(stack);
       stack.querySelectorAll(':scope > [data-panel-id]').forEach((panel) => {
         this._leftStackResizeObserver.observe(panel);
-        const inner = [...panel.children].find(
-          (child) => !child.classList.contains('panel-glow'),
-        );
+        const [inner] = panel.children;
         if (inner) this._leftStackResizeObserver.observe(inner);
       });
       document

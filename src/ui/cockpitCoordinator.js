@@ -34,8 +34,6 @@ export class CockpitCoordinator {
     const {
       flightsLayer,
       militaryFlightsLayer,
-      isTr3b,
-      toggleTr3b,
       militaryAwarenessLayer,
       cachedGroundFloor,
       cachedMeshFloor,
@@ -54,8 +52,6 @@ export class CockpitCoordinator {
       services: {
         flightsLayer,
         militaryFlightsLayer,
-        isTr3b,
-        toggleTr3b,
         militaryAwarenessLayer,
         formatAwarenessLabel,
         cachedGroundFloor,

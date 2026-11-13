@@ -1,4 +1,4 @@
-import { getKeyholeGeometry } from './celestialRing.js';
+import { getKeyholeGeometry } from './keyholeGeometry.js';
 
 /**
  * Scope mask — the app's signature circular viewport treatment, made real.

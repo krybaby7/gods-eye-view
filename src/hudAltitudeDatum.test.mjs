@@ -59,7 +59,7 @@ const SFO_ELLIPSOIDAL_M = -15;
  */
 function installHudEnvironment() {
   const elements = new Map(
-    ['hud-alt', 'hud-summary', 'hud-mgrs', 'hud-latlon', 'hud-bottom-line', 'hud-gsd', 'hud-coll', 'hud-ona', 'hud-mode']
+    ['hud-alt', 'hud-mgrs', 'hud-latlon', 'hud-place']
       .map((id) => [id, { textContent: '' }]),
   );
   const previousDocument = globalThis.document;
@@ -137,84 +137,33 @@ test('the corner ALT readout prints the MSL height, never the ellipsoidal one', 
   );
 });
 
-test('the summary ALT tag agrees with the corner readout', () => {
-  // Both are on screen together; a viewer reading "ALT -15M" in one corner and
-  // "ALT: 17m" in the other has found a bug, not a distinction.
-  assert.equal(
-    has(/const altDisplayM = Number\.isFinite\(m\.altMslM\) \? m\.altMslM : m\.altM;/),
-    true,
-    'the summary altitude tag must prefer the MSL datum and fall back to the raw height',
-  );
-  assert.equal(
-    has(/const altTag = m\.altM >= 1000/),
-    false,
-    'the summary altitude tag must not regress to the raw ellipsoidal height',
-  );
-});
-
-test('the sensor model keeps the ellipsoidal height it was tuned against', () => {
-  // GSD/NIIRS and the STREET/CITY/METRO view band are camera-geometry math,
-  // not readouts. Re-datuming them would silently move their thresholds, so
-  // altM stays and altMslM is purely additive.
-  assert.equal(
-    has(/const gsd = Math\.max\(0\.01, altM \* 0\.000375\);/),
-    true,
-    'GSD must keep reading the raw camera height',
-  );
-  assert.equal(
-    has(/const band = this\._viewBand\(m\.altM\);/),
-    true,
-    'the view band must keep reading the raw camera height',
-  );
-});
-
 // ── The cold → resolved transition, driven live ─────────────────────────────
 //
 // The grid is a lazy ~2.7 MB chunk, so the first telemetry ticks of a session
-// paint UNCORRECTED. The corner readout picks the correction up on the very
-// next tick once it lands; the summary line has no such cadence — it repaints
-// on camera settle or its own 15 s retry. That left a window at SFO where the
-// corner read `ALT: 17m` beside a summary still reading `ALT -15M`, for up to
-// fifteen seconds. Both must move in the SAME tick.
+// paint UNCORRECTED. The readout picks the correction up on the very next tick
+// once it lands, with no timer of its own.
 
-test('a cold tick paints both readouts uncorrected, and resolving flips both in one tick', async () => {
+test('a cold tick paints the readout uncorrected, and the next tick corrects it', async () => {
   const env = installHudEnvironment();
   let hud;
   try {
     hud = new IntelHUD(env.viewer);
     const alt = () => env.elements.get('hud-alt').textContent;
-    const summary = () => env.elements.get('hud-summary').textContent;
 
     // Tick 1 — cold. This is also the tick that requests the grid.
     hud._updateCameraData();
-    assert.match(alt(), /^ALT: -15m/, `cold corner readout, got ${alt()}`);
-    assert.match(summary(), /\| ALT -15M \|/, `cold summary tag, got ${summary()}`);
+    assert.match(alt(), /^ALT: -15m/, `cold readout, got ${alt()}`);
 
     // The HUD registered its own continuation on this same shared promise
     // during tick 1, and it registered first, so awaiting here means its
-    // readiness flag is already set. No timers, no 15 s retry.
+    // readiness flag is already set.
     await ensureGeoidReady();
     await Promise.resolve();
 
-    // Tick 2 — resolved. ONE tick has to move both.
     hud._updateCameraData();
-    assert.match(alt(), /^ALT: 17m/, `corrected corner readout, got ${alt()}`);
-    assert.match(
-      summary(),
-      /\| ALT 17M \|/,
-      `the summary must repaint in the same tick the corner does, got ${summary()}`,
-    );
-
-    // Tick 3 — steady state. The repaint is a transition, not a per-tick cost.
-    const summaryRevisionAfterFlip = hud._summaryRevision;
+    assert.match(alt(), /^ALT: 17m/, `corrected readout, got ${alt()}`);
     hud._updateCameraData();
     assert.match(alt(), /^ALT: 17m/);
-    assert.match(summary(), /\| ALT 17M \|/);
-    assert.equal(
-      hud._summaryRevision,
-      summaryRevisionAfterFlip,
-      'a settled geoid must not re-dirty the summary on every telemetry tick',
-    );
   } finally {
     hud?.destroy();
     env.restore();
@@ -242,7 +191,6 @@ test('the corrected readouts are the MSL datum, not a coincidence of the SFO sig
       /^ALT: 54m/,
       `100 m ellipsoidal over London is 54 m MSL, got ${env.elements.get('hud-alt').textContent}`,
     );
-    assert.match(env.elements.get('hud-summary').textContent, /\| ALT 54M \|/);
   } finally {
     hud?.destroy();
     env.restore();

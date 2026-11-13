@@ -8,6 +8,10 @@ import {
 } from './panelRailGeometry.js';
 
 import { displayPanelScroller } from './displayPanelScroll.js';
+import {
+  RIGHT_RAIL_SINGLE_PANEL,
+  applySinglePanelRule,
+} from './railSinglePanel.js';
 
 const pendingCollapseRetries = new WeakSet();
 
@@ -82,28 +86,15 @@ export function layoutRightPanelRail({
       onCollapse(panel);
     }
   }
-  // Normalize restored state and theme entry without overwriting saved panel
-  // preferences. This marker is distinct from Tactical's space-based collapse.
-  if (hud.variant === 'cyber') {
-    const expanded = panels.filter(
-      (panel) => !panel.classList.contains('collapsed'),
-    );
-    const owner =
-      expanded.find((panel) => panel.id === preferredPanelId) ||
-      expanded.find((panel) => panel.contains(documentRef?.activeElement)) ||
-      expanded[0];
-    for (const panel of expanded) {
-      if (panel === owner) continue;
-      panel.classList.add('collapsed', 'cyber-accordion-collapsed');
-      onCollapse(panel);
-    }
-  } else {
-    for (const panel of panels) {
-      if (!panel.classList.contains('cyber-accordion-collapsed')) continue;
-      panel.classList.remove('collapsed', 'cyber-accordion-collapsed');
-      onCollapse(panel);
-    }
-  }
+  // Normalise restored state without overwriting saved panel preferences.
+  // This marker is distinct from Tactical's space-based collapse.
+  applySinglePanelRule({
+    panels,
+    enabled: RIGHT_RAIL_SINGLE_PANEL,
+    preferredPanelId,
+    activeElement: documentRef?.activeElement,
+    onCollapse,
+  });
   const isMobile = windowRef.matchMedia('(max-width: 720px)').matches;
   const hasExpandedPanel = panels.some(
     (panel) =>

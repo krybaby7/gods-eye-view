@@ -295,7 +295,7 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 #cesium-credits {
   position: fixed;
   /* Bottom-LEFT corner, mirrored from the GEV mic pill (right:36/bottom:36) so the two bottom
-     corners are symmetric; sits below the coordinate HUD (.hud-bottom-left, bottom:180). Was
+     corners are symmetric; the status line sits bottom-right, clear of it. Was
      dead-center at the bottom, tucked under the LOCATIONS/STYLE panels. Must stay visible (Google
      /Cesium attribution ToS). */
   bottom: 36px;
@@ -499,17 +499,6 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   user-select: none;
 }
 
-#title-bar .title-glow {
-  position: absolute;
-  top: -20px;
-  left: -20px;
-  width: 200px;
-  height: 80px;
-  background: radial-gradient(ellipse, var(--accent-dim) 0%, transparent 70%);
-  filter: blur(20px);
-  opacity: 0.6;
-}
-
 #title-bar h1 {
   display: flex;
   align-items: center;
@@ -519,7 +508,6 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   font-weight: 600;
   letter-spacing: 8px;
   color: var(--text-primary);
-  text-shadow: 0 0 30px var(--accent-glow);
   position: relative;
 }
 
@@ -528,7 +516,6 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   display: block;
   width: 52px;
   height: auto;
-  filter: drop-shadow(0 0 12px rgba(0, 246, 255, 0.5));
 }
 
 #title-bar .title-logo::before,
@@ -605,15 +592,6 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   font-weight: 300;
 }
 
-#title-bar .subtitle {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 5px;
-  color: var(--text-dim);
-  margin-top: 8px;
-  text-transform: uppercase;
-}
-
 #title-bar .frame-rate-readout {
   margin-top: 6px;
   font-family: var(--font-mono);
@@ -621,47 +599,4 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   font-variant-numeric: tabular-nums;
   letter-spacing: 1px;
   color: var(--accent);
-}
-
-/* ── Style Indicator ──────────────────────────── */
-#style-indicator {
-  position: fixed;
-  top: 32px;
-  right: 36px;
-  z-index: 100;
-  pointer-events: none;
-  user-select: none;
-  text-align: right;
-}
-
-#style-indicator .indicator-label {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 3px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-}
-
-#style-indicator .indicator-value {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 16px;
-  font-weight: 500;
-  letter-spacing: 5px;
-  color: var(--accent);
-  margin-top: 4px;
-  text-shadow: 0 0 20px var(--accent-glow);
-  transition: var(--transition-smooth);
-}
-
-:root:not([data-ui-theme='cyber']) #style-indicator {
-  padding: 3px 8px;
-  border-radius: 4px;
-  background: var(--map-readout-bg);
-}
-
-:root:not([data-ui-theme='cyber']) #style-indicator .indicator-label {
-  color: var(--text-primary);
-  opacity: 0.84;
 }

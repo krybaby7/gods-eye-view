@@ -100,20 +100,6 @@
   pointer-events: auto;
 }
 
-.key-setup-scanline {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(54, 220, 255, 0.8),
-    transparent
-  );
-  box-shadow: 0 0 1rem rgba(54, 220, 255, 0.45);
-  pointer-events: none;
-}
-
 .key-setup-header,
 .key-setup-footer {
   display: flex;

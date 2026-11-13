@@ -4,28 +4,12 @@ import assert from 'node:assert/strict';
 import {
   resolveCockpitUtilityAnchor,
   resolveCockpitUtilityLayout,
-  resolveCyberCockpitPanelLane,
 } from './cockpitUtilityLayout.js';
 
 // 1512x790, the height the strip used to collide with the briefing card at.
 const desktop = { viewportHeight: 790, stripHeight: 107, collapsedHeight: 50 };
 
-test('Cyber shared panel slot reserves both footer lanes above the decorative frame', () => {
-  for (const viewportHeight of [600, 673, 713, 986, 1376]) {
-    for (const signalHeight of [44, 76]) {
-      for (const contactHeight of [44, 84, 120]) {
-        const top = Math.max(164, Math.min(204, viewportHeight * 0.19));
-        const lane = resolveCyberCockpitPanelLane({ viewportHeight, top, signalHeight, contactHeight });
-        assert.ok(lane.panelHeight >= 120);
-        assert.ok(top + lane.panelHeight + 8 + contactHeight <= viewportHeight * 0.82 + .01);
-        assert.ok(lane.signalTop + signalHeight <= viewportHeight * 0.82 + .01);
-        assert.equal(lane.signalTop, top + lane.utilityHeight + 8);
-      }
-    }
-  }
-});
-
-test('Cyber keeps the Data Layers top while reserving briefing clearance', () => {
+test('a floor-anchored strip keeps its top while reserving briefing clearance', () => {
   for (const viewportHeight of [673, 713, 986, 1376]) {
     const leftTop = Math.max(164, Math.min(204, viewportHeight * 0.19));
     const collapsed = resolveCockpitUtilityAnchor({

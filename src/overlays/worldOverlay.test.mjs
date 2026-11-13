@@ -9,7 +9,7 @@ import {
   getKeyholeGeometry,
   keyholeLabelAlphaFromGeometry,
   setKeyholeFadeTuning,
-} from '../celestialRing.js';
+} from '../keyholeGeometry.js';
 import { createCctvThumbnailOverlayEntry, createFrameSlot } from '../data/cctvCards.js';
 import { combinedOverlayAlpha } from './worldOverlayDraw.js';
 import {
@@ -773,7 +773,7 @@ test('HUD mutations defer occluder selector scans until overlay paint work exist
 test('ticking chrome churn (text swaps, non-chrome nodes) never invalidates a live host', () => {
   const env = installMockEnvironment({
     occluders: [
-      { selector: '.hud-top-left', rect: { left: 0, top: 0, width: 140, height: 44 } },
+      { selector: '.hud-status', rect: { left: 0, top: 0, width: 140, height: 44 } },
       { id: 'traffic-sync-chip', rect: { left: 200, top: 0, width: 90, height: 24 } },
     ],
   });
@@ -787,7 +787,7 @@ test('ticking chrome churn (text swaps, non-chrome nodes) never invalidates a li
   const textNode = { nodeType: 3 };
   const clockTick = {
     type: 'childList',
-    target: env.document.querySelector('.hud-top-left'),
+    target: env.document.querySelector('.hud-status'),
     addedNodes: [textNode],
     removedNodes: [textNode],
   };
@@ -856,7 +856,7 @@ test('genuine chrome changes still invalidate: add, remove, and own-attribute fl
 test('chrome observers scope: body is childList discovery; occluder attributes are element-only', () => {
   const env = installMockEnvironment({
     occluders: [
-      { selector: '.hud-top-left', rect: { left: 0, top: 0, width: 140, height: 44 } },
+      { selector: '.hud-status', rect: { left: 0, top: 0, width: 140, height: 44 } },
     ],
   });
   initWorldOverlay(env.viewer);
@@ -1416,10 +1416,10 @@ test('a placement is only ever kept under chrome that composites ABOVE the host'
   assert.equal(paintedUnder([{ id: 'left-panel-stack', rect: viewport }]), 1,
     'chrome above the host keeps the soft preference');
   // Below the host: no placement may overlap it, so the entry is vetoed instead
-  // of painting over HUD text. `.hud-top-left` is nested in #intel-hud, so this
+  // of painting over HUD text. `.hud-status` is nested in #intel-hud, so this
   // also proves the classifier walks the ancestor chain rather than reading the
   // element's own (auto) z-index.
-  assert.equal(paintedUnder([{ selector: '.hud-top-left', parent: '#intel-hud', rect: viewport }]), 0,
+  assert.equal(paintedUnder([{ selector: '.hud-status', parent: '#intel-hud', rect: viewport }]), 0,
     'chrome below the host keeps an absolute veto');
 });
 

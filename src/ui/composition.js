@@ -15,10 +15,12 @@ import { ShareLinkManager } from '../sharelink.js';
 import { OrbitController } from '../orbit.js';
 import {
   CelestialRing,
-  getKeyholeFadeTuning,
   isCelestialRingStyleSupported,
-  setKeyholeFadeTuning,
 } from '../celestialRing.js';
+import {
+  getKeyholeFadeTuning,
+  setKeyholeFadeTuning,
+} from '../keyholeGeometry.js';
 import {
   destroyTrackedReadout,
   initTrackedReadout,
@@ -40,7 +42,6 @@ import {
   setDetectionStyle,
   setDetectionTuning,
 } from '../data/detection.js';
-import { isTr3b, toggleTr3b } from '../data/tr3bRegistry.js';
 import {
   holdContinuousRender,
   releaseContinuousRender,
@@ -95,8 +96,6 @@ export class StyleManager extends ApplicationShell {
         resumeDetection,
         setDetectionStyle,
         setDetectionTuning,
-        isTr3b,
-        toggleTr3b,
         holdContinuousRender,
         releaseContinuousRender,
         governorRequestRender,

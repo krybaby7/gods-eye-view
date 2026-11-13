@@ -1,6 +1,4 @@
-/** Cyber keeps the frame fixed; other layouts retain their existing scroller. */
+/** The Display panel scrolls as a whole; this seam names its scroller. */
 export function displayPanelScroller(panel) {
-  return panel?.ownerDocument?.documentElement?.dataset.uiTheme === 'cyber'
-    ? panel.querySelector('.pp-panel-body') || panel
-    : panel;
+  return panel;
 }
