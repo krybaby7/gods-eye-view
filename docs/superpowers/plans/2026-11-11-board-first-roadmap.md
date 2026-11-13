@@ -567,6 +567,19 @@ Added on 2026-11-12, when the owner approved the stage 0 mock:
     which showed both ways and recommended this one. The owner did not answer the question apart
     from that approval, and was told how it was read.
 
+Added on 2026-11-13, when the owner asked for the next pieces to be built by Opus agents in the
+cloud:
+
+32. **Build straight to the finished app.** The owner said they will hardly look at the app until
+    all of it is built, and asked for the end result to be built at once. So no piece designs a
+    stand-in for something a later piece builds. Each part is built as section 3 and the mock show
+    it. Where its content does not exist yet, it shows the finished app's own empty state, never
+    invented content, and a control that does nothing yet is not shown. Pieces that do not need
+    each other's result are built at the same time, in the cloud where that works (section 10).
+    This answers what the Today column shows before stage 3: the finished column, empty until
+    there are stories. That last reading is Claude's, and the owner was told. Each merge still
+    waits for the owner's word (decision 29) unless they say otherwise.
+
 ## 6. Risks
 
 - **Stage 1 is bigger than it looks.** Most of its lines are in panels the owner did not write.
@@ -891,8 +904,8 @@ the status line at the top of this file and the owner's status page.
 | Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                    |
 | 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)      |
 | 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13      |
-| 3      | The frame (1.2), built to the approved mock                                                                         | Not started. Next (decision 30 unblocked it) |
-| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Not started. It needs no restyle             |
+| 3      | The frame (1.2), built to the approved mock                                                                         | Being built since 2026-11-13 (`feat/frame`)  |
+| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Being built since 2026-11-13, beside piece 3 |
 | Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Not started                                  |
 | Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock         |
 
@@ -925,6 +938,16 @@ nothing that breaks the app. It left these, none of them built:
 The before and after captures, and the two scripts that took them (`start-server.mjs` and
 `capture.mjs`), are in the main folder under `qa-artifacts/costume-off/`, not committed. The
 worktree and its local branch are removed.
+
+**Pieces 3 and 4, built at the same time (decision 32).** Started on 2026-11-13 as two Opus agents,
+each in its own working folder on the owner's PC and each opening one pull request, from branches
+`feat/frame` and `feat/words-for-numbers`. The owner asked for the cloud. The app would not start a
+cloud session while the owner was connected from another device, and an agent sent to the cloud
+from the session ran on the PC instead, so the cloud is still untried for this project. The two
+pieces share the country sheet and split it like this. The frame owns the container: `index.html`,
+the templates, where the sheet sits, its width, the look of the tab bar and the layout rules of
+`world-panel.css`. Words for numbers owns the content: the code that writes the words, the rows and
+the Overview tab. Whichever is merged second is first brought up to date with the other.
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
