@@ -226,12 +226,16 @@ export function worldComparison(snapshot, indicator, iso3) {
   const level = others.length - below - above;
   const sentence =
     below === 0 && above === 0
-      ? `Level with all ${others.length} other ${others.length === 1 ? 'country' : 'countries'} with a figure.`
+      ? others.length === 1
+        ? 'Level with the one other country with a figure.'
+        : `Level with all ${others.length} other countries with a figure.`
       : (below >= above
           ? `${better} than ${below} ${total}`
           : `${worse} than ${above} ${total}`) +
         (level ? `, and level with ${level}.` : '.');
-  return { sentence, position: below / others.length };
+  // A tie sits halfway through its level group, so the mark agrees with the
+  // sentence: level with everyone is the middle of the strip.
+  return { sentence, position: (below + level / 2) / others.length };
 }
 
 const NO_HISTORY = 'Earlier years are not stored yet, so no trend is drawn.';
@@ -287,6 +291,7 @@ export function trendReading(entry = {}, figures = 1) {
       points,
       since: first.period,
       perYear: years > 0 ? points / years : null,
+      latest: claimKind({ score: last.score, method: last.method }).kind,
     },
   };
 }
@@ -370,6 +375,13 @@ export function standouts(rows) {
         Math.abs(a.words.trend.change.perYear),
     );
   const fastest = moved[0];
+  const fastestLatest = fastest?.words.trend.change.latest;
+  const fastestNote =
+    fastestLatest === 'forecast'
+      ? ' (the latest figure is a forecast)'
+      : fastestLatest === 'estimate'
+        ? " (the latest figure is the source's own estimate)"
+        : '';
   if (!fastest) {
     parts.push(
       withTrend.length
@@ -380,14 +392,15 @@ export function standouts(rows) {
     const { points, since } = fastest.words.trend.change;
     const rounded = Math.round(Math.abs(points));
     parts.push(
-      `Moving fastest: ${fastest.area.toLowerCase()}, ${rounded} ${rounded === 1 ? 'point' : 'points'} ${points > 0 ? 'better' : 'worse'} than in ${periodText(since)}.`,
+      `Moving fastest: ${fastest.area.toLowerCase()}, ${rounded} ${rounded === 1 ? 'point' : 'points'} ${points > 0 ? 'better' : 'worse'} than in ${periodText(since)}${fastestNote}.`,
     );
   }
   return {
     sentence: parts.join(' '),
     target: weakest[0].section,
-    kind: named.some((row) => claimOf(row) !== 'measured')
-      ? 'estimate'
-      : 'measured',
+    kind:
+      fastestNote || named.some((row) => claimOf(row) !== 'measured')
+        ? 'estimate'
+        : 'measured',
   };
 }

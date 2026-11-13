@@ -225,7 +225,7 @@ test('a tie reads as level, never as "than 0"', () => {
   );
   assert.equal(
     worldComparison(tied([50, 50]), polarisation, 'C0').sentence,
-    'Level with all 1 other country with a figure.',
+    'Level with the one other country with a figure.',
   );
   assert.equal(
     worldComparison(tied([50, 50, 40, 60, 60]), polarisation, 'C0').sentence,
@@ -462,5 +462,85 @@ test('a forecast or an estimate named as strongest or weakest says so', () => {
       row('Fiscal', 'strength', 20),
     ]).kind,
     'measured',
+  );
+});
+
+test('a moving-fastest change whose latest figure is a forecast or estimate says so', () => {
+  const forecast = standouts([
+    row('Energy', 'strength', 80),
+    row('Fiscal', 'strength', 50, {
+      points: -6,
+      since: '2020',
+      perYear: -1,
+      latest: 'forecast',
+    }),
+    row('Food', 'strength', 20),
+  ]);
+  assert.match(
+    forecast.sentence,
+    /Moving fastest: fiscal, 6 points worse than in 2020 \(the latest figure is a forecast\)\.$/,
+  );
+  // Marked in look as well as in words, though fiscal is neither end.
+  assert.equal(forecast.kind, 'estimate');
+  assert.match(
+    standouts([
+      row('Energy', 'strength', 80),
+      row('Food', 'strength', 20, {
+        points: 4,
+        since: '2020',
+        perYear: 1,
+        latest: 'estimate',
+      }),
+    ]).sentence,
+    /Moving fastest: food, 4 points better than in 2020 \(the latest figure is the source's own estimate\)\.$/,
+  );
+  // The trend itself records what its latest figure is.
+  assert.equal(
+    trendReading({
+      score: 54,
+      history: [
+        { period: '2019', score: 48, method: 'observed' },
+        { period: '2024', score: 54, method: 'source-forecast' },
+      ],
+    }).change.latest,
+    'forecast',
+  );
+  assert.equal(
+    standouts([
+      row('Energy', 'strength', 80),
+      row('Food', 'strength', 20, {
+        points: 4,
+        since: '2020',
+        perYear: 1,
+        latest: 'measured',
+      }),
+    ]).kind,
+    'measured',
+  );
+});
+
+test('the world strip mark agrees with the sentence when there are ties', () => {
+  const tied = (scores) => ({
+    countries: Object.fromEntries(
+      scores.map((score, i) => [
+        `C${i}`,
+        { kind: 'state', slots: { C6: { score } } },
+      ]),
+    ),
+  });
+  // Level with everyone sits in the middle, not at the weakest end.
+  assert.equal(
+    worldComparison(tied([50, 50, 50]), polarisation, 'C0').position,
+    0.5,
+  );
+  // Above 2 and level with 1 of 4: (2 + 0.5) / 4.
+  assert.equal(
+    worldComparison(tied([50, 50, 40, 40, 60]), polarisation, 'C0').position,
+    2.5 / 4,
+  );
+  // Without ties the mark is unchanged.
+  assert.equal(
+    worldComparison(tied([50, 40, 60, 30]), polarisation, 'C0').position,
+    2 / 3,
   );
 });

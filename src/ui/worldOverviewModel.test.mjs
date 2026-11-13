@@ -182,12 +182,13 @@ test('alerts list live flags with source and date, never cleared ones', () => {
     },
   };
   const line = alertLine(snapshot, sheet);
-  // The stale and the expired flags are neither counted nor shown.
+  // The stale and the expired flags are not counted or named, but the line
+  // says they exist; the cleared flag is not mentioned at all.
   assert.equal(line.title, '3 alerts');
   assert.equal(line.count, 3);
   assert.equal(
     line.text,
-    'Red GDACS flood alert · GDACS · 2026-11-08. Third · X · 2026-11-01. And 1 more.',
+    'Red GDACS flood alert · GDACS · 2026-11-08. Third · X · 2026-11-01. And 1 more. 2 more flags come from sources that are stale or have no recent data.',
   );
   assert.doesNotMatch(line.text, /INR|Expired|Old/);
   const expiredOnly = alertLine(
@@ -205,9 +206,24 @@ test('alerts list live flags with source and date, never cleared ones', () => {
   );
   assert.equal(expiredOnly.count, 0);
   assert.equal(expiredOnly.title, 'Alerts');
+  // "No current alerts" never hides a source that is stale.
   assert.equal(
     expiredOnly.text,
-    'No current alerts for this country in the loaded sources.',
+    'No current alerts for this country in the loaded sources. 2 more flags come from sources that are stale or have no recent data.',
+  );
+  assert.equal(
+    alertLine(
+      {
+        features: {
+          'live-gdacs': {
+            flags: [{ iso3: 'IND', label: 'Stale one', status: 'stale' }],
+            inactiveFlags: [{ iso3: 'IND', label: 'Old', status: 'cleared' }],
+          },
+        },
+      },
+      sheet,
+    ).text,
+    'No current alerts for this country in the loaded sources. 1 more flag comes from sources that are stale or have no recent data.',
   );
   const quiet = alertLine({ features: {} }, sheet);
   assert.equal(quiet.count, 0);
@@ -412,6 +428,22 @@ test('the largest dependency is modelled and says so', () => {
       sheet,
     ).text,
     'The route model holds no energy trade rows for India.',
+  );
+  // A row with no share is said as exactly that, not as no rows.
+  assert.equal(
+    dependencyLine(
+      {
+        countryIndex,
+        features: {
+          'energy-dependencies': {
+            mode: 'fixture',
+            rows: [{ provider: 'USA', dependent: 'IND', route: [] }],
+          },
+        },
+      },
+      sheet,
+    ).text,
+    'The route model holds an energy trade row for India, but no import share for it.',
   );
   const fixture = {
     countryIndex,

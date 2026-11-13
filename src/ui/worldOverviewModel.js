@@ -131,17 +131,25 @@ export function standoutLine(sheetModel) {
   };
 }
 
-// Only a flag whose evidence is current is an alert. A flag whose evidence
-// has expired, or whose source is stale, is not counted or shown here.
+// Only a flag whose evidence is current is an alert. A flag whose source is
+// stale or has no recent data is not counted, but the line says it exists.
 export function alertLine(snapshot, sheetModel) {
-  const flags = liveFlags(snapshot, sheetModel.iso3).filter(
+  const all = liveFlags(snapshot, sheetModel.iso3);
+  const flags = all.filter(
     ({ status }) => status == null || status === 'active',
   );
+  const held = all.filter(({ status }) =>
+    ['stale', 'no-recent-data'].includes(status),
+  ).length;
+  const heldNote = held
+    ? ` ${held === 1 ? '1 more flag comes' : `${held} more flags come`} from sources that are stale or have no recent data.`
+    : '';
   const base = { id: 'alerts', title: 'Alerts', target: 'condition' };
   if (!flags.length)
     return {
       ...base,
-      text: 'No current alerts for this country in the loaded sources.',
+      text:
+        'No current alerts for this country in the loaded sources.' + heldNote,
       count: 0,
     };
   const described = flags.map((flag) =>
@@ -152,7 +160,7 @@ export function alertLine(snapshot, sheetModel) {
   return {
     ...base,
     title: flags.length === 1 ? '1 alert' : `${flags.length} alerts`,
-    text: shown + (rest > 0 ? `. And ${rest} more.` : '.'),
+    text: shown + (rest > 0 ? `. And ${rest} more.` : '.') + heldNote,
     count: flags.length,
   };
 }
@@ -277,6 +285,8 @@ export function dependencyLine(snapshot, sheetModel) {
       'The route model assigns no energy imports through the monitored chokepoints.';
   else if (exposure?.length)
     text = `The route model holds no import share for ${sheetModel.name}'s routes.`;
+  else if (supplier)
+    text = `The route model holds an energy trade row for ${sheetModel.name}, but no import share for it.`;
   else if (model.mode === 'modelled' && model.energyExposure)
     // The compact model keeps every importer's exposure, so a missing entry
     // is what the model holds, not something still loading.
