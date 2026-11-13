@@ -267,11 +267,17 @@ async function pickCountry(lon, lat, iso3) {
 
 async function checkHatchPixels(filename) {
   const size = 36;
-  const viewport = page.viewport();
+  // The camera looks at the centre of the globe's canvas, which the frame
+  // insets from the window's edges, so sample there rather than mid-window.
+  const canvas = await page.evaluate(() => {
+    const { left, top, width, height } =
+      window.__godsEyeView.viewer.scene.canvas.getBoundingClientRect();
+    return { left, top, width, height };
+  });
   const { data, info } = await sharp(path.join(evidence, filename))
     .extract({
-      left: Math.floor((viewport.width - size) / 2),
-      top: Math.floor((viewport.height - size) / 2),
+      left: Math.floor(canvas.left + (canvas.width - size) / 2),
+      top: Math.floor(canvas.top + (canvas.height - size) / 2),
       width: size,
       height: size,
     })
@@ -412,8 +418,12 @@ async function layout(width, height) {
           }
         }
       const chips = document.querySelector('#world-areas');
+      // On a phone the lens row in the frame's bottom bar scrolls sideways,
+      // like the area chips: a button is reachable once scrolled into view.
+      const lenses = document.querySelector('#world-lens-bar .frame-seg');
       const controls = [...document.querySelectorAll('#world-lens-bar button')];
       const scrollLeft = chips.scrollLeft;
+      const lensScrollLeft = lenses?.scrollLeft ?? 0;
       const clippedChips = [];
       const unreachable = [];
       function canReach(button) {
@@ -424,7 +434,10 @@ async function layout(width, height) {
       }
       for (const button of controls) {
         if (!button.getClientRects().length) continue;
-        if (chips.contains(button) && !canReach(button)) {
+        if (
+          (chips.contains(button) || lenses?.contains(button)) &&
+          !canReach(button)
+        ) {
           clippedChips.push(button.textContent.trim());
           button.scrollIntoView({
             inline: 'nearest',
@@ -435,6 +448,7 @@ async function layout(width, height) {
         if (!canReach(button)) unreachable.push(button.textContent.trim());
       }
       chips.scrollLeft = scrollLeft;
+      if (lenses) lenses.scrollLeft = lensScrollLeft;
       return { rects, overlaps, clippedChips, unreachable };
     },
     { width, height },

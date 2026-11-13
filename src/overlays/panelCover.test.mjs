@@ -22,11 +22,7 @@ function element(rect, { hidden = false, visible = true } = {}) {
 test('a code box under a panel is covered, one beside it is not', () => {
   const rects = [{ left: 52, top: 340, right: 332, bottom: 672 }];
   assert.equal(boxUnderRects(200, 400, rects, 27, 12), true);
-  assert.equal(
-    boxUnderRects(340, 400, rects, 27, 12),
-    true,
-    'the box edge counts, not only its centre',
-  );
+  assert.equal(boxUnderRects(340, 400, rects, 27, 12), true, 'the box edge counts, not only its centre');
   assert.equal(boxUnderRects(380, 400, rects, 27, 12), false);
   assert.equal(boxUnderRects(Number.NaN, 400, rects), false);
 });
@@ -54,24 +50,11 @@ test('the cover measures shown chrome only, throttles, and bumps its revision on
   const first = cover.refresh();
   assert.equal(selector, PANEL_COVER_SELECTORS.join(', '));
   assert.equal(cover.covers(1100, 300), true);
-  assert.equal(
-    cover.covers(200, 200),
-    false,
-    'hidden, invisible and empty chrome cover nothing',
-  );
+  assert.equal(cover.covers(200, 200), false, 'hidden, invisible and empty chrome cover nothing');
 
-  shown.getBoundingClientRect = () => ({
-    left: 1052,
-    top: 266,
-    width: 176,
-    height: 60,
-  });
+  shown.getBoundingClientRect = () => ({ left: 1052, top: 266, width: 176, height: 60 });
   clock += PANEL_COVER_REFRESH_MS - 1;
-  assert.equal(
-    cover.refresh(),
-    first,
-    'no new measurement inside the throttle window',
-  );
+  assert.equal(cover.refresh(), first, 'no new measurement inside the throttle window');
   clock += 1;
   const second = cover.refresh();
   assert.notEqual(second, first, 'a panel that moved bumps the revision');
@@ -95,26 +78,13 @@ test('the cover lists every panel surface, the board chrome and the status line'
 });
 
 test('the board hides its country codes under the cover, wired from the app layer', () => {
-  const geometry = readFileSync(
-    new URL('../layers/world/geometry.js', import.meta.url),
-    'utf8',
-  );
+  const geometry = readFileSync(new URL('../layers/world/geometry.js', import.meta.url), 'utf8');
   assert.match(geometry, /cullLabels\(camera, cover = null\)/);
   assert.match(geometry, /cover\.covers\(/);
-  const layer = readFileSync(
-    new URL('../layers/world/index.js', import.meta.url),
-    'utf8',
-  );
+  const layer = readFileSync(new URL('../layers/world/index.js', import.meta.url), 'utf8');
   assert.match(layer, /geometry\.cullLabels\(camera, cover\)/);
-  assert.match(
-    layer,
-    /cover\?\.watch\?\.\(requestRender, lifecycle\.signal\)/,
-    'a layout change asks for a frame',
-  );
-  const app = readFileSync(
-    new URL('../app/layers/world.js', import.meta.url),
-    'utf8',
-  );
+  assert.match(layer, /cover\?\.watch\?\.\(requestRender, lifecycle\.signal\)/, 'a layout change asks for a frame');
+  const app = readFileSync(new URL('../app/layers/world.js', import.meta.url), 'utf8');
   assert.match(app, /createPanelCover\(\)/);
 });
 

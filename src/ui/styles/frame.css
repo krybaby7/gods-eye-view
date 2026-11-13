@@ -73,6 +73,12 @@ body.gev-frame {
   font: var(--type-body);
 }
 
+/* The bars stack above the globe's floating chrome (the dock is 145), so the
+   turn list and the area chips that open from them are never covered. */
+.frame-region.frame-bar {
+  z-index: 150;
+}
+
 .frame-region :is(button, input) {
   font: inherit;
   color: inherit;
@@ -426,6 +432,22 @@ body.gev-frame {
   border-radius: 3px;
 }
 
+/* Below 1366 px the bar is tight: the lens buttons and the ramp narrow and
+   the "Lens" caption goes, so the legend's unknown key is never clipped. */
+@media (max-width: 1365px) {
+  .frame-lens > .frame-caption {
+    display: none;
+  }
+
+  .frame-lens .frame-seg button {
+    padding: 0 8px;
+  }
+
+  .frame-legend .world-legend-ramp {
+    width: 72px;
+  }
+}
+
 #world-legend-note {
   overflow: hidden;
   font: var(--type-caption);
@@ -630,6 +652,24 @@ body.gev-frame #globe-navigation {
   bottom: calc(var(--frame-bottom) + var(--frame-status) + var(--space-3));
 }
 
+/* With Today and the sheet both open, a globe under 1800 px of window is too
+   narrow for the dock and the navigation side by side, so the navigation
+   lifts above the dock (dock bottom 90 px, about 74 px tall, 12 px gap). */
+@media (max-width: 1799px) {
+  body.gev-frame[data-sheet='open']:not([data-today='folded'])
+    #globe-navigation {
+    bottom: calc(var(--frame-bottom) + var(--frame-status) + 98px);
+  }
+}
+
+/* Below 1366 px the globe is too narrow with the sheet open even with Today
+   folded (812 px at 1280). */
+@media (max-width: 1365px) {
+  body.gev-frame[data-sheet='open'] #globe-navigation {
+    bottom: calc(var(--frame-bottom) + var(--frame-status) + 98px);
+  }
+}
+
 /* Zoom lives in the bottom bar; the cockpit keeps its own. */
 body.gev-frame:not(.cockpit-mode) #globe-navigation .map-zoom-controls {
   display: none;
@@ -637,7 +677,9 @@ body.gev-frame:not(.cockpit-mode) #globe-navigation .map-zoom-controls {
 
 /* Above the bar, the status line and the credit: 52 + 26 + 12 px, written as
    one length so the attribution model can resolve it. */
-body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(.ui-embed)
+body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(
+    .ui-embed
+  )
   #command-dock {
   bottom: 90px;
   left: var(--frame-globe-centre);
@@ -710,7 +752,9 @@ body.gev-frame .hud-ais-vessel {
 /* The required imagery credit. Its offset is a plain length, the height of
    the bottom bar (--frame-bar), so the attribution model in
    creditAttribution.test.mjs can resolve it. */
-body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(.ui-embed)
+body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(
+    .ui-embed
+  )
   #cesium-credits {
   right: calc(var(--frame-right) + 12px);
   bottom: 52px;
@@ -728,6 +772,30 @@ body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(.
   body.gev-frame .frame-sep,
   body.gev-frame .frame-legend {
     display: none;
+  }
+
+  /* On a phone the lens row takes the bar and scrolls sideways; zoom (pinch
+     does it) and the presets switch step aside to make the room. */
+  body.gev-frame
+    :is(#frame-presets, .frame-zoom, .frame-lens > .frame-caption) {
+    display: none;
+  }
+
+  body.gev-frame .frame-lens {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  body.gev-frame .frame-lens .frame-seg {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  body.gev-frame .frame-lens .frame-seg button {
+    flex: none;
+    padding: 0 8px;
   }
 
   /* The sheet covers the globe instead of squeezing it. */

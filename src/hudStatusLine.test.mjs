@@ -22,8 +22,7 @@ registerHooks({
       return {
         format: 'module',
         shortCircuit: true,
-        source:
-          'export function forward() { return "10SEG55776339"; }\nexport default { forward };\n',
+        source: 'export function forward() { return "10SEG55776339"; }\nexport default { forward };\n',
       };
     }
     return next(url, context);
@@ -34,11 +33,7 @@ const { IntelHUD } = await import('./hud.js');
 const source = readFileSync(new URL('./hud.js', import.meta.url), 'utf8');
 
 /** A fake page whose #intel-hud keeps the markup and hands out text sinks. */
-function installPage({
-  latDeg = 37.616,
-  lonDeg = -122.368,
-  height = 900,
-} = {}) {
+function installPage({ latDeg = 37.616, lonDeg = -122.368, height = 900 } = {}) {
   const sinks = new Map();
   const classes = new Set();
   const hud = {
@@ -57,11 +52,7 @@ function installPage({
       sinks.set(id, {
         textContent: '',
         hidden: false,
-        classList: {
-          add: (n) => own.add(n),
-          remove: (n) => own.delete(n),
-          contains: (n) => own.has(n),
-        },
+        classList: { add: (n) => own.add(n), remove: (n) => own.delete(n), contains: (n) => own.has(n) },
       });
     }
     return sinks.get(id);
@@ -133,21 +124,10 @@ test('the HUD draws no banners, invented numbers, REC, orbit or band strips', ()
   try {
     hud = new IntelHUD(page.viewer);
     for (const pattern of ORNAMENT) {
-      assert.doesNotMatch(
-        page.hud.innerHTML,
-        pattern,
-        `markup still carries ${pattern}`,
-      );
+      assert.doesNotMatch(page.hud.innerHTML, pattern, `markup still carries ${pattern}`);
     }
-    assert.doesNotMatch(
-      source,
-      /Math\.random/,
-      'nothing on the HUD is random any more',
-    );
-    assert.doesNotMatch(
-      source,
-      /_missionId|_sensorId|_orbitNum|_passNum|_recBlink/,
-    );
+    assert.doesNotMatch(source, /Math\.random/, 'nothing on the HUD is random any more');
+    assert.doesNotMatch(source, /_missionId|_sensorId|_orbitNum|_passNum|_recBlink/);
   } finally {
     hud?.destroy();
     page.restore();
@@ -159,47 +139,22 @@ test('the status line holds the place, coordinates, MGRS, altitude and UTC time'
   let hud;
   try {
     hud = new IntelHUD(page.viewer);
-    const line = page.hud.innerHTML.slice(
-      page.hud.innerHTML.indexOf('hud-status-line'),
-    );
-    for (const id of [
-      'hud-place',
-      'hud-latlon',
-      'hud-mgrs',
-      'hud-alt',
-      'hud-time',
-    ]) {
-      assert.ok(
-        line.includes(`id="${id}"`),
-        `#${id} belongs to the one status line`,
-      );
+    const line = page.hud.innerHTML.slice(page.hud.innerHTML.indexOf('hud-status-line'));
+    for (const id of ['hud-place', 'hud-latlon', 'hud-mgrs', 'hud-alt', 'hud-time']) {
+      assert.ok(line.includes(`id="${id}"`), `#${id} belongs to the one status line`);
     }
-    assert.ok(
-      page.hud.innerHTML.includes('id="hud-ais-vessel"'),
-      'the vessel line is kept',
-    );
+    assert.ok(page.hud.innerHTML.includes('id="hud-ais-vessel"'), 'the vessel line is kept');
     hud.show();
     assert.match(page.text('hud-latlon'), /^37°36'57\.60"N 122°22'04\.80"W$/);
     // MGRS is optional (roadmap 1.2, Appendix A): off until the viewer asks.
     assert.equal(page.sink('hud-mgrs').hidden, true, 'MGRS starts hidden');
-    assert.equal(
-      page.text('hud-mgrs'),
-      '',
-      'and is not worked out while hidden',
-    );
+    assert.equal(page.text('hud-mgrs'), '', 'and is not worked out while hidden');
     hud.setMgrsVisible(true, { persist: false });
     assert.equal(page.sink('hud-mgrs').hidden, false);
     assert.equal(page.text('hud-mgrs'), 'MGRS: 10S EG 5577 6339');
     assert.match(page.text('hud-alt'), /^ALT: \d+m$/);
-    assert.match(
-      page.text('hud-time'),
-      /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$/,
-    );
-    assert.match(
-      page.text('hud-place'),
-      /^NEAR .+\(SAN FRANCISCO\)$/,
-      'near a catalogued landmark',
-    );
+    assert.match(page.text('hud-time'), /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$/);
+    assert.match(page.text('hud-place'), /^NEAR .+\(SAN FRANCISCO\)$/, 'near a catalogued landmark');
   } finally {
     hud?.destroy();
     page.restore();
@@ -239,33 +194,13 @@ test('the place name never calls a model', () => {
     hud?.destroy();
     page.restore();
   }
-  assert.doesNotMatch(
-    source,
-    /summarize\(|summaryService|hudSummaryResponse|getBasemapLabelContext/,
-  );
-  const shell = readFileSync(
-    new URL('./ui/applicationShell.js', import.meta.url),
-    'utf8',
-  );
-  assert.doesNotMatch(
-    shell,
-    /summaryService/,
-    'the shell no longer hands the HUD a summary service',
-  );
+  assert.doesNotMatch(source, /summarize\(|summaryService|hudSummaryResponse|getBasemapLabelContext/);
+  const shell = readFileSync(new URL('./ui/applicationShell.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(shell, /summaryService/, 'the shell no longer hands the HUD a summary service');
 });
 
 test('every HUD layout shows the same quiet line; Minimal drops altitude and the vessel', () => {
-  const css = readFileSync(
-    new URL('./ui/styles/overlays.css', import.meta.url),
-    'utf8',
-  );
-  assert.match(
-    css,
-    /#intel-hud\[data-variant='minimal'\] :is\(#hud-alt, \.hud-ais-vessel\)/,
-  );
-  assert.doesNotMatch(
-    css,
-    /text-shadow|hud-bracket|hud-corner/,
-    'no glow and no brackets',
-  );
+  const css = readFileSync(new URL('./ui/styles/overlays.css', import.meta.url), 'utf8');
+  assert.match(css, /#intel-hud\[data-variant='minimal'\] :is\(#hud-alt, \.hud-ais-vessel\)/);
+  assert.doesNotMatch(css, /text-shadow|hud-bracket|hud-corner/, 'no glow and no brackets');
 });
