@@ -1,0 +1,104 @@
+  <!-- The frame (roadmap 1.2): five solid regions around the globe. src/ui/frame.js
+       owns its state; the World Board fills the parts that carry board ids. -->
+  <header id="frame-top" class="frame-region frame-bar frame-top" aria-label="Global Eye View">
+    <span class="frame-brand">Global Eye View</span>
+    <span class="frame-sep" aria-hidden="true"></span>
+    <div class="frame-gauge frame-when">
+      <span id="frame-date" class="frame-gauge-main"></span>
+      <span id="frame-refreshed" class="frame-gauge-caption" hidden></span>
+    </div>
+    <div id="frame-board-status" class="frame-board-status" hidden>
+      <div class="frame-turn">
+        <button id="world-turn" class="frame-pill" type="button" aria-controls="world-turn-changes" aria-expanded="false" hidden></button>
+        <div id="world-turn-changes" class="frame-popup" role="region" aria-label="Turn changes" tabindex="0" hidden></div>
+      </div>
+      <span id="world-progress" class="frame-progress" role="status" hidden></span>
+    </div>
+    <span class="frame-grow"></span>
+    <div id="frame-gauges" class="frame-gauges" role="group" aria-label="World gauges" hidden></div>
+    <span class="frame-sep" aria-hidden="true"></span>
+    <button id="world-refresh" class="frame-iconbtn" type="button" aria-label="Refresh the board" title="Refresh the board" hidden>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 11-1.6-3.7M13 2.5v2.6h-2.6" /></svg>
+    </button>
+  </header>
+
+  <aside id="frame-today" class="frame-region frame-column frame-today" aria-labelledby="frame-today-title">
+    <div class="frame-pane-head">
+      <h2 id="frame-today-title" class="frame-title">Today</h2>
+      <span class="frame-grow"></span>
+      <button id="frame-today-fold" class="frame-iconbtn" type="button" aria-controls="frame-today" aria-expanded="true" aria-label="Fold Today away" title="Fold Today away">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5" /></svg>
+      </button>
+    </div>
+    <div id="frame-today-body" class="frame-today-body">
+      <div id="frame-today-empty" class="frame-empty">
+        <p class="frame-empty-title">Nothing is listed yet</p>
+        <p class="frame-empty-text">What is happening in the world will be listed here, ranked, each item one sentence with its place, its time and its sources.</p>
+      </div>
+    </div>
+  </aside>
+
+  <aside id="frame-rail" class="frame-region frame-column frame-rail" aria-label="Today, folded away">
+    <button id="frame-today-open" class="frame-iconbtn" type="button" aria-controls="frame-today" aria-expanded="false" aria-label="Open Today" title="Open Today">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" /></svg>
+    </button>
+    <span class="frame-caption">Today</span>
+  </aside>
+
+  <aside id="frame-sheet" class="frame-region frame-column frame-sheet" aria-label="Sheet">
+    <section id="world-character-sheet" class="frame-sheet-content" aria-labelledby="world-sheet-name" hidden>
+      <header class="frame-sheet-head">
+        <div class="frame-sheet-titles">
+          <span class="frame-kind"><span id="world-sheet-code" class="frame-code"></span><span id="world-hp-label"></span></span>
+          <h2 id="world-sheet-name" class="frame-display">Country</h2>
+          <div id="world-hp-track"></div>
+        </div>
+        <button id="world-sheet-close" class="frame-iconbtn" type="button" aria-label="Clear country selection" title="Close the sheet">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+        </button>
+      </header>
+      <div id="world-sheet-tabs" class="frame-tabs" role="tablist" aria-label="Sheet sections"></div>
+      <div id="world-sheet-body" class="frame-sheet-body" data-rail-scroller>
+        <section id="world-card-content" hidden></section>
+        <div id="world-country-content">
+          <div id="world-sheet-content" role="tabpanel"></div>
+          <section id="world-since-turn" hidden></section>
+          <div id="world-sheet-extra" hidden></div>
+          <p id="world-coverage" class="world-detail"></p>
+          <p id="world-no-data" class="world-detail" hidden></p>
+        </div>
+      </div>
+    </section>
+  </aside>
+
+  <footer id="frame-bottom" class="frame-region frame-bar frame-bottom">
+    <section id="world-lens-bar" class="frame-lens" aria-label="World Board lenses" hidden>
+      <span class="frame-caption">Lens</span>
+      <div role="group" aria-label="World Board lens" class="world-lens-options frame-seg"></div>
+      <div id="world-areas" class="frame-popup frame-areas" role="group" aria-label="Strength area" hidden></div>
+    </section>
+    <aside id="world-legend" class="frame-legend" aria-label="World Board legend" hidden>
+      <div class="frame-legend-row">
+        <strong id="world-legend-title"></strong>
+        <span class="world-legend-ramp" aria-hidden="true"></span>
+        <span id="world-legend-stops"></span>
+        <span class="world-legend-unknown"><span class="world-hatch" aria-hidden="true"></span>Unknown or disputed</span>
+      </div>
+      <span id="world-legend-note"></span>
+    </aside>
+    <span class="frame-grow"></span>
+    <button id="frame-layers" class="frame-btn" type="button" aria-controls="data-panel" aria-expanded="false">Layers</button>
+    <button id="frame-presets" class="frame-btn" type="button" aria-controls="lens-bar" aria-expanded="true">Presets</button>
+    <div class="frame-seg" role="group" aria-label="Zoom">
+      <button id="frame-zoom-out" type="button" aria-label="Zoom out" title="Zoom out">−</button>
+      <button id="frame-zoom-in" type="button" aria-label="Zoom in" title="Zoom in">+</button>
+    </div>
+    <button id="frame-voice" class="frame-iconbtn" type="button" aria-label="Voice" title="Voice" aria-pressed="false" hidden>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="6" y="2" width="4" height="7.5" rx="2" /><path d="M3.5 7.5a4.5 4.5 0 009 0M8 12v2" /></svg>
+    </button>
+  </footer>
+
+  <aside id="world-hover" class="world-board-hud" data-panel-surface aria-hidden="true" hidden>
+    <strong id="world-hover-name"></strong>
+    <span id="world-hover-value"></span>
+  </aside>

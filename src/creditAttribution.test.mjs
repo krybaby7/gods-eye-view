@@ -202,6 +202,9 @@ const RECOGNIZED = new Set([
   '#command-dock',
   '#command-dock:has(#location-bar:not(.collapsed))',
   '#command-dock:has(#control-panel:not(.collapsed))',
+  // the frame (roadmap 1.2): resolved by the frame test below
+  'body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(.ui-embed) #cesium-credits',
+  'body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(.ui-embed) #command-dock',
   // rail
   '#right-context-rail',
   '#right-context-rail.layout-focus',
@@ -433,6 +436,30 @@ test('the model refuses every cascade construct it cannot resolve', () => {
     }
   }
   assert.deepEqual(complaints, [], `the attribution model cannot resolve:\n  ${complaints.join('\n  ')}\n`);
+});
+
+const FRAMED = 'body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(.ui-embed)';
+
+test('in the frame the credit sits on the bottom bar and the dock stays above it', () => {
+  const foundation = fs.readFileSync(path.join(ROOT, 'src/ui/styles/foundation.css'), 'utf8');
+  const bar = Number(foundation.match(/--frame-bar: (\d+)px;/)?.[1]);
+  const status = Number(foundation.match(/--frame-status: (\d+)px;/)?.[1]);
+  for (const width of WIDTHS) {
+    for (const height of HEIGHTS) {
+      const credit = resolve([...CREDIT_SELECTORS, `${FRAMED} #cesium-credits`], 'bottom', width, 'framed credit');
+      assert.equal(credit.part, `${FRAMED} #cesium-credits`, 'the frame places the credit');
+      const creditBottom = toPx(credit.decl.value, height, 'framed credit bottom');
+      assert.equal(creditBottom, bar, 'the credit stands on the bottom bar, not under it');
+      const dock = resolve(['#command-dock', `${FRAMED} #command-dock`], 'bottom', width, 'framed dock');
+      assert.equal(dock.part, `${FRAMED} #command-dock`, 'the frame places the dock');
+      const dockBottom = toPx(dock.decl.value, height, 'framed dock bottom');
+      assert.ok(dockBottom >= bar + status, 'the dock clears the status line');
+      assert.ok(dockBottom >= creditBottom + CREDIT_HEIGHT_PX + MIN_CLEARANCE_PX,
+        `the dock (${dockBottom}px) keeps clear of the credit at ${width}x${height}`);
+    }
+  }
+  // Clean view and recording keep their own credit rules, as before.
+  assert.ok(RULES.some((rule) => rule.parts.includes('body.ui-clean-view #cesium-credits')));
 });
 
 test('custom properties inside modelled offsets are provably non-negative', () => {

@@ -2437,6 +2437,8 @@
       "src/ui/worldPanel.js",
       "src/ui/worldEnergyPanels.js",
       "src/ui/worldPanelModel.js",
+      "src/ui/frame.js",
+      "src/ui/frameGauges.js",
       "src/ui/searchesPanel.js",
       "src/ui/searchesPanelModel.js",
       "src/layers/world/phase-3.js",
