@@ -26,7 +26,7 @@ import {
   SCOPE_TERMINUS_QUANTUM,
   _resetScopeMaskForTest,
 } from './scopeMask.js';
-import { KEYHOLE_OUTER_RADIUS } from './celestialRing.js';
+import { KEYHOLE_OUTER_RADIUS } from './keyholeGeometry.js';
 
 beforeEach(() => {
   _resetScopeMaskForTest();

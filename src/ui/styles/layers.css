@@ -40,19 +40,6 @@
   transform: translateY(0);
 }
 
-#data-panel .panel-glow {
-  position: absolute;
-  inset: -20px;
-  background: radial-gradient(
-    ellipse at center,
-    var(--accent-dim) 0%,
-    transparent 60%
-  );
-  filter: blur(20px);
-  opacity: 0.25;
-  pointer-events: none;
-}
-
 .data-panel-inner {
   position: relative;
   background: var(--glass-bg);
@@ -1002,18 +989,6 @@ button.search-layers-shortcut {
     animation: none;
   }
 }
-#global-context-panel .panel-glow {
-  position: absolute;
-  inset: -20px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(98, 181, 255, 0.2) 0%,
-    transparent 62%
-  );
-  filter: blur(20px);
-  opacity: 0.24;
-  pointer-events: none;
-}
 .global-context-panel-inner {
   position: relative;
   display: flex;
@@ -1195,56 +1170,6 @@ button.search-layers-shortcut {
 }
 .global-context-actions:has(#cockpit-entry[hidden]) {
   grid-template-columns: 1fr;
-}
-/* TR-3B reclassify toggle rides an `auto` trailing column so the chip never
-   resizes the COCKPIT / SEARCH buttons beside it. */
-.global-context-actions:has(#tr3b-toggle:not([hidden])) {
-  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
-}
-.global-context-actions:has(#cockpit-entry[hidden]):has(
-    #tr3b-toggle:not([hidden])
-  ) {
-  grid-template-columns: minmax(0, 1fr) auto;
-}
-.tr3b-toggle {
-  width: 26px;
-  min-height: 30px;
-  padding: 0;
-  border: 1px solid rgba(98, 181, 255, 0.22);
-  border-radius: 5px;
-  background: rgba(42, 113, 171, 0.08);
-  /* The saucer is a COLOR-font glyph: `color` and `text-shadow` cannot touch
-     it, so the dim/lit states are carried by `filter` alongside the border and
-     fill. 14px sits inside the 26px chip with breathing room. */
-  font:
-    14px/1 ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    monospace;
-  filter: grayscale(0.6) opacity(0.62);
-  cursor: pointer;
-  transition:
-    filter 160ms ease,
-    border-color 160ms ease,
-    background 160ms ease;
-}
-.tr3b-toggle[hidden] {
-  display: none;
-}
-.tr3b-toggle:hover,
-.tr3b-toggle:focus-visible {
-  border-color: rgba(127, 200, 255, 0.6);
-  background: rgba(66, 148, 211, 0.18);
-  filter: grayscale(0.15) opacity(0.95);
-  outline: none;
-}
-.tr3b-toggle[aria-pressed='true'] {
-  border-color: rgba(190, 220, 255, 0.75);
-  background: rgba(20, 23, 28, 0.9);
-  /* Active: full-colour saucer with a soft halo. drop-shadow works on an emoji
-     where text-shadow does not, so the glyph itself telegraphs the state
-     rather than relying on the chrome alone. */
-  filter: drop-shadow(0 0 5px rgba(150, 210, 255, 0.9));
 }
 .global-context-modes {
   display: grid;

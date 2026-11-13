@@ -292,7 +292,7 @@ test('detection holds nothing, and asks for its own frames instead', async () =>
   assert.match(
     paintLane,
     /detectionNeedsFollowUpFrame\(\{[\s\S]*?\n\s*nowMs,/,
-    'the sonar cadence and fade demand share the same frame-clock sample',
+    'the fade demand reads the same frame-clock sample',
   );
   assert.match(paintLane, /animatingLabelCount: result\.animatingCount/,
     'demand counts fades in both directions');

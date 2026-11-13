@@ -98,10 +98,6 @@
   max-width: 110px;
 }
 
-#command-dock .panel-glow {
-  display: none;
-}
-
 #command-dock .panel-inner,
 #command-dock .location-inner,
 #command-dock #control-panel.collapsed .panel-inner,
@@ -219,16 +215,6 @@ body:not(.ui-clean-view):not(.recording-mode) #cesium-credits {
   bottom: calc(2vh + 7rem);
 }
 
-body:not(.ui-clean-view):not(.recording-mode):has(
-    #intel-hud[data-variant='minimal'].active
-  )
-  #cesium-credits {
-  right: 36px;
-  left: auto;
-  width: min(340px, calc(100vw - 72px)) !important;
-  text-align: right;
-}
-
 body.ui-clean-view #command-dock,
 body.recording-mode #command-dock {
   opacity: 0 !important;
@@ -241,14 +227,6 @@ body.recording-mode #cesium-credits {
   right: auto;
   bottom: 36px;
   left: 36px;
-}
-
-#intel-hud[data-variant='minimal'] .hud-bottom-left {
-  bottom: calc(2vh + 7.5rem);
-}
-
-#intel-hud[data-variant='minimal'] .hud-bottom-bar {
-  bottom: calc(2vh + 11.5rem);
 }
 
 @media (max-width: 980px) {
@@ -276,14 +254,6 @@ body.recording-mode #cesium-credits {
 
   body:not(.ui-clean-view):not(.recording-mode) #cesium-credits {
     bottom: calc(2vh + 9.5rem);
-  }
-
-  #intel-hud[data-variant='minimal'] .hud-bottom-left {
-    bottom: calc(2vh + 12rem);
-  }
-
-  #intel-hud[data-variant='minimal'] .hud-bottom-bar {
-    bottom: calc(2vh + 16rem);
   }
 }
 

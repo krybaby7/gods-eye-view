@@ -249,9 +249,7 @@ export function _updateCctvSyncChip(loading, enabled) {
     clearTimeout(this._cctvChipHideTimer);
     this._cctvChipHideTimer = null;
     this._cctvChipWasBusy = true;
-    this.actions.setSplitFlapText(this._cctvSyncLabel, 'loading frames');
-    // The counter is left plain on purpose: it ticks every few frames
-    // during a grid load, and flapping it would read as a slot machine.
+    this._cctvSyncLabel.textContent = 'loading frames';
     this._cctvSyncProgress.textContent = `${loaded}/${total}`;
     this._cctvSyncChip.classList.add('visible');
     return;
@@ -260,7 +258,7 @@ export function _updateCctvSyncChip(loading, enabled) {
   if (this._cctvChipWasBusy && enabled && total > 0) {
     // Load just completed — flash the final count, then auto-hide.
     this._cctvChipWasBusy = false;
-    this.actions.setSplitFlapText(this._cctvSyncLabel, 'camera grid ready');
+    this._cctvSyncLabel.textContent = 'camera grid ready';
     this._cctvSyncProgress.textContent = `${total}/${total}`;
     this._cctvSyncChip.classList.add('visible');
     clearTimeout(this._cctvChipHideTimer);

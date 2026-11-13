@@ -30,7 +30,7 @@ const EMPTY = {
 
 export function createWorldLayer({
   source,
-  services: { picking = {}, render = {} } = {},
+  services: { picking = {}, render = {}, cover = null } = {},
 } = {}) {
   const listeners = new Set();
   let viewer;
@@ -149,7 +149,7 @@ export function createWorldLayer({
       for (const overlay of overlays) overlay.update(state);
       overlaysDirty = false;
     }
-    geometry.cullLabels(camera);
+    geometry.cullLabels(camera, cover);
     for (const overlay of overlays) overlay.frame?.(camera);
   }
 

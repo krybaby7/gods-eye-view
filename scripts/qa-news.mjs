@@ -2022,28 +2022,16 @@ async function main() {
       },
     );
 
-    await step('the Cyber theme keeps the panel usable', async () => {
-      await page.evaluate(() => {
-        const select = document.getElementById('hud-layout-select');
-        select.value = 'cyber';
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-      await waitFor(
-        page,
-        () => document.documentElement.dataset.uiTheme === 'cyber',
-        null,
-        'the Cyber theme',
-      );
+    await step('the panel stays usable', async () => {
       await wait(800);
       const s = await newsState(page);
-      assert.equal(s.theme, 'cyber');
       assert.equal(s.panelHidden, false);
       const box = await page.$eval('#situation-panel', (n) => {
         const r = n.getBoundingClientRect();
         return { width: r.width, height: r.height };
       });
       assert.ok(box.width > 200 && box.height > 40, JSON.stringify(box));
-      await shot(page, '07-cyber');
+      await shot(page, '07-panel');
       if (fixtures) {
         assert.equal((await briefState(page)).expanded, 'true');
         const fit = await overflow(page);
@@ -2054,14 +2042,8 @@ async function main() {
             .scrollIntoView({ block: 'start' }),
         );
         await wait(300);
-        await shot(page, '18-brief-cyber');
+        await shot(page, '18-brief');
       }
-      await page.evaluate(() => {
-        const select = document.getElementById('hud-layout-select');
-        select.value = 'tactical';
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-      await wait(500);
     });
 
     if (fixtures)
@@ -2480,29 +2462,9 @@ async function main() {
 
     if (fixtures)
       await step(
-        'World in the Cyber theme and at 720 px and 390 px fits without horizontal scroll',
+        'World at 720 px and 390 px fits without horizontal scroll',
         async () => {
-          await page.evaluate(() => {
-            const select = document.getElementById('hud-layout-select');
-            select.value = 'cyber';
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-          });
-          await waitFor(
-            page,
-            () => document.documentElement.dataset.uiTheme === 'cyber',
-            null,
-            'the Cyber theme',
-          );
-          await wait(800);
-          let fit = await overflow(page);
-          assert.ok(fit.body <= 1, JSON.stringify(fit));
-          await shot(page, '25-world-cyber');
-          await page.evaluate(() => {
-            const select = document.getElementById('hud-layout-select');
-            select.value = 'tactical';
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-          });
-          await wait(500);
+          let fit;
           for (const [width, height, name] of [
             [720, 900, '26-world-720'],
             [390, 844, '27-world-390'],

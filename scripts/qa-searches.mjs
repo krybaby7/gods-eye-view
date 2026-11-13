@@ -1040,21 +1040,8 @@ async function main() {
     );
 
     await step(
-      'The panel fits Cyber and narrow widths and collapses in Cockpit',
+      'The panel fits narrow widths and collapses in Cockpit',
       async () => {
-        const setTheme = (theme) =>
-          page.evaluate((value) => {
-            const select = document.getElementById('hud-layout-select');
-            select.value = value;
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-          }, theme);
-        await setTheme('cyber');
-        await until(
-          page,
-          () => document.documentElement.dataset.uiTheme === 'cyber',
-          null,
-          'Cyber theme',
-        );
         await panelText(page, 'Updated port reporting.');
         for (const width of [720, 390]) {
           await page.setViewport({ width, height: 844 });
@@ -1081,10 +1068,9 @@ async function main() {
               box.overflow <= 1,
             JSON.stringify(box),
           );
-          await shot('08-cyber-' + width);
+          await shot('08-narrow-' + width);
         }
         await page.setViewport(VIEWPORT);
-        await setTheme('tactical');
         // Exercise the same panel-chrome entry point that Cockpit uses. A tracked aircraft is unnecessary.
         await page.evaluate(() =>
           window.__godsEyeView.styleManager._panelChrome.enterCockpit(),

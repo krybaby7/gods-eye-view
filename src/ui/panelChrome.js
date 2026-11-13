@@ -3,6 +3,11 @@ import { displayPanelScroller } from './displayPanelScroll.js';
 import { PanelPositionControls } from './panelPositionControls.js';
 import { PanelLayoutController } from './panelLayoutController.js';
 import {
+  RIGHT_RAIL_SINGLE_PANEL,
+  SINGLE_PANEL_COLLAPSED_CLASS,
+  singlePanelPeersToClose,
+} from './railSinglePanel.js';
+import {
   bindPanelDisclosure,
   collapsePanelOnEscape,
   createHoverDisclosure,
@@ -358,7 +363,7 @@ export class PanelChrome {
       // restore the user's explicit expanded preference at its own viewport.
       const collapsed =
         panelEl.classList.contains('layout-auto-collapsed') ||
-        panelEl.classList.contains('cyber-accordion-collapsed')
+        panelEl.classList.contains(SINGLE_PANEL_COLLAPSED_CLASS)
           ? false
           : panelEl.classList.contains('collapsed');
       const entry = { id: spec.id, collapsed };
@@ -418,31 +423,19 @@ export class PanelChrome {
     const nextCollapsed = Boolean(collapsed);
     const wasAutoCollapsed =
       panelEl.classList.contains('layout-auto-collapsed') ||
-      panelEl.classList.contains('cyber-accordion-collapsed');
-    // A user opening a Cyber rail panel owns the whole accordion, including
-    // peers that were only presentation-collapsed during a saved-state restore.
-    // A floating window is outside the accordion both ways.
-    if (
-      explicit &&
-      !restore &&
-      !nextCollapsed &&
-      document.documentElement?.dataset.uiTheme === 'cyber' &&
-      panelEl.parentElement === this._rightPanelStack &&
-      !panelEl.classList.contains('panel-floating')
-    ) {
-      for (const peer of this._rightPanelStack.children) {
-        if (
-          peer !== panelEl &&
-          peer.matches('[data-panel-id]') &&
-          !peer.classList.contains('panel-floating') &&
-          !peer.hidden
-        ) {
-          this.setPanelCollapsed(peer.id, true, {
-            explicit,
-            persist,
-            syncShare: false,
-          });
-        }
+      panelEl.classList.contains(SINGLE_PANEL_COLLAPSED_CLASS);
+    // With the one-panel rule on, a user opening a rail panel owns the whole
+    // rail, including peers only presentation-collapsed during a restore.
+    if (RIGHT_RAIL_SINGLE_PANEL && explicit && !restore && !nextCollapsed) {
+      for (const peer of singlePanelPeersToClose(
+        panelEl,
+        this._rightPanelStack,
+      )) {
+        this.setPanelCollapsed(peer.id, true, {
+          explicit,
+          persist,
+          syncShare: false,
+        });
       }
     }
     const leftOwnerPanel = this._leftPanelStack?.contains(panelEl)
@@ -476,23 +469,6 @@ export class PanelChrome {
     ) {
       this._panelLayout._rightStackPreferredPanelId = null;
     }
-    // Reveal Radio's owner before the no-op check: the nested section may
-    // already be expanded while its Context parent is closed.
-    if (
-      document.documentElement?.dataset.uiTheme === 'cyber' &&
-      !nextCollapsed &&
-      panelId === 'radio-panel' &&
-      document
-        .getElementById('global-context-panel')
-        ?.classList.contains('collapsed')
-    ) {
-      this.setPanelCollapsed('global-context-panel', false, {
-        explicit,
-        restore,
-        persist,
-        syncShare,
-      });
-    }
     if (
       panelEl.classList.contains('collapsed') === nextCollapsed &&
       !wasAutoCollapsed
@@ -508,7 +484,7 @@ export class PanelChrome {
     }
     panelEl.classList.remove(
       'layout-auto-collapsed',
-      'cyber-accordion-collapsed',
+      SINGLE_PANEL_COLLAPSED_CLASS,
     );
     if (
       !nextCollapsed &&
@@ -531,7 +507,6 @@ export class PanelChrome {
     if (
       !nextCollapsed &&
       panelId === 'radio-panel' &&
-      document.documentElement?.dataset.uiTheme !== 'cyber' &&
       document
         .getElementById('global-context-panel')
         ?.classList.contains('collapsed')

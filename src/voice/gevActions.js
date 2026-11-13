@@ -700,7 +700,7 @@ export function createGevActionRunner({
       const style = normalizeStyle(args.style);
       if (!style)
         throw new Error(`Unknown visual style: ${args.style || 'missing'}`);
-      styleManager.setStyle(style, { userInitiated: true });
+      styleManager.setStyle(style);
       return { ok: true, action: 'set_visual_style', style };
     }
 
@@ -1101,17 +1101,6 @@ export function createGevActionRunner({
         Object.assign(out, result);
       }
       return { ...out, hud: styleManager.getControlState().hud };
-    }
-
-    if (name === 'set_cyber_sonar') {
-      if (typeof styleManager?.setCyberSonar !== 'function') {
-        return {
-          ok: false,
-          action: 'set_cyber_sonar',
-          error: 'Cyber sonar controls are unavailable.',
-        };
-      }
-      return { action: 'set_cyber_sonar', ...styleManager.setCyberSonar(args) };
     }
 
     if (name === 'set_detection') {

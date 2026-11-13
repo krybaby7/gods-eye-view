@@ -1,5 +1,5 @@
 import { createRocketLaunchesLayer } from '../../layers/launches/index.js';
-import * as geometry from '../../celestialRing.js';
+import * as geometry from '../../keyholeGeometry.js';
 import * as overlays from '../../overlays/worldOverlay.js';
 import * as render from '../../renderGovernor.js';
 

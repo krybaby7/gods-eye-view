@@ -1,5 +1,4 @@
 import * as Cesium from 'cesium';
-import { cyberSonarBaseAlpha } from '../../cyberSonar.js';
 import {
   turnRateFromFixHistory,
   liftRepeatedGroundFix,
@@ -166,7 +165,7 @@ export function createFlightSnapshotRenderer({
           // freshness × focus × horizon alpha composition.
           bb.color = rendering
             ._fleetBillboardColor(icao24)
-            .withAlpha(cyberSonarBaseAlpha(bb));
+            .withAlpha(bb.color?.alpha ?? 1);
         }
         if (
           prevMeta?.klass !== meta.klass ||

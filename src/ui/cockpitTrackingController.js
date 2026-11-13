@@ -32,42 +32,11 @@ export function dispatchCockpitModeChanged(active, info = null) {
   );
 }
 
-export function toggleTrackedTr3b() {
-  if (this.destroyed) return false;
-  const info = this.readAircraftInfo();
-  const icao24 = String(info?.icao24 || '').trim();
-  if (!icao24) return false;
-  this.services.toggleTr3b(icao24);
-  const layer =
-    info.layerId === 'military'
-      ? this.services.militaryFlightsLayer
-      : this.services.flightsLayer;
-  layer.refreshTr3b?.(icao24);
-  this._tr3bSignature = null; // force the chip to repaint on the next sync
-  this.syncTr3bToggle(info);
-  return true;
-}
-
-export function syncTr3bToggle(info) {
-  if (!this.tr3bToggle) return;
-  const icao24 = String(info?.icao24 || '').trim();
-  const converted = !!icao24 && this.services.isTr3b(icao24);
-  const signature = icao24 ? `${icao24}:${converted ? 1 : 0}` : '';
-  if (this._tr3bSignature === signature) return;
-  this._tr3bSignature = signature;
-  this.tr3bToggle.hidden = !icao24;
-  this.tr3bToggle.setAttribute('aria-pressed', converted ? 'true' : 'false');
-  this.tr3bToggle.title = converted
-    ? 'Restore real aircraft'
-    : 'Reclassify as TR-3B';
-}
-
 export function syncEntry() {
   if (this.destroyed) return false;
   if (this.active) return;
   const info = this.readAircraftInfo();
   const trackedContact = !!(info && this.viewer.trackedEntity?.position);
-  this.syncTr3bToggle(trackedContact ? info : null);
   const available = !!(this.isEntryAllowed() && trackedContact);
   // Change-only DOM writes: this runs on a preUpdate cadence, and
   // unconditional `hidden` assignments invalidate style/layout every frame
@@ -169,10 +138,6 @@ export function enter() {
   // syncEntry re-applies every write (notably re-hiding mapViewButton).
   this._entryAvailable = undefined;
   if (this.entry) this.entry.hidden = true;
-  if (this.tr3bToggle) {
-    this.tr3bToggle.hidden = true;
-    this._tr3bSignature = null;
-  }
   if (this.mapViewButton) this.mapViewButton.hidden = false;
   if (this.resetGlobeButton) this.resetGlobeButton.hidden = false;
   if (this.hud) this.hud.hidden = false;

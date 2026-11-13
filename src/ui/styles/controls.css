@@ -9,19 +9,6 @@
   max-width: 680px;
 }
 
-#control-panel .panel-glow {
-  position: absolute;
-  inset: -30px;
-  background: radial-gradient(
-    ellipse at center bottom,
-    var(--accent-dim) 0%,
-    transparent 60%
-  );
-  filter: blur(30px);
-  opacity: 0.4;
-  pointer-events: none;
-}
-
 .panel-inner {
   position: relative;
   background: var(--glass-bg);
@@ -401,20 +388,6 @@
   width: 128px;
   height: auto;
   margin: 0 auto 24px;
-  filter: drop-shadow(0 0 24px rgba(0, 246, 255, 0.42));
-  animation: logo-pulse 2s ease-in-out infinite;
-}
-
-@keyframes logo-pulse {
-  0%,
-  100% {
-    opacity: 0.72;
-    transform: scale(0.98);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.02);
-  }
 }
 
 .loader-content h2 {
@@ -801,28 +774,6 @@
   min-width: 200px;
 }
 
-.cyber-sonar-control {
-  display: none;
-}
-
-:root[data-ui-theme='cyber'] .cyber-sonar-control {
-  display: flex;
-}
-
-.cyber-sonar-toggle-row,
-.cyber-sonar-setting {
-  min-width: 200px;
-}
-
-.cyber-sonar-toggle-row .pp-mode-btn {
-  margin-left: auto;
-  min-width: 48px;
-}
-
-:root[data-cyber-sonar='off'] .cyber-sonar-setting {
-  display: none;
-}
-
 /* Map Source tiles live with Visual Presets in the bottom command tray. */
 .map-source-section {
   display: grid;
@@ -1092,7 +1043,6 @@ body.ui-clean-view #clean-view-exit {
 }
 
 body.ui-clean-view #title-bar,
-body.ui-clean-view #style-indicator,
 body.ui-clean-view #top-center-actions,
 body.ui-clean-view #globe-navigation,
 body.ui-clean-view #global-loading-status,

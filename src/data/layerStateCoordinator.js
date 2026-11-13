@@ -11,6 +11,8 @@ import {
   SHARE_TRACKING_RESTORE_POLICIES,
   cloneLayerState,
   createDefaultLayerState,
+  FIRST_START_LAYER_IDS,
+  createFirstStartLayerState,
   isExplicitLayerStateOrigin,
   layerOptionsForRestore,
   normalizeLayerState,
@@ -109,6 +111,7 @@ export class LayerStateCoordinator {
     let selected = shareLayerState
       ? normalizeLayerState(shareLayerState)
       : null;
+    let firstStart = false;
     if (selected) {
       this._source = 'share';
       this._shareCreatedAtMs = Number.isFinite(shareCreatedAtMs)
@@ -126,6 +129,11 @@ export class LayerStateCoordinator {
       if (stored) {
         selected = stored;
         this._source = 'local';
+      } else {
+        // Nothing saved and no link: the board starts on. Only its visibility
+        // is restored, and it is not written to storage until the visitor
+        // makes an explicit choice.
+        firstStart = true;
       }
     } else {
       // A valid historical camera/style share with no v2 layer payload keeps
@@ -133,12 +141,18 @@ export class LayerStateCoordinator {
       // unrelated recipient's saved local layer preferences.
       this._source = 'legacy-share';
     }
-    this._durableState = selected || createDefaultLayerState();
+    this._durableState =
+      selected ||
+      (firstStart ? createFirstStartLayerState() : createDefaultLayerState());
     this.shareLinkManager?.setLayerStateProvider?.(() =>
       this.getDurableState(),
     );
     this.shareLinkManager?.onLayerStateChange?.();
     this._notifyDurableState();
+    if (firstStart) {
+      this.restorePromise = this._restoreFirstStartLayers();
+      return this.restorePromise;
+    }
     if (!selected) return this.restorePromise;
     this.restorePromise = this._restoreSelectedState(
       this._source === 'share'
@@ -309,6 +323,48 @@ export class LayerStateCoordinator {
     await (typeof this.restoreGate === 'function'
       ? this.restoreGate()
       : this.restoreGate);
+  }
+
+  /**
+   * Turn on the first-start layers without touching any option: every option
+   * already boots at its default, so only visibility needs restoring.
+   */
+  async _restoreFirstStartLayers() {
+    const origin = LAYER_RESTORE_ORIGINS.local;
+    for (const layerId of FIRST_START_LAYER_IDS) {
+      this._restoreControllers.set(layerId, new AbortController());
+    }
+    try {
+      await this._waitForRestoreGate();
+      const settled = await Promise.allSettled(
+        FIRST_START_LAYER_IDS.map((layerId) => {
+          const controller = this._restoreControllers.get(layerId);
+          if (this._destroyed || controller?.signal.aborted)
+            return { layerId, targetEnabled: true, origin, succeeded: false };
+          return this.dataManager.restoreLayerState(
+            layerId,
+            { enabled: true, params: null },
+            { origin, signal: controller.signal },
+          );
+        }),
+      );
+      this.lastRestoreResults = settled.map((result, index) =>
+        result.status === 'fulfilled'
+          ? result.value
+          : {
+              layerId: FIRST_START_LAYER_IDS[index],
+              targetEnabled: true,
+              origin,
+              errorClass: result.reason?.name || 'Error',
+              error: String(result.reason?.message || result.reason),
+              succeeded: false,
+            },
+      );
+      return this.lastRestoreResults.map((result) => ({ ...result }));
+    } finally {
+      this._restoreControllers.clear();
+      this._notifyDurableState();
+    }
   }
 
   async _restoreSelectedState(origin) {

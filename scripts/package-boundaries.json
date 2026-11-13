@@ -550,6 +550,7 @@
       "src/ui/displayPanelScroll.js",
       "src/ui/leftPanelRail.js",
       "src/ui/rightPanelRail.js",
+      "src/ui/railSinglePanel.js",
       "src/ui/panelMeasurement.js",
       "src/ui/panelRailGeometry.js",
       "src/panelStackLayout.js"
@@ -725,7 +726,6 @@
     "modules": [
       "src/hudLayouts.js",
       "src/hudLayoutPolicy.js",
-      "src/cyberSonar.js",
       "src/ui/radioPanelPlacement.js",
       "src/app/stateChannel.js",
       "src/app/renderQuality.js",
@@ -754,7 +754,6 @@
       "src/navigationPolicy.js",
       "src/panelStackLayout.js",
       "src/rightRailPolicy.js",
-      "src/splitFlap.js",
       "src/styles/anime.js",
       "src/styles/noir.js",
       "src/styles/retro.js",
@@ -762,7 +761,6 @@
       "src/styles/surveillance.js",
       "src/styles/thermal.js",
       "src/ui/applicationShell.js",
-      "src/ui/cyberSonarControls.js",
       "src/ui/locationNavigation.js",
       "src/ui/cockpitCoordinator.js",
       "src/ui/cameraOrientationControls.js",
@@ -816,6 +814,7 @@
       "src/ui/mapSourceControls.js",
       "src/ui/navigationController.js",
       "src/ui/panelChrome.js",
+      "src/ui/railSinglePanel.js",
       "src/ui/panelDisclosure.js",
       "src/ui/panelLayoutController.js",
       "src/ui/panelMeasurement.js",
@@ -980,7 +979,6 @@
   "civil-flights": {
     "exports": ["./layers/flights"],
     "modules": [
-      "src/cyberSonar.js",
       "src/data/aircraftClass.js",
       "src/data/aircraftIcons.js",
       "src/data/aircraftMeta.js",
@@ -1023,7 +1021,6 @@
   "military-flights": {
     "exports": ["./layers/military"],
     "modules": [
-      "src/cyberSonar.js",
       "src/data/aircraftClass.js",
       "src/data/aircraftIcons.js",
       "src/data/aircraftMeta.js",
@@ -1199,7 +1196,6 @@
   "launches-layer": {
     "exports": ["./layers/launches"],
     "modules": [
-      "src/cyberSonar.js",
       "src/layers/launches/camera.js",
       "src/layers/launches/controls.js",
       "src/layers/launches/index.js",
@@ -1261,7 +1257,6 @@
   "awareness-layer": {
     "exports": ["./layers/awareness"],
     "modules": [
-      "src/cyberSonar.js",
       "src/cockpitMath.js",
       "src/data/iconOrientation.js",
       "src/data/militaryAwarenessEngine.js",
@@ -1624,12 +1619,9 @@
       "./standalone/catalog"
     ],
     "modules": [
-      "src/cyberSonarScene.js",
-      "src/cyberSonar.js",
       "src/hudLayouts.js",
       "src/hudLayoutPolicy.js",
       "src/ui/radioPanelPlacement.js",
-      "src/cyberSonarGpu.js",
       "src/scenes/nepalEvidencePack.js",
       "src/data/bhoteKoshiEvent.js",
       "src/ui/imagerySplit.js",
@@ -1654,6 +1646,7 @@
       "src/app/layerPresentation.js",
       "src/app/layers/aisLiveVessels.js",
       "src/app/layers/alprCameras.js",
+      "src/keyholeGeometry.js",
       "src/app/layers/bikeshare.js",
       "src/app/layers/cctv.js",
       "src/app/layers/earthquakes.js",
@@ -2037,7 +2030,6 @@
       "src/loadingFeedback.js",
       "src/locationStatus.js",
       "src/locations.js",
-      "src/logoGaze.js",
       "src/mapStackChips.js",
       "src/mapStackController.js",
       "src/mapStartup.js",
@@ -2083,7 +2075,6 @@
       "src/sources/live/contract.js",
       "src/sources/live/standalone.js",
       "src/sources/live/vessels.js",
-      "src/splitFlap.js",
       "src/standalone/catalog.js",
       "src/standalone/layerSources.js",
       "src/styles/anime.js",
@@ -2093,7 +2084,6 @@
       "src/styles/surveillance.js",
       "src/styles/thermal.js",
       "src/ui/applicationShell.js",
-      "src/ui/cyberSonarControls.js",
       "src/ui/locationNavigation.js",
       "src/ui/cockpitCoordinator.js",
       "src/ui/cameraOrientationControls.js",
@@ -2148,6 +2138,7 @@
       "src/ui/mapSourceControls.js",
       "src/ui/navigationController.js",
       "src/ui/panelChrome.js",
+      "src/ui/railSinglePanel.js",
       "src/ui/panelDisclosure.js",
       "src/ui/panelLayoutController.js",
       "src/ui/panelMeasurement.js",
@@ -2432,6 +2423,7 @@
       "src/layers/searches/records.js",
       "src/layers/searches/source.js",
       "src/app/layers/world.js",
+      "src/overlays/panelCover.js",
       "src/layers/world/geometry.js",
       "src/layers/world/energy.js",
       "src/layers/world/energyOverlay.js",
@@ -2489,7 +2481,6 @@
   "application-layer-construction": {
     "exports": ["./application/layers"],
     "modules": [
-      "src/cyberSonar.js",
       "src/data/bhoteKoshiEvent.js",
       "src/ui/imagerySplit.js",
       "src/maps/imageryComparison.js",
@@ -2515,6 +2506,7 @@
       "src/layers/weather/rasterTiles.js",
       "src/app/layers/aisLiveVessels.js",
       "src/app/layers/alprCameras.js",
+      "src/keyholeGeometry.js",
       "src/app/layers/bikeshare.js",
       "src/app/layers/cctv.js",
       "src/app/layers/earthquakes.js",
@@ -3009,6 +3001,7 @@
       "src/layers/searches/records.js",
       "src/layers/searches/source.js",
       "src/app/layers/world.js",
+      "src/overlays/panelCover.js",
       "src/layers/world/geometry.js",
       "src/layers/world/energy.js",
       "src/layers/world/energyOverlay.js",
@@ -3148,7 +3141,6 @@
   "ui-visual-settings": {
     "exports": ["./ui/visual-settings"],
     "modules": [
-      "src/cyberSonar.js",
       "src/hudLayouts.js",
       "src/hudLayoutPolicy.js",
       "src/ui/radioPanelPlacement.js",
@@ -3181,6 +3173,7 @@
       "src/panelStackLayout.js",
       "src/ui/leftPanelRail.js",
       "src/ui/panelChrome.js",
+      "src/ui/railSinglePanel.js",
       "src/ui/panelDisclosure.js",
       "src/ui/panelLayoutController.js",
       "src/ui/panelMeasurement.js",
@@ -3491,9 +3484,9 @@
   "transit-standalone": {
     "exports": ["./layers/transit/standalone"],
     "modules": [
-      "src/cyberSonar.js",
       "src/app/sourceSlot.js",
       "src/celestialRing.js",
+      "src/keyholeGeometry.js",
       "src/data/cameraSensitivity.js",
       "src/data/contactPlayback.js",
       "src/data/contactTrailRenderer.js",
