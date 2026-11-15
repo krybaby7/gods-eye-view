@@ -400,13 +400,16 @@ body.gev-frame {
   color: var(--text-1);
 }
 
-/* The legend's marks (title, ramp and stops or the classes with their
-   swatches, and the unknown key) wrap onto as many lines of the 52 px bar as
-   they need, each mark whole; more than the bar holds closes them up to the
-   dense line, and marks that still do not fit leave the bar whole, from the
-   last back (frameLegend.js measures). The note takes the line left, cut
-   with an ellipsis, and goes when none is left; whatever is left out or cut
-   is read whole in the popover behind the info button. */
+/* The legend is a fixed band of the 52 px bar. Its marks (title, ramp and
+   stops or the classes with their swatches, and the unknown key) wrap onto
+   as many lines as the band holds and the note takes a line under them, cut
+   with an ellipsis. A stop is drawn whole or not at all; the title and the
+   unknown key are always whole. frameLegend.js measures what is drawn: more
+   than the band holds closes up to the dense line, then stops leave from the
+   last back, then the note goes; whatever is left out or cut is read whole
+   in the popover behind the info button. The band's height is fixed, not a
+   cap, so a short legend sits centred with room above and below its first
+   and last lines (whose type is taller than the dense line). */
 .frame-legend {
   display: flex;
   flex: 1 1 auto;
@@ -415,7 +418,7 @@ body.gev-frame {
   align-self: center;
   min-width: 0;
   /* The bar's height less its border and a pixel of air either side. */
-  max-height: calc(var(--frame-bar) - 4px);
+  height: calc(var(--frame-bar) - 4px);
   overflow: hidden;
   font: 500 12px/15px var(--font-sans);
   color: var(--text-2);

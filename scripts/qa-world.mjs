@@ -697,6 +697,19 @@ async function frameLayout(width, height, label) {
                   return !rects.length || !rects.every(within);
                 })
                 .map((node) => node.textContent.trim()),
+              // Where each part was drawn against the legend's box, so a
+              // failure shows which edge it crossed and by how much.
+              box: [frame.left, frame.top, frame.right, frame.bottom].map(
+                Math.round,
+              ),
+              rects: [...marks, note].map((node) => ({
+                part: node.textContent.trim().slice(0, 24),
+                rects: [...node.getClientRects()].map((rect) =>
+                  [rect.left, rect.top, rect.right, rect.bottom].map(
+                    (value) => Math.round(value * 10) / 10,
+                  ),
+                ),
+              })),
               noteText,
               noteWhole:
                 !noteText ||

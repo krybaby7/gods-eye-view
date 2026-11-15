@@ -1,26 +1,30 @@
 /**
  * The legend in the frame's bottom bar, and the way to read it whole.
  *
- * The bar is one 52 px row. The legend's marks (its title, the ramp and its
- * stops or the classes with their swatches, and the "Unknown or disputed"
- * key) wrap onto as many lines as the bar holds, each mark whole; when they
- * need more lines than the bar has at its usual line height they close up to
- * the dense one, and marks that still do not fit leave the bar whole, from
- * the last one back (the title and the Unknown key always stay). The note
- * takes the line that is left, cut short with an ellipsis, and goes when no
- * line is left. Whenever a mark is left out or the note is cut, or the
- * legend is not drawn at all (a phone), a small button at the legend's end
- * opens a popover holding the whole legend.
+ * The bar is one 52 px row and the legend a fixed band of it. The legend's
+ * marks (its title, the ramp and its stops or the classes with their
+ * swatches, and the "Unknown or disputed" key) wrap onto as many lines as the
+ * band holds, and the note takes a line under them, cut short with an
+ * ellipsis. The rule: a stop is shown whole or not at all, and the title and
+ * the Unknown key are always whole. When the marks need more room than the
+ * band has they close up to the dense line; stops that still do not fit leave
+ * the bar, from the last one back; if even that is not enough the note goes
+ * (and the stops that then fit come back). Whenever a stop or the note is
+ * left out or the note is cut, or the legend is not drawn at all (a phone),
+ * a button at the legend's end opens a popover holding the whole legend.
  *
- * What is cut is measured, not guessed: after each change of lens, of the
- * columns beside the globe and of the window's size.
+ * What fits is measured on what is drawn: every part still shown must lie
+ * wholly inside the legend's box, the same test the browser check makes. It
+ * is measured again whenever the legend's words, the room beside it, the
+ * window or the fonts change.
  */
 
 const SLACK = 1;
 
-const px = (value) => {
-  const number = Number.parseFloat(value);
-  return Number.isFinite(number) ? number : 0;
+/** The size of a node's box, to tell a real change from the fit's own. */
+const sizeOf = (node) => {
+  const box = node?.getBoundingClientRect?.();
+  return box ? `${box.width}x${box.height}` : '';
 };
 
 /**
@@ -38,10 +42,41 @@ export function createFrameLegend({ document, window, signal, observers }) {
   if (!legend || !button || !popup) return { sync() {}, close() {} };
   const row = legend.querySelector('.frame-legend-row');
   const note = find('world-legend-note');
+  const title = find('world-legend-title');
+  const unknown = legend.querySelector('.world-legend-unknown');
   const style = (node, pseudo) =>
     window?.getComputedStyle?.(node, pseudo) ?? null;
 
-  /** Lays the legend out for the room it has; true when anything is cut. */
+  const noteText = () => note?.textContent.trim() ?? '';
+  const noteShown = () =>
+    Boolean(noteText()) && !legend.hasAttribute('data-note-off');
+  /** True when every box the node draws lies inside the legend's. */
+  function within(node, frame) {
+    const rects = [...(node.getClientRects?.() ?? [])];
+    return (
+      rects.length > 0 &&
+      rects.every(
+        (rect) =>
+          rect.top >= frame.top - SLACK &&
+          rect.bottom <= frame.bottom + SLACK &&
+          rect.left >= frame.left - SLACK &&
+          rect.right <= frame.right + SLACK,
+      )
+    );
+  }
+  /** True when every part still shown is drawn whole. */
+  function whole(stops) {
+    const frame = legend.getBoundingClientRect();
+    const parts = [
+      title,
+      ...stops.filter((stop) => !stop.hasAttribute('data-out')),
+      unknown,
+    ].filter((node) => node?.textContent.trim());
+    if (noteShown()) parts.push(note);
+    return parts.every((node) => within(node, frame));
+  }
+
+  /** Lays the legend out for the room it has; true when anything is left out or cut. */
   function fit() {
     legend.removeAttribute('data-dense');
     legend.removeAttribute('data-note-off');
@@ -50,28 +85,41 @@ export function createFrameLegend({ document, window, signal, observers }) {
     // A legend that is not drawn (the phone's bar has no room for it) is
     // read only through the popover.
     if (!legend.getClientRects?.().length) return true;
-    const room = px(style(legend)?.maxHeight) || legend.clientHeight;
-    const over = () =>
-      (row?.scrollHeight ?? 0) > room + SLACK ||
-      (row?.scrollWidth ?? 0) > (row?.clientWidth ?? 0) + SLACK;
-    if (over()) legend.setAttribute('data-dense', '');
-    // Marks that still do not fit leave the bar whole, from the last one
-    // back: a mark is shown whole or not at all, and the title and the
-    // Unknown key always stay.
-    let left = 0;
-    for (let at = stops.length - 1; at >= 0 && over(); at -= 1) {
+    let fits = whole(stops);
+    if (!fits) {
+      legend.setAttribute('data-dense', '');
+      fits = whole(stops);
+    }
+    // Stops leave the bar whole, from the last one back.
+    for (let at = stops.length - 1; at >= 0 && !fits; at -= 1) {
       stops[at].setAttribute('data-out', '');
-      left += 1;
+      fits = whole(stops);
     }
-    const marksCut = left > 0 || over();
-    const marks = row?.scrollHeight ?? 0;
-    if (!note?.textContent.trim()) return marksCut;
-    const line = px(style(note)?.lineHeight) || px(style(row)?.lineHeight);
-    if (room - marks < line - SLACK) {
+    // Still no room for the title and the Unknown key: the note gives up its
+    // line, and the stops that then fit come back, in order.
+    if (!fits && noteShown()) {
       legend.setAttribute('data-note-off', '');
-      return true;
+      fits = whole(stops);
+      for (const stop of stops) {
+        if (!fits || !stop.hasAttribute('data-out')) continue;
+        stop.removeAttribute('data-out');
+        if (!whole(stops)) {
+          stop.setAttribute('data-out', '');
+          break;
+        }
+      }
     }
-    return marksCut || note.scrollWidth > note.clientWidth + SLACK;
+    // The usual line height where what is left fits it.
+    if (fits && legend.hasAttribute('data-dense')) {
+      legend.removeAttribute('data-dense');
+      if (!whole(stops)) legend.setAttribute('data-dense', '');
+    }
+    return (
+      !fits ||
+      stops.some((stop) => stop.hasAttribute('data-out')) ||
+      (Boolean(noteText()) && !noteShown()) ||
+      (noteShown() && note.scrollWidth > note.clientWidth + SLACK)
+    );
   }
 
   // ── The popover: the same legend, whole ──
@@ -158,10 +206,20 @@ export function createFrameLegend({ document, window, signal, observers }) {
     if (focus && !button.hidden) button.focus();
   }
 
+  // The boxes whose size can change what fits, and their sizes after the
+  // last fit: a size the fit itself left is not a reason to fit again.
+  const watched = [legend, legend.parentElement, row].filter(Boolean);
+  let seen = new Map();
+  const remember = () => {
+    seen = new Map(watched.map((node) => [node, sizeOf(node)]));
+  };
+  const resized = () => watched.some((node) => seen.get(node) !== sizeOf(node));
+
   function sync() {
     if (legend.hidden) {
       button.hidden = true;
       close();
+      remember();
       return;
     }
     const cut = fit();
@@ -171,6 +229,7 @@ export function createFrameLegend({ document, window, signal, observers }) {
       fill();
       place();
     }
+    remember();
   }
 
   button.addEventListener(
@@ -197,7 +256,9 @@ export function createFrameLegend({ document, window, signal, observers }) {
   );
 
   if (typeof MutationObserver !== 'undefined') {
-    // The board rewrites the legend's words on a change of lens or country.
+    // The board rewrites the legend's words (title, stops, note) anywhere
+    // inside it on a change of lens or country. Only `hidden` is watched
+    // among attributes, so the fit's own data-* marks never call it again.
     const observer = new MutationObserver(sync);
     observer.observe(legend, {
       subtree: true,
@@ -210,13 +271,22 @@ export function createFrameLegend({ document, window, signal, observers }) {
   }
   if (typeof ResizeObserver !== 'undefined') {
     // The window's width, a fold of Today or the sheet, and the phone's
-    // layout all reach the legend as a change of its own or the bar's size.
-    const observer = new ResizeObserver(sync);
-    observer.observe(legend);
-    if (legend.parentElement) observer.observe(legend.parentElement);
+    // layout reach the legend as a change of its own or the bar's size;
+    // words that grow the marks reach it as a change of the row's (the
+    // legend's own box is a fixed band and does not grow with them).
+    const observer = new ResizeObserver(() => {
+      if (resized()) sync();
+    });
+    for (const node of watched) observer.observe(node);
     observers.push(observer);
   }
   window?.addEventListener?.('resize', sync, { signal });
+  // A font that finishes loading changes every mark's width.
+  const fonts = document.fonts;
+  fonts?.addEventListener?.('loadingdone', sync, { signal });
+  fonts?.ready?.then?.(() => {
+    if (!signal?.aborted) sync();
+  });
   sync();
 
   return { sync, close };
