@@ -7,8 +7,9 @@ the Jev filer of decision 26 is the first thing built and is merged (pull reques
 The owner approved the stage 0 mock on 2026-11-12 (decisions 30 and 31, section 8.3 and Appendix D).
 Piece 2, costume off and board on, was built unattended on 2026-11-12 and merged on 2026-11-13 as
 pull request 26, after an independent review. Piece 4, words for numbers and the Overview tab, was
-merged the same day as pull request 27 under decision 33. Section 10 gives the order of building
-and the state of each piece. Builds on `docs/superpowers/specs/2026-11-08-world-board-design.md`
+merged the same day as pull request 27 under decision 33. Piece 3, the frame, was merged on
+2026-11-16 as pull request 28, also under decision 33. Section 10 gives the order of building and
+the state of each piece. Builds on `docs/superpowers/specs/2026-11-08-world-board-design.md`
 (the World Board spec, whose rules still hold) and on a review of the code, the docs and the
 running app on main at 7fb39f6. Section 8 says what the first review could not see and section 8.1
 what the second one found.
@@ -914,15 +915,15 @@ asks. Decision 33 lets a reviewed piece be merged without asking until the app i
 table is the order and the state. The session that finishes a piece updates its row, the status
 line at the top of this file and the owner's status page.
 
-| Order  | Piece                                                                                                               | State on 2026-11-13                         |
-| ------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                   |
-| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)     |
-| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13     |
-| 3      | The frame (1.2), built to the approved mock                                                                         | Being built since 2026-11-13 (`feat/frame`) |
-| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13     |
-| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Not started                                 |
-| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock        |
+| Order  | Piece                                                                                                               | State on 2026-11-16                       |
+| ------ | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                 |
+| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)   |
+| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13   |
+| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16   |
+| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13   |
+| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Next: 1.5 and 1.4, built at the same time |
+| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock      |
 
 **Piece 2, costume off and board on.** Merged on 2026-11-13 as pull request 26 (merge commit
 `c9c6beee`), on the owner's word. Before the merge a separate agent ran the five gates again and
@@ -989,6 +990,80 @@ which this piece does not touch. The review left these, none of them built:
   from the bar beside it. No current source does.
 - The whole history travels in every snapshot, not only with an opened country: about 0.2 MB more
   on the wire for each load once sources hold 12 periods.
+
+**Piece 3, the frame.** Merged on 2026-11-16 as pull request 28 (merge commit `286c7bae`), under
+decision 33. The World Board now sits in the frame of the approved mock: a top bar, the Today column
+on the left, the globe in the middle, one country sheet on the right and a bottom bar, each a solid
+region. The lens buttons, the legend, the turn and Refresh moved into the bars. Today shows an
+honest empty state until there are stories (decision 32) and folds to a narrow rail. Below 1180 px
+Today and the sheet take turns; at 720 px and narrower Today folds and the sheet covers the globe.
+The sheet's tab bar holds Overview, Condition, Strength and Relations, and a More menu holds
+Exposure, Leverage, Assets and People. News and Stakes are not listed until they have content
+(decision 32). Putting Leverage under More, and leaving those two out, are the director's readings,
+for the owner to confirm.
+
+What piece 2 left for the frame is done. The globe's canvas and its labels are cut to the globe
+region and `src/overlays/panelCover.js` watches the regions' sizes, so a country code no longer
+shows under a panel while the camera is still. On a phone the bar does not draw the legend, so
+nothing sits over the status line. MGRS is off unless it is turned on under Display.
+
+The legend has a rule, set by the director during the build and also for the owner to confirm. In
+the 52 px bottom bar a colour class is shown whole or not at all. While the legend is in the bar,
+its title and the "Unknown or disputed" key are whole. Where the bar cannot hold even those two, in
+a narrow window, the legend leaves the bar altogether and a button, "The whole legend", stays, as on
+a phone. Whenever anything is left out or the note is cut, that button is shown and opens all of it.
+Nothing is drawn half-clipped at any window width.
+
+The change was read three times. A reader of `1516244e` found that a class which sets `display`
+defeated the `hidden` attribute, so parts the frame hides were still drawn; that was fixed, and
+`src/ui/frameHidden.test.mjs` now tests for it. An independent reader then read everything since
+(`1516244e..f8080375`), confirmed that fix, and found the legend's title and Unknown key still
+clipped between about 721 and 1100 px, the button's own width left out of the fit, and the colour
+ramp not measured. A builder fixed these in `43903518`. That last fix, about 100 changed lines of
+app code with their tests and browser steps, was read by the directing session and not by an
+independent reader.
+
+Before the merge, on the final commit `43903518` and with nothing else running on the PC, the five
+gates passed (7,155 tests: 7,145 passing, none failing, 10 skipped) and so did the four fixture
+browser runs, against a server with no keys that was up for about 18 minutes: the World Board 25 of
+25 steps, the news 28 steps, the searches 11 checks, and the lenses 22 with 1 skipped (the
+frame-rate comparison, which the run turns off). That was the second full run. The first failed two
+scripts for reasons in the scripts, not the app. The news script expects a digest stamp with a time
+only, and fails for about ten minutes after local midnight, when the app rightly adds the day. The
+World Board script's first step waits for a loading line that a fast load has already cleared. After
+the merge the tree of `main` equals the tree of that commit.
+
+Not checked: the running app with the owner's saved board, keys and imagery (the top bar's gauges
+were seen only with test data); window sizes other than the six measured (1280×720, 1440×900,
+1920×1080, 1024×768, 800×600 and a 390×844 phone); fonts other than the test browser's; the cockpit,
+recording and the clean view; recent imagery's split view, the scope vignette and the sun and moon
+ring; and six QA scripts outside the gate list, which were edited for the smaller canvas and never
+run (`qa-draw-tool.mjs`, `qa-cctv-v2.mjs`, `qa-directions.mjs`, `qa-installation-polish.mjs`,
+`qa-transit.mjs` and `track-regression.mjs`). The review left these, none of them built:
+
+- **For the tools menu and the layers menu (1.5 and 1.4).** The original's floating panels can
+  overlap at 1280×720 with Display expanded and with Today and the sheet both open. A panel that can
+  be dragged still stops at the window's edge, not the globe region's, so it can be dropped under a
+  bar, Today or the sheet. The fixed points that `qa-draw-tool.mjs` clicks can now land on a panel.
+  The dock still has a second voice button beside the one in the bottom bar.
+- **For the restyle (1.3).** Sheet text under 12 px outside the Overview (`.world-control`,
+  `.world-kicker`, `.world-flag`, `.world-slot-id` and `.world-row-score` in
+  `src/ui/styles/world-panel.css`). The legend's dense form sets 12 px type on a 12 px line.
+  Ownership shows two of its four lines at 1280 and 1440 px wide, and at 1024×768 most legends keep
+  only a few marks: shorter wording would let more in.
+- **For the tests (1.6).** Tests that only match source text or do arithmetic on tokens
+  (`src/costumeOff.test.mjs`, parts of `src/ui/frame.test.mjs`, `src/overlays/panelCover.test.mjs`
+  and the additions to `src/hudStatusLine.test.mjs`). `src/testSupport/cssCascade.mjs` takes every
+  `@media` and `:has()` as true and skips `@container`, so its guard cannot cover `#frame-presets`
+  and `#frame-layers`. The World Board script now takes 13 to 17 minutes, because it measures every
+  lens's legend at two more window sizes, and a full run takes 21 to 25. The two script faults of
+  the first run are still there.
+- **Small.** The status line shows "Eye altitude" and "UTC" with no figure before the first tick, or
+  when the altitude is not a number (`src/hud.js`). The frame leaves room for what later items
+  bring: the new name in the title (R6), the search box (2.3) and Today's list (stage 3).
+
+The logs of both full runs and the frame's captures are in the main folder under
+`qa-artifacts/frame/`, not committed. The worktree and its local branch are removed.
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
