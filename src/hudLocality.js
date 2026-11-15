@@ -1,7 +1,8 @@
 /**
  * @module hudLocality
  * @description The plain place name on the HUD status line — either
- * "NEAR <landmark>" or the coarse region.
+ * "Near <landmark> (<city>)" or the coarse region, in sentence case: capitals
+ * only where the names have them (Appendix D).
  *
  * Split out of `hud.js` purely so it is unit-testable: `hud.js` pulls in the `mgrs`
  * CommonJS package, which Vite resolves but plain Node cannot import by named export.
@@ -24,7 +25,7 @@
 export const NEAR_POI_MAX_KM = 150;
 
 /**
- * Plain place name for the status line: `NEAR <POI> (<CITY>)` within the bound
+ * Plain place name for the status line: `Near <POI> (<city>)` within the bound
  * (inclusive), otherwise the coarse region. The coordinates sit beside it on
  * the same line, so the old `SECTOR <lat> <lon>` fallback would only repeat them.
  *
@@ -36,7 +37,7 @@ export const NEAR_POI_MAX_KM = 150;
 export function composePlaceName(nearest, region) {
   const distKm = Number(nearest?.distKm);
   if (nearest && Number.isFinite(distKm) && distKm <= NEAR_POI_MAX_KM) {
-    return `NEAR ${String(nearest.poi).toUpperCase()} (${String(nearest.city).toUpperCase()})`;
+    return `Near ${String(nearest.poi)} (${String(nearest.city)})`;
   }
   return String(region || '');
 }

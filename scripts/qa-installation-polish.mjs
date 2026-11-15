@@ -236,10 +236,12 @@ export async function checkInstallationSelection(
                 ] || 0,
             });
           });
+        // Canvas pixels to window pixels: the frame insets the canvas.
+        const rect = g.viewer.scene.canvas.getBoundingClientRect();
         return {
           id: record.id,
-          x: screen.x,
-          y: screen.y,
+          x: screen.x + rect.left,
+          y: screen.y + rect.top,
           parts: record.footprints.length,
         };
       }, site);
@@ -330,11 +332,13 @@ export async function checkInstallationSelection(
       await sleep(900);
       const empty = await page.evaluate(() => {
         const g = window.__godsEyeView;
+        // scene.pick takes canvas pixels; the click takes window pixels.
+        const rect = g.viewer.scene.canvas.getBoundingClientRect();
         for (let y = 250; y < 650; y += 75)
           for (let x = 400; x < 850; x += 75) {
             const pick = g.viewer.scene.pick({ x, y });
             if (!pick?.id?.installationId && !pick?.id?.gevTrackedId)
-              return { x, y };
+              return { x: x + rect.left, y: y + rect.top };
           }
         throw new Error('No empty map point');
       });

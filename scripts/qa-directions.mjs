@@ -78,7 +78,11 @@ async function lookAt(lat, lon, height) {
   );
 }
 
-/** Canvas position of a lon/lat on the rendered surface, or null. */
+/**
+ * Window position of a lon/lat on the rendered surface, or null. Cesium gives
+ * canvas pixels; the frame insets the canvas, so its left and top are added
+ * before the point is clicked.
+ */
 const screenAt = (lat, lon) =>
   page.evaluate(
     (la, lo) => {
@@ -94,8 +98,16 @@ const screenAt = (lat, lon) =>
       if (!win || !Number.isFinite(win.x)) return null;
       const x = Math.round(win.x);
       const y = Math.round(win.y);
-      if (x < 40 || y < 40 || x > 1240 || y > 820) return null;
-      return { x, y };
+      const canvas = scene.canvas;
+      if (
+        x < 40 ||
+        y < 40 ||
+        x > canvas.clientWidth - 40 ||
+        y > canvas.clientHeight - 40
+      )
+        return null;
+      const rect = canvas.getBoundingClientRect();
+      return { x: x + rect.left, y: y + rect.top };
     },
     lat,
     lon,

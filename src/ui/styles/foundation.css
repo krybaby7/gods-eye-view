@@ -17,8 +17,8 @@
   --text-dim: rgba(232, 234, 237, 0.3);
   /* Opaque surface for browser-painted menus, which cannot use --glass-bg. */
   --menu-bg: #12121c;
-  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  --font-sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
   --panel-radius: 16px;
   --btn-radius: 10px;
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -31,6 +31,83 @@
   --display-panel-expanded-width: 272px;
   --cockpit-radio-collapsed-width: 148px;
   --cockpit-radio-expanded-width: 232px;
+
+  /* The approved look (roadmap Appendix D, decision 30). A name says what a
+     value is for, so a light set can be added later under the same names.
+     --accent, --accent-dim, the fonts and the motion values above are shared. */
+  --surface-space: #05070b;
+  --surface-0: #0a0a0f;
+  --surface-1: #12121c;
+  --surface-2: #1b1c28;
+  --surface-3: #262838;
+  --line-soft: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --text-1: #e8eaed;
+  --text-2: #aab0bb;
+  --text-3: #868c99;
+  --on-accent: #04222b;
+  --ramp-0: #c2410c;
+  --ramp-25: #f08c3a;
+  --ramp-50: #d9c58f;
+  --ramp-75: #4aa8d8;
+  --ramp-100: #1d6fd1;
+  --ramp: linear-gradient(
+    90deg,
+    var(--ramp-0) 0%,
+    var(--ramp-25) 25%,
+    var(--ramp-50) 50%,
+    var(--ramp-75) 75%,
+    var(--ramp-100) 100%
+  );
+  --unknown-hatch: repeating-linear-gradient(
+    135deg,
+    rgba(185, 219, 223, 0.4) 0 1px,
+    rgba(10, 18, 25, 0.55) 1px 5px
+  );
+  --alert-calm: #8b97a8;
+  --alert-watch: #e6c453;
+  --alert-strained: #f0935a;
+  --alert-crisis: #ff5d6c;
+  --rel-war: #db474f;
+  --rel-sanctions: #e8933f;
+  --rel-ally: #3da1ea;
+  --rel-rival: #b25ec5;
+  --rel-partner: #3eaf97;
+  --rel-neutral: #949faf;
+  --live-civil: #22e0ff;
+  --live-military: #ffb347;
+  --live-sea: #3fe0c8;
+  --live-space: #bda4ff;
+  --radius-panel: 16px;
+  --radius-control: 10px;
+  --radius-chip: 6px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.38);
+  /* Type scale. Sentences are never below 13px; nothing is below 12px. */
+  --type-display: 600 24px/30px var(--font-sans);
+  --type-title: 600 18px/24px var(--font-sans);
+  --type-heading: 600 15px/20px var(--font-sans);
+  --type-body: 400 14px/21px var(--font-sans);
+  --type-small: 400 13px/19px var(--font-sans);
+  --type-caption: 500 12px/16px var(--font-sans);
+  --type-figure: 600 15px/20px var(--font-mono);
+  --type-code: 500 12px/18px var(--font-mono);
+  /* The frame, at a window 1366 wide or more; narrower windows use the values
+     in frame.css. The globe's region is what the four edges leave. */
+  --frame-bar: 52px;
+  --frame-today: 340px;
+  --frame-sheet: 460px;
+  --frame-rail: 48px;
+  --frame-status: 26px;
+  --frame-top: 0px;
+  --frame-right: 0px;
+  --frame-bottom: 0px;
+  --frame-left: 0px;
 }
 
 * {

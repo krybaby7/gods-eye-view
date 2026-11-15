@@ -129,7 +129,7 @@ export default async function phase4({
   camera,
   pickCountry,
   lens,
-  tab,
+  selectTab,
   wait,
 }) {
   const assetId = (id) => 'world-card:asset:' + id;
@@ -282,7 +282,7 @@ export default async function phase4({
       assert.equal(await text('#world-legend-title'), 'Ownership');
       await camera(104, 33, 8_000_000);
       await pickCountry(104, 33, 'CHN');
-      await page.click(tab('assets'));
+      await selectTab('assets');
       await page.waitForSelector('#world-sheet-content .world-asset-section');
       assert.match(
         await text('#world-sheet-content'),
@@ -382,7 +382,7 @@ export default async function phase4({
   await step(
     'Draft military presence and geometry-free fab remain listed with separate provenance',
     async () => {
-      await page.click(tab('assets'));
+      await selectTab('assets');
       await page.waitForSelector('#world-sheet-content .world-asset-section');
       assert.match(
         await text('#world-sheet-content'),
@@ -397,7 +397,7 @@ export default async function phase4({
       await page.click('#world-sheet-close');
       await camera(10.3, 51, 7_500_000);
       await pickCountry(10.3, 51, 'DEU');
-      await page.click(tab('assets'));
+      await selectTab('assets');
       await clickAssetList('Fab 24');
       await page.waitForSelector('#world-card-content .world-asset-details');
       assert.match(

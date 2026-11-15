@@ -1,9 +1,12 @@
+import { canvasClientX, canvasFraction } from '../overlays/canvasFrame.js';
+
 const HANDLE_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'Home', 'End']);
 
 function clampUnit(value) {
   return Math.max(0, Math.min(1, Number(value) || 0));
 }
 
+/** Only used when the scene has no canvas to measure. */
 function defaultViewportWidth() {
   return (
     Number(document.documentElement?.clientWidth) ||
@@ -72,12 +75,21 @@ export function createImagerySplit({
   let pointerId = null;
   let destroyed = false;
 
+  // Cesium cuts the imagery at a fraction of the canvas, and since the frame
+  // the canvas is inset in the window. With a canvas the pointer, the drawn
+  // line and the cut all use the canvas's own rectangle; without one (tests,
+  // a bare scene) the window width stands in, as before.
+  const onCanvas = Boolean(scene?.canvas?.getBoundingClientRect);
+  function lineLeft() {
+    return onCanvas ? `${canvasClientX(scene, value)}px` : `${value * 100}%`;
+  }
+
   function apply(next, { notify = false, render = true } = {}) {
     const clamped = clampUnit(next);
     const changed = clamped !== value;
     value = clamped;
     if (scene && scene.splitPosition !== value) scene.splitPosition = value;
-    const css = `${value * 100}%`;
+    const css = lineLeft();
     if (cssProperty && cssValue !== css) {
       cssTarget.style.setProperty(cssProperty, css);
       cssValue = css;
@@ -94,9 +106,29 @@ export function createImagerySplit({
   }
 
   function setFromClientX(clientX) {
+    if (onCanvas) {
+      const fraction = canvasFraction(scene, clientX);
+      if (fraction != null) apply(fraction, { notify: true });
+      return;
+    }
     const viewportWidth = Number(getViewportWidth()) || 0;
     if (viewportWidth <= 0 || !Number.isFinite(Number(clientX))) return;
     apply(Number(clientX) / viewportWidth, { notify: true });
+  }
+
+  // Today folding, the sheet opening or a resize moves the canvas: the line
+  // follows so it stays on the cut.
+  function followCanvas() {
+    if (destroyed || !cssProperty || value == null) return;
+    const css = lineLeft();
+    if (css === cssValue) return;
+    cssTarget.style.setProperty(cssProperty, css);
+    cssValue = css;
+  }
+  let canvasObserver = null;
+  if (onCanvas && typeof ResizeObserver !== 'undefined') {
+    canvasObserver = new ResizeObserver(followCanvas);
+    canvasObserver.observe(scene.canvas);
   }
 
   function handlePointerDown(event) {
@@ -162,6 +194,7 @@ export function createImagerySplit({
     destroy() {
       if (destroyed) return;
       destroyed = true;
+      canvasObserver?.disconnect();
       if (dragging && pointerId != null)
         handle.releasePointerCapture?.(pointerId);
       dragging = false;

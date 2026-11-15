@@ -78,7 +78,10 @@
   gap: 6px;
 }
 
-.world-overview-line {
+/* Two classes, so the line keeps its type, padding and edge whether this
+   file loads before or after .panel-surface-control (font: inherit), which
+   would otherwise hand it the sheet's 14 px body type. */
+.world-overview .world-overview-line {
   display: grid;
   gap: 4px;
   width: 100%;

@@ -64,6 +64,9 @@ const rules = {
   ],
 };
 
+/** The live feeds that have a flag rule, so can set a condition flag. */
+export const CONDITION_FLAG_SOURCES = Object.freeze(Object.keys(rules));
+
 export function conditionFlag(sourceId, fields) {
   const { iso3, slot, key = slot } = fields;
   return {

@@ -1671,6 +1671,9 @@ async function main() {
       const scene = viewer.scene;
       const w = scene.canvas.clientWidth;
       const h = scene.canvas.clientHeight;
+      // The canvas sits inside the frame's globe region, not at the window's
+      // corner: the mouse takes window pixels, scene.pick canvas pixels.
+      const rect = scene.canvas.getBoundingClientRect();
       const a = scene.cartesianToCanvasCoordinates(pts[0]);
       const b = scene.cartesianToCanvasCoordinates(pts[pts.length - 1]);
       if (
@@ -1695,7 +1698,14 @@ async function main() {
         candidates.unshift({ x: b.x, y: b.y });
       }
       if (!candidates.length) return null;
-      return { ...candidates[0], candidates, ux: dx / mag, uy: dy / mag };
+      return {
+        ...candidates[0],
+        candidates,
+        ux: dx / mag,
+        uy: dy / mag,
+        left: rect.left,
+        top: rect.top,
+      };
     });
 
     const calBeforeDrag = await page.evaluate(() => {
@@ -1719,7 +1729,10 @@ async function main() {
       // buffer settles. Try several visible shaft points; stop after the first
       // actual offset change so a successful drag still has exactly one release.
       for (const grab of eastDrag.candidates) {
-        const pickBufferReady = await positionPointerForGizmoDrag(page, grab);
+        const pickBufferReady = await positionPointerForGizmoDrag(page, {
+          x: grab.x + eastDrag.left,
+          y: grab.y + eastDrag.top,
+        });
         if (!pickBufferReady) continue;
         const ownsPick = await page.evaluate((point) => {
           const scene = window.__godsEyeView.viewer.scene;
@@ -1740,8 +1753,8 @@ async function main() {
         await page.mouse.down();
         for (let i = 1; i <= 5; i++) {
           await page.mouse.move(
-            grab.x + eastDrag.ux * i * 12,
-            grab.y + eastDrag.uy * i * 12,
+            eastDrag.left + grab.x + eastDrag.ux * i * 12,
+            eastDrag.top + grab.y + eastDrag.uy * i * 12,
           );
           await sleep(40);
           transientDragStates.push(
