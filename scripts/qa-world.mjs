@@ -534,6 +534,179 @@ async function legendPopover(legend, where) {
   return popover;
 }
 
+/**
+ * The bottom bar's legend as drawn, read in the page: whether the bar draws
+ * it at all, each part's boxes against the legend's own, what is left out,
+ * and whether the info button shows. Null while the legend is hidden (the
+ * World Board is off). It runs in the page, so it uses nothing from here.
+ */
+function readLegend() {
+  const legendBox = document.getElementById('world-legend');
+  if (!legendBox || legendBox.hidden) return null;
+  const shown = (element) => {
+    if (!element) return false;
+    const style = getComputedStyle(element);
+    return (
+      style.display !== 'none' &&
+      style.visibility === 'visible' &&
+      Number(style.opacity) > 0 &&
+      element.getClientRects().length > 0
+    );
+  };
+  const frame = legendBox.getBoundingClientRect();
+  const within = (rect) =>
+    rect.top >= frame.top - 1 &&
+    rect.bottom <= frame.bottom + 1 &&
+    rect.left >= frame.left - 1 &&
+    rect.right <= frame.right + 1;
+  const title = document.getElementById('world-legend-title');
+  const ramp = legendBox.querySelector('.world-legend-ramp');
+  const unknown = legendBox.querySelector('.world-legend-unknown');
+  const stops = [...document.getElementById('world-legend-stops').children];
+  const note = document.getElementById('world-legend-note');
+  const marks = [title, ...stops, unknown].filter((node) =>
+    node?.textContent.trim(),
+  );
+  const name = (node) =>
+    node === ramp ? 'the ramp' : node.textContent.trim().slice(0, 40);
+  const noteText = note.textContent.replace(/\s+/g, ' ').trim();
+  const noteRects = [...note.getClientRects()];
+  const drawn = shown(legendBox);
+  // The parts the bar draws: the marks, the ramp where the lens has one, and
+  // the note while it has a line.
+  const parts = [...marks, ramp, ...(noteRects.length ? [note] : [])].filter(
+    (node) => node && node.getClientRects().length > 0,
+  );
+  return {
+    lens:
+      document
+        .querySelector('#world-lens-bar [aria-pressed="true"]')
+        ?.getAttribute('data-world-lens') ?? null,
+    drawn,
+    away: legendBox.hasAttribute('data-away'),
+    text: legendBox.textContent.replace(/\s+/g, ' ').trim(),
+    width: Math.round(legendBox.clientWidth),
+    dense: legendBox.hasAttribute('data-dense'),
+    marks: marks.map((node) => node.textContent.trim()),
+    // A part drawn in the bar lies whole inside the legend's box, or is not
+    // drawn at all (the ramp included).
+    partsCut: drawn
+      ? parts
+          .filter((node) => ![...node.getClientRects()].every(within))
+          .map(name)
+      : [],
+    marksOut: drawn
+      ? marks.filter((node) => !node.getClientRects().length).map(name)
+      : [],
+    // While the legend is in the bar, its title and Unknown key are whole.
+    keysOut: drawn
+      ? [title, unknown]
+          .filter((node) => {
+            const rects = [...node.getClientRects()];
+            return !rects.length || !rects.every(within);
+          })
+          .map(name)
+      : [],
+    box: [frame.left, frame.top, frame.right, frame.bottom].map(Math.round),
+    rects: [...marks, ramp, note].filter(Boolean).map((node) => ({
+      part: name(node),
+      rects: [...node.getClientRects()].map((rect) =>
+        [rect.left, rect.top, rect.right, rect.bottom].map(
+          (value) => Math.round(value * 10) / 10,
+        ),
+      ),
+    })),
+    noteText,
+    noteWhole:
+      !noteText ||
+      (noteRects.length > 0 &&
+        noteRects.every(within) &&
+        note.scrollWidth <= note.clientWidth + 1),
+    button: shown(document.getElementById('frame-legend-whole')),
+  };
+}
+
+/**
+ * The legend rule, on a legend read by readLegend: in the bar every part
+ * shown is whole and the title and Unknown key are there, or the bar does not
+ * draw the legend at all; whatever is left out or cut, the info button shows
+ * and its popover, inside the window, holds the whole legend. With
+ * `everyMarkFits`, the legend is in the bar and every lens but Ownership
+ * keeps all its marks (true at the overlap step's sizes).
+ */
+async function checkLegend(legend, where, { everyMarkFits = false } = {}) {
+  const about = `${legend.lens} legend at ${where}: ${JSON.stringify(legend)}`;
+  if (everyMarkFits)
+    assert.ok(legend.drawn, `The bar does not draw the ${about}`);
+  if (!legend.drawn)
+    assert.ok(
+      legend.button,
+      `The bar does not draw the ${legend.lens} legend and shows no button at ${where}`,
+    );
+  else {
+    assert.deepEqual(legend.partsCut, [], `Parts are cut in the ${about}`);
+    assert.deepEqual(
+      legend.keysOut,
+      [],
+      `The title or Unknown key is not whole in the ${about}`,
+    );
+    assert.ok(
+      !legend.marksOut.length || legend.button,
+      `Marks are left out with no way to read them in the ${about}`,
+    );
+    assert.ok(
+      legend.noteWhole || legend.button,
+      `The note is cut with no way to read it in the ${about}`,
+    );
+    if (everyMarkFits && legend.lens !== 'ownership')
+      assert.deepEqual(
+        legend.marksOut,
+        [],
+        `Marks that should fit are left out of the ${about}`,
+      );
+  }
+  return legend.button ? legendPopover(legend, where) : null;
+}
+
+/** Waits for the page's next two frames, so a fit the last change caused is drawn. */
+async function nextRender() {
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+}
+
+/**
+ * The legend at a window size once the bar has settled there: read when two
+ * reads 250 ms apart agree.
+ */
+async function legendAt(width, height, label) {
+  await page.setViewport({ width, height, deviceScaleFactor: 1 });
+  await page.waitForFunction(
+    (width, height) => innerWidth === width && innerHeight === height,
+    wait,
+    width,
+    height,
+  );
+  let legend;
+  for (let tries = 0; tries < 20; tries += 1) {
+    await nextRender();
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    const next = await page.evaluate(readLegend);
+    if (tries && JSON.stringify(next) === JSON.stringify(legend)) break;
+    legend = next;
+  }
+  // The legend itself is listed, so the popover a check adds to it is kept;
+  // `window` is the window's size (`width` is the legend's).
+  if (legend) Object.assign(legend, { window: `${width}×${height}`, label });
+  report.legendSizes ??= [];
+  report.legendSizes.push(legend ?? { window: `${width}×${height}`, label });
+  await shot(`legend-${width}x${height}-${label}`);
+  return legend;
+}
+
 async function frameLayout(width, height, label) {
   await page.setViewport({ width, height, deviceScaleFactor: 1 });
   const data = await page.evaluate(
@@ -648,90 +821,18 @@ async function frameLayout(width, height, label) {
       ]
         .filter((element) => getComputedStyle(element).display !== 'none')
         .map((element) => element.id || element.className || element.tagName);
-      // The legend explains every colour on the globe: its marks (title,
-      // stops or classes, the Unknown key) are never cut; the note is whole
-      // or the info button that opens the whole legend is shown.
-      const legendBox = document.getElementById('world-legend');
-      const legend = shown(legendBox)
-        ? (() => {
-            const frame = legendBox.getBoundingClientRect();
-            const within = (rect) =>
-              rect.top >= frame.top - 1 &&
-              rect.bottom <= frame.bottom + 1 &&
-              rect.left >= frame.left - 1 &&
-              rect.right <= frame.right + 1;
-            const marks = [
-              document.getElementById('world-legend-title'),
-              ...document.getElementById('world-legend-stops').children,
-              legendBox.querySelector('.world-legend-unknown'),
-            ].filter((node) => node?.textContent.trim());
-            const note = document.getElementById('world-legend-note');
-            const noteText = note.textContent.replace(/\s+/g, ' ').trim();
-            const noteRects = [...note.getClientRects()];
-            return {
-              lens:
-                document
-                  .querySelector('#world-lens-bar [aria-pressed="true"]')
-                  ?.getAttribute('data-world-lens') ?? null,
-              text: legendBox.textContent.replace(/\s+/g, ' ').trim(),
-              width: Math.round(legendBox.clientWidth),
-              dense: legendBox.hasAttribute('data-dense'),
-              marks: marks.map((node) => node.textContent.trim()),
-              // A mark is whole in the bar or not drawn at all; only a
-              // stop may be left out, never the title or the Unknown key.
-              marksCut: marks
-                .filter((node) => {
-                  const rects = [...node.getClientRects()];
-                  return rects.length > 0 && !rects.every(within);
-                })
-                .map((node) => node.textContent.trim()),
-              marksOut: marks
-                .filter((node) => !node.getClientRects().length)
-                .map((node) => node.textContent.trim()),
-              keysOut: [
-                document.getElementById('world-legend-title'),
-                legendBox.querySelector('.world-legend-unknown'),
-              ]
-                .filter((node) => {
-                  const rects = [...node.getClientRects()];
-                  return !rects.length || !rects.every(within);
-                })
-                .map((node) => node.textContent.trim()),
-              // Where each part was drawn against the legend's box, so a
-              // failure shows which edge it crossed and by how much.
-              box: [frame.left, frame.top, frame.right, frame.bottom].map(
-                Math.round,
-              ),
-              rects: [...marks, note].map((node) => ({
-                part: node.textContent.trim().slice(0, 24),
-                rects: [...node.getClientRects()].map((rect) =>
-                  [rect.left, rect.top, rect.right, rect.bottom].map(
-                    (value) => Math.round(value * 10) / 10,
-                  ),
-                ),
-              })),
-              noteText,
-              noteWhole:
-                !noteText ||
-                (noteRects.length > 0 &&
-                  noteRects.every(within) &&
-                  note.scrollWidth <= note.clientWidth + 1),
-              button: shown(document.getElementById('frame-legend-whole')),
-            };
-          })()
-        : null;
       return {
         today: document.body.dataset.today,
         sheet: document.body.dataset.sheet,
         globeWidth: Math.round(globe.right - globe.left),
         overlaps,
         hiddenShown,
-        legend,
         ...stable,
       };
     },
     { width, height },
   );
+  data.legend = await page.evaluate(readLegend);
   report.frameLayouts ??= [];
   report.frameLayouts.push({ width, height, label, ...data });
   await shot(`frame-${width}x${height}-${label}`);
@@ -745,39 +846,13 @@ async function frameLayout(width, height, label) {
     [],
     `Hidden parts of the frame drawn at ${width}×${height} (${label})`,
   );
-  if (data.legend) {
-    assert.deepEqual(
-      data.legend.marksCut,
-      [],
-      `The ${data.legend.lens} legend's marks are cut at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
+  // At these sizes every lens but Ownership fits whole in the bar.
+  if (data.legend)
+    data.legend.popover = await checkLegend(
+      data.legend,
+      `${width}×${height} (${label})`,
+      { everyMarkFits: true },
     );
-    assert.deepEqual(
-      data.legend.keysOut,
-      [],
-      `The ${data.legend.lens} legend's title or Unknown key is not whole at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
-    );
-    assert.ok(
-      !data.legend.marksOut.length || data.legend.button,
-      `The ${data.legend.lens} legend leaves out marks with no way to read them at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
-    );
-    // Only Ownership's marks (four sentences) are too long for the bar
-    // today; every other lens's marks fit and must all be in it.
-    if (data.legend.lens !== 'ownership')
-      assert.deepEqual(
-        data.legend.marksOut,
-        [],
-        `The ${data.legend.lens} legend leaves out marks that should fit at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
-      );
-    assert.ok(
-      data.legend.noteWhole || data.legend.button,
-      `The ${data.legend.lens} legend's note is cut with no way to read it at ${width}×${height} (${label}): ${JSON.stringify(data.legend)}`,
-    );
-    if (data.legend.button)
-      data.legend.popover = await legendPopover(
-        data.legend,
-        `${width}×${height} (${label})`,
-      );
-  }
   assert.ok(
     data.globeWidth >= FRAME_GLOBE_MIN_WIDTH,
     `The globe is ${data.globeWidth} px at ${width}×${height} (${label}); it needs ${FRAME_GLOBE_MIN_WIDTH}`,
@@ -887,6 +962,8 @@ try {
       layout,
       frameLayout,
       legendPopover,
+      checkLegend,
+      legendAt,
       lens,
       area,
       tab,

@@ -153,16 +153,20 @@ function alertsGauge(features, turn) {
   const countries = new Set(alerts.map(({ iso3 }) => iso3).filter(Boolean));
   // A stale, failed or unloaded feed drops out of the count, so the caption
   // always says how many of the feeds it holds: a partial count never reads
-  // as complete.
+  // as complete. A count from a single feed names it in the caption too, so
+  // the value shows its source; the title names every feed counted and every
+  // feed not counted.
   const names = [...new Set(feeds.map((id) => ALERT_FEEDS[id]))];
   const all = [...new Set(Object.values(ALERT_FEEDS))];
   const missing = all.filter((name) => !names.includes(name));
+  const held = `${names.length} of ${all.length} feeds`;
+  const source = names.length === 1 ? `${names[0]} · ${held}` : held;
   return {
     id: 'alerts',
     label: 'Alerts',
     value: String(alerts.length),
     change: null,
-    caption: `in ${countries.size} ${countries.size === 1 ? 'country' : 'countries'} · ${day} · ${names.length} of ${all.length} feeds`,
+    caption: `in ${countries.size} ${countries.size === 1 ? 'country' : 'countries'} · ${day} · ${source}`,
     title:
       `Active condition flags from the live feeds: ${names.join(', ')}` +
       (missing.length

@@ -5,18 +5,26 @@
  * marks (its title, the ramp and its stops or the classes with their
  * swatches, and the "Unknown or disputed" key) wrap onto as many lines as the
  * band holds, and the note takes a line under them, cut short with an
- * ellipsis. The rule: a stop is shown whole or not at all, and the title and
- * the Unknown key are always whole. When the marks need more room than the
- * band has they close up to the dense line; stops that still do not fit leave
- * the bar, from the last one back; if even that is not enough the note goes
- * (and the stops that then fit come back). Whenever a stop or the note is
- * left out or the note is cut, or the legend is not drawn at all (a phone),
- * a button at the legend's end opens a popover holding the whole legend.
+ * ellipsis. The rule: a colour class is shown whole or not at all, and while
+ * the legend is in the bar its title and the Unknown key are whole. When the
+ * marks need more room than the band has they close up to the dense line;
+ * stops that still do not fit leave the bar, from the last one back; if even
+ * that is not enough the note goes (and the stops that then fit come back).
+ * Where the band cannot hold even the title and the Unknown key whole (a
+ * narrow window), nothing of the legend is drawn in the bar (data-away). And
+ * on a phone the bar does not draw the legend at all. Whenever anything is
+ * left out or the note is cut, a button at the legend's end opens a popover
+ * holding the whole legend.
  *
- * What fits is measured on what is drawn: every part still shown must lie
- * wholly inside the legend's box, the same test the browser check makes. It
- * is measured again whenever the legend's words, the room beside it, the
- * window or the fonts change.
+ * What fits is measured on what is drawn: every part still shown (the ramp
+ * among them) must lie wholly inside the legend's box, the same test the
+ * browser check makes. The button takes room from the legend when it shows,
+ * so the state drawn is the state measured: the legend is fitted with the
+ * button hidden; if anything is then left out or cut, the button is shown
+ * and the legend fitted once more beside it, and the button stays shown for
+ * that pass whatever the second fit finds. Two passes at most, and no
+ * flipping. It is measured again whenever the legend's words, the room
+ * beside it, the window or the fonts change.
  */
 
 const SLACK = 1;
@@ -43,6 +51,7 @@ export function createFrameLegend({ document, window, signal, observers }) {
   const row = legend.querySelector('.frame-legend-row');
   const note = find('world-legend-note');
   const title = find('world-legend-title');
+  const ramp = legend.querySelector('.world-legend-ramp');
   const unknown = legend.querySelector('.world-legend-unknown');
   const style = (node, pseudo) =>
     window?.getComputedStyle?.(node, pseudo) ?? null;
@@ -72,12 +81,16 @@ export function createFrameLegend({ document, window, signal, observers }) {
       ...stops.filter((stop) => !stop.hasAttribute('data-out')),
       unknown,
     ].filter((node) => node?.textContent.trim());
+    // The ramp has no words; it counts wherever it is drawn (a lens of
+    // classes, such as Diplomacy, does not draw it).
+    if (ramp?.getClientRects?.().length) parts.push(ramp);
     if (noteShown()) parts.push(note);
     return parts.every((node) => within(node, frame));
   }
 
   /** Lays the legend out for the room it has; true when anything is left out or cut. */
   function fit() {
+    legend.removeAttribute('data-away');
     legend.removeAttribute('data-dense');
     legend.removeAttribute('data-note-off');
     const stops = [...(find('world-legend-stops')?.children ?? [])];
@@ -109,13 +122,18 @@ export function createFrameLegend({ document, window, signal, observers }) {
         }
       }
     }
+    // Not even the title and the Unknown key fit whole: nothing of the
+    // legend is drawn in the bar, and it is read through the popover.
+    if (!fits) {
+      legend.setAttribute('data-away', '');
+      return true;
+    }
     // The usual line height where what is left fits it.
-    if (fits && legend.hasAttribute('data-dense')) {
+    if (legend.hasAttribute('data-dense')) {
       legend.removeAttribute('data-dense');
       if (!whole(stops)) legend.setAttribute('data-dense', '');
     }
     return (
-      !fits ||
       stops.some((stop) => stop.hasAttribute('data-out')) ||
       (Boolean(noteText()) && !noteShown()) ||
       (noteShown() && note.scrollWidth > note.clientWidth + SLACK)
@@ -199,12 +217,23 @@ export function createFrameLegend({ document, window, signal, observers }) {
     place();
     popup.focus?.();
   }
+  /**
+   * Closes the popover. With `focus`, focus goes back to the button, or,
+   * where the button is no longer shown, to the pressed lens button, so it
+   * never falls to the page's body.
+   */
   function close({ focus = false } = {}) {
     if (!isOpen()) return;
     popup.hidden = true;
     button.setAttribute('aria-expanded', 'false');
-    if (focus && !button.hidden) button.focus();
+    if (!focus) return;
+    if (!button.hidden) button.focus();
+    else
+      find('world-lens-bar')?.querySelector('[aria-pressed="true"]')?.focus?.();
   }
+  /** Closes the popover from a fit, keeping focus that was inside it. */
+  const closeFromFit = () =>
+    close({ focus: popup.contains(document.activeElement) });
 
   // The boxes whose size can change what fits, and their sizes after the
   // last fit: a size the fit itself left is not a reason to fit again.
@@ -218,13 +247,23 @@ export function createFrameLegend({ document, window, signal, observers }) {
   function sync() {
     if (legend.hidden) {
       button.hidden = true;
-      close();
+      closeFromFit();
       remember();
       return;
     }
+    // The button takes room from the legend: what is drawn must be what was
+    // measured (see the top). Fitted first without it; if anything is left
+    // out, the button shows and the legend is fitted again beside it.
+    const focused = document.activeElement === button;
+    button.hidden = true;
     const cut = fit();
-    button.hidden = !cut;
-    if (!cut) close();
+    if (cut) {
+      button.hidden = false;
+      fit();
+      // Hidden for a moment, it may have lost focus it had: give it back.
+      if (focused && document.activeElement !== button) button.focus();
+    }
+    if (!cut) closeFromFit();
     else if (isOpen()) {
       fill();
       place();

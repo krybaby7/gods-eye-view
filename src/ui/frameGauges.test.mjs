@@ -122,7 +122,40 @@ test('alerts are unknown until a feed that can carry flags has loaded', () => {
     features: { 'live-gdacs': { flags: [] } },
   });
   assert.equal(none.value, '0', 'a loaded flag feed with no flags is a true 0');
-  assert.equal(none.caption, 'in 0 countries · 11 Nov · 1 of 11 feeds');
+  // One feed counted: the caption names it as well as saying it is one of
+  // eleven, and the title names the feeds left out.
+  assert.equal(none.caption, 'in 0 countries · 11 Nov · GDACS · 1 of 11 feeds');
+  assert.equal(
+    none.title,
+    'Active condition flags from the live feeds: GDACS. Not counted, not loaded or stale: coups, GDELT, FX, IMF CPI, UNHCR, UCDP, debt DSA, ElectionGuide, HDX, IODA',
+  );
+});
+
+test('a single feed is named in the caption; two or more are counted there and named in the title', () => {
+  const turn = { endedAt: '2026-11-11T18:00:00Z' };
+  // UCDP's saved and token stores are one feed, so both loaded is still one.
+  const [ucdp] = worldGauges({
+    turn,
+    features: {
+      'live-ucdp-saved': { flags: [] },
+      'live-ucdp-token': { flags: [] },
+    },
+  });
+  assert.equal(ucdp.caption, 'in 0 countries · 11 Nov · UCDP · 1 of 11 feeds');
+  const [two] = worldGauges({
+    turn,
+    features: {
+      'live-gdacs': { flags: [{ iso3: 'PHL' }] },
+      'live-ioda': { flags: [] },
+    },
+  });
+  assert.equal(two.caption, 'in 1 country · 11 Nov · 2 of 11 feeds');
+  assert.doesNotMatch(two.caption, /GDACS|IODA/);
+  assert.match(two.title, /from the live feeds: GDACS, IODA\. /);
+  assert.match(
+    two.title,
+    /Not counted, not loaded or stale: coups, GDELT, FX, IMF CPI, UNHCR, UCDP, debt DSA, ElectionGuide, HDX$/,
+  );
 });
 
 test('alerts count only active flags from the loaded live condition feeds', () => {

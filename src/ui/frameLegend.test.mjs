@@ -16,14 +16,20 @@ const BAND = 48;
 const LINE = 15;
 const DENSE = 12;
 const TYPE = 15;
+// The legend band's width, and the room the info button takes from it when
+// it shows (its 28 px and the bar's 14 px gap).
+const WIDTH = 400;
+const BUTTON = 42;
 
 /**
  * The bar's legend as frame.html has it, with a layout model: the marks take
  * `lines` lines (or `lines(n)` when n stops are in the bar) and the note one
  * more, centred in the 48 px band; the title sits on the first line and the
  * Unknown key on the last, each a box of the type's height centred on its
- * line, and the stops are line-high boxes between. The note is `noteWidth`
- * px of text in a 400 px line.
+ * line, and the stops are line-high boxes between. The ramp sits on the
+ * title's line. The band is 400 px wide, less the button's room while the
+ * button shows, and `lines(n, width)` may use that width. The note is
+ * `noteWidth` px of text in a line as wide as the band.
  */
 function setup({
   lines = 2,
@@ -33,6 +39,7 @@ function setup({
   stops = ['Weak', 'Midrange', 'Strong'],
   note = 'World Bank · IMF · UCDP · V-Dem',
   observe = false,
+  rampRight = 226,
 } = {}) {
   const document = createFakeDocument();
   const el = (tag, id, className) => {
@@ -58,10 +65,15 @@ function setup({
   const popup = el('div', 'frame-legend-popup', 'frame-popup');
   popup.hidden = true;
   const outside = el('button', 'frame-layers');
-  bar.append(legend, button, popup, outside);
+  const lensBar = el('section', 'world-lens-bar', 'frame-lens');
+  const lensButton = el('button');
+  lensButton.setAttribute('aria-pressed', 'true');
+  lensBar.append(lensButton);
+  bar.append(lensBar, legend, button, popup, outside);
   document.body.append(bar);
 
   const model = { lines, noteWidth, drawn, fits: 0 };
+  const width = () => WIDTH - (button.hidden ? 0 : BUTTON);
   const shownStops = () =>
     stopList.children.filter((stop) => !stop.hasAttribute('data-out'));
   const noteShown = () =>
@@ -71,7 +83,7 @@ function setup({
     const line = legend.hasAttribute('data-dense') ? DENSE : LINE;
     const marks =
       typeof model.lines === 'function'
-        ? model.lines(shownStops().length)
+        ? model.lines(shownStops().length, width())
         : model.lines;
     const total = (marks + (noteShown() ? 1 : 0)) * line;
     const top = (BAND - total) / 2;
@@ -93,13 +105,21 @@ function setup({
   };
   legend.getBoundingClientRect = () => ({
     left: 0,
-    right: 400,
+    right: width(),
     top: 0,
     bottom: BAND,
-    width: 400,
+    width: width(),
     height: BAND,
   });
   title.getClientRects = () => [layout().typeBox(0)];
+  // The ramp beside the title; a lens of classes does not draw it.
+  ramp.getClientRects = () => {
+    if (swatches) return [];
+    const { at, line } = layout();
+    return [
+      { left: 110, right: rampRight, top: at(0) + 3, bottom: at(0) + line - 3 },
+    ];
+  };
   unknown.getClientRects = () => {
     const { marks, typeBox } = layout();
     return [typeBox(marks - 1)];
@@ -107,7 +127,9 @@ function setup({
   noteNode.getClientRects = () => {
     if (!noteShown()) return [];
     const { marks, at, line } = layout();
-    return [{ left: 0, right: 400, top: at(marks), bottom: at(marks) + line }];
+    return [
+      { left: 0, right: width(), top: at(marks), bottom: at(marks) + line },
+    ];
   };
   // A stop is a line-high box on the lines between the title's and the
   // Unknown key's.
@@ -120,7 +142,7 @@ function setup({
   Object.defineProperty(noteNode, 'scrollWidth', {
     get: () => model.noteWidth,
   });
-  noteNode.clientWidth = 400;
+  Object.defineProperty(noteNode, 'clientWidth', { get: width });
   const window = {
     getComputedStyle(node, pseudo) {
       if (pseudo === '::before') {
@@ -147,7 +169,7 @@ function setup({
   // The row's box grows with the lines its marks take; the bar's does not.
   row.getBoundingClientRect = () => {
     const { marks, line } = layout();
-    return { width: 400, height: marks * line };
+    return { width: width(), height: marks * line };
   };
   bar.getBoundingClientRect = () => ({ width: 1280, height: 52 });
 
@@ -235,9 +257,11 @@ function setup({
     document,
     legend,
     title,
+    ramp,
     unknown,
     noteNode,
     button,
+    lensButton,
     popup,
     outside,
     model,
@@ -305,14 +329,36 @@ test('a note cut by its ellipsis brings the button, and the popover holds the wh
   assert.equal(page.document.activeElement, page.button);
 });
 
-/** The boxes a node draws, all inside the 48 px band (to 1 px). */
+/** The boxes a node draws, all inside the legend's band as drawn (to 1 px). */
 const wholeInBand = (node) => {
   const rects = node.getClientRects();
+  const band = node.ownerDocument
+    .getElementById('world-legend')
+    .getBoundingClientRect();
   return (
     rects.length > 0 &&
-    rects.every((rect) => rect.top >= -1 && rect.bottom <= BAND + 1)
+    rects.every(
+      (rect) =>
+        rect.top >= band.top - 1 &&
+        rect.bottom <= band.bottom + 1 &&
+        rect.left >= band.left - 1 &&
+        rect.right <= band.right + 1,
+    )
   );
 };
+/** Every part the bar draws of the legend lies whole inside its band. */
+const drawnWhole = (page) =>
+  [
+    page.title,
+    page.ramp,
+    ...page.document
+      .getElementById('world-legend-stops')
+      .children.filter((stop) => !stop.hasAttribute('data-out')),
+    page.unknown,
+    ...(page.legend.hasAttribute('data-note-off') ? [] : [page.noteNode]),
+  ]
+    .filter((node) => node.getClientRects().length)
+    .every(wholeInBand);
 
 test('a note with no line left is dropped, the stops stay, and the button shows', () => {
   // Three lines of marks fill the band: the note has no line, and even with
@@ -375,17 +421,78 @@ test('stops leave from the last one back, each whole or not at all', () => {
   assert.equal(page.button.hidden, false);
 });
 
-test('the title and the Unknown key are never left out, even where nothing else fits', () => {
-  // Marks that take four lines whatever is left out: no layout is whole.
-  // The stops and the note go and the button shows; the title and the
-  // Unknown key are never the ones taken out.
-  const page = setup({ lines: 4 });
-  assert.equal(page.title.hasAttribute('data-out'), false);
-  assert.equal(page.unknown.hasAttribute('data-out'), false);
-  assert.ok(page.title.getClientRects().length > 0);
-  assert.ok(page.unknown.getClientRects().length > 0);
+test('where only the title and the Unknown key fit, they are whole inside the band and the rest is behind the button', () => {
+  // A title line, a line per stop and an Unknown-key line: with no stop and
+  // no note that is three lines, which the band holds; anything more it does
+  // not. The stops and the note go, and what stays is drawn whole.
+  const page = setup({ lines: (shown) => 3 + shown });
+  assert.equal(page.legend.hasAttribute('data-away'), false);
+  assert.deepEqual(outOf(page), ['Weak', 'Midrange', 'Strong']);
   assert.equal(page.legend.hasAttribute('data-note-off'), true);
+  assert.ok(wholeInBand(page.title), 'the title is whole in the band');
+  assert.ok(wholeInBand(page.unknown), 'the Unknown key is whole in the band');
+  assert.ok(drawnWhole(page));
   assert.equal(page.button.hidden, false);
+});
+
+test('where even the title and the Unknown key cannot be whole, the legend leaves the bar and the button shows', () => {
+  // Marks that take four lines whatever is left out: no layout is whole.
+  const page = setup({ lines: 4 });
+  assert.equal(page.legend.hasAttribute('data-away'), true);
+  assert.equal(page.button.hidden, false);
+  page.button.click();
+  const whole = text(page.popup);
+  for (const part of [
+    'Condition',
+    'Weak',
+    'Midrange',
+    'Strong',
+    'Unknown or disputed',
+    'World Bank · IMF · UCDP · V-Dem',
+  ])
+    assert.ok(whole.includes(part), `the popover has "${part}": ${whole}`);
+  // Room again: the legend comes back to the bar, whole.
+  page.model.lines = 2;
+  page.model.noteWidth = 120;
+  page.sync();
+  assert.equal(page.legend.hasAttribute('data-away'), false);
+  assert.ok(drawnWhole(page));
+  assert.equal(page.button.hidden, true);
+});
+
+test('a ramp the band would cut is seen: the legend is never drawn with it half-clipped', () => {
+  // The ramp runs past the band's right edge whatever else is left out.
+  const page = setup({ rampRight: 460 });
+  assert.equal(page.legend.hasAttribute('data-away'), true);
+  assert.equal(page.button.hidden, false);
+  // A lens of classes draws no ramp, and its legend stays in the bar.
+  const classes = setup({ rampRight: 460, swatches: true });
+  assert.equal(classes.legend.hasAttribute('data-away'), false);
+});
+
+test('the room the button takes is measured: what is drawn is what was fitted', () => {
+  // In the full band the marks take two lines; in the band less the
+  // button's room they take a line for the title and Unknown key and one per
+  // stop. The note is cut, so the button must show: fitted once without it
+  // the legend would keep every stop, and the button would then push the
+  // marks onto five lines, past the band.
+  const page = setup({
+    lines: (shown, width) => (width >= WIDTH ? 2 : 1 + shown),
+    noteWidth: 900,
+  });
+  assert.equal(page.button.hidden, false);
+  assert.ok(
+    drawnWhole(page),
+    'every part drawn is whole with the button shown',
+  );
+  assert.deepEqual(outOf(page), ['Midrange', 'Strong']);
+  // The note becomes short and nothing needs the button: it hides, and the
+  // stops that the band without it holds come back.
+  page.model.noteWidth = 120;
+  page.sync();
+  assert.equal(page.button.hidden, true);
+  assert.deepEqual(outOf(page), []);
+  assert.ok(drawnWhole(page));
 });
 
 test('marks that fit are all kept in the bar', () => {
@@ -453,7 +560,9 @@ test('a resize the fit itself left is not fitted again; a real change of size is
   // The marks grow a line (a font that loaded, say): the row's box grows.
   page.model.lines = 3;
   page.resize();
-  assert.equal(page.model.fits, before + 1);
+  // One fit with the button hidden, which leaves the note out, and one more
+  // with the button shown.
+  assert.equal(page.model.fits, before + 2);
   assert.equal(page.legend.hasAttribute('data-note-off'), true);
   assert.equal(page.button.hidden, false);
 });
@@ -527,4 +636,31 @@ test('a hidden legend hides the button and closes the popover', () => {
   page.sync();
   assert.equal(page.button.hidden, true);
   assert.equal(page.popup.hidden, true);
+});
+
+test('a popover closed by a fit gives focus back to the button, or to the pressed lens where the button goes', () => {
+  const page = setup({ noteWidth: 900 });
+  page.button.click();
+  assert.equal(page.document.activeElement, page.popup);
+  // The note becomes short: nothing is cut, the button hides, the popover
+  // closes, and focus goes to the lens rather than the page's body.
+  page.model.noteWidth = 120;
+  page.sync();
+  assert.equal(page.popup.hidden, true);
+  assert.equal(page.document.activeElement, page.lensButton);
+
+  // The legend hidden while focus is in the popover: the same.
+  const hidden = setup({ noteWidth: 900 });
+  hidden.button.click();
+  hidden.legend.hidden = true;
+  hidden.sync();
+  assert.equal(hidden.document.activeElement, hidden.lensButton);
+
+  // Focus elsewhere is left where it is.
+  const elsewhere = setup({ noteWidth: 900 });
+  elsewhere.button.click();
+  elsewhere.outside.focus();
+  elsewhere.model.noteWidth = 120;
+  elsewhere.sync();
+  assert.equal(elsewhere.document.activeElement, elsewhere.outside);
 });

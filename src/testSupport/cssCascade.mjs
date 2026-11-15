@@ -1,10 +1,22 @@
 /**
  * A small CSS cascade for tests: the application's real style sheets, read as
  * rules in source order, matched against modelled elements, and resolved by
- * importance, specificity and source order. @media and @supports count as
- * always on, and a state the test cannot know (hover, focus, :has) counts as
- * on where that widens what applies and as off inside :not. Anything the model
- * cannot read fails loudly rather than being skipped. Not a browser.
+ * importance, specificity and source order. Not a browser.
+ *
+ * What it reads and what it does not:
+ * - Every rule inside @media and @supports counts as on, whatever the
+ *   condition, so a rule meant only for a phone applies at every width.
+ * - Rules inside @layer are read as if unlayered: layer order is not modelled.
+ * - Every other at-rule block (@container, @font-face, @keyframes, @page and
+ *   so on) is skipped silently, with all the rules inside it.
+ * - A state the test cannot know (hover, focus, :has() and any pseudo-class
+ *   it does not list) counts as on where that widens what applies and as off
+ *   inside :not. Pseudo-elements never match.
+ * - Sibling combinators are taken as possibly matching (siblings are not
+ *   modelled).
+ * It fails loudly on an attribute selector it cannot parse, a custom property
+ * that is not defined or nests too deep, and an id that is not in the
+ * application's HTML. Anything else outside this list is not checked.
  */
 import assert from 'node:assert/strict';
 
@@ -32,7 +44,10 @@ export function splitTop(text, delimiter) {
   return parts.map((part) => part.trim()).filter(Boolean);
 }
 
-/** Style rules in source order; @media and @supports count as always on. */
+/**
+ * Style rules in source order. @media and @supports count as always on and
+ * @layer as unlayered; any other at-rule block is skipped with its rules.
+ */
 export function rules(css) {
   const src = css.replace(/\/\*[\s\S]*?\*\//g, '');
   const out = [];

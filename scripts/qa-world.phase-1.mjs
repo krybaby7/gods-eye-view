@@ -17,7 +17,8 @@ export default async function phase1({
   checkRows,
   layout,
   frameLayout,
-  legendPopover,
+  checkLegend,
+  legendAt,
   lens,
   area,
   slot,
@@ -316,39 +317,76 @@ export default async function phase1({
             await page.click(lens(pressed));
           }
         }
+        // Narrower windows, where the bar's band is too small for some
+        // legends: every part shown is whole in the legend's box, or the bar
+        // does not draw the legend and the info button shows; wherever the
+        // button shows, its popover is inside the window and holds it all.
+        {
+          const pressed = await page.$eval(
+            '#world-lens-bar [aria-pressed="true"]',
+            (node) => node.dataset.worldLens,
+          );
+          const lensIds = await page.$$eval(
+            '#world-lens-bar [data-world-lens]',
+            (nodes) => nodes.map((node) => node.dataset.worldLens),
+          );
+          try {
+            for (const [width, height] of [
+              [1024, 768],
+              [800, 600],
+            ]) {
+              await page.setViewport({ width, height, deviceScaleFactor: 1 });
+              for (const id of lensIds) {
+                try {
+                  await page.$eval(lens(id), (node) => node.click());
+                  await page.waitForFunction(
+                    (selector) =>
+                      document
+                        .querySelector(selector)
+                        ?.getAttribute('aria-pressed') === 'true',
+                    wait,
+                    lens(id),
+                  );
+                  const legend = await legendAt(width, height, `lens-${id}`);
+                  assert.ok(
+                    legend,
+                    `No legend for ${id} at ${width}×${height}`,
+                  );
+                  legend.popover = await checkLegend(
+                    legend,
+                    `${width}×${height}`,
+                  );
+                } catch (error) {
+                  legendFailures.push(error.message);
+                }
+              }
+            }
+          } finally {
+            await page.$eval(lens(pressed), (node) => node.click());
+          }
+        }
         // On a phone the bar has no room for the legend: the info button is
-        // the way to it, and its popover stays inside the window.
-        await page.setViewport({
-          width: 390,
-          height: 844,
-          deviceScaleFactor: 1,
-        });
+        // the way to it, and its popover stays inside the window. Read once
+        // the lens is pressed and the page has drawn the change.
         for (const id of ['ownership', 'diplomacy', 'strength']) {
           if (!(await page.$(lens(id)))) continue;
-          await page.$eval(lens(id), (node) => node.click());
           try {
-            const phone = await page.evaluate(() => {
-              const button = document.getElementById('frame-legend-whole');
-              const stops = document.getElementById('world-legend-stops');
-              return {
-                lens:
-                  document
-                    .querySelector('#world-lens-bar [aria-pressed="true"]')
-                    ?.getAttribute('data-world-lens') ?? null,
-                button: button.getClientRects().length > 0,
-                marks: [
-                  document.getElementById('world-legend-title').textContent,
-                  ...[...stops.children].map((node) => node.textContent),
-                  'Unknown or disputed',
-                ].filter(Boolean),
-                noteText: document
-                  .getElementById('world-legend-note')
-                  .textContent.replace(/\s+/g, ' ')
-                  .trim(),
-              };
-            });
-            assert.ok(phone.button, `No legend button on a phone for ${id}`);
-            await legendPopover(phone, '390×844 (phone)');
+            await page.$eval(lens(id), (node) => node.click());
+            await page.waitForFunction(
+              (selector) =>
+                document
+                  .querySelector(selector)
+                  ?.getAttribute('aria-pressed') === 'true',
+              wait,
+              lens(id),
+            );
+            const phone = await legendAt(390, 844, `phone-${id}`);
+            assert.ok(phone, `No legend for ${id} on a phone`);
+            assert.ok(
+              !phone.drawn && phone.button,
+              `On a phone the bar should not draw the ${id} legend and should show its button: ${JSON.stringify(phone)}`,
+            );
+            phone.popover = await checkLegend(phone, '390×844 (phone)');
           } catch (error) {
             legendFailures.push(error.message);
           }
