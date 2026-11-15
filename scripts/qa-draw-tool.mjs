@@ -104,9 +104,44 @@ async function pressFinish() {
   await page.keyboard.press('Enter');
 }
 
-/** One click on the globe canvas, the way a person makes one. */
+/**
+ * The window the fixed points below were chosen for, when the globe's canvas
+ * filled it. The canvas now sits inside the frame's globe region, so each
+ * fixed point is kept as the same fraction of today's canvas.
+ */
+const DESIGN = { width: 1280, height: 860 };
+
+/** The globe canvas's rectangle in window pixels. */
+const canvasRect = () =>
+  page.evaluate(() => {
+    const rect =
+      window.__godsEyeView.viewer.scene.canvas.getBoundingClientRect();
+    return {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+    };
+  });
+
+/**
+ * One click on the globe canvas, the way a person makes one, at a point given
+ * on the design window and placed at the same fraction of the canvas.
+ */
 async function clickWorld(x, y, options = {}) {
-  await page.mouse.click(x, y, options);
+  const rect = await canvasRect();
+  await page.mouse.click(
+    rect.left + (x / DESIGN.width) * rect.width,
+    rect.top + (y / DESIGN.height) * rect.height,
+    options,
+  );
+  await wait(options.settle ?? 140);
+}
+
+/** One click at a canvas pixel (as Cesium projects it), in window pixels. */
+async function clickCanvas(point, options = {}) {
+  const rect = await canvasRect();
+  await page.mouse.click(rect.left + point.x, rect.top + point.y, options);
   await wait(options.settle ?? 140);
 }
 
@@ -361,7 +396,7 @@ try {
     areaVertices === 4,
     `${areaVertices} vertices`,
   );
-  await page.mouse.click(410, 500, { count: 2 });
+  await clickWorld(410, 500, { count: 2, settle: 0 });
   const areaLanded = await waitForMarks(3);
   await wait(900);
   const afterDoubleClick = await page.evaluate(() =>
@@ -430,7 +465,7 @@ try {
       : 'no CCTV camera or bundled site could be reached — the ownership case cannot be proved',
   );
   if (target) {
-    await clickWorld(target.x, target.y, { settle: 900 });
+    await clickCanvas(target, { settle: 900 });
     const selectedNormally = await page.evaluate(() =>
       Boolean(window.__godsEyeView.viewer.selectedEntity),
     );
@@ -443,7 +478,7 @@ try {
     });
     await page.click('#draw-toggle');
     await page.click('.pp-mode-btn[data-shape="area"]');
-    await clickWorld(target.x, target.y, { settle: 900 });
+    await clickCanvas(target, { settle: 900 });
     const whileDrawing = await drawState();
     const selectedWhileDrawing = await page.evaluate(() =>
       Boolean(window.__godsEyeView.viewer.selectedEntity),
@@ -855,7 +890,17 @@ async function onScreen(belongs, timeout = 20_000) {
             const window2d = scene.cartesianToCanvasCoordinates(position);
             if (!window2d) continue;
             const { x, y } = window2d;
-            if (!(x > 300 && x < 900 && y > 180 && y < 600)) continue;
+            // Clear of the side panels: the band the script used on the
+            // design window, as fractions of today's canvas.
+            const w = scene.canvas.clientWidth;
+            const h = scene.canvas.clientHeight;
+            if (!(
+              x > w * (300 / 1280) &&
+              x < w * (900 / 1280) &&
+              y > h * (180 / 860) &&
+              y < h * (600 / 860)
+            ))
+              continue;
             // Projecting into the window is not the same as being clickable:
             // the entity may be beyond the horizon or behind a building. Only a
             // spot where the scene actually picks it proves the control case.

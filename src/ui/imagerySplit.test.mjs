@@ -45,12 +45,12 @@ class FakeElement {
   }
 }
 
-function fixture({ initialValue = 0.5, splitPosition = 0.37 } = {}) {
+function fixture({ initialValue = 0.5, splitPosition = 0.37, canvas } = {}) {
   const body = new FakeElement('body');
   const cssCalls = [];
   const changes = [];
   let renders = 0;
-  const scene = { splitPosition };
+  const scene = { splitPosition, ...(canvas && { canvas }) };
   const cssTarget = {
     style: {
       setProperty(name, value) {
@@ -258,6 +258,78 @@ test('pointer drags follow the primary pointer only', () => {
   });
   assert.equal(env.scene.splitPosition, 0.75, 'the drag ended');
   assert.deepEqual(env.changes, [0.25, 0.75]);
+});
+
+test('on an inset canvas the pointer, the drawn line and the cut agree, and follow the canvas', (t) => {
+  // The frame insets the canvas: Today open (340) leaves 1100 of a 1440 window.
+  const rect = { left: 340, top: 52, width: 1100, height: 796 };
+  const canvas = {
+    get clientWidth() {
+      return rect.width;
+    },
+    clientHeight: 796,
+    getBoundingClientRect: () => ({ ...rect }),
+  };
+  const observers = [];
+  globalThis.ResizeObserver = class {
+    constructor(callback) {
+      this.callback = callback;
+      observers.push(this);
+    }
+    observe(target) {
+      this.target = target;
+    }
+    disconnect() {
+      this.disconnected = true;
+    }
+  };
+  t.after(() => delete globalThis.ResizeObserver);
+  const env = fixture({ canvas });
+  assert.deepEqual(
+    env.cssCalls,
+    [['set', '--split', '890px']],
+    'the line sits on the canvas middle',
+  );
+  env.handle.dispatch('pointerdown', {
+    button: 0,
+    clientX: 340 + 275,
+    pointerId: 1,
+    preventDefault() {},
+  });
+  assert.equal(
+    env.scene.splitPosition,
+    0.25,
+    'the cut is measured from the canvas’s left edge',
+  );
+  assert.deepEqual(
+    env.cssCalls.at(-1),
+    ['set', '--split', '615px'],
+    'the line is under the pointer',
+  );
+  env.handle.dispatch('pointermove', {
+    clientX: 340,
+    pointerId: 1,
+    preventDefault() {},
+  });
+  assert.equal(
+    env.scene.splitPosition,
+    0,
+    'the canvas’s left edge shows all of B',
+  );
+  env.handle.dispatch('pointerup', { pointerId: 1 });
+  env.split.setValue(0.5);
+  // Today folds to its 48 px rail: the canvas moves and widens.
+  Object.assign(rect, { left: 48, width: 1392 });
+  observers[0].callback();
+  assert.equal(observers[0].target, canvas);
+  assert.deepEqual(
+    env.cssCalls.at(-1),
+    ['set', '--split', '744px'],
+    'the line follows the cut',
+  );
+  assert.equal(env.scene.splitPosition, 0.5, 'the cut itself is unchanged');
+  env.split.destroy();
+  assert.equal(observers[0].disconnected, true);
 });
 
 test('visibility toggles the line without touching the value', () => {

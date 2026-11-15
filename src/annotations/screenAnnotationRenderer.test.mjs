@@ -326,3 +326,39 @@ test('an add that throws after inserting its group unwinds instead of orphaning 
   );
   renderer.destroy();
 });
+
+test('the layer sits on the globe’s own container, so canvas pixels land where they mark', (t) => {
+  const originalDocument = globalThis.document;
+  globalThis.document = fakeDocument();
+  t.after(() => {
+    if (originalDocument === undefined) delete globalThis.document;
+    else globalThis.document = originalDocument;
+  });
+  const container = new FakeElement('div');
+  const camera = {
+    positionWC: Cesium.Cartesian3.ZERO,
+    directionWC: Cesium.Cartesian3.ZERO,
+    positionCartographic: { height: 1000 },
+  };
+  const scene = {
+    camera,
+    canvas: { clientWidth: 1100, clientHeight: 796, width: 1100, height: 796 },
+    postRender: { addEventListener() {}, removeEventListener() {} },
+  };
+  const renderer = createScreenAnnotationRenderer({ scene, camera, container, trackedEntity: null });
+  const layer = container.children.find((child) => child.classList.contains('gev-screen-whiteboard'));
+  assert.ok(layer, 'the layer is in the container');
+  assert.equal(
+    document.body.children.some((child) => child.classList.contains('gev-screen-whiteboard')),
+    false,
+    'not a window-sized layer on the body',
+  );
+  const styles = document.getElementById('gev-screen-whiteboard-styles');
+  assert.match(
+    styles.textContent ?? styles._innerHTML ?? '',
+    /\.gev-screen-whiteboard \{ position: absolute; inset: 0;/,
+    'it fills the container, which is the canvas',
+  );
+  renderer.destroy();
+  assert.equal(container.children.includes(layer), false, 'destroy removes it');
+});

@@ -126,7 +126,7 @@ export default async function phase5({
   text,
   camera,
   pickCountry,
-  tab,
+  selectTab,
   wait,
 }) {
   await step(
@@ -157,7 +157,7 @@ export default async function phase5({
         await text(government),
         /Head of government.*India government fixture.*Government Fixture Artist.*CC BY 4.0/s,
       );
-      await page.click(tab('people'));
+      await selectTab('people');
       await page.waitForSelector(
         '.world-people-tab a.world-person-account',
         wait,

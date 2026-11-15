@@ -1,13 +1,18 @@
 /**
- * Where the app's chrome sits on screen, for text Cesium draws on the globe.
+ * Where the app's chrome sits over the globe, for text Cesium draws on it.
  *
  * The World Board's country codes are billboards in the WebGL canvas, under
- * every panel. The panels are translucent glass, so a code under an open panel
- * showed through it and read as drawn across it. Stacking cannot fix that from
- * the canvas side; hiding a code while its box sits under chrome does.
+ * every panel. In the frame (roadmap 1.2) the canvas is inset to the globe
+ * region, so the bars, Today and the sheet can no longer have a code under
+ * them; what still floats over the globe (the layer list, the right rail, the
+ * dock, the navigation buttons, the status line) is measured here, and a code
+ * whose box sits under it is hidden rather than read through it.
  *
- * Measurement is throttled and only runs from a rendered frame, so a parked
- * camera costs nothing; the revision tells a caller when the chrome moved.
+ * Rects are kept in the canvas's own coordinates, the space Cesium's window
+ * coordinates use, so a globe region that does not start at the window's
+ * corner still lines up. Measurement is throttled and runs from a rendered
+ * frame; `watch` asks for that frame when the chrome or the globe region
+ * changes size, so a layout change re-culls even under a parked camera.
  */
 
 /** Chrome a globe code must not show through. Rail panels are listed one by one. */
@@ -24,6 +29,9 @@ export const PANEL_COVER_SELECTORS = Object.freeze([
   '#cockpit-context',
   '#cockpit-signal-stream',
 ]);
+
+/** The element whose box is the canvas: window coordinates start at its corner. */
+export const PANEL_COVER_CANVAS_ID = 'cesiumContainer';
 
 /** Minimum interval between two measurements of the chrome. */
 export const PANEL_COVER_REFRESH_MS = 200;
@@ -67,11 +75,13 @@ function isShown(element) {
 /**
  * @param {object} [options]
  * @param {Document} [options.documentRef]
+ * @param {Window} [options.windowRef]
  * @param {() => number} [options.now]
  * @param {number} [options.refreshMs]
  */
 export function createPanelCover({
   documentRef = globalThis.document,
+  windowRef = globalThis.window,
   now = () => globalThis.performance?.now?.() ?? Date.now(),
   refreshMs = PANEL_COVER_REFRESH_MS,
 } = {}) {
@@ -79,20 +89,34 @@ export function createPanelCover({
   let signature = '';
   let revision = 0;
   let measuredAt = Number.NEGATIVE_INFINITY;
+  let resizeObserver = null;
+  const observed = new Set();
+
+  function observe(element) {
+    if (!resizeObserver || !element || observed.has(element)) return;
+    observed.add(element);
+    resizeObserver.observe(element);
+  }
 
   function measure() {
+    const canvas = documentRef?.getElementById?.(PANEL_COVER_CANVAS_ID);
+    const origin = canvas?.getBoundingClientRect?.() ?? { left: 0, top: 0 };
+    observe(canvas);
     const next = [];
     for (const element of documentRef?.querySelectorAll?.(
       PANEL_COVER_SELECTORS.join(', '),
     ) || []) {
+      observe(element);
       if (!isShown(element)) continue;
       const rect = element.getBoundingClientRect?.();
       if (!rect || !(rect.width > 0) || !(rect.height > 0)) continue;
+      const left = rect.left - origin.left;
+      const top = rect.top - origin.top;
       next.push({
-        left: rect.left,
-        top: rect.top,
-        right: rect.left + rect.width,
-        bottom: rect.top + rect.height,
+        left,
+        top,
+        right: left + rect.width,
+        bottom: top + rect.height,
       });
     }
     const nextSignature = next
@@ -105,6 +129,10 @@ export function createPanelCover({
     }
   }
 
+  function invalidate() {
+    measuredAt = Number.NEGATIVE_INFINITY;
+  }
+
   return {
     /** Re-measure when due; returns a revision that changes when the chrome moved. */
     refresh() {
@@ -115,9 +143,38 @@ export function createPanelCover({
       }
       return revision;
     },
-    /** Whether a box centred on (x, y) sits under any measured chrome. */
+    /** Measure on the next refresh, whatever the throttle says. */
+    invalidate,
+    /** Whether a box centred on (x, y), in canvas pixels, sits under any measured chrome. */
     covers(x, y, halfWidth = 0, halfHeight = 0) {
       return boxUnderRects(x, y, rects, halfWidth, halfHeight);
+    },
+    /**
+     * Call `onChange` (to ask the idle globe for a frame) whenever the chrome
+     * or the globe region changes size or the window resizes, until `signal`
+     * aborts. Panels found later are observed as they are measured.
+     */
+    watch(onChange, signal) {
+      if (signal?.aborted) return;
+      const changed = () => {
+        invalidate();
+        onChange?.();
+      };
+      const Observer = globalThis.ResizeObserver;
+      if (typeof Observer === 'function') {
+        resizeObserver = new Observer(changed);
+        measure();
+      }
+      windowRef?.addEventListener?.('resize', changed, { signal });
+      signal?.addEventListener?.(
+        'abort',
+        () => {
+          resizeObserver?.disconnect();
+          resizeObserver = null;
+          observed.clear();
+        },
+        { once: true },
+      );
     },
   };
 }

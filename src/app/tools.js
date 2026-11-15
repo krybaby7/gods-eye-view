@@ -6,6 +6,7 @@ import { createRecentImageryPanel } from '../ui/recentImagery.js';
 import { createSituationPanel } from '../ui/situationPanel.js';
 import { createSearchesPanel } from '../ui/searchesPanel.js';
 import { createWorldPanel } from '../ui/worldPanel.js';
+import { createFrame } from '../ui/frame.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
 import { installViews, isEmbeddedInline } from './embed.js';
 import { installScopeMask, destroyScopeMask } from '../scopeMask.js';
@@ -135,15 +136,9 @@ export function createApplicationTools({
     defer(startChrome({ loadingScreen, styleManager, dataManager, signal }));
   const world = dataManager.layers.get('world')?.module;
   if (world) {
-    const panel = createWorldPanel({
-      layer: world,
-      openSheet: () =>
-        styleManager.setPanelCollapsed('world-character-sheet', false, {
-          explicit: true,
-          persist: false,
-          syncShare: false,
-        }),
-    });
+    // The sheet sits in the frame's right column and is open whenever it has
+    // something to show, so the panel needs no opener.
+    const panel = createWorldPanel({ layer: world });
     defer(() => panel.destroy());
   }
   // Idle render governor: flips the scene into requestRenderMode whenever
@@ -230,6 +225,13 @@ export function createApplicationTools({
       delete window.__gevVoiceCommands;
   });
   debug.voiceCommands = voiceCommands;
+  // The frame comes last: its bottom bar delegates to the zoom and voice
+  // controls built above.
+  const frame = createFrame({
+    requestRender: governorRequestRender,
+    world,
+  });
+  defer(() => frame.destroy());
   defer(
     installViews({
       shell: styleManager,

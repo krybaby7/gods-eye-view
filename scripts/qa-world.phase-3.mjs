@@ -88,6 +88,7 @@ export default async function phase3({
   waitSettled,
   pickCountry,
   lens,
+  selectTab,
   wait,
 }) {
   await step(
@@ -139,7 +140,7 @@ export default async function phase3({
           )?.material.uniforms.dashPattern === 255
         );
       }, wait);
-      await page.click('#world-tab-relations');
+      await selectTab('relations');
       await page.waitForSelector('[data-world-relation="fixture-vote"]', wait);
       for (const label of [
         'Allies',
@@ -197,13 +198,16 @@ export default async function phase3({
         const war = lines.find(
           (line) => line.id === 'world-card:relation:fixture-war',
         );
+        // Window coordinates are relative to the canvas, which the frame
+        // insets from the page's corner; the click needs page coordinates.
+        const { left, top } = scene.canvas.getBoundingClientRect();
         for (const location of war?.positions.slice(5, -5) ?? []) {
           const position = C.SceneTransforms.worldToWindowCoordinates(
             scene,
             location,
           );
           if (position && scene.pick(position, 1, 1)?.id === war.id)
-            return { x: position.x, y: position.y };
+            return { x: position.x + left, y: position.y + top };
         }
         return false;
       }, wait);

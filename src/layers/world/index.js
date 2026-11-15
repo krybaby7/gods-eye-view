@@ -322,6 +322,9 @@ export function createWorldLayer({
       mode = boardMapMode(viewer.camera.positionCartographic?.height, 'detail');
       opacity = mode === 'board' ? 1 : 0;
       geometry?.setActive(true);
+      // A panel or the globe region that changes size asks the idle globe
+      // for a frame, so the codes under the chrome are re-culled at once.
+      cover?.watch?.(requestRender, lifecycle.signal);
       overlays = overlayFactories.map((create) =>
         create({
           viewer,

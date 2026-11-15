@@ -505,6 +505,22 @@ owners with synchronous cleanup. Existing scene, share and HUD engines retain
 their entry points. `ui/styles` loads the ordered stylesheet entry; component
 files retain the original cascade, including responsive and dock refinements.
 
+## The frame
+
+`src/ui/frame.js` owns the frame's state and its bars' controls and imports
+only `frameGauges.js`, which is pure: it reads the World Board snapshot it is
+given and imports nothing. The frame reaches the board through the
+`getSnapshot` and `subscribe` it is passed, and the original controls (layers,
+presets, zoom, voice, the sheet's close button) by clicking their own
+elements, so it holds none of their state. Layout itself is CSS in
+`styles/frame.css`, keyed on `data-today` and `data-sheet`.
+
+`src/overlays/canvasFrame.js` is a leaf that imports nothing: the canvas's
+rectangle in the window and converters between canvas and window pixels. Code
+in `src/ui`, `src/data`, `src/annotations` and the layer renderers may import
+it; portable `sources/*` graphs must not reach it. `src/hudFormat.js` is a
+pure formatter for the status line and also imports nothing.
+
 ## UI state and Scene actions
 
 `StyleManager.subscribeShareState(listener)` supplies the current shareable
