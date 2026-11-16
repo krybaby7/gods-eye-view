@@ -8,11 +8,11 @@ The owner approved the stage 0 mock on 2026-11-12 (decisions 30 and 31, section 
 Piece 2, costume off and board on, was built unattended on 2026-11-12 and merged on 2026-11-13 as
 pull request 26, after an independent review. Piece 4, words for numbers and the Overview tab, was
 merged the same day as pull request 27 under decision 33. Piece 3, the frame, was merged on
-2026-11-16 as pull request 28, also under decision 33. Section 10 gives the order of building and
-the state of each piece. Builds on `docs/superpowers/specs/2026-11-08-world-board-design.md`
-(the World Board spec, whose rules still hold) and on a review of the code, the docs and the
-running app on main at 7fb39f6. Section 8 says what the first review could not see and section 8.1
-what the second one found.
+2026-11-16 as pull request 28, also under decision 33, and the tools menu (1.5) the same day as pull
+request 29. Section 10 gives the order of building and the state of each piece. Builds on
+`docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
+hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
+what the first review could not see and section 8.1 what the second one found.
 
 ## 0. Shape in one paragraph
 
@@ -255,7 +255,8 @@ the frame, the second feeds Today, the third becomes a tool.
 
 **1.5 The original tools move out of the way.** The cockpit, voice, scenes and recording, drawing,
 and the render styles (night vision, thermal, CRT and the others) keep working. They open from a
-Tools menu or from the thing they act on, not from the main screen (section 5, decision 3).
+Tools menu or from the thing they act on, not from the main screen (section 5, decision 3). Merged
+as pull request 29 on 2026-11-16 (section 10).
 
 **1.6 Tests follow.** Rewrite the tests that pin text, and add a picture-based check: one capture
 per region at three window sizes, compared with an approved set, so a restyle is judged by how it
@@ -915,15 +916,17 @@ asks. Decision 33 lets a reviewed piece be merged without asking until the app i
 table is the order and the state. The session that finishes a piece updates its row, the status
 line at the top of this file and the owner's status page.
 
-| Order  | Piece                                                                                                               | State on 2026-11-16                       |
-| ------ | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                 |
-| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)   |
-| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13   |
-| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16   |
-| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13   |
-| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Next: 1.5 and 1.4, built at the same time |
-| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock      |
+| Order  | Piece                                                                                                               | State on 2026-11-16                                               |
+| ------ | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                                         |
+| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)                           |
+| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13                           |
+| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16                           |
+| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13                           |
+| 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16                           |
+| 6      | The layers menu (1.4)                                                                                               | Stage one built (pull request 30, a draft); stage two being built |
+| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Next: 1.3 and 1.6                                                 |
+| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock                              |
 
 **Piece 2, costume off and board on.** Merged on 2026-11-13 as pull request 26 (merge commit
 `c9c6beee`), on the owner's word. Before the merge a separate agent ran the five gates again and
@@ -1064,6 +1067,89 @@ run (`qa-draw-tool.mjs`, `qa-cctv-v2.mjs`, `qa-directions.mjs`, `qa-installation
 
 The logs of both full runs and the frame's captures are in the main folder under
 `qa-artifacts/frame/`, not committed. The worktree and its local branch are removed.
+
+**Piece 5, the tools menu (1.5).** Merged on 2026-11-16 as pull request 29 (merge commit
+`7ab45925`), under decision 33. The original app's tools moved off the globe into a menu at the end
+of the top bar. Its button opens a list of three: Data sources and keys, Display, and Tools. Each
+opens a floating panel under the top bar, on the right, and only when it is chosen. A panel closes
+with its close button or with Escape. It does not close on a click on the globe, so drawing and
+picking a place still work while one is open. At 720 px and narrower the panels are full-width
+sheets above the bottom bar. Data sources and keys opens the provider-keys dialog and holds the War
+Monitor's switch. Display holds the render styles, the map source, the render quality and the
+display options. Tools holds the place search, north up, tilt and Reset Globe, drawing, scenes and
+recording, and the share link. The controls were moved whole, with their ids, so voice, scenes,
+share links, embed and MCP still find them. The dock's voice pill and the globe's own zoom pair are
+gone: voice is the microphone in the bottom bar, and zoom is the bottom bar's. The cockpit is still
+entered from a selected aircraft's card. Other parts of the app open a section through
+`openMenuSection` in `src/ui/toolsMenu.js`, or by the `gev:open-menu-section` event, whose names
+are in `src/ui/menuSections.js`. With nothing opened, the only part of the original app over the
+globe is the status line. The cameras, street level, context and radio panels stay where they were,
+as the brief asks.
+
+Two readings are the director's, built as written, for the owner to confirm. The War Monitor's
+switch lives in Menu ▸ Data sources and keys until Today takes the news over; 1.4 takes its row out
+of the layer list. And, like the World Board, the War Monitor is left alone by "Switch all off" and
+by the presets.
+
+An independent reader read the build and a second reader checked each serious finding. A builder
+fixed what stood in `0fdf1e56`: "Open the War Monitor panel" had left the menu's own panel lying
+over the War Monitor panel, and the legend's width had been read from a picture, not measured. An
+independent reader read that fix and found nothing that breaks the piece.
+
+The first full run, on `0fdf1e56`, failed in two places, and neither fault was in the app. One unit
+test failed (7,165 tests: 7,154 passing, 1 failing, 10 skipped). `src/annotations/drawTool.test.mjs`
+finds the Draw description in three documents by the words "DISPLAY ▸ Draw", and the branch had
+rightly changed `README.md` to "Menu ▸ Tools ▸ Draw". No builder saw it, because builders were told
+not to run the whole `npm test`. And the World Board script failed at its first step, the fault the
+frame's run had met. A fixer cured both, and a third, in `38b7663c`, which touches tests, scripts
+and one line of `docs/CURRENT-STATE.md` and no app code:
+
+- The document test accepts the old words or the menu's.
+- Before it clicks, `toggleWorld` in `scripts/qa-world.mjs` notes when the loading line is shown,
+  and the first step (`scripts/qa-world.phase-1.mjs`) waits until it was shown or is still showing,
+  so a fast load no longer slips past. The layers menu's branch carries the same lines.
+- Each fixture snapshot in `scripts/qa-news.mjs` reads the clock once. Before, every story read it
+  for itself, so three stories given the same age tied only when built in the same millisecond, and
+  the app, rightly sorting by time, sometimes put them in an order the script did not expect. That
+  had failed one earlier run.
+
+Two independent readers read that commit and found nothing that breaks it. They found two untrue
+sentences in the pull request's text, which the director corrected.
+
+Before the merge, on the final commit `38b7663c` and with nothing else running on the PC, the five
+gates passed (7,165 tests: 7,155 passing, none failing, 10 skipped) and so did the four fixture
+browser runs, against a server with no keys that was up for about 19 minutes: the World Board 33 of
+33 steps, eight of them the menu's, the news 29 steps, the searches 11 checks, and the lenses 22
+with 1 skipped. After the merge the tree of `main` equals the tree of that commit.
+
+Two things learned. The legend's width follows the lens: at 1280×720 its band in the bottom bar is
+481 px under Strength and 472 px under Condition, on `main` before this piece and after it. The
+pull request first read those two numbers as 9 px lost; a width is compared only under the same
+lens. And the rule that kept builders from the whole `npm test` let a test pinned on a document's
+words fail unseen. A builder who changes a document's words now searches the tests for the old
+words first, and makes one run of the five checks, under the shared lock, on the final commit.
+
+Not checked: the running app with the owner's keys; a War Monitor Refresh or a Search Layers run; a
+real phone (only a 390×844 window); and `scripts/qa-draw-tool.mjs`, rewritten to open the menu and
+to aim at the open globe and never run. GitHub runs no checks on the fork, so the local run is the
+evidence. The review left these:
+
+- **Given to the layers menu's second stage (1.4).** Type sizes written in place in
+  `src/ui/styles/tools-menu.css`. The Share button's word is not a real text node. The menu's
+  wrapper borrows the sheet's `frame-more` class. The note about keys does not follow the keys
+  dialog. The Tools panel's "View" heading shows even when its group is empty. Nothing records that
+  the hidden zoom pair is tied to the bottom bar's. `README.md` still sends the reader to a "POWER
+  UP" chip, `docs/CURRENT-STATE.md` still describes a DISPLAY rail, and `CHANGELOG.md` has no
+  entry for the menu.
+- **For the tests (1.6).** The first step's new wait passes if the loading line is missing
+  altogether, and does not look at whether it is really drawn. In the document test the old words
+  win over the menu's where a document holds both.
+- **Still there.** The news script still fails for about ten minutes after local midnight, so no
+  full run is started then. The panels this piece leaves in place, and the War Monitor panel, still
+  float over the globe and may overlap at 1280×720; that is not measured.
+
+The logs of both full runs, of the builder's five browser runs, and the captures are in the main
+folder under `qa-artifacts/tools-menu/`, not committed.
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
