@@ -1049,142 +1049,148 @@ async function detailPanelsLayout(width, height, label) {
       },
       { layerId, on },
     );
-  const result = { width, height, label, panels: [] };
-  const switched = [];
-  const expanded = [];
+  // One panel at a time: the right rail folds a panel it has no room for,
+  // so two expanded at once would measure the rail's choice, not the panel.
+  const result = { width, height, label, panels: [], problems: [] };
   try {
-    await openMenu();
     for (const panel of panels) {
-      const row = await setRow(panel.layerId, true);
-      panel.row = row;
-      if (row.clicked) switched.push(panel.layerId);
-    }
-    await closeMenu();
-    // A weather panel with entries shows itself; give it a moment.
-    await page
-      .waitForFunction(
-        () => !document.getElementById('weather-panel')?.hidden,
-        { timeout: 5000 },
-      )
-      .catch(() => {});
-    for (const panel of panels) {
-      const opened = await page.$eval(
-        panel.selector,
-        (node, id) => {
-          if (node.hidden || !node.classList.contains('collapsed'))
-            return false;
-          node.querySelector(`[data-collapse-target="${id}"]`)?.click();
-          return true;
-        },
-        panel.selector.slice(1),
-      );
-      if (opened) expanded.push(panel.selector);
-    }
-    await settle();
-    const data = await page.evaluate(
-      (selectors) => {
-        const shown = (element) => {
-          if (!element) return false;
-          const style = getComputedStyle(element);
-          return (
-            !element.hidden &&
-            style.display !== 'none' &&
-            style.visibility === 'visible' &&
-            Number(style.opacity) > 0 &&
-            element.getClientRects().length > 0
-          );
-        };
-        const box = (element) => {
-          const { left, top, right, bottom } = element.getBoundingClientRect();
-          return { left, top, right, bottom };
-        };
-        const regions = [
-          ['top bar', '#frame-top'],
-          ['bottom bar', '#frame-bottom'],
-          ['Today', '#frame-today'],
-          ['rail', '#frame-rail'],
-          ['sheet', '#frame-sheet'],
-        ]
-          .map(([name, selector]) => [name, document.querySelector(selector)])
-          .filter(([, element]) => shown(element))
-          .map(([name, element]) => ({ name, ...box(element) }));
-        return {
-          today: document.body.dataset.today,
-          sheet: document.body.dataset.sheet,
-          regions,
-          window: { width: innerWidth, height: innerHeight },
-          panels: selectors.map((selector) => {
-            const element = document.querySelector(selector);
-            return {
-              selector,
-              exists: Boolean(element),
-              hidden: Boolean(element?.hidden),
-              collapsed: Boolean(element?.classList.contains('collapsed')),
-              box: shown(element) ? box(element) : null,
-            };
-          }),
-        };
-      },
-      panels.map(({ selector }) => selector),
-    );
-    result.today = data.today;
-    result.sheet = data.sheet;
-    result.regions = data.regions;
-    await shot(`detail-panels-${width}x${height}-${label}`);
-    const problems = [];
-    const notDrawn = [];
-    panels.forEach((panel, index) => {
-      const measured = data.panels[index];
-      result.panels.push({ name: panel.name, row: panel.row, ...measured });
-      const { box } = measured;
-      if (!box) {
-        // The weather panel stays hidden until a weather layer has entries;
-        // with the feeds answered by nothing that is the expected state.
-        if (panel.layerId !== 'cctv' && measured.hidden)
-          notDrawn.push(
-            `${panel.name} panel not drawn: hidden, no ${panel.layerId} entries under the fixtures`,
-          );
-        else problems.push(`${panel.name} panel is not drawn`);
-        return;
-      }
-      if (
-        box.left < 0 ||
-        box.top < 0 ||
-        box.right > data.window.width ||
-        box.bottom > data.window.height
-      )
-        problems.push(
-          `${panel.name} panel leaves the window: ${JSON.stringify(box)}`,
-        );
-      for (const region of data.regions)
-        if (
-          Math.min(box.right, region.right) - Math.max(box.left, region.left) >
-            1 &&
-          Math.min(box.bottom, region.bottom) - Math.max(box.top, region.top) >
-            1
-        )
-          problems.push(`${panel.name} panel / ${region.name}`);
-    });
-    result.problems = problems;
-    result.notDrawn = notDrawn;
-  } finally {
-    // Leave the page as it was: panels folded again, layers off again.
-    for (const selector of expanded)
-      await page
-        .$eval(
-          selector,
+      let switched = false;
+      let expanded = false;
+      try {
+        await openMenu();
+        const row = await setRow(panel.layerId, true);
+        switched = Boolean(row.clicked);
+        await closeMenu();
+        // A weather panel with entries shows itself; give it a moment.
+        await page
+          .waitForFunction(
+            (selector) => !document.querySelector(selector)?.hidden,
+            { timeout: 5000 },
+            panel.selector,
+          )
+          .catch(() => {});
+        expanded = await page.$eval(
+          panel.selector,
           (node, id) => {
-            if (!node.classList.contains('collapsed'))
-              node.querySelector(`[data-collapse-target="${id}"]`)?.click();
+            if (node.hidden || !node.classList.contains('collapsed'))
+              return false;
+            node.querySelector(`[data-collapse-target="${id}"]`)?.click();
+            return true;
           },
-          selector.slice(1),
+          panel.selector.slice(1),
+        );
+        await page
+          .waitForFunction(
+            (selector) =>
+              !document
+                .querySelector(selector)
+                ?.classList.contains('collapsed'),
+            { timeout: 3000 },
+            panel.selector,
+          )
+          .catch(() => {});
+        await settle();
+        const data = await page.evaluate((selector) => {
+          const shown = (element) => {
+            if (!element) return false;
+            const style = getComputedStyle(element);
+            return (
+              !element.hidden &&
+              style.display !== 'none' &&
+              style.visibility === 'visible' &&
+              Number(style.opacity) > 0 &&
+              element.getClientRects().length > 0
+            );
+          };
+          const box = (element) => {
+            const { left, top, right, bottom } =
+              element.getBoundingClientRect();
+            return { left, top, right, bottom };
+          };
+          const regions = [
+            ['top bar', '#frame-top'],
+            ['bottom bar', '#frame-bottom'],
+            ['Today', '#frame-today'],
+            ['rail', '#frame-rail'],
+            ['sheet', '#frame-sheet'],
+          ]
+            .map(([name, regionSelector]) => [
+              name,
+              document.querySelector(regionSelector),
+            ])
+            .filter(([, element]) => shown(element))
+            .map(([name, element]) => ({ name, ...box(element) }));
+          const element = document.querySelector(selector);
+          const style = element && getComputedStyle(element);
+          return {
+            today: document.body.dataset.today,
+            sheet: document.body.dataset.sheet,
+            regions,
+            window: { width: innerWidth, height: innerHeight },
+            exists: Boolean(element),
+            hidden: Boolean(element?.hidden),
+            className: element?.className || '',
+            parent: element?.parentElement?.id || '',
+            display: style?.display,
+            visibility: style?.visibility,
+            opacity: style?.opacity,
+            box: shown(element) ? box(element) : null,
+          };
+        }, panel.selector);
+        await shot(`detail-panel-${panel.layerId}-${width}x${height}-${label}`);
+        result.today = data.today;
+        result.sheet = data.sheet;
+        result.panels.push({ name: panel.name, row, ...data });
+        const { box } = data;
+        if (!box) {
+          // The weather panel stays hidden until a weather layer has
+          // entries; with the feeds answered by nothing that can happen.
+          if (panel.layerId !== 'cctv' && data.hidden)
+            result.panels.at(-1).notDrawn =
+              `hidden, no ${panel.layerId} entries under the fixtures`;
+          else result.problems.push(`${panel.name} panel is not drawn`);
+          continue;
+        }
+        if (
+          box.left < 0 ||
+          box.top < 0 ||
+          box.right > data.window.width ||
+          box.bottom > data.window.height
         )
-        .catch(() => {});
-    if (switched.length) {
-      await openMenu();
-      for (const layerId of switched) await setRow(layerId, false);
-      await closeMenu();
+          result.problems.push(
+            `${panel.name} panel leaves the window: ${JSON.stringify(box)}`,
+          );
+        for (const region of data.regions)
+          if (
+            Math.min(box.right, region.right) -
+              Math.max(box.left, region.left) >
+              1 &&
+            Math.min(box.bottom, region.bottom) -
+              Math.max(box.top, region.top) >
+              1
+          )
+            result.problems.push(`${panel.name} panel / ${region.name}`);
+      } finally {
+        // Leave the page as it was: the panel folded, the layer off again.
+        if (expanded)
+          await page
+            .$eval(
+              panel.selector,
+              (node, id) => {
+                if (!node.classList.contains('collapsed'))
+                  node.querySelector(`[data-collapse-target="${id}"]`)?.click();
+              },
+              panel.selector.slice(1),
+            )
+            .catch(() => {});
+        if (switched) {
+          await openMenu();
+          await setRow(panel.layerId, false);
+          await closeMenu();
+        }
+      }
     }
+  } finally {
     report.detailPanelLayouts ??= [];
     report.detailPanelLayouts.push(result);
   }
