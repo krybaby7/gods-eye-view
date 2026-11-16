@@ -411,6 +411,17 @@ body.gev-frame #key-setup-chip {
   display: none !important;
 }
 
+/* Share has moved into the menu, so the top-centre holder keeps only the
+   clear-layers button (roadmap 1.4's). The holder draws nothing; it must not
+   take clicks meant for the globe either. */
+body.gev-frame #top-center-actions {
+  pointer-events: none;
+}
+
+body.gev-frame #top-center-actions > * {
+  pointer-events: auto;
+}
+
 /* The dock keeps only the voice card and its error tray; #frame-voice in the
    bottom bar is the one way in to voice. */
 body.gev-frame #command-dock {
