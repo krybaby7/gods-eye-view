@@ -1143,12 +1143,11 @@ async function detailPanelsLayout(width, height, label) {
         result.panels.push({ name: panel.name, row, ...data });
         const { box } = data;
         if (!box) {
-          // The weather panel stays hidden until a weather layer has
-          // entries; with the feeds answered by nothing that can happen.
-          if (panel.layerId !== 'cctv' && data.hidden)
-            result.panels.at(-1).notDrawn =
-              `hidden, no ${panel.layerId} entries under the fixtures`;
-          else result.problems.push(`${panel.name} panel is not drawn`);
+          // A panel that is not drawn cannot be measured, so the step fails:
+          // it never passes without measuring each panel.
+          result.problems.push(
+            `${panel.name} panel is not drawn (hidden ${data.hidden}, display ${data.display})`,
+          );
           continue;
         }
         if (

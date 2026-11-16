@@ -1504,7 +1504,7 @@ try {
             animation instanceof CSSTransition && animation.playState === 'running'
           ));
         }, { timeout: 5_000 }, width);
-        await page.focus('#data-panel .panel-collapse-btn');
+        await page.focus('#layers-menu-close'); // the menu's first control (its disclosure is hidden)
         const targets = [[dataSetup.offId, 'OFF', false], [dataSetup.fixtureIds[0], 'ON', true], [dataSetup.fixtureIds[1], 'STALE', true]];
         for (const [id, label, enabled] of targets) {
           const navigation = await tabTo(`[data-layer-id="${id}"] .data-toggle-btn`);
@@ -1550,7 +1550,7 @@ try {
 
       await page.setViewport({ width: 1000, height: 900, deviceScaleFactor: 1 });
       await page.evaluate(() => window.__godsEyeView.styleManager.setPanelCollapsed('data-panel', false, { persist: false, syncShare: false }));
-      await page.focus('#data-panel .panel-collapse-btn');
+      await page.focus('#layers-menu-close'); // the menu's first control (its disclosure is hidden)
       const transitionTab = await tabTo(`[data-layer-id="${dataSetup.transitionId}"] .data-toggle-btn`);
       const transitionBefore = await layerFocusState(dataSetup.transitionId);
       check('Data Layers: transition fixture receives native Tab focus',

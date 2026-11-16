@@ -86,14 +86,8 @@ try {
     if (m.type() === 'error')
       console.log('  [console.error]', m.text().slice(0, 200));
   });
-  // The Data Layers panel remembers its collapsed state; start it open.
-  await page.evaluateOnNewDocument(() => {
-    try {
-      localStorage.setItem('godsEyeView.v6.panelCollapsed.data-panel', '0');
-    } catch {
-      /* storage may be unavailable */
-    }
-  });
+  // The layers menu starts closed on every load (a stored state is not
+  // read); the journey opens it below, and its rows are clicked by script.
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => !!window.__godsEyeView?.viewer, {
     timeout: 120_000,
