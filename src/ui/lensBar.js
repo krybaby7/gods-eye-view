@@ -2,6 +2,14 @@ import { LENSES } from '../lenses/catalog.js';
 import { lensStatus, planLensClick } from '../lenses/rules.js';
 import { layerFeedState } from '../data/feedState.js';
 
+/** A preset's state in words, for its title and label. */
+const STATUS_WORDS = Object.freeze({
+  on: 'on',
+  off: 'off',
+  partial: 'partly on',
+  unavailable: 'not available',
+});
+
 const set = (node, key, value) => {
   if (node[key] !== value) node[key] = value;
 };
@@ -13,9 +21,9 @@ function layerDescription(id, byId) {
   const layer = byId.get(id);
   const name = layer?.name || id;
   if (!layer || layer.available === false)
-    return `${name}: UNAVAILABLE — ${layer?.reason || 'Data source unavailable'}`;
+    return `${name}: not available — ${layer?.reason || 'Data source unavailable'}`;
   const state = layer.enabled ? layerFeedState(layer.stats) : 'off';
-  return `${name}: ${state === 'nominal' ? 'ON' : state.toUpperCase()}`;
+  return `${name}: ${state === 'nominal' ? 'on' : state}`;
 }
 
 /** Topic buttons over supplied layer snapshots; lifecycle and persistence stay with the caller. */
@@ -92,7 +100,7 @@ export function createLensBar({
       attribute(
         button,
         'aria-label',
-        `${lens.label}: ${status.toUpperCase()}, ${enabledCount} of ${availableCount} available layers on. ${details.join('. ')}`,
+        `${lens.label}: ${STATUS_WORDS[status] || status},${enabledCount} of ${availableCount} available layers on. ${details.join('. ')}`,
       );
     }
   }

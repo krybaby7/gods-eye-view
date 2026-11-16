@@ -8,6 +8,7 @@ export const APPLICATION_TEMPLATES = Object.freeze([
   'layer-panels',
   'context',
   'frame',
+  'layers-menu',
   'welcome',
   'provider-settings',
   'hud-loading',

@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { createLensBar } from './lensBar.js';
 import { railFixture } from './railTestFixture.mjs';
 
@@ -70,9 +69,9 @@ test('lens buttons derive off, partial, on and unavailable from available layers
   );
   assert.equal(air.dataset.status, 'unavailable');
   assert.equal(air.disabled, true);
-  assert.match(air.title, /Aircraft: UNAVAILABLE — No source/);
-  assert.match(air.title, /Military: UNAVAILABLE — No source/);
-  assert.match(air.getAttribute('aria-label'), /Air: UNAVAILABLE/);
+  assert.match(air.title, /Aircraft: not available — No source/);
+  assert.match(air.title, /Military: not available — No source/);
+  assert.match(air.getAttribute('aria-label'), /Air: not available/);
   assert.deepEqual(
     f.calls,
     [],
@@ -208,7 +207,7 @@ test('tooltips use supplied names and reasons as plain text and reflect feed hea
       { id: 'b', name: 'Military', enabled: false, available: false, reason },
     ],
   });
-  assert.match(f.button('air').title, /Aircraft: STALE/);
+  assert.match(f.button('air').title, /Aircraft: stale/);
   assert.ok(f.button('air').title.includes(reason));
   assert.equal(
     f.find((node) => node.tagName === 'IMG'),
@@ -280,22 +279,4 @@ test('a missing mount returns an inert API without reading state or subscribing'
   view.refresh();
   await view.click('air');
   view.destroy();
-});
-
-test('the static lens bar is the first rail child with the shared surface contract', () => {
-  const html = readFileSync(
-    new URL('./templates/layer-panels.html', import.meta.url),
-    'utf8',
-  );
-  assert.match(html, /id="left-panel-stack">\s*<section\s+id="lens-bar"/);
-  const markup = html.slice(
-    html.indexOf('id="lens-bar"'),
-    html.indexOf('</section>'),
-  );
-  assert.match(markup, /data-panel-id="lens-bar"/);
-  assert.match(markup, /data-panel-fixed/);
-  assert.match(
-    markup,
-    /<div[^>]*data-panel-surface[^>]*>\s*<div[^>]*class="lens-buttons"[^>]*data-panel-body[^>]*data-rail-scroller/,
-  );
 });

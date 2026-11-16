@@ -10,7 +10,6 @@ import {
   FRAME_GLOBE_MIN_WIDTH,
   FRAME_NARROW_QUERY,
   FRAME_SHARED_QUERY,
-  FRAME_PRESETS_STORAGE_KEY,
   FRAME_SHEET_TABS_SHOWN,
   FRAME_TODAY_OPEN_MIN_WIDTH,
   FRAME_TODAY_STORAGE_KEY,
@@ -67,6 +66,7 @@ function fakeElement(id) {
   };
   node.append = (...children) => node.children.push(...children);
   node.querySelector = () => null;
+  node.contains = (other) => other === node;
   node.getBoundingClientRect = () => ({ width: 120, height: 26 });
   node.focus = () => {
     node.focused = true;
@@ -125,7 +125,7 @@ const FRAME_IDS = [
   'frame-layers',
   'data-panel',
   'frame-presets',
-  'lens-bar',
+  'frame-presets-menu',
   'frame-zoom-out',
   'frame-zoom-in',
   'zoom-map-out',
@@ -382,7 +382,7 @@ test('the top bar shows the date, the refresh day and only the gauges the board 
   );
 });
 
-test('the bottom bar opens the layers, shows or hides the presets and zooms', (t) => {
+test('the bottom bar opens the layers menu and the presets menu, and zooms', (t) => {
   withObservers(t);
   const h = harness({ ids: FRAME_IDS });
   const collapse = fakeElement('collapse');
@@ -400,11 +400,12 @@ test('the bottom bar opens the layers, shows or hides the presets and zooms', (t
   assert.equal(h.node('frame-layers').getAttribute('aria-expanded'), 'false');
   h.node('frame-layers').click();
   assert.equal(toggled, 1, 'Layers uses the layer list’s own disclosure');
-  assert.equal(h.node('lens-bar').hidden, false, 'presets show by default');
+  assert.equal(h.node('frame-presets-menu').hidden, true, 'presets start shut');
   h.node('frame-presets').click();
-  assert.equal(h.node('lens-bar').hidden, true);
-  assert.equal(h.node('frame-presets').getAttribute('aria-expanded'), 'false');
-  assert.equal(h.store.get(FRAME_PRESETS_STORAGE_KEY), 'hidden');
+  assert.equal(h.node('frame-presets-menu').hidden, false);
+  assert.equal(h.node('frame-presets').getAttribute('aria-expanded'), 'true');
+  h.node('frame-presets').click();
+  assert.equal(h.node('frame-presets-menu').hidden, true);
   h.node('frame-zoom-in').click();
   h.node('frame-zoom-out').click();
   assert.equal(zoomed, 'inout');

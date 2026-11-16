@@ -85,8 +85,13 @@ export class DisplayBindings {
         },
         toggleOrbit: () => this._toggleOrbit(),
         toggleCleanView: () => this.toggleCleanView(),
-        toggleLayers: () =>
-          document.getElementById('data-panel').classList.toggle('active'),
+        // F opens or closes the layers menu, as the bottom bar's Layers does.
+        toggleLayers: () => {
+          const layers = document.getElementById('frame-layers');
+          if (layers && !layers.hidden) layers.click();
+          else
+            document.getElementById('data-panel')?.classList.toggle('active');
+        },
         cycleDetection: () => {
           this.shareLinkManager?.claimRestoreLane?.('visual');
           this.claimDetection();

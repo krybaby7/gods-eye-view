@@ -14,7 +14,7 @@ import {
   OTHER_LAYERS_LABEL,
   layerRowFor,
 } from '../lenses/groups.js';
-import { layerStateWords } from './layerStates.js';
+import { countLayersOn, layerStateWords } from './layerStates.js';
 const FEED_STATE_LABELS = Object.freeze({
   nominal: 'ON',
   loading: 'LOADING',
@@ -244,7 +244,17 @@ export class LayerPanel {
     }
     for (const column of columns)
       if (column.children.length) this._toggleContainer.appendChild(column);
+    this._syncOnCount();
     this._refreshWeatherPanel();
+  }
+
+  /** How many listed rows are on, for the menu's head and the Layers button. */
+  _syncOnCount() {
+    const count = String(
+      countLayersOn(this.getAll(), (id) => !LAYERS_WITHOUT_ROWS.includes(id)),
+    );
+    if (this._toggleContainer.dataset.onCount !== count)
+      this._toggleContainer.dataset.onCount = count;
   }
 
   _renderRow(layer, generation) {
@@ -600,6 +610,7 @@ export class LayerPanel {
         row.querySelector('.data-row-list'),
       );
     }
+    this._syncOnCount();
     this._refreshWeatherPanel();
   }
 

@@ -1,5 +1,6 @@
 import { frameDate, refreshedLabel, worldGauges } from './frameGauges.js';
 import { createFrameLegend } from './frameLegend.js';
+import { createLayersMenu } from './layersMenu.js';
 
 /** Window width below which Today starts folded to its rail. */
 export const FRAME_TODAY_OPEN_MIN_WIDTH = 1100;
@@ -15,7 +16,6 @@ export const FRAME_SHARED_QUERY = '(max-width: 1179px)';
 /** Sheet tabs shown before "More ›" (the mock and Appendix D show four). */
 export const FRAME_SHEET_TABS_SHOWN = 4;
 export const FRAME_TODAY_STORAGE_KEY = 'gev.frame.today';
-export const FRAME_PRESETS_STORAGE_KEY = 'gev.frame.presets';
 
 function read(storage, key) {
   try {
@@ -367,49 +367,8 @@ export function createFrame({
   );
 
   // ── Bottom bar: ways in to the layers, the presets, zoom and voice ──
-  const layersButton = find('frame-layers');
-  const dataPanel = find('data-panel');
-  function syncLayers() {
-    layersButton?.setAttribute(
-      'aria-expanded',
-      String(Boolean(dataPanel && !dataPanel.classList.contains('collapsed'))),
-    );
-  }
-  if (layersButton && dataPanel) {
-    syncLayers();
-    layersButton.addEventListener(
-      'click',
-      () =>
-        dataPanel.querySelector('[data-collapse-target="data-panel"]')?.click(),
-      { signal },
-    );
-    if (typeof MutationObserver !== 'undefined') {
-      const observer = new MutationObserver(syncLayers);
-      observer.observe(dataPanel, {
-        attributes: true,
-        attributeFilter: ['class'],
-      });
-      observers.push(observer);
-    }
-  } else if (layersButton) layersButton.hidden = true;
-
-  const presetsButton = find('frame-presets');
-  const presets = find('lens-bar');
-  function setPresets(shown, { persist = false } = {}) {
-    if (!presets) return;
-    presets.hidden = !shown;
-    presetsButton?.setAttribute('aria-expanded', String(shown));
-    if (persist)
-      write(storage, FRAME_PRESETS_STORAGE_KEY, shown ? 'shown' : 'hidden');
-  }
-  if (presetsButton && presets) {
-    setPresets(read(storage, FRAME_PRESETS_STORAGE_KEY) !== 'hidden');
-    presetsButton.addEventListener(
-      'click',
-      () => setPresets(presets.hidden, { persist: true }),
-      { signal },
-    );
-  } else if (presetsButton) presetsButton.hidden = true;
+  // The layers menu and the presets menu live in their own module.
+  const layersMenu = createLayersMenu({ document, signal, observers });
 
   for (const [id, target] of [
     ['frame-zoom-out', 'zoom-map-out'],
@@ -457,7 +416,7 @@ export function createFrame({
       for (const timer of timers) clearInterval(timer);
       for (const node of [...ownFocus.keys()]) routeFocus(node, false);
       legend.close();
-      presets?.removeAttribute('hidden');
+      layersMenu.destroy();
       body.classList.remove('gev-frame');
       delete body.dataset.today;
       delete body.dataset.sheet;
