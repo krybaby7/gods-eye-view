@@ -334,9 +334,19 @@ export default async function phase9({
         lat: Number(Math.max(-70, Math.min(70, centre.lat)).toFixed(4)),
       };
       try {
+        // The cockpit's own gate needs Contacts on (flights and military
+        // flights, contextModePolicy.js cockpitEntryAllowed), as "open
+        // contacts" does it; the military feed is answered by nothing.
+        result.contacts = await page.evaluate(async () => {
+          const { styleManager, dataManager } = window.__godsEyeView;
+          const outcome = await styleManager.setContextMode('contacts');
+          for (const id of ['flights', 'military'])
+            if (!dataManager.isEnabled(id))
+              await dataManager.setEnabled(id, true, { origin: 'user' });
+          return { ok: Boolean(outcome?.ok), mode: outcome?.mode ?? null };
+        });
         const tracked = await page.evaluate(async () => {
           const manager = window.__godsEyeView.dataManager;
-          await manager.setEnabled('flights', true, { origin: 'user' });
           const module = manager.layers.get('flights')?.module;
           const deadline = performance.now() + 15_000;
           while (performance.now() < deadline) {
@@ -367,7 +377,7 @@ export default async function phase9({
           !document.getElementById('cockpit-hud').hidden;
         try {
           await page.waitForFunction(activeCockpit, { timeout: 8_000 });
-          result.entry = 'fixture aircraft tracked, then the C key';
+          result.entry = `Contacts on (${JSON.stringify(result.contacts)}), fixture aircraft tracked, then the C key`;
         } catch {
           // By code, as the cockpit's own entry does it.
           await page.evaluate(() => {
@@ -376,7 +386,7 @@ export default async function phase9({
             view.enter();
           });
           await page.waitForFunction(activeCockpit, { timeout: 10_000 });
-          result.entry = `fixture aircraft tracked, then by code (C did not enter: ${JSON.stringify(result.before)})`;
+          result.entry = `Contacts on, fixture aircraft tracked, then by code (C did not enter: ${JSON.stringify(result.before)})`;
         }
         console.log(`[INFO] Cockpit entered: ${result.entry}`);
         await new Promise((resolve) => setTimeout(resolve, 1200));
@@ -526,7 +536,9 @@ export default async function phase9({
             const { styleManager, dataManager } = window.__godsEyeView;
             if (styleManager.cockpitView.active)
               styleManager.cockpitView.exit();
-            await dataManager.setEnabled('flights', false, { origin: 'user' });
+            await styleManager.setContextMode('off');
+            for (const id of ['flights', 'military'])
+              await dataManager.setEnabled(id, false, { origin: 'user' });
           })
           .catch(() => {});
         report.transport.flightFixture = null;
