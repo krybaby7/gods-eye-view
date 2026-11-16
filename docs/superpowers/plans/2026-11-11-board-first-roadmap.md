@@ -925,7 +925,7 @@ line at the top of this file and the owner's status page.
 | 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13                           |
 | 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16                           |
 | 6      | The layers menu (1.4)                                                                                               | Stage one built (pull request 30, a draft); stage two being built |
-| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Next: 1.3 and 1.6                                                 |
+| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Next: 1.3 (scoped; the plan is below), then 1.6                   |
 | Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock                              |
 
 **Piece 2, costume off and board on.** Merged on 2026-11-13 as pull request 26 (merge commit
@@ -1150,6 +1150,66 @@ evidence. The review left these:
 
 The logs of both full runs, of the builder's five browser runs, and the captures are in the main
 folder under `qa-artifacts/tools-menu/`, not committed.
+
+**One look (1.3): the plan.** Scoped on 2026-11-16 by six readers and a challenger, from the code
+and the mock; nothing is built and nothing was looked at in a browser. The plan is in the main
+folder, `qa-artifacts/handoff-2026-11-13b/briefs/piece-1.3-plan.md`, not committed. The readers
+counted, by script, 1,632 colours, 54 font families and 342 sizes under 12 px written in place in
+the app's source. All 51 tokens of Appendix D are already in `src/ui/styles/foundation.css` with the
+approved values, but little outside the frame and the two menus uses them.
+
+It is built as twelve pull requests, one at a time, each with the full local run and an independent
+read:
+
+- **A1, the tokens and the board's later sheets.** The seven old tokens that equal an approved one
+  become its alias. The world sheets, `panel-surfaces.css` and the last colour written in
+  `frame.css` take the tokens, and sheet text under 12 px is cured. One module of plain values,
+  `src/designTokens.js`, feeds the globe's colours, with a guard that it equals the style sheet.
+- **A2, the kit.** One sheet of shared components, `src/ui/styles/kit.css`. A check that no colour,
+  font, size, radius or shadow is written in place, with an allowance per file that only goes down.
+  A capture script, `scripts/qa-look.mjs`, that pictures one panel, empty and filled, at 1280×720,
+  1440×900 and 1920×1080 and fails when a panel lies over the frame or over another panel. The lens
+  bar's sizes and the dense legend.
+- **B to K, one panel each,** in the order of item 1.3: layer list, weather, cameras, street level,
+  recent imagery, radio, context, settings and keys, welcome, and the cockpit last, as one pull
+  request.
+- **L, what item 1.3 does not list.** The command dock, the voice card, directions, drawing, scenes,
+  the agent's panel, toasts, credits and the sync chips. "No colour or font written in place" cannot
+  be met without them.
+
+A1 shares only two or three small files with the layers menu and could be built beside it. It is
+built after 1.4 merges instead, on the new `main`, so that it is gated once and the two do not share
+the PC. Everything else needs 1.4 or the kit first.
+
+These are the director's readings, taken on the plan's recommendation and not yet put to the owner:
+
+- **Names.** The shared components are prefixed `kit-`: `kit-pop`, `kit-panel`, `kit-sec`,
+  `kit-btn`, `kit-iconbtn`, `kit-seg`, `kit-switch`, `kit-chip`, `kit-dl`, `kit-card`, `kit-note`
+  and `kit-empty`. Cost: the old names live beside them until L.
+- **Panels the mock does not show.** The mock shows two floating surfaces, the layers menu and the
+  hover card. Every original panel, weather to welcome, is a solid `kit-panel` docked in the
+  right-hand rail of the globe region, and stays solid when dragged. Only menus and hover cards
+  float (`kit-pop`). A drag is held inside the globe region, built with cameras, because a dragged
+  panel can otherwise lie over Today or the sheet. Cost: this is not the mock's; a later mock of
+  these panels changes one sheet.
+- **States the mock does not draw.** Hover lifts a surface one step (`--surface-2`). Disabled is
+  dimmed. Inputs use `--surface-0`, `--line-strong` and `--radius-control`.
+- **Tokens beyond Appendix D.** `--link`, one cyan for links; `--status-reduced` `#ffc47b` and
+  `--status-disrupted` `#ff9aa0`; `--radius-pill` 999px and `--radius-mark` 2px; `--cat-*` for the
+  radio's categories; and `--rel-armed` `#f4525d`, because the mock and the globe draw the
+  armed-conflict line in that red and not in `--rel-war` `#db474f`. Each joins Appendix D when its
+  piece is built. The two colours for draft and estimate in `world-phase-4.css` stay as they are
+  until their meaning is read.
+- **Welcome.** It takes the kit on its present layout, and that is its finished look until 2.5
+  replaces it.
+- **Settings and keys.** The dialog is named "Data sources and keys" and sits centred on the globe
+  region.
+- **Proof.** The capture script's pictures, before and after, with each merge. They are the start of
+  the approved set of 1.6.
+
+The plan read the layers menu at its first stage, before it was joined to the tools menu, so part of
+what it says 1.4 removes is wrong: at the second stage 1.4 removes only `src/data/localLayers.js`.
+Each brief reads its files again on `main` after 1.4 merges.
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
