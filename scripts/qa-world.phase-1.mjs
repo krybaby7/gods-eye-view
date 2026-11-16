@@ -17,6 +17,7 @@ export default async function phase1({
   checkRows,
   layout,
   frameLayout,
+  menusLayout,
   checkLegend,
   legendAt,
   lens,
@@ -275,6 +276,13 @@ export default async function phase1({
           await page.setViewport({ width, height, deviceScaleFactor: 1 });
           await setToday('open');
           await frameLayout(width, height, 'today-open-sheet-open');
+          // The layers menu and the Presets menu, opened with Today and the
+          // sheet open: inside the window and clear of the frame.
+          try {
+            await menusLayout(width, height, 'today-open-sheet-open');
+          } catch (error) {
+            legendFailures.push(error.message);
+          }
           await setToday('folded');
           await frameLayout(width, height, 'today-folded-sheet-open');
           // Each lens's legend in the full-width bottom bar, with Today open

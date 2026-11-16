@@ -446,6 +446,16 @@ the caller. Hidden-page refresh scheduling remains an explicit callback.
 `ui/layers/feedback` exposes the existing pure loading/notice reducers separately
 from DOM controls. Scheduling and presentation stay with their callers.
 
+The rows are grouped by `src/lenses/groups.js`, a pure table that imports
+nothing; the presets in `src/lenses/catalog.js` read the same table, so a row
+and its preset can never disagree. `src/ui/layerStates.js` turns a layer's feed
+state (`src/data/feedState.js`) into the row's plain words and imports nothing
+else. `src/ui/layersMenu.js` opens and closes the menu and the bottom bar's
+Presets menu; it imports nothing and reaches the panel only through its own
+disclosure button and the `data-on-count` the list publishes, so the panel's
+existing collapse, persistence and voice paths stay the only owners of its
+state.
+
 ## Location controls
 
 `ui/location` exports Location controls, the cancellable lookup controller and

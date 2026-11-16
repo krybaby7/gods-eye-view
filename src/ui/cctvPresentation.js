@@ -161,7 +161,8 @@ export function _renderCctvState(state) {
         ? `${cameras.length} cameras loaded · click a camera to activate`
         : `${cameras.length} cameras loaded · enable CCTV to activate`;
     } else {
-      this._cctvMeta.textContent = 'Switch cameras on to load camera intersections';
+      this._cctvMeta.textContent =
+        'Switch cameras on to load camera intersections';
     }
   }
 
@@ -210,8 +211,7 @@ export function _renderCctvState(state) {
 
   this._syncCctvSourceBadge(activeCamera, enabled);
   this._typeCctvSummary(
-    state?.summary ||
-      'Switch cameras on to start camera-linked summaries.',
+    state?.summary || 'Switch cameras on to start camera-linked summaries.',
   );
 }
 

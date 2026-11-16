@@ -68,7 +68,6 @@ const report = {
   errors: [],
   console: [],
 };
-const toggle = '#data-toggles [data-layer-id="world"] .data-toggle-btn';
 const lens = (id) => `#world-lens-bar [data-world-lens="${id}"]`;
 const area = (id) => `#world-lens-bar [data-world-area="${id}"]`;
 const tab = (id) => `[data-world-tab="${id}"]`;
@@ -100,18 +99,20 @@ async function shot(name) {
 const text = (selector) =>
   page.$eval(selector, (element) => element.textContent.trim());
 
+// The World Board has no row in the layers menu (piece 1.4): it is the
+// application's own view, switched by code and by command. The test switches
+// it as the command does, through the data manager, as a person's action.
 async function toggleWorld() {
-  if (await page.$('#data-panel.collapsed')) {
-    await page.click('[data-collapse-target="data-panel"]');
-    await page.waitForSelector('#data-panel:not(.collapsed)', {
-      visible: true,
+  await page.evaluate(() => {
+    const manager = window.__godsEyeView.dataManager;
+    manager.setEnabled('world', !manager.isEnabled('world'), {
+      origin: 'user',
     });
-  }
-  await page.click(toggle);
+  });
 }
 async function waitSettled(enabled) {
   await page.waitForFunction(
-    (buttonSelector, expected) => {
+    (expected) => {
       const manager = window.__godsEyeView?.dataManager;
       return (
         manager &&
@@ -120,13 +121,10 @@ async function waitSettled(enabled) {
           .getAll()
           .every(
             (row) => !['enabling', 'disabling'].includes(row.lifecycleState),
-          ) &&
-        document.querySelector(buttonSelector)?.getAttribute('aria-busy') !==
-          'true'
+          )
       );
     },
     wait,
-    toggle,
     enabled,
   );
 }
@@ -737,11 +735,14 @@ async function frameLayout(width, height, label) {
           .filter(([, element]) => shown(element))
           .map(([name, element]) => box(name, element));
         const panels = [
+          // The layers menu and the Presets menu float only while open; a
+          // closed one is not drawn and is skipped.
           '#data-panel',
+          '#frame-presets-menu',
+          '#lens-bar',
           '#right-context-rail > [data-panel-id]',
           '#command-dock',
           '#globe-navigation',
-          '#lens-bar',
           '#key-setup-chip',
           '#world-hover',
         ]
@@ -860,6 +861,131 @@ async function frameLayout(width, height, label) {
   return data;
 }
 
+// The layers menu and the Presets menu (piece 1.4). Closed, neither is drawn
+// and nothing of the layer list is over the globe. Open, each sits inside the
+// window and clear of the bars, Today, the rail and the sheet; they float
+// over the globe and may cover its other floating panels while open.
+async function menusLayout(width, height, label) {
+  await page.setViewport({ width, height, deviceScaleFactor: 1 });
+  const measure = (selector) =>
+    page.evaluate((selector) => {
+      const shown = (element) => {
+        if (!element) return false;
+        const style = getComputedStyle(element);
+        return (
+          style.display !== 'none' &&
+          style.visibility === 'visible' &&
+          element.getClientRects().length > 0
+        );
+      };
+      const box = (element) => {
+        const { left, top, right, bottom } = element.getBoundingClientRect();
+        return { left, top, right, bottom };
+      };
+      const regions = [
+        ['top bar', '#frame-top'],
+        ['bottom bar', '#frame-bottom'],
+        ['Today', '#frame-today'],
+        ['rail', '#frame-rail'],
+        ['sheet', '#frame-sheet'],
+      ]
+        .map(([name, regionSelector]) => [
+          name,
+          document.querySelector(regionSelector),
+        ])
+        .filter(([, element]) => shown(element))
+        .map(([name, element]) => ({ name, ...box(element) }));
+      const drawn = ['#data-panel', '#lens-bar', '#frame-presets-menu'].filter(
+        (other) => shown(document.querySelector(other)),
+      );
+      const element = selector && document.querySelector(selector);
+      return {
+        today: document.body.dataset.today,
+        sheet: document.body.dataset.sheet,
+        regions,
+        drawn,
+        menu: element && shown(element) ? box(element) : null,
+        window: { width: innerWidth, height: innerHeight },
+      };
+    }, selector);
+  const settle = () =>
+    page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        ),
+    );
+  const problems = (data, name) => {
+    const found = [];
+    const { menu, regions } = data;
+    if (!menu) return [`${name} is not drawn`];
+    if (
+      menu.left < 0 ||
+      menu.top < 0 ||
+      menu.right > data.window.width ||
+      menu.bottom > data.window.height
+    )
+      found.push(`${name} leaves the window: ${JSON.stringify(menu)}`);
+    for (const region of regions)
+      if (
+        Math.min(menu.right, region.right) - Math.max(menu.left, region.left) >
+          1 &&
+        Math.min(menu.bottom, region.bottom) - Math.max(menu.top, region.top) >
+          1
+      )
+        found.push(`${name} / ${region.name}`);
+    return found;
+  };
+  const result = { width, height, label };
+  await settle();
+  const closed = await measure(null);
+  result.closed = closed.drawn;
+  assert.deepEqual(
+    closed.drawn,
+    [],
+    `With the menus closed, parts of the layer list are drawn at ${width}×${height} (${label})`,
+  );
+
+  await page.click('#frame-layers');
+  await page.waitForSelector('#data-panel:not(.collapsed)', { visible: true });
+  await settle();
+  const layers = await measure('#data-panel');
+  result.layers = layers;
+  assert.equal(
+    await page.$eval('#frame-layers', (node) =>
+      node.getAttribute('aria-expanded'),
+    ),
+    'true',
+  );
+  await shot(`layers-menu-${width}x${height}-${label}`);
+  await page.click('#layers-menu-close');
+  await page.waitForSelector('#data-panel.collapsed', { hidden: true });
+
+  await page.click('#frame-presets');
+  await page.waitForSelector('#frame-presets-menu:not([hidden])', {
+    visible: true,
+  });
+  await settle();
+  const presets = await measure('#frame-presets-menu');
+  result.presets = presets;
+  await shot(`presets-menu-${width}x${height}-${label}`);
+  await page.click('#frame-presets');
+  await page.waitForSelector('#frame-presets-menu', { hidden: true });
+
+  result.problems = [
+    ...problems(layers, 'layers menu'),
+    ...problems(presets, 'Presets menu'),
+  ];
+  report.menuLayouts ??= [];
+  report.menuLayouts.push(result);
+  assert.deepEqual(
+    result.problems,
+    [],
+    `Menus at ${width}×${height} (${label}, Today ${layers.today}, sheet ${layers.sheet})`,
+  );
+  return result;
+}
+
 try {
   await fs.mkdir(evidence, { recursive: true });
   browser = await puppeteer.launch({
@@ -961,6 +1087,7 @@ try {
       checkRows,
       layout,
       frameLayout,
+      menusLayout,
       legendPopover,
       checkLegend,
       legendAt,

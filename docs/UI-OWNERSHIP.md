@@ -38,6 +38,27 @@ exist and their order; the frame only shows the first four and puts the rest
 under More, so a new first tab (Overview) needs no frame change. A control the
 frame cannot connect is hidden, never shown dead.
 
+### The layers menu (roadmap 1.4)
+
+The bottom bar's **Layers** button opens the layers menu and its **Presets**
+button opens a small menu of the eight presets. Neither sits on the globe any
+more: the old left-rail Data Layers panel and lens bar are gone from it.
+
+| Owner | Responsibility |
+| --- | --- |
+| `src/lenses/groups.js` | The one table of groups, row names, columns, preset hotkeys, the tool row that opens a panel, and the layers that have no row (World and the layers another surface drives) |
+| `src/lenses/catalog.js` | The eight presets, read from that table |
+| `templates/layers-menu.html` | The menu's head ("Layers", the on count, Switch all off, close), the preset chips and the foot sentence |
+| `styles/layers-menu.css` | The floating menu's size and place at each width (three columns, two, one, a full-width sheet at 720 px and under) |
+| `styles/lens-bar.css` | The preset chips in the menu and the rows of the Presets menu |
+| `layersMenu.js` | Opening and closing: the Layers button, Escape, the close button, a press outside, focus in and back, the on count on the button and in the head, and the Presets menu |
+| `layerPanel.js` | The rows and their switches, built from the group table |
+| `layerStates.js` | The plain words a row says: live, stale, waiting for a key |
+
+The menu is still `#data-panel`, a collapsible panel, so voice, share links,
+saved panel state and Escape keep opening and closing it as before. The bottom
+bar, the top bar and the command dock stay the frame's and roadmap 1.5's.
+
 `#cesiumContainer` and `#world-overlay-root` are inset to the globe's region,
 so the canvas no longer fills the window. Anything that mixes Cesium's canvas
 pixels with window pixels converts through `src/overlays/canvasFrame.js`, and
