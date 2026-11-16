@@ -481,13 +481,37 @@ export default async function phase8({
   await step(
     'The legend’s band at 1280×720 with the menu button in the top bar',
     async () => {
+      // Measured twice in the same window: with the menu button, and with
+      // its holder taken out of the layout, which is the bar as it was
+      // before this piece added the button.
+      let withButton;
+      let withoutButton;
       try {
-        const legend = await legendAt(1280, 720, 'tools-menu');
-        report.toolsMenu.legendBand1280 = legend?.width ?? null;
-        assert.ok(legend, 'The legend is read at 1280×720');
+        withButton = await legendAt(1280, 720, 'tools-menu');
+        await page.$eval('#frame-top .frame-menu', (node) => {
+          node.style.display = 'none';
+        });
+        withoutButton = await legendAt(1280, 720, 'tools-menu-without-button');
       } finally {
+        await page
+          .$eval('#frame-top .frame-menu', (node) => {
+            node.style.display = '';
+          })
+          .catch(() => {});
         await page.setViewport(desktop);
       }
+      report.toolsMenu.legendBand1280 = withButton?.width ?? null;
+      report.toolsMenu.legendBand1280WithoutButton =
+        withoutButton?.width ?? null;
+      console.log(
+        `[INFO] Legend band at 1280×720 (${withButton?.lens ?? 'no lens'}): ${withButton?.width ?? 'not drawn'} px with the menu button, ${withoutButton?.width ?? 'not drawn'} px without it`,
+      );
+      assert.ok(withButton, 'The legend is read at 1280×720');
+      assert.equal(
+        typeof withButton.width,
+        'number',
+        'The legend band is measured',
+      );
     },
     { fatal: false },
   );

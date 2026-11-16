@@ -303,13 +303,17 @@ export function createToolsMenu({
       }
     });
     listen(openPanel, 'click', () => {
+      // The menu's panel floats above the right rail, where the War Monitor
+      // panel opens, so it closes first; focus goes to the opened panel.
+      close();
       // The panel's own expand control opens it; this never presses Refresh.
       const panel = find('situation-panel');
-      if (panel?.classList?.contains('collapsed'))
-        panel
-          .querySelector('[data-collapse-target="situation-panel"]')
-          ?.click();
+      const expand = panel?.querySelector(
+        '[data-collapse-target="situation-panel"]',
+      );
+      if (panel?.classList?.contains('collapsed')) expand?.click();
       panel?.scrollIntoView?.({ block: 'nearest' });
+      expand?.focus?.();
     });
     const unsubscribe = news.subscribe?.(sync);
     if (typeof unsubscribe === 'function') cleanups.push(unsubscribe);

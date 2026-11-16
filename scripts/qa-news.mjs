@@ -2635,6 +2635,67 @@ async function main() {
       },
     );
 
+    await step(
+      "Menu ▸ Data sources and keys opens the War Monitor panel, and the menu's panel does not cover it",
+      async () => {
+        await page.click(
+          '#situation-panel [data-collapse-target="situation-panel"]',
+        );
+        await waitFor(
+          page,
+          () =>
+            document
+              .getElementById('situation-panel')
+              .classList.contains('collapsed'),
+          null,
+          'the Situation panel folded',
+        );
+        await page.click('#frame-menu');
+        await page.waitForSelector('#frame-menu-list:not([hidden])');
+        await page.click('#frame-menu-item-sources');
+        await page.waitForSelector('#frame-menu-sources:not([hidden])');
+        assert.equal(
+          await page.$eval('#frame-war-switch', (node) => node.checked),
+          true,
+          'the switch agrees with the layer',
+        );
+        await page.click('#frame-war-open');
+        await waitFor(
+          page,
+          () =>
+            !document
+              .getElementById('situation-panel')
+              .classList.contains('collapsed'),
+          null,
+          'the Situation panel expanded',
+        );
+        await wait(600);
+        const seen = await page.evaluate(() => {
+          const panel = document.getElementById('situation-panel');
+          const box = panel.getBoundingClientRect();
+          const left = Math.max(box.left, 0);
+          const right = Math.min(box.right, innerWidth);
+          const top = Math.max(box.top, 0);
+          const bottom = Math.min(box.bottom, innerHeight);
+          const x = (left + right) / 2;
+          const y = (top + bottom) / 2;
+          const hit = document.elementFromPoint(x, y);
+          return {
+            menuHidden: document.getElementById('frame-menu-sources').hidden,
+            point: [Math.round(x), Math.round(y)],
+            onTop: Boolean(hit && panel.contains(hit)),
+            hit: hit?.closest('[id]')?.id ?? hit?.tagName ?? null,
+          };
+        });
+        assert.equal(seen.menuHidden, true, 'the menu panel closes');
+        assert.ok(
+          seen.onTop,
+          `the War Monitor panel is on top at its centre: ${JSON.stringify(seen)}`,
+        );
+        await shot(page, '40-menu-opens-war-monitor');
+      },
+    );
+
     assert.deepEqual(errors, []);
     for (const [theater, framed] of Object.entries(frameModes))
       console.log(

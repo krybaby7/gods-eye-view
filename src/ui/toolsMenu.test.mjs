@@ -282,7 +282,7 @@ test('a control this build lacks leaves no empty heading, and an empty section n
 });
 
 test('the War Monitor switch drives the layer, offers the panel, and never refreshes', async () => {
-  const { menu, byId, calls, situation } = page();
+  const { document, menu, byId, calls, situation } = page();
   const toggle = byId('frame-war-switch');
   const openPanel = byId('frame-war-open');
   assert.equal(toggle.checked, false);
@@ -300,11 +300,24 @@ test('the War Monitor switch drives the layer, offers the panel, and never refre
   assert.equal(toggle.getAttribute('aria-checked'), 'true');
   assert.equal(openPanel.hidden, false);
 
+  menu.open('sources');
+  const sources = byId('frame-menu-sources');
+  assert.equal(sources.hidden, false);
   openPanel.click();
   assert.equal(
     situation.classList.contains('collapsed'),
     false,
     'the panel opens',
+  );
+  assert.equal(
+    sources.hidden,
+    true,
+    'the menu panel closes so it does not cover the War Monitor panel',
+  );
+  assert.equal(
+    document.activeElement,
+    situation.querySelector('[data-collapse-target="situation-panel"]'),
+    'focus moves to the opened panel, not back to the menu button',
   );
   openPanel.click();
   assert.equal(
