@@ -124,6 +124,8 @@ test('a click anywhere on a row switches it, and Search layers only opens its pa
 
 test('partial feed controls distinguish incomplete records from stale data and outages', async () => {
   const { LayerPanel, layerFeedState } = await import('./layerPanel.js');
+  const { layerRowFor } = await import('../lenses/groups.js');
+  const panelLabel = (layer) => layerRowFor(layer.id)?.row.name || layer.name;
   const classes = new Map();
   const attrs = new Map();
   const button = {
@@ -153,8 +155,9 @@ test('partial feed controls distinguish incomplete records from stale data and o
   assert.equal(classes.get('feed-stale'), false);
   assert.equal(attrs.get('role'), 'switch');
   assert.equal(attrs.get('aria-checked'), 'true');
-  assert.match(attrs.get('aria-label'), /: partial$/);
-  assert.doesNotMatch(attrs.get('aria-label'), /PARTIAL/);
+  // The state is said once, by aria-checked: the name carries no state word.
+  assert.equal(attrs.get('aria-label'), panelLabel(layer));
+  assert.doesNotMatch(attrs.get('aria-label'), /partial|on/i);
   assert.match(
     panel._buildMetaText(layer),
     /^PARTIAL · AISStream · 2 of 3 records accepted · /,
@@ -184,7 +187,8 @@ test('partial feed controls distinguish incomplete records from stale data and o
   panel._syncToggleButton(button, layer);
   assert.equal(button.textContent, 'OFF');
   assert.equal(attrs.get('aria-checked'), 'false');
-  assert.match(attrs.get('aria-label'), /: off$/);
+  assert.equal(attrs.get('aria-label'), panelLabel(layer));
+  assert.doesNotMatch(attrs.get('aria-label'), /off/i);
 });
 
 test('readout rows contain only toggles and metadata; ordinary rows retain controls', async () => {
