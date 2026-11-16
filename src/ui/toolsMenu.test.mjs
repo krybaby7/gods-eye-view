@@ -11,6 +11,7 @@ import {
   createToolsMenu,
   openMenuSection,
 } from './toolsMenu.js';
+import { MENU_OPEN_EVENT } from './menuSections.js';
 import { createGevActionRunner } from '../voice/gevActions.js';
 
 const FRAME_HTML = readFileSync(
@@ -406,6 +407,42 @@ test('other parts of the app open a section by import or by event', () => {
   assert.equal(byId('frame-menu-tools').hidden, true);
   menu.destroy();
   assert.equal(openMenuSection('tools'), false, 'no menu, nothing opens');
+});
+
+test('a press outside closes an open panel, but not a press on the globe or in a dialog', () => {
+  const { document, menu, byId, dock } = page();
+  const globe = element(document, 'div', { id: 'cesiumContainer' });
+  const dialog = element(document, 'dialog');
+  document.body.append(globe, dialog);
+  menu.open('display');
+  const display = byId('frame-menu-display');
+  document.dispatchEvent({ type: 'pointerdown', target: display });
+  assert.equal(display.hidden, false, 'a press inside keeps it');
+  document.dispatchEvent({ type: 'pointerdown', target: globe });
+  assert.equal(display.hidden, false, 'the globe stays usable for picking');
+  document.dispatchEvent({ type: 'pointerdown', target: dialog });
+  assert.equal(display.hidden, false);
+  document.dispatchEvent({ type: 'pointerdown', target: dock });
+  assert.equal(display.hidden, true, 'a press elsewhere closes it');
+  menu.destroy();
+});
+
+test('one menu at a time: the Menu announces itself and closes when another opens', () => {
+  const { document, menu, byId } = page();
+  const heard = [];
+  document.addEventListener(MENU_OPEN_EVENT, (event) =>
+    heard.push(event.detail.menu),
+  );
+  byId('frame-menu').click();
+  assert.deepEqual(heard, ['menu']);
+  document.dispatchEvent({ type: MENU_OPEN_EVENT, detail: { menu: 'layers' } });
+  assert.equal(byId('frame-menu-list').hidden, true);
+  menu.open('sources');
+  document.dispatchEvent({ type: MENU_OPEN_EVENT, detail: { menu: 'menu' } });
+  assert.equal(byId('frame-menu-sources').hidden, false, 'its own is ignored');
+  document.dispatchEvent({ type: MENU_OPEN_EVENT, detail: { menu: 'legend' } });
+  assert.equal(byId('frame-menu-sources').hidden, true);
+  menu.destroy();
 });
 
 test('voice panel commands open and close a moved panel through its section', async () => {

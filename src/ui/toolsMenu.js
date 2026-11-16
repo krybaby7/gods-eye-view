@@ -1,4 +1,9 @@
-import { MENU_SECTIONS, MENU_SECTION_EVENT } from './menuSections.js';
+import {
+  MENU_OPEN_EVENT,
+  MENU_SECTIONS,
+  MENU_SECTION_EVENT,
+  announceMenuOpen,
+} from './menuSections.js';
 
 export { MENU_SECTIONS, MENU_SECTION_EVENT };
 
@@ -43,9 +48,10 @@ export function openMenuSection(name) {
  * The top bar's menu (roadmap 1.5): the original app's tools, out of the way
  * of the globe. A three-line button opens a short list; each entry opens a
  * floating panel that holds the original controls, moved there whole.
- * Panels open only when chosen and close by their close button or Escape,
- * not on a click on the globe, so drawing and picking places still work
- * while one is open.
+ * Panels open only when chosen and close by their close button, Escape or a
+ * click outside, but not on a click on the globe, so drawing and picking
+ * places still work while one is open. Like every menu, the list and the
+ * panels close when another menu opens (MENU_OPEN_EVENT).
  *
  * @param {object} options
  * @param {Document} [options.document]
@@ -127,8 +133,10 @@ export function createToolsMenu({
   function setListOpen(state, { focus = false } = {}) {
     list.hidden = !state;
     button.setAttribute('aria-expanded', String(state));
-    if (state) enabledItems()[0]?.focus();
-    else if (focus) button.focus();
+    if (state) {
+      announceMenuOpen(document, 'menu');
+      enabledItems()[0]?.focus();
+    } else if (focus) button.focus();
   }
 
   listen(button, 'click', () => {
@@ -179,6 +187,7 @@ export function createToolsMenu({
       if (node && other !== name) node.hidden = true;
     panel.hidden = false;
     openName = name;
+    announceMenuOpen(document, 'menu');
     panel.focus();
     return true;
   }
@@ -209,6 +218,26 @@ export function createToolsMenu({
       true,
     );
   }
+
+  // A press outside an open panel closes it, except on the globe (drawing,
+  // picking a place) or in a dialog a panel's control opened (the keys).
+  listen(document, 'pointerdown', (event) => {
+    const panel = openName ? panels[openName] : null;
+    const target = event.target;
+    if (!panel || panel.contains(target)) return;
+    if (button.parentNode?.contains?.(target)) return;
+    const onGlobe = ['cesiumContainer', 'world-overlay-root'].some((id) =>
+      find(id)?.contains?.(target),
+    );
+    if (onGlobe || target?.closest?.('dialog')) return;
+    close();
+  });
+  // One menu at a time: another menu opening closes the list and the panel.
+  listen(document, MENU_OPEN_EVENT, (event) => {
+    if (event?.detail?.menu === 'menu') return;
+    if (!list.hidden) setListOpen(false);
+    close();
+  });
 
   listen(document, MENU_SECTION_EVENT, (event) => {
     const name = event?.detail?.section;

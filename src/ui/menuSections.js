@@ -18,3 +18,50 @@ export const MENU_SECTIONS = Object.freeze(['sources', 'display', 'tools']);
 
 /** The CustomEvent, dispatched on `document`, that opens a section. */
 export const MENU_SECTION_EVENT = 'gev:open-menu-section';
+
+/**
+ * One menu at a time (piece 1.4): the layers menu, the Presets menu, the top
+ * bar's Menu list and its panels, the sheet's More menu and the legend's
+ * popover. A menu that opens dispatches this event on `document` with
+ * `detail.menu` naming itself, before it moves focus; every other menu closes
+ * on it without moving focus.
+ */
+export const MENU_OPEN_EVENT = 'gev:menu-open';
+
+/** A CustomEvent where the document has one; a plain event in a test. */
+function menuEvent(document, type, detail) {
+  const Custom = document?.defaultView?.CustomEvent;
+  return typeof Custom === 'function'
+    ? new Custom(type, { detail })
+    : { type, detail };
+}
+
+/** Says that `menu` is opening, so every other menu closes. */
+export function announceMenuOpen(document, menu) {
+  document?.dispatchEvent?.(menuEvent(document, MENU_OPEN_EVENT, { menu }));
+}
+
+/**
+ * Calls `close` whenever a menu other than `menu` opens.
+ * @param {Document} document
+ * @param {string|string[]} menu the name, or names, this caller announces
+ * @param {Function} close
+ * @param {AbortSignal} [signal]
+ */
+export function closeWhenAnotherOpens(document, menu, close, signal) {
+  const own = [menu].flat();
+  document?.addEventListener?.(
+    MENU_OPEN_EVENT,
+    (event) => {
+      if (!own.includes(event?.detail?.menu)) close(event?.detail?.menu);
+    },
+    signal ? { signal } : undefined,
+  );
+}
+
+/** Opens a section of the top bar's menu without importing the menu. */
+export function requestMenuSection(document, section) {
+  document?.dispatchEvent?.(
+    menuEvent(document, MENU_SECTION_EVENT, { section }),
+  );
+}

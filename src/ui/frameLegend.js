@@ -1,3 +1,5 @@
+import { announceMenuOpen, closeWhenAnotherOpens } from './menuSections.js';
+
 /**
  * The legend in the frame's bottom bar, and the way to read it whole.
  *
@@ -215,6 +217,7 @@ export function createFrameLegend({ document, window, signal, observers }) {
     popup.hidden = false;
     button.setAttribute('aria-expanded', 'true');
     place();
+    announceMenuOpen(document, 'legend');
     popup.focus?.();
   }
   /**
@@ -279,10 +282,14 @@ export function createFrameLegend({ document, window, signal, observers }) {
   document.addEventListener?.(
     'keydown',
     (event) => {
-      if (event.key === 'Escape' && isOpen()) close({ focus: true });
+      if (event.key !== 'Escape' || !isOpen()) return;
+      event.preventDefault?.();
+      close({ focus: true });
     },
     { signal },
   );
+  // One menu at a time: another menu opening closes the popover.
+  closeWhenAnotherOpens(document, 'legend', () => close(), signal);
   document.addEventListener?.(
     'pointerdown',
     (event) => {

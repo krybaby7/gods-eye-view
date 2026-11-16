@@ -16,6 +16,7 @@ import {
   createFrame,
 } from './frame.js';
 import { worldSheetTabs } from './worldPanel.js';
+import { MENU_OPEN_EVENT } from './menuSections.js';
 import phase2 from '../layers/world/phase-2.js';
 import phase3 from '../layers/world/phase-3.js';
 import phase4 from '../layers/world/phase-4.js';
@@ -752,4 +753,42 @@ test('the sheet shows Overview, Condition, Strength and Relations, the rest unde
   assets.focus();
   assert.equal(assets.focused, true);
   assert.equal(more.focused, false);
+});
+
+test('More is one menu among the others: it announces itself and closes when another opens', (t) => {
+  withObservers(t);
+  const h = harness({
+    ids: [
+      ...FRAME_IDS,
+      'world-sheet-tabs',
+      'frame-sheet-more',
+      'frame-sheet-more-menu',
+    ],
+  });
+  // The page's events: menus announce themselves on the document.
+  const heard = [];
+  const listeners = [];
+  h.document.addEventListener = (type, listener) =>
+    listeners.push({ type, listener });
+  h.document.dispatchEvent = (event) => {
+    if (event.type === MENU_OPEN_EVENT) heard.push(event.detail.menu);
+    for (const entry of listeners)
+      if (entry.type === event.type) entry.listener(event);
+  };
+  h.node('world-sheet-tabs').children = worldSheetTabs(phaseTabs).map(
+    (tab, i) => fakeTab(tab, i === 0),
+  );
+  const frame = h.create();
+  t.after(() => frame.destroy());
+  const more = h.node('frame-sheet-more');
+  const menu = h.node('frame-sheet-more-menu');
+  more.click();
+  assert.equal(menu.hidden, false);
+  assert.deepEqual(heard, ['sheet-more']);
+  h.document.dispatchEvent({
+    type: MENU_OPEN_EVENT,
+    detail: { menu: 'legend' },
+  });
+  assert.equal(menu.hidden, true, 'the legend opening closes More');
+  assert.equal(more.getAttribute('aria-expanded'), 'false');
 });

@@ -167,10 +167,46 @@ body #data-panel.layers-menu:focus-visible {
   font: var(--type-caption);
 }
 
+/* The foot: three links into the top bar's Menu, then the sentence. */
 .layers-menu-foot {
+  display: flex;
   flex: none;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
   padding-top: var(--space-3);
   border-top: 1px solid var(--line-soft);
+  color: var(--text-2);
+  font: var(--type-small);
+}
+
+.layers-menu-foot[hidden],
+.layers-menu-link[hidden] {
+  display: none;
+}
+
+.layers-menu-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: var(--type-small);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.layers-menu-link:hover,
+.layers-menu-link:focus-visible {
+  text-decoration: underline;
+}
+
+.layers-menu-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.layers-menu-foot-note {
+  margin: 0;
   color: var(--text-2);
   font: var(--type-small);
 }
@@ -353,4 +389,44 @@ body #data-panel.layers-menu:focus-visible {
   .layers-menu #data-toggles.data-toggle-list {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* ── In the cockpit (opened from its own Layers and Presets buttons) ──
+   The frame is not drawn there, so both menus centre between the cockpit's
+   top line and its heading tape, and between its two side windows, inside
+   the window. The lengths are the cockpit's own (src/ui/styles/cockpit.css:
+   the top line's offset, the rail-safe line above the compass, the side
+   window's width and margin). */
+body.cockpit-mode {
+  --cockpit-menu-top: calc(clamp(18px, 3vh, 34px) + 72px);
+  --cockpit-menu-bottom: calc(clamp(84px, 11vh, 118px) + 100px);
+  --cockpit-menu-width: min(
+    640px,
+    max(
+      320px,
+      calc(
+        100vw - 2 * (clamp(24px, 4vw, 58px) + min(340px, 28vw) + var(--space-3))
+      )
+    ),
+    calc(100vw - 2 * var(--space-4))
+  );
+}
+
+body.cockpit-mode #data-panel.layers-menu,
+body.cockpit-mode #frame-presets-menu.frame-presets-menu {
+  top: auto;
+  right: auto;
+  bottom: var(--cockpit-menu-bottom);
+  left: 50%;
+  z-index: 150;
+  max-height: calc(
+    100dvh - var(--cockpit-menu-top) - var(--cockpit-menu-bottom)
+  );
+  transform: translateX(-50%);
+}
+
+body.cockpit-mode #data-panel.layers-menu {
+  width: var(--cockpit-menu-width);
+  border-width: 1px;
+  border-radius: var(--radius-panel);
 }

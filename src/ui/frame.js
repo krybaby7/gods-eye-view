@@ -1,6 +1,7 @@
 import { frameDate, refreshedLabel, worldGauges } from './frameGauges.js';
 import { createFrameLegend } from './frameLegend.js';
 import { createLayersMenu } from './layersMenu.js';
+import { announceMenuOpen, closeWhenAnotherOpens } from './menuSections.js';
 
 /** Window width below which Today starts folded to its rail. */
 export const FRAME_TODAY_OPEN_MIN_WIDTH = 1100;
@@ -145,7 +146,15 @@ export function createFrame({
     if (!more || !moreMenu) return;
     more.setAttribute('aria-expanded', String(state));
     moreMenu.hidden = !state;
+    if (state) announceMenuOpen(document, 'sheet-more');
   }
+  // One menu at a time: another menu opening closes this one.
+  closeWhenAnotherOpens(
+    document,
+    'sheet-more',
+    () => setMoreOpen(false),
+    signal,
+  );
   // A tab under More is hidden and cannot take focus, yet the board focuses
   // the tab it selects (arrow keys, an Overview line). Focus meant for such a
   // tab goes to More, which carries that tab's name once it is chosen.
@@ -231,6 +240,7 @@ export function createFrame({
       const items = [...moreMenu.querySelectorAll('button')];
       const at = items.indexOf(document.activeElement);
       if (event.key === 'Escape') {
+        event.preventDefault();
         setMoreOpen(false);
         more.focus();
       } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {

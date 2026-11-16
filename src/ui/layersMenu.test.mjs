@@ -7,6 +7,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createLayersMenu } from './layersMenu.js';
+import { toggleLayersMenu } from './layersMenuToggle.js';
+import { MENU_OPEN_EVENT, MENU_SECTION_EVENT } from './menuSections.js';
 
 const observers = [];
 class FakeObserver {
@@ -33,11 +35,14 @@ function notify(node, attribute) {
       observer.callback([]);
 }
 
-function page() {
+function page({ links = [] } = {}) {
   observers.length = 0;
   globalThis.MutationObserver = FakeObserver;
   const byId = new Map();
   const document = { activeElement: null };
+  // The window takes a key first, in the capture phase, as a browser's does.
+  const window = {};
+  document.defaultView = window;
   const listeners = new Map();
   function on(target, type, callback, options = {}) {
     const key = `${type}`;
@@ -58,25 +63,41 @@ function page() {
       type,
       target,
       defaultPrevented: false,
+      stopped: false,
       preventDefault() {
         this.defaultPrevented = true;
+      },
+      stopImmediatePropagation() {
+        this.stopped = true;
       },
       ...extra,
     };
     // A click or press bubbles from its target to the page.
-    const path = [];
+    const path = [window];
     for (let node = target; node; node = node.parent) path.push(node);
     if (type === 'keydown' || type === 'pointerdown' || type === 'click')
       path.push(document);
     for (const node of path)
-      for (const entry of listeners.get(node)?.get(type) || [])
+      for (const entry of listeners.get(node)?.get(type) || []) {
+        if (event.stopped) return event;
         entry.callback(event);
+      }
     return event;
   }
   function element(id, parent, { classes = [], dataset = {} } = {}) {
     const node = {
       id,
       parent,
+      get parentNode() {
+        return this.parent;
+      },
+      nextSibling: null,
+      append(child) {
+        child.parent = node;
+      },
+      insertBefore(child) {
+        child.parent = node;
+      },
       hidden: false,
       dataset: { ...dataset },
       attributes: new Map(),
@@ -133,6 +154,16 @@ function page() {
   document.addEventListener = (type, callback, options) =>
     on(document, type, callback, options);
   document.getElementById = (id) => byId.get(id) ?? null;
+  window.addEventListener = (type, callback, options) =>
+    on(window, type, callback, options);
+  // Announcements and section requests are dispatched on the document.
+  const announced = [];
+  document.dispatchEvent = (event) => {
+    announced.push(event);
+    for (const entry of listeners.get(document)?.get(event.type) || [])
+      entry.callback(event);
+    return true;
+  };
 
   const bar = element('frame-bottom', document.body);
   const button = element('frame-layers', bar);
@@ -162,6 +193,23 @@ function page() {
   });
   const searchName = element('', searchRow);
   const globe = element('cesiumContainer', document.body);
+  // The cockpit's own chrome, drawn only in the cockpit.
+  const cockpit = element('view-switcher', document.body);
+  const cockpitLayers = element('cockpit-layers', cockpit);
+  const cockpitPresets = element('cockpit-presets', cockpit);
+  // The top bar's Menu items the foot links lead to, and the links.
+  const items = Object.fromEntries(
+    links.map((section) => [
+      section,
+      element(`frame-menu-item-${section}`, document.body),
+    ]),
+  );
+  const foot = element('', menu);
+  const footLinks = ['sources', 'display', 'tools'].map((section) =>
+    element('', foot, { dataset: { menuSection: section } }),
+  );
+  menu.querySelectorAll = (selector) =>
+    selector === '[data-menu-section]' ? footLinks : [];
 
   const controller = new AbortController();
   const made = [];
@@ -183,6 +231,13 @@ function page() {
     searchRow,
     searchName,
     globe,
+    cockpitLayers,
+    cockpitPresets,
+    items,
+    footLinks,
+    announced,
+    bar,
+    window,
     controller,
     menuApi,
     node: (id) => byId.get(id),
@@ -314,4 +369,113 @@ test('after destroy, nothing is listened to and the Presets menu is shut', () =>
   assert.equal(p.presetsButton.getAttribute('aria-expanded'), 'false');
   p.button.click();
   assert.equal(p.isOpen(), false);
+});
+
+test('the foot links show only for sections the Menu offers, and each closes the menu and asks for its section', () => {
+  const p = page({ links: ['sources', 'display'] });
+  p.button.click();
+  const [sources, display, tools] = p.footLinks;
+  assert.equal(sources.hidden, false);
+  assert.equal(display.hidden, false);
+  assert.equal(tools.hidden, true, 'no Menu item, no link that does nothing');
+  p.items.display.hidden = true;
+  p.button.click();
+  p.button.click();
+  assert.equal(display.hidden, true, 'a hidden Menu item hides its link');
+
+  p.announced.length = 0;
+  sources.click();
+  assert.equal(p.isOpen(), false, 'the layers menu closes first');
+  const request = p.announced.find(
+    (event) => event.type === MENU_SECTION_EVENT,
+  );
+  assert.deepEqual(request?.detail, { section: 'sources' });
+});
+
+test('one menu at a time: each announces itself, and another menu opening closes both', () => {
+  const p = page();
+  p.button.click();
+  assert.deepEqual(
+    p.announced.filter((e) => e.type === MENU_OPEN_EVENT).map((e) => e.detail),
+    [{ menu: 'layers' }],
+  );
+  p.document.dispatchEvent({
+    type: MENU_OPEN_EVENT,
+    detail: { menu: 'legend' },
+  });
+  assert.equal(p.isOpen(), false, 'the legend opening closes the layers menu');
+
+  p.presetsButton.click();
+  assert.deepEqual(p.announced.at(-1).detail, { menu: 'presets' });
+  p.document.dispatchEvent({ type: MENU_OPEN_EVENT, detail: { menu: 'menu' } });
+  assert.equal(p.presets.hidden, true, 'the top bar Menu closes Presets');
+});
+
+test('Escape is taken on the window first, so nothing behind the menu sees it', () => {
+  const p = page();
+  let behind = 0;
+  p.document.addEventListener('keydown', () => behind++);
+  p.button.click();
+  const escape = p.fire(p.menu, 'keydown', { key: 'Escape' });
+  assert.equal(escape.defaultPrevented, true);
+  assert.equal(escape.stopped, true);
+  assert.equal(behind, 0, 'the cockpit and tracking never see it');
+  assert.equal(p.isOpen(), false);
+  p.fire(p.menu, 'keydown', { key: 'Escape' });
+  assert.equal(behind, 1, 'with nothing open, Escape passes on');
+});
+
+test('in the cockpit its Layers and Presets buttons open the same menus, and focus returns to them', () => {
+  const p = page();
+  p.document.body.classList.add('cockpit-mode');
+  p.cockpitLayers.focus();
+  p.cockpitLayers.click();
+  assert.equal(p.isOpen(), true, 'the same #data-panel opens');
+  assert.equal(p.cockpitLayers.getAttribute('aria-expanded'), 'true');
+  p.fire(p.cockpitLayers, 'pointerdown');
+  assert.equal(p.isOpen(), true, 'its own button is not outside');
+  p.fire(p.menu, 'keydown', { key: 'Escape' });
+  assert.equal(p.isOpen(), false);
+  assert.equal(p.document.activeElement, p.cockpitLayers);
+
+  p.cockpitPresets.click();
+  assert.equal(p.presets.hidden, false);
+  assert.equal(p.cockpitPresets.getAttribute('aria-expanded'), 'true');
+  assert.equal(
+    p.presets.parent,
+    p.document.body,
+    'the bottom bar is not drawn in the cockpit, so the menu moves to the body',
+  );
+  p.fire(p.globe, 'pointerdown');
+  assert.equal(p.presets.hidden, true, 'a press outside shuts it');
+  assert.equal(p.presets.parent, p.bar, 'and it goes back home');
+
+  p.cockpitPresets.click();
+  p.document.body.classList.remove('cockpit-mode');
+  assert.equal(p.presets.hidden, true, 'leaving the cockpit shuts it');
+  assert.equal(p.presets.parent, p.bar);
+});
+
+test('outside the cockpit Presets stays in the bottom bar', () => {
+  const p = page();
+  p.presetsButton.click();
+  assert.equal(p.presets.parent, p.bar);
+});
+
+test('F toggles the menu through its disclosure, but not where the menu is not drawn', () => {
+  const p = page();
+  assert.equal(toggleLayersMenu(p.document), true);
+  assert.equal(p.isOpen(), true);
+  assert.equal(toggleLayersMenu(p.document), true);
+  assert.equal(p.isOpen(), false);
+  p.document.body.classList.add('cockpit-mode');
+  assert.equal(toggleLayersMenu(p.document), true, 'the cockpit draws it');
+  assert.equal(p.isOpen(), true);
+  toggleLayersMenu(p.document);
+  for (const mode of ['recording-mode', 'ui-clean-view']) {
+    p.document.body.classList.add(mode);
+    assert.equal(toggleLayersMenu(p.document), false, mode);
+    assert.equal(p.isOpen(), false);
+    p.document.body.classList.remove(mode);
+  }
 });
