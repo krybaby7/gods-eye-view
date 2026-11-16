@@ -227,11 +227,12 @@ export function clearSelectedLayers() {
       // coordinators are still cleared but are not rows anyone switched on.
       const listed = (id) => !LAYERS_WITHOUT_ROWS.includes(id);
       const cleared = result.clearedIds.filter(listed).length;
+      const notCleared = result.notClearedIds.filter(listed).length;
       if (result.targetIds.length === 0) {
         this.showToast('No selected data layers');
-      } else if (result.notClearedIds.length > 0) {
+      } else if (notCleared > 0) {
         this.showToast(
-          `${result.notClearedIds.length} data layer${result.notClearedIds.length === 1 ? '' : 's'} could not be cleared`,
+          `${notCleared} data layer${notCleared === 1 ? '' : 's'} could not be cleared`,
         );
       } else if (cleared === 0) {
         this.showToast('No selected data layers');

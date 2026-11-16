@@ -73,22 +73,21 @@ export const LAYER_GROUPS = Object.freeze([
     row('radio', 'Radio'),
     row('searches', 'Search layers', { opensPanel: 'searches-panel' }),
   ]),
-  // The War Monitor keeps its own row and switch, apart from the presets.
-  group('news', 'News', 2, null, null, [row('news', 'War Monitor')], {
-    preset: false,
-  }),
 ]);
 
 /**
- * Layers the frame itself switches (World is a view of the bottom bar, not a
- * row), so "Switch all off" in the layers menu leaves them as they are.
+ * Layers that belong to the frame, not to the list, so "Switch all off" and
+ * the presets leave them as they are and the menu's counts leave them out.
+ * World is the frame's own view, switched by code, command and share link.
+ * The War Monitor feeds Today; its switch is in Menu > Data sources and keys
+ * (src/ui/toolsMenu.js) until Today takes the news over.
  */
-export const FRAME_LAYER_IDS = Object.freeze(['world']);
+export const FRAME_LAYER_IDS = Object.freeze(['world', 'news']);
 
 /**
  * Layers that keep working by code, share link and command but have no row:
- * the World Board opens from its own view, and the rest are driven by another
- * surface (awareness by the cockpit, Bhote Koshi by its scene).
+ * the frame's own layers above, and the rest are driven by another surface
+ * (awareness by the cockpit, Bhote Koshi by its scene).
  */
 export const LAYERS_WITHOUT_ROWS = Object.freeze([
   ...FRAME_LAYER_IDS,

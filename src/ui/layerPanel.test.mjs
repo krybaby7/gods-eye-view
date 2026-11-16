@@ -29,7 +29,7 @@ function mountRows(ids, { enabled = () => false, extra = {} } = {}) {
   });
 }
 
-test('rows follow the group table: three columns, table names, no World row, unknown layers last', async () => {
+test('rows follow the group table: three columns, table names, no World or War Monitor row, unknown layers last', async () => {
   const previousDocument = globalThis.document;
   const { f, panel } = await mountRows([
     'bikeshare',
@@ -39,6 +39,7 @@ test('rows follow the group table: three columns, table names, no World row, unk
     'traffic',
     'mystery-layer',
     'news',
+    'earthquakes',
   ]);
   globalThis.document = f.document;
   try {
@@ -54,7 +55,9 @@ test('rows follow the group table: three columns, table names, no World row, unk
         section.children.slice(1).map((row) => row.dataset.layerId),
       ]);
     assert.deepEqual(groups(columns[0]), [['Air', ['flights']]]);
-    assert.deepEqual(groups(columns[1]), [['News', ['news']]]);
+    assert.deepEqual(groups(columns[1]), [
+      ['Hazards and weather', ['earthquakes']],
+    ]);
     assert.deepEqual(groups(columns[2]), [
       ['City', ['traffic', 'transit', 'bikeshare']],
       ['Other layers', ['mystery-layer']],
@@ -63,6 +66,11 @@ test('rows follow the group table: three columns, table names, no World row, unk
       f.find((node) => node.dataset?.layerId === 'world'),
       null,
       'World keeps working by code and command but has no row',
+    );
+    assert.equal(
+      f.find((node) => node.dataset?.layerId === 'news'),
+      null,
+      'the War Monitor is switched from Menu > Data sources and keys, not a row',
     );
     const traffic = f.find((node) => node.dataset?.layerId === 'traffic');
     assert.equal(
