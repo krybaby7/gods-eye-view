@@ -23,7 +23,7 @@ export const PANEL_COVER_SELECTORS = Object.freeze([
   '#right-context-rail > [data-panel-id]',
   '.world-board-hud:not(#world-hover)',
   '#command-dock',
-  '#globe-navigation',
+  '.tools-panel:not([hidden])',
   '#cesium-credits',
   '#intel-hud.active .hud-status',
   '#cockpit-context',

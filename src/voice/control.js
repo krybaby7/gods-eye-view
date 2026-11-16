@@ -69,8 +69,12 @@ export function createVoiceControl({ reset = false } = {}) {
       const locationBar = document.getElementById('location-bar');
       const controlPanel = document.getElementById('control-panel');
       commandDock.appendChild(root);
-      if (locationBar) commandDock.insertBefore(locationBar, root);
-      if (controlPanel) commandDock.appendChild(controlPanel);
+      // Only while they are still in the dock: the top bar's menu
+      // (src/ui/toolsMenu.js) may have taken them into its panels.
+      if (locationBar?.parentNode === commandDock)
+        commandDock.insertBefore(locationBar, root);
+      if (controlPanel?.parentNode === commandDock)
+        commandDock.appendChild(controlPanel);
     } else {
       document.body.appendChild(root);
     }

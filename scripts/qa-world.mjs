@@ -740,9 +740,9 @@ async function frameLayout(width, height, label) {
           '#data-panel',
           '#right-context-rail > [data-panel-id]',
           '#command-dock',
-          '#globe-navigation',
+          // The original tools live in the top bar's menu (roadmap 1.5).
+          '#frame-tools > .tools-panel',
           '#lens-bar',
-          '#key-setup-chip',
           '#world-hover',
         ]
           .flatMap((selector) => [...document.querySelectorAll(selector)])
