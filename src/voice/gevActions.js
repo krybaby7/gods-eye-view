@@ -46,6 +46,7 @@ import { unavailablePlaceSearch } from '../search/placeSearch.js';
 import * as defaultAnnotationResolver from '../annotations/annotationResolver.js';
 import { normalizeRadioCountryInput } from '../data/radioCountry.js';
 import { TR3B_CLASS } from '../data/tr3bRegistry.js';
+import { MENU_SECTION_EVENT } from '../ui/menuSections.js';
 
 const ALLOWED_STYLES = new Set([
   'normal',
@@ -3040,6 +3041,21 @@ function normalizeAircraftClassFilter(value) {
 }
 
 function setPanelOpen(styleManager, panelId, open) {
+  // A panel moved into the top bar's menu (src/ui/toolsMenu.js) opens and
+  // closes with its menu section, not with its own fold.
+  const doc = globalThis.document;
+  const section = doc
+    ?.getElementById?.(panelId)
+    ?.closest?.('[data-menu-section-panel]')
+    ?.getAttribute?.('data-menu-section-panel');
+  if (section && typeof doc.dispatchEvent === 'function') {
+    doc.dispatchEvent(
+      new CustomEvent(MENU_SECTION_EVENT, {
+        detail: open ? { section } : { section: 'none', only: section },
+      }),
+    );
+    return;
+  }
   if (styleManager && typeof styleManager.setPanelCollapsed === 'function') {
     styleManager.setPanelCollapsed(panelId, !open, { explicit: true });
   } else {

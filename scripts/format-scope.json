@@ -1034,5 +1034,7 @@
   "scripts/bench-searches.mjs",
   "scripts/bench-searches.fixtures.mjs",
   "scripts/bench-searches.test.mjs",
-  "server/providers/search/agents/toolkit.test.mjs"
+  "server/providers/search/agents/toolkit.test.mjs",
+  "src/ui/toolsMenu.test.mjs",
+  "src/ui/styles/tools-menu.css"
 ]

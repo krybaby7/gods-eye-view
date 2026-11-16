@@ -18,15 +18,10 @@ const LEFT_STACK_OBSTACLE_SELECTOR = [
   '#traffic-sync-chip',
   '#cctv-sync-chip',
   '#intel-hud .hud-status',
-  '#key-setup-chip',
   '#cockpit-context',
   '#cesium-credits .cesium-credit-logoContainer',
   '#cesium-credits .cesium-credit-textContainer',
-  '#location-bar',
-  '#control-panel',
   '#gev-voice-control',
-  '#pp-toggles',
-  '#param-slider-panel',
 ].join(', ');
 /**
  * Fixed UI regions that can occupy the right control lane. Runtime rectangle
@@ -49,7 +44,6 @@ const RIGHT_STACK_OBSTACLE_SELECTOR = [
   '#cesium-credits .cesium-credit-textContainer',
   '#command-dock',
   '#gev-voice-control',
-  '#globe-navigation',
 ].join(', ');
 export class PanelLayoutController {
   constructor({

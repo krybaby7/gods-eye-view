@@ -589,6 +589,8 @@ export async function initKeySetup({
     );
   });
 
+  // Tells the top bar's menu (src/ui/toolsMenu.js) the dialog is wired up.
+  root.dataset.keySetupReady = 'true';
   render(status);
 
   // Re-entry for a fully-keyed setup, demos, and support: ?setup=1 opens the

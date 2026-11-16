@@ -30,6 +30,7 @@ right and the bottom bar. Its owners:
 | `styles/frame.css` | All placement: region sizes, the globe's inset, the bars' contents, where floating chrome sits inside the globe's region |
 | `frame.js` | Region state on `<body>` (`data-today`, `data-sheet`), Today and the sheet taking turns below 1,180 px, the sheet's first four tabs and More, the bars' controls, a render request on every layout change |
 | `frameGauges.js` | The top bar's date, refresh day and gauges, from the board's stored snapshot only |
+| `toolsMenu.js`, `menuSections.js`, `styles/tools-menu.css` | The top bar's menu (roadmap 1.5): the original app's tools in three floating panels, and the hook that opens a section |
 
 The World Board's own files (`worldPanel.js` and the other `world*.js`) own
 what the sheet, the lens row, the legend and the turn say; the frame owns
@@ -51,9 +52,43 @@ imagery credit at its right end and the selected vessel's AIS line above it.
 When space runs short the place name gives way first; altitude and the time
 always stay. Its layouts are Tactical, Operator and Minimal
 (`src/hudLayoutPolicy.js`); a stored or shared `cyber` layout falls back to
-Tactical. Rails treat `#intel-hud .hud-status`, the frame's bars and the key
-setup chip as obstacles, and the World Board hides country codes that would
-sit under a panel (`src/overlays/panelCover.js`).
+Tactical. Rails treat `#intel-hud .hud-status` and the frame's bars as
+obstacles, and the World Board hides country codes that would sit under a
+panel or an open menu panel (`src/overlays/panelCover.js`).
+
+## The top bar's menu
+
+Nothing of the original app sits on the globe by default but the status line.
+Its tools open from the menu button, last in the top bar (`#frame-menu`, three
+lines), as three floating panels inside `#frame-tools`:
+
+| Section | What it holds |
+| --- | --- |
+| Data sources and keys (`sources`) | The provider keys dialog (`#key-setup`, opened through its own chip, which no longer shows) and the War Monitor's switch and the way to open its panel |
+| Display (`display`) | Visual presets, map source and render quality (`#control-panel`); the display options (`#pp-toggles`: detection, 3D models, scope, sun and moon ring, bloom, sharpen, MGRS and clean view) |
+| Tools (`tools`) | Going to a place (`#location-bar`), the view controls and navigation help (`#globe-navigation`), drawing, scenes and recording (`#scene-panel`), and the share link (`#share-btn`) |
+
+`toolsMenu.js` moves each original control, whole, into its slot in
+`templates/frame.html`; markup, ids and wiring stay, so voice actions, scenes,
+share links and tests still find them. A moved panel is marked
+`data-panel-fixed` and kept open; its dock or rail disclosure no longer
+applies. A control that is absent hides its group, and a section with nothing
+in it hides its entry. Panels open only when chosen and close by their close
+button or Escape (focus returns to the menu button), not on a click on the
+globe, so drawing and picking places work while one is open. Below 720 px the
+panels are full-width sheets above the bottom bar. The holder is a frame
+region, so the panels are not drawn in the cockpit, while recording, in the
+clean view or when embedded.
+
+Voice is reached only from `#frame-voice`; the dock keeps the voice card and
+its error tray, and its pill is not drawn. Zoom is only in the bottom bar. The
+cockpit is still entered from a selected aircraft's card.
+
+Other parts open a section with `openMenuSection(name)` from `toolsMenu.js`, or,
+without importing the menu, by dispatching `gev:open-menu-section`
+(`MENU_SECTION_EVENT` in `menuSections.js`) on `document` with
+`detail.section` one of `MENU_SECTIONS`. Voice's `set_panel_open` on a moved
+panel opens or closes its section the same way.
 
 Owners receive named services, elements, operations and readers. They do not
 receive the application shell itself. Readers resolve a replaceable collaborator

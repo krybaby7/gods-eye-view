@@ -1,7 +1,7 @@
 /**
  * A small DOM for panel tests: elements, text nodes, attributes, classes,
- * events and simple selectors ([attr="value"], .class, tag). Only what the
- * Situation panel uses; not a browser.
+ * events and simple selectors ([attr="value"], [attr], .class, tag). Only what the
+ * panel tests use; not a browser.
  */
 
 class FakeNode {
@@ -229,11 +229,19 @@ export class FakeElement extends FakeNode {
   matches(selector) {
     const attribute = /^\[([\w-]+)="([^"]*)"\]$/.exec(selector);
     if (attribute) return this.getAttribute(attribute[1]) === attribute[2];
+    const present = /^\[([\w-]+)\]$/.exec(selector);
+    if (present) return this.hasAttribute(present[1]);
     const [tag, ...classes] = selector.split('.');
     return (
       (!tag || this.tagName === tag.toUpperCase()) &&
       classes.every((name) => this.classList.contains(name))
     );
+  }
+
+  closest(selector) {
+    for (let at = this; at?.nodeType === 1; at = at.parentNode)
+      if (at.matches(selector)) return at;
+    return null;
   }
 
   querySelectorAll(selector) {
