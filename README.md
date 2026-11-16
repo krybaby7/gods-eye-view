@@ -172,7 +172,7 @@ reopens the same panel.
 
 Do not enter credentials in Pinokio 8.0.40's native **Configure** panel: that
 release does not save this nested app file correctly, and it logs submitted
-values. Use **POWER UP → Provider Settings** inside GEV instead. The Pinokio
+values. Use the provider-keys dialog inside GEV instead (**Menu ▸ Data sources and keys**). The Pinokio
 8.2 announcement fixes installation; it does not establish that this separate
 Configure issue is resolved. On macOS, the Keychain via
 `./scripts/dev-fresh.sh` remains the stronger storage option.
@@ -357,7 +357,7 @@ _The Space Missions layer replaying a Falcon 9 ascent — labeled `RECONSTRUCTED
 
 > Street-level photos from any provider in one panel. This build ships **Mapillary** (a free client token) and **Google Street View** (your Google Maps key).
 
-**Setup.** At [mapillary.com/dashboard/developers](https://www.mapillary.com/dashboard/developers), register an application with **Read** access and copy its **Client Token** (`MLY|…`). Paste it into **POWER UP → Mapillary**, or set `MAPILLARY_CLIENT_TOKEN` in `.env` and restart. Without it the panel reads **KEY REQUIRED**. **Google Street View** uses `GOOGLE_MAPS_API_KEY` with the **Maps JavaScript API** enabled for it in Google Cloud; its chip starts off, since every panorama is billed to the key.
+**Setup.** At [mapillary.com/dashboard/developers](https://www.mapillary.com/dashboard/developers), register an application with **Read** access and copy its **Client Token** (`MLY|…`). Paste it into the Mapillary row of the provider-keys dialog (**Menu ▸ Data sources and keys**), or set `MAPILLARY_CLIENT_TOKEN` in `.env` and restart. Without it the panel reads **KEY REQUIRED**. **Google Street View** uses `GOOGLE_MAPS_API_KEY` with the **Maps JavaScript API** enabled for it in Google Cloud; its chip starts off, since every panorama is billed to the key.
 
 **Use.** Turn on **Street Level** under DATA LAYERS → Cameras, or with the pill in the STREET LEVEL panel header. Each provider has a chip in its own colour (Mapillary green), and one is lit at a time: lighting one switches the other off. Mapillary, which is free, is lit by default. The **IMAGERY** (ALL / 360° / FLAT) and **SINCE** filters apply to Mapillary; Street View panoramas are all 360°, so with Street View lit the filters and legend are hidden. Click a coverage line for its image cones and a cone to open the photo. On the **Google 3D** map (Google's terms keep Street View off other maps, where it does not appear), light **GOOGLE STREET VIEW** and click a street from below 3 km, or press **OPEN STREET VIEW** for the view centre, to open Google's panorama there; step along its arrows. Above the photo: **EXPAND**, **FIT / FILL** (Mapillary), and **FOLLOW** (the globe camera follows the photo's view; Google 3D map only). The caption links to the image on the provider's site, and the globe credits each provider that is on ("© Mapillary contributors, CC BY-SA 4.0", "Street View imagery © Google").
 
@@ -414,7 +414,7 @@ src/
 ├── main.js                 # Bootstrap: Google 3D tiles, layer registration
 ├── ui.js                   # Runtime UI — panels, HUD, styles, control facade
 ├── hud.js                  # Intelligence HUD + AI scene summary
-├── keySetup.js             # POWER UP panel — in-app provider keys (dev server only)
+├── keySetup.js             # provider-keys dialog (Menu ▸ Data sources and keys; dev server only)
 ├── mapStackController.js   # Basemap switching — Google 3D / Esri / OSM / ion stacks
 ├── voice/                  # OpenAI Realtime session + 30 voice tools
 ├── layers/                 # Layer components — weather, wind, cyclones, transit, ALPR, …

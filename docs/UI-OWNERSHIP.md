@@ -56,9 +56,17 @@ more: the old left-rail Data Layers panel and lens bar are gone from it.
 | `layerPanel.js` | The rows and their switches, built from the group table |
 | `layerStates.js` | The plain words a row says: live, stale, waiting for a key |
 
-The menu is still `#data-panel`, a collapsible panel, so voice, share links,
-saved panel state and Escape keep opening and closing it as before. The bottom
-bar, the top bar and the command dock stay the frame's and roadmap 1.5's.
+The menu is still `#data-panel`, a collapsible panel, so voice and Escape
+keep opening and closing it as before. A menu is not a panel, though: it starts
+closed on every load. Its stored collapsed state is cleared and not read
+(`panelPositionControls.js`), and share links no longer carry it; an old link's
+`d` token is still read, and ignored. The bottom bar, the top bar and the
+command dock stay the frame's and roadmap 1.5's.
+
+World has no switch on screen, on purpose: it is the frame's own view, not a
+layer in the list. Until the bottom bar's Countries view arrives it is switched
+by code (`dataManager.setEnabled('world', …)`, which the browser checks use),
+by command and by share link.
 
 The War Monitor has no row: its switch is in Menu > Data sources and keys, and,
 like World, "Switch all off" and the presets leave it alone.
@@ -124,6 +132,12 @@ clean view or when embedded.
 Voice is reached only from `#frame-voice`; the dock keeps the voice card and
 its error tray, and its pill is not drawn. Zoom is only in the bottom bar. The
 cockpit is still entered from a selected aircraft's card.
+
+The zoom pair is coupled, and hidden: `body.gev-frame .map-zoom-controls
+{ display: none !important }` (`styles/tools-menu.css`) hides the original
+zoom buttons everywhere in the frame, and the bottom bar's zoom buttons click
+that hidden pair, so the camera's zoom keeps one owner. Moving, renaming or
+removing `.map-zoom-controls` or its buttons breaks the bottom bar's zoom.
 
 Other parts open a section with `openMenuSection(name)` from `toolsMenu.js`, or,
 without importing the menu, by dispatching `gev:open-menu-section`
