@@ -374,6 +374,52 @@ test('provider keys open the key setup dialog where the server offers it, and sa
   pending.menu.destroy();
 });
 
+test('the key note follows a keys dialog that is put into the page later', () => {
+  // A stand-in observer: the test calls every live one, as the browser would
+  // after the dialog is appended and after it becomes ready.
+  const observers = new Set();
+  const previous = globalThis.MutationObserver;
+  globalThis.MutationObserver = class {
+    constructor(callback) {
+      this.callback = callback;
+    }
+    observe() {
+      observers.add(this);
+    }
+    disconnect() {
+      observers.delete(this);
+    }
+  };
+  const notify = () => {
+    for (const observer of [...observers]) observer.callback([]);
+  };
+  try {
+    const { document, menu, byId } = page({ keySetup: null });
+    assert.match(
+      byId('frame-keys-note').textContent,
+      /only by the development server/,
+    );
+    const chip = element(document, 'button', { id: 'key-setup-chip' });
+    const dialog = element(document, 'aside', { id: 'key-setup' });
+    document.body.append(chip, dialog);
+    notify();
+    assert.match(byId('frame-keys-note').textContent, /^Checking/);
+    assert.equal(byId('frame-keys-open').hidden, true);
+    dialog.dataset.keySetupReady = 'true';
+    notify();
+    assert.match(
+      byId('frame-keys-note').textContent,
+      /^Add or change the keys/,
+    );
+    assert.equal(byId('frame-keys-open').hidden, false);
+    menu.destroy();
+    assert.equal(observers.size, 0, 'every observer is let go on destroy');
+  } finally {
+    if (previous === undefined) delete globalThis.MutationObserver;
+    else globalThis.MutationObserver = previous;
+  }
+});
+
 test('other parts of the app open a section by import or by event', () => {
   const { document, menu, byId } = page();
   assert.equal(MENU_SECTION_EVENT, 'gev:open-menu-section');

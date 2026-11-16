@@ -256,33 +256,55 @@ export function createToolsMenu({
     const note = find('frame-keys-note');
     const openKeys = find('frame-keys-open');
     if (!note || !openKeys) return;
+    // Writes only on a change: a page-wide observer below would otherwise
+    // see its own write and call this again without end.
     function sync() {
       const dialog = find('key-setup');
       const chip = find('key-setup-chip');
-      if (!dialog || !chip) {
-        note.textContent = KEYS_ABSENT;
-        openKeys.hidden = true;
-        return;
-      }
-      const ready = dialog.dataset?.keySetupReady === 'true';
-      note.textContent = ready ? KEYS_READY : KEYS_PENDING;
-      openKeys.hidden = !ready;
+      const ready =
+        Boolean(dialog && chip) && dialog.dataset?.keySetupReady === 'true';
+      const words =
+        !dialog || !chip ? KEYS_ABSENT : ready ? KEYS_READY : KEYS_PENDING;
+      if (note.textContent !== words) note.textContent = words;
+      if (openKeys.hidden !== !ready) openKeys.hidden = !ready;
     }
     sync();
     listen(openKeys, 'click', () => {
       // The chip owns opening the dialog (src/keySetup.js); it stays hidden.
       find('key-setup-chip')?.click();
     });
-    const dialog = find('key-setup');
-    if (dialog && typeof MutationObserver !== 'undefined') {
-      const observer = new MutationObserver(sync);
-      observer.observe(dialog, {
-        attributes: true,
-        attributeFilter: ['data-key-setup-ready'],
+    if (typeof MutationObserver === 'undefined') return;
+    // The note follows the dialog: its readiness, and the dialog itself
+    // when it is put into the page after the menu was set up.
+    let watched = null;
+    const readiness = new MutationObserver(sync);
+    cleanups.push(() => readiness.disconnect());
+    let arrival = null;
+    function watch() {
+      const dialog = find('key-setup');
+      if (dialog && dialog !== watched) {
+        watched = dialog;
+        readiness.observe(dialog, {
+          attributes: true,
+          attributeFilter: ['data-key-setup-ready'],
+        });
+        if (dialog.parentNode)
+          readiness.observe(dialog.parentNode, { childList: true });
+      }
+      if (dialog && find('key-setup-chip')) {
+        arrival?.disconnect();
+        arrival = null;
+      }
+    }
+    watch();
+    const root = document.body ?? document.documentElement;
+    if (root && !(watched && find('key-setup-chip'))) {
+      arrival = new MutationObserver(() => {
+        watch();
+        sync();
       });
-      if (dialog.parentNode)
-        observer.observe(dialog.parentNode, { childList: true });
-      cleanups.push(() => observer.disconnect());
+      arrival.observe(root, { childList: true, subtree: true });
+      cleanups.push(() => arrival?.disconnect());
     }
   }
 
