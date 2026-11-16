@@ -55,8 +55,24 @@ const CATEGORIES = [
   { id: 'cyber-information', label: 'Cyber & information', color: '#22d3ee' },
 ];
 
+// One clock reading per snapshot: every time inside one snapshot is measured
+// from the same instant, so stories given the same age really tie (and keep
+// the server's order) however long the snapshot takes to build. Outside a
+// snapshot, iso() reads the clock at each call.
+let snapshotNow = null;
 const iso = (minutesAgo) =>
-  new Date(Date.now() - minutesAgo * 60_000).toISOString();
+  new Date((snapshotNow ?? Date.now()) - minutesAgo * 60_000).toISOString();
+
+/** Builds one snapshot with a single clock reading for all its times. */
+function atOneClock(build) {
+  const outer = snapshotNow;
+  snapshotNow = outer ?? Date.now();
+  try {
+    return build();
+  } finally {
+    snapshotNow = outer;
+  }
+}
 
 // The Brief fixtures use the real theater's actors, drivers and tracks.
 const THEATER = JSON.parse(
@@ -300,10 +316,11 @@ const at = (name, lat, lon, method = 'gazetteer') => ({
   name,
 });
 
-export function fixtureSnapshot({
-  digested = false,
-  briefFailed = false,
-} = {}) {
+export function fixtureSnapshot(options = {}) {
+  return atOneClock(() => buildFixtureSnapshot(options));
+}
+
+function buildFixtureSnapshot({ digested = false, briefFailed = false } = {}) {
   const items = [
     item(
       'i-centcom',
@@ -622,6 +639,10 @@ const region = (name, lat, lon) => ({
  * a list-only development, a model-placed pin, and no Situation Brief.
  */
 export function worldSnapshot() {
+  return atOneClock(buildWorldSnapshot);
+}
+
+function buildWorldSnapshot() {
   const w = { theater: 'world', digested: true };
   const items = [
     item(
@@ -2632,6 +2653,67 @@ async function main() {
           false,
           'exit restores the panel',
         );
+      },
+    );
+
+    await step(
+      "Menu ▸ Data sources and keys opens the War Monitor panel, and the menu's panel does not cover it",
+      async () => {
+        await page.click(
+          '#situation-panel [data-collapse-target="situation-panel"]',
+        );
+        await waitFor(
+          page,
+          () =>
+            document
+              .getElementById('situation-panel')
+              .classList.contains('collapsed'),
+          null,
+          'the Situation panel folded',
+        );
+        await page.click('#frame-menu');
+        await page.waitForSelector('#frame-menu-list:not([hidden])');
+        await page.click('#frame-menu-item-sources');
+        await page.waitForSelector('#frame-menu-sources:not([hidden])');
+        assert.equal(
+          await page.$eval('#frame-war-switch', (node) => node.checked),
+          true,
+          'the switch agrees with the layer',
+        );
+        await page.click('#frame-war-open');
+        await waitFor(
+          page,
+          () =>
+            !document
+              .getElementById('situation-panel')
+              .classList.contains('collapsed'),
+          null,
+          'the Situation panel expanded',
+        );
+        await wait(600);
+        const seen = await page.evaluate(() => {
+          const panel = document.getElementById('situation-panel');
+          const box = panel.getBoundingClientRect();
+          const left = Math.max(box.left, 0);
+          const right = Math.min(box.right, innerWidth);
+          const top = Math.max(box.top, 0);
+          const bottom = Math.min(box.bottom, innerHeight);
+          const x = (left + right) / 2;
+          const y = (top + bottom) / 2;
+          const hit = document.elementFromPoint(x, y);
+          return {
+            menuHidden: document.getElementById('frame-menu-sources').hidden,
+            point: [Math.round(x), Math.round(y)],
+            onTop: Boolean(hit && panel.contains(hit)),
+            hit: hit?.closest('[id]')?.id ?? hit?.tagName ?? null,
+          };
+        });
+        assert.equal(seen.menuHidden, true, 'the menu panel closes');
+        assert.ok(
+          seen.onTop,
+          `the War Monitor panel is on top at its centre: ${JSON.stringify(seen)}`,
+        );
+        await shot(page, '40-menu-opens-war-monitor');
       },
     );
 

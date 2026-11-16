@@ -107,6 +107,23 @@ async function toggleWorld() {
       visible: true,
     });
   }
+  await page.evaluate(() => {
+    // A quick first turn's progress can show and hide before a wait starts;
+    // note that it was shown.
+    const progress = document.getElementById('world-progress');
+    window.__worldProgressSeen = false;
+    window.__worldProgressObserver?.disconnect();
+    if (progress) {
+      const note = () => {
+        if (!progress.hidden) window.__worldProgressSeen = true;
+      };
+      window.__worldProgressObserver = new MutationObserver(note);
+      window.__worldProgressObserver.observe(progress, {
+        attributes: true,
+        attributeFilter: ['hidden'],
+      });
+    }
+  });
   await page.click(toggle);
 }
 async function waitSettled(enabled) {
@@ -740,9 +757,9 @@ async function frameLayout(width, height, label) {
           '#data-panel',
           '#right-context-rail > [data-panel-id]',
           '#command-dock',
-          '#globe-navigation',
+          // The original tools live in the top bar's menu (roadmap 1.5).
+          '#frame-tools > .tools-panel',
           '#lens-bar',
-          '#key-setup-chip',
           '#world-hover',
         ]
           .flatMap((selector) => [...document.querySelectorAll(selector)])
