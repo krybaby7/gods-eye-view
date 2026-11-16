@@ -2717,6 +2717,40 @@ async function main() {
       },
     );
 
+    await step(
+      'the layers list has no War Monitor row; its switch in Data sources and keys turns the news off and on',
+      async () => {
+        const rows = await page.$$eval(
+          '#data-toggles [data-layer-id="news"]',
+          (nodes) => nodes.length,
+        );
+        assert.equal(rows, 0, 'no War Monitor row in the layers list');
+        const enabled = () =>
+          page.evaluate(() =>
+            window.__godsEyeView.dataManager.isEffectivelyEnabled('news'),
+          );
+        assert.equal(await enabled(), true, 'the news is on to begin with');
+        await page.click('#frame-menu');
+        await page.waitForSelector('#frame-menu-list:not([hidden])');
+        await page.click('#frame-menu-item-sources');
+        await page.waitForSelector('#frame-menu-sources:not([hidden])');
+        for (const want of [false, true]) {
+          await page.click('#frame-war-switch');
+          await waitFor(
+            page,
+            (want) =>
+              window.__godsEyeView.dataManager.isEffectivelyEnabled('news') ===
+                want &&
+              document.getElementById('frame-war-switch').checked === want,
+            want,
+            `the news ${want ? 'on' : 'off'} by its switch`,
+          );
+        }
+        await shot(page, '41-war-switch');
+        await page.keyboard.press('Escape');
+      },
+    );
+
     assert.deepEqual(errors, []);
     for (const [theater, framed] of Object.entries(frameModes))
       console.log(
