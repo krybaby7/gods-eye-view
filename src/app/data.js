@@ -1,7 +1,7 @@
 import { LayerLifecycle } from '../data/lifecycle.js';
 import { LayerPresentation } from './layerPresentation.js';
 import { LENSES } from '../lenses/catalog.js';
-import { createLensBar } from '../ui/lensBar.js';
+import { createLensBar, createPresetBusy } from '../ui/lensBar.js';
 import { lensLayerSnapshots } from './lensLayers.js';
 /** Register the application layer catalog before allowing state restoration. */
 export function createApplicationData({
@@ -59,7 +59,9 @@ export function createApplicationData({
   }
   presentation.mount(document.getElementById('data-toggles'));
   // The presets twice: as chips in the layers menu, and as the bottom bar's
-  // Presets menu. Both read and switch the same layers.
+  // Presets menu. Both read and switch the same layers, and share which
+  // preset is still switching.
+  const presetBusy = createPresetBusy();
   const presetBar = (id) =>
     createLensBar({
       container: document.getElementById(id),
@@ -67,6 +69,7 @@ export function createApplicationData({
       setEnabled: (layerId, enabled, options) =>
         dataManager.setEnabled(layerId, enabled, options),
       subscribeActivity: (listener) => dataManager.subscribeActivity(listener),
+      busy: presetBusy,
     });
   const lensBar = presetBar('lens-bar');
   const presetsMenu = presetBar('frame-presets-menu');

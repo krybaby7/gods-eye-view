@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLensBar } from './lensBar.js';
+import { createLensBar, createPresetBusy } from './lensBar.js';
 import { railFixture } from './railTestFixture.mjs';
 
 const lenses = [
@@ -8,7 +8,13 @@ const lenses = [
   { id: 'sea', label: 'Sea', icon: '⚓', hotkey: 2, layerIds: ['b', 'c'] },
 ];
 
-function fixture({ rows, setEnabled, onWrite, withContainer = true } = {}) {
+function fixture({
+  rows,
+  setEnabled,
+  onWrite,
+  withContainer = true,
+  busy,
+} = {}) {
   const f = railFixture(onWrite);
   const buttons = f.document.createElement('div');
   buttons.className = 'lens-buttons';
@@ -33,6 +39,7 @@ function fixture({ rows, setEnabled, onWrite, withContainer = true } = {}) {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
+    ...(busy ? { busy } : {}),
   });
   return {
     ...f,
@@ -141,6 +148,34 @@ test('busy clicks dispatch their complete intent synchronously and allow rapid r
   await second;
   assert.equal(f.button('air').getAttribute('aria-busy'), 'false');
   f.view.destroy();
+});
+
+test('two bars sharing their busy state show a preset busy in both until it settles', async () => {
+  const busy = createPresetBusy();
+  const resolve = [];
+  const slow = () => new Promise((done) => resolve.push(done));
+  const chips = fixture({ busy, setEnabled: slow });
+  const menu = fixture({ busy, setEnabled: slow });
+  const work = chips.view.click('air');
+  assert.equal(chips.button('air').getAttribute('aria-busy'), 'true');
+  assert.equal(
+    menu.button('air').getAttribute('aria-busy'),
+    'true',
+    'the other bar reads the preset as busy too',
+  );
+  assert.equal(menu.button('sea').getAttribute('aria-busy'), 'false');
+  resolve.forEach((done) => done(true));
+  await work;
+  assert.equal(chips.button('air').getAttribute('aria-busy'), 'false');
+  assert.equal(menu.button('air').getAttribute('aria-busy'), 'false');
+  // Bars that do not share keep their own.
+  const alone = fixture({ setEnabled: slow });
+  const own = alone.view.click('air');
+  assert.equal(alone.button('air').getAttribute('aria-busy'), 'true');
+  assert.equal(menu.button('air').getAttribute('aria-busy'), 'false');
+  resolve.forEach((done) => done(true));
+  await own;
+  for (const bar of [chips, menu, alone]) bar.view.destroy();
 });
 
 test('a fully on peer protects a shared layer without a remembered lens click', async () => {
