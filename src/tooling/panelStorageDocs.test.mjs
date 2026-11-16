@@ -146,3 +146,59 @@ test('the documented outcomes hold: default, stored open, stored shut, and a sha
     globalThis.localStorage = saved.localStorage;
   }
 });
+
+test('the layers menu starts closed on every load, whatever was stored', async () => {
+  const { PanelPositionControls } =
+    await import('../ui/panelPositionControls.js');
+  const saved = {
+    document: globalThis.document,
+    localStorage: globalThis.localStorage,
+  };
+  const classes = new Set(['panel-collapsible']);
+  const menu = {
+    id: 'data-panel',
+    dataset: {},
+    classList: {
+      contains: (name) => classes.has(name),
+      toggle: (name, active) =>
+        active ? classes.add(name) : classes.delete(name),
+      add: (name) => classes.add(name),
+      remove: (name) => classes.delete(name),
+    },
+  };
+  const key = 'godsEyeView.v6.panelCollapsed.data-panel';
+  const store = new Map([[key, '0']]);
+  globalThis.document = { getElementById: () => menu };
+  globalThis.localStorage = {
+    getItem: (name) => (store.has(name) ? store.get(name) : null),
+    setItem: (name, value) => store.set(name, String(value)),
+    removeItem: (name) => store.delete(name),
+  };
+  try {
+    const synced = [];
+    const controls = new PanelPositionControls({
+      syncPanelCollapseButton: (panel) => synced.push(panel),
+      layoutRightPanels: () => {},
+      syncCctvPanelViewport: () => {},
+      showToast: () => {},
+    });
+    // An open state saved by an older build is cleared, and the menu closes.
+    controls._restorePanelCollapsedState('data-panel');
+    assert.equal(classes.has('collapsed'), true);
+    assert.equal(store.has(key), false, 'the old open state is cleared');
+    assert.deepEqual(synced, [menu], 'the Layers button is told it is shut');
+
+    // Opening it saves nothing, so the next load starts closed too.
+    controls._savePanelCollapsedState('data-panel', false);
+    assert.equal(store.has(key), false);
+    controls._restorePanelCollapsedState('data-panel');
+    assert.equal(classes.has('collapsed'), true);
+
+    // Panels still keep their stored state.
+    controls._savePanelCollapsedState('cctv-panel', false);
+    assert.equal(store.get('godsEyeView.v6.panelCollapsed.cctv-panel'), '0');
+  } finally {
+    globalThis.document = saved.document;
+    globalThis.localStorage = saved.localStorage;
+  }
+});
