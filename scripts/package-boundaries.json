@@ -682,7 +682,8 @@
       "src/ui/contextTransactions.js",
       "src/contextModePolicy.js",
       "src/rightRailPolicy.js",
-      "src/ui/panelRailGeometry.js"
+      "src/ui/panelRailGeometry.js",
+      "src/lenses/groups.js"
     ],
     "external": []
   },

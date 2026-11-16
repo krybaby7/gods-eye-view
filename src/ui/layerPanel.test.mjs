@@ -143,7 +143,10 @@ test('partial feed controls distinguish incomplete records from stale data and o
   assert.equal(button.dataset.feedState, 'partial');
   assert.equal(classes.get('feed-partial'), true);
   assert.equal(classes.get('feed-stale'), false);
-  assert.match(attrs.get('aria-label'), /PARTIAL/);
+  assert.equal(attrs.get('role'), 'switch');
+  assert.equal(attrs.get('aria-checked'), 'true');
+  assert.match(attrs.get('aria-label'), /: partial$/);
+  assert.doesNotMatch(attrs.get('aria-label'), /PARTIAL/);
   assert.match(
     panel._buildMetaText(layer),
     /^PARTIAL · AISStream · 2 of 3 records accepted · /,
@@ -172,6 +175,8 @@ test('partial feed controls distinguish incomplete records from stale data and o
   layer.enabled = false;
   panel._syncToggleButton(button, layer);
   assert.equal(button.textContent, 'OFF');
+  assert.equal(attrs.get('aria-checked'), 'false');
+  assert.match(attrs.get('aria-label'), /: off$/);
 });
 
 test('readout rows contain only toggles and metadata; ordinary rows retain controls', async () => {

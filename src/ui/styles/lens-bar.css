@@ -13,7 +13,7 @@
 #lens-bar .lens-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2);
   min-width: 0;
 }
 
@@ -26,10 +26,10 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   height: 28px;
   min-height: 0;
-  padding: 0 10px;
+  padding: 0 var(--space-3);
   border: 1px solid transparent;
   border-radius: var(--radius-chip);
   background: var(--surface-2);
@@ -68,10 +68,7 @@
 
 .lens-count {
   color: var(--text-2);
-  font: var(--type-figure);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 16px;
+  font: var(--type-code);
 }
 
 .lens-count[hidden] {
@@ -135,12 +132,12 @@
   gap: var(--space-3);
   width: 100%;
   min-height: 0;
-  padding: 7px 10px;
+  padding: var(--space-2) var(--space-3);
   border: 0;
   border-radius: var(--radius-chip);
   background: none;
   color: var(--text-1);
-  font: 500 13px/19px var(--font-sans);
+  font: var(--type-control);
   text-align: left;
   white-space: nowrap;
 }
@@ -166,8 +163,8 @@
 
 /* The layers count on the bottom bar's Layers button. */
 .frame-layers-count {
-  margin-left: 6px;
+  margin-left: var(--space-1);
   color: var(--accent);
-  font: var(--type-figure);
-  font-family: var(--font-mono);
+  font: var(--type-control-figure);
+  font-variant-numeric: tabular-nums;
 }

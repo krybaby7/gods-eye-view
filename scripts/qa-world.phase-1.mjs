@@ -18,6 +18,7 @@ export default async function phase1({
   layout,
   frameLayout,
   menusLayout,
+  detailPanelsLayout,
   checkLegend,
   legendAt,
   lens,
@@ -270,6 +271,8 @@ export default async function phase1({
       };
       const before = await today();
       const legendFailures = [];
+      // The menus' own failures, reported under their own name.
+      const menuFailures = [];
       try {
         // India is selected, so the sheet is open.
         for (const [width, height] of [
@@ -285,7 +288,7 @@ export default async function phase1({
           try {
             await menusLayout(width, height, 'today-open-sheet-open');
           } catch (error) {
-            legendFailures.push(error.message);
+            menuFailures.push(error.message);
           }
           await setToday('folded');
           await frameLayout(width, height, 'today-folded-sheet-open');
@@ -415,7 +418,8 @@ export default async function phase1({
         );
         await setToday('open');
         await frameLayout(1280, 720, 'today-open-sheet-closed');
-        assert.deepEqual(legendFailures, []);
+        assert.deepEqual(menuFailures, [], 'Layers and Presets menus');
+        assert.deepEqual(legendFailures, [], 'Bottom-bar legends');
       } finally {
         // Leave the page as the next steps expect it, pass or fail.
         await page.setViewport(desktop);
@@ -425,6 +429,43 @@ export default async function phase1({
       }
     },
     // A layout failure is reported without stopping the board's other checks.
+    { fatal: false },
+  );
+
+  await step(
+    'The Cameras and Weather panels, opened from the layers menu, stay clear of Today, the sheet and the bars at 1280×720',
+    async () => {
+      const before = await page.evaluate(() => document.body.dataset.today);
+      try {
+        await page.setViewport({
+          width: 1280,
+          height: 720,
+          deviceScaleFactor: 1,
+        });
+        if (before !== 'open') {
+          await page.click('#frame-today-open');
+          await page.waitForFunction(
+            () => document.body.dataset.today === 'open',
+            wait,
+          );
+        }
+        if ((await page.evaluate(() => document.body.dataset.sheet)) !== 'open')
+          await pickCountry(81.7, 21.2, 'IND');
+        await detailPanelsLayout(1280, 720, 'today-open-sheet-open');
+      } finally {
+        await page.setViewport(desktop);
+        if (
+          (await page.evaluate(() => document.body.dataset.today)) !== before &&
+          before === 'folded'
+        ) {
+          await page.click('#frame-today-fold');
+          await page.waitForFunction(
+            () => document.body.dataset.today === 'folded',
+            wait,
+          );
+        }
+      }
+    },
     { fatal: false },
   );
 

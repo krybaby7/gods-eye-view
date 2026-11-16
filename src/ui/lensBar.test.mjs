@@ -60,6 +60,10 @@ test('lens buttons derive off, partial, on and unavailable from available layers
   assert.equal(air.getAttribute('aria-pressed'), 'mixed');
   assert.equal(air.querySelector('.lens-count').textContent, '1/2');
   assert.equal(air.querySelector('.lens-count').hidden, false);
+  assert.match(
+    air.getAttribute('aria-label'),
+    /^Air: partly on, 1 of 2 available layers on\. /,
+  );
   f.update(f.rows().map((row) => ({ ...row, enabled: true })));
   assert.equal(air.dataset.status, 'on');
   assert.equal(air.getAttribute('aria-pressed'), 'true');

@@ -1551,15 +1551,20 @@ export class LayerLifecycle {
    * @param {object} [options] Clear transition options.
    * @param {string} [options.origin='user'] Visibility-event origin.
    * @param {symbol|null} [options.notificationToken] Shared notification owner.
+   * @param {string[]} [options.keepIds] Layers this clear leaves as they are
+   *   (the World view, which the frame switches on and off, not a layer row).
    * @returns {Promise<{targetIds:string[],items:object[],clearedIds:string[],notClearedIds:string[]}>}
    */
   async clearSelectedLayers({
     origin = 'user',
     notificationToken = null,
+    keepIds = [],
   } = {}) {
     const clearBatchId = Symbol('clear-selected-layers');
+    const kept = new Set(keepIds);
     const targets = [...this.layers]
       .filter(([, entry]) => this._effectiveEnabled(entry))
+      .filter(([layerId]) => !kept.has(layerId))
       .map(([layerId, entry]) => ({
         layerId,
         intentEpoch: entry.visibilityIntentEpoch,

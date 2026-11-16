@@ -1001,6 +1001,201 @@ async function menusLayout(width, height, label) {
   return result;
 }
 
+// The Cameras and Weather detail panels, after their layers are switched on
+// from the layers menu and the menu is closed: each panel drawn sits inside
+// the window and clear of the bars, Today, the rail and the sheet. The run's
+// fixtures answer the camera and weather feeds with nothing, so a panel that
+// shows only with data may stay hidden; that is reported as not drawn, with
+// its reason, and is not counted as a pass.
+async function detailPanelsLayout(width, height, label) {
+  await page.setViewport({ width, height, deviceScaleFactor: 1 });
+  const panels = [
+    { name: 'Cameras', layerId: 'cctv', selector: '#cctv-panel' },
+    {
+      name: 'Weather',
+      layerId: 'weather-cyclones',
+      selector: '#weather-panel',
+    },
+  ];
+  const settle = () =>
+    page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        ),
+    );
+  const openMenu = async () => {
+    await page.click('#frame-layers');
+    await page.waitForSelector('#data-panel:not(.collapsed)', {
+      visible: true,
+    });
+  };
+  const closeMenu = async () => {
+    await page.click('#layers-menu-close');
+    await page.waitForSelector('#data-panel.collapsed', { hidden: true });
+  };
+  // Switch a row on or off through its switch in the open menu.
+  const setRow = (layerId, on) =>
+    page.evaluate(
+      ({ layerId, on }) => {
+        const button = document.querySelector(
+          `#data-panel [data-layer-id="${layerId}"] .data-toggle-btn`,
+        );
+        if (!button) return { found: false };
+        const was = button.getAttribute('aria-checked') === 'true';
+        if (button.disabled) return { found: true, disabled: true, on: was };
+        if (was !== on) button.click();
+        return { found: true, disabled: false, on: was, clicked: was !== on };
+      },
+      { layerId, on },
+    );
+  const result = { width, height, label, panels: [] };
+  const switched = [];
+  const expanded = [];
+  try {
+    await openMenu();
+    for (const panel of panels) {
+      const row = await setRow(panel.layerId, true);
+      panel.row = row;
+      if (row.clicked) switched.push(panel.layerId);
+    }
+    await closeMenu();
+    // A weather panel with entries shows itself; give it a moment.
+    await page
+      .waitForFunction(
+        () => !document.getElementById('weather-panel')?.hidden,
+        { timeout: 5000 },
+      )
+      .catch(() => {});
+    for (const panel of panels) {
+      const opened = await page.$eval(
+        panel.selector,
+        (node, id) => {
+          if (node.hidden || !node.classList.contains('collapsed'))
+            return false;
+          node.querySelector(`[data-collapse-target="${id}"]`)?.click();
+          return true;
+        },
+        panel.selector.slice(1),
+      );
+      if (opened) expanded.push(panel.selector);
+    }
+    await settle();
+    const data = await page.evaluate(
+      (selectors) => {
+        const shown = (element) => {
+          if (!element) return false;
+          const style = getComputedStyle(element);
+          return (
+            !element.hidden &&
+            style.display !== 'none' &&
+            style.visibility === 'visible' &&
+            Number(style.opacity) > 0 &&
+            element.getClientRects().length > 0
+          );
+        };
+        const box = (element) => {
+          const { left, top, right, bottom } = element.getBoundingClientRect();
+          return { left, top, right, bottom };
+        };
+        const regions = [
+          ['top bar', '#frame-top'],
+          ['bottom bar', '#frame-bottom'],
+          ['Today', '#frame-today'],
+          ['rail', '#frame-rail'],
+          ['sheet', '#frame-sheet'],
+        ]
+          .map(([name, selector]) => [name, document.querySelector(selector)])
+          .filter(([, element]) => shown(element))
+          .map(([name, element]) => ({ name, ...box(element) }));
+        return {
+          today: document.body.dataset.today,
+          sheet: document.body.dataset.sheet,
+          regions,
+          window: { width: innerWidth, height: innerHeight },
+          panels: selectors.map((selector) => {
+            const element = document.querySelector(selector);
+            return {
+              selector,
+              exists: Boolean(element),
+              hidden: Boolean(element?.hidden),
+              collapsed: Boolean(element?.classList.contains('collapsed')),
+              box: shown(element) ? box(element) : null,
+            };
+          }),
+        };
+      },
+      panels.map(({ selector }) => selector),
+    );
+    result.today = data.today;
+    result.sheet = data.sheet;
+    result.regions = data.regions;
+    await shot(`detail-panels-${width}x${height}-${label}`);
+    const problems = [];
+    const notDrawn = [];
+    panels.forEach((panel, index) => {
+      const measured = data.panels[index];
+      result.panels.push({ name: panel.name, row: panel.row, ...measured });
+      const { box } = measured;
+      if (!box) {
+        // The weather panel stays hidden until a weather layer has entries;
+        // with the feeds answered by nothing that is the expected state.
+        if (panel.layerId !== 'cctv' && measured.hidden)
+          notDrawn.push(
+            `${panel.name} panel not drawn: hidden, no ${panel.layerId} entries under the fixtures`,
+          );
+        else problems.push(`${panel.name} panel is not drawn`);
+        return;
+      }
+      if (
+        box.left < 0 ||
+        box.top < 0 ||
+        box.right > data.window.width ||
+        box.bottom > data.window.height
+      )
+        problems.push(
+          `${panel.name} panel leaves the window: ${JSON.stringify(box)}`,
+        );
+      for (const region of data.regions)
+        if (
+          Math.min(box.right, region.right) - Math.max(box.left, region.left) >
+            1 &&
+          Math.min(box.bottom, region.bottom) - Math.max(box.top, region.top) >
+            1
+        )
+          problems.push(`${panel.name} panel / ${region.name}`);
+    });
+    result.problems = problems;
+    result.notDrawn = notDrawn;
+  } finally {
+    // Leave the page as it was: panels folded again, layers off again.
+    for (const selector of expanded)
+      await page
+        .$eval(
+          selector,
+          (node, id) => {
+            if (!node.classList.contains('collapsed'))
+              node.querySelector(`[data-collapse-target="${id}"]`)?.click();
+          },
+          selector.slice(1),
+        )
+        .catch(() => {});
+    if (switched.length) {
+      await openMenu();
+      for (const layerId of switched) await setRow(layerId, false);
+      await closeMenu();
+    }
+    report.detailPanelLayouts ??= [];
+    report.detailPanelLayouts.push(result);
+  }
+  assert.deepEqual(
+    result.problems,
+    [],
+    `Detail panels at ${width}×${height} (${label}, Today ${result.today}, sheet ${result.sheet})`,
+  );
+  return result;
+}
+
 try {
   await fs.mkdir(evidence, { recursive: true });
   browser = await puppeteer.launch({
@@ -1055,9 +1250,14 @@ try {
     report.rendering.renderer &&
     !/swiftshader|software|llvmpipe|softpipe/i.test(report.rendering.renderer),
   );
-  await page.evaluate(() =>
-    document.getElementById('clear-selected-layers').click(),
-  );
+  // "Switch all off" leaves World on (World is the bottom bar's view, not a
+  // row), so World goes off by the data manager, as the frame's World does.
+  await page.evaluate(async () => {
+    document.getElementById('clear-selected-layers').click();
+    await window.__godsEyeView.dataManager.setEnabled('world', false, {
+      origin: 'user',
+    });
+  });
   await waitSettled(false);
   await page.evaluate(async () => {
     const source = await (await fetch('/src/layers/world/geometry.js')).text();
@@ -1103,6 +1303,7 @@ try {
       layout,
       frameLayout,
       menusLayout,
+      detailPanelsLayout,
       legendPopover,
       checkLegend,
       legendAt,

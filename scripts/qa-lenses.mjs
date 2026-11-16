@@ -724,10 +724,15 @@ async function snapshot() {
     };
   });
 }
+// "Switch all off" leaves World alone (it is the bottom bar's view, not a
+// row), so a World left on by a share link goes off by the data manager.
 async function clear() {
-  await page.evaluate(() =>
-    document.getElementById('clear-selected-layers').click(),
-  );
+  await page.evaluate(async () => {
+    document.getElementById('clear-selected-layers').click();
+    const manager = window.__godsEyeView.dataManager;
+    if (manager.isEnabled('world'))
+      await manager.setEnabled('world', false, { origin: 'user' });
+  });
   await waitSettled();
 }
 // The presets are chips at the top of the layers menu (piece 1.4), opened

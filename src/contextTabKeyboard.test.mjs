@@ -151,3 +151,26 @@ test('Context async action buttons remain focused while busy', () => {
   assert.match(control, /button\.setAttribute\('aria-busy', String\(busy\)\)/);
   assert.doesNotMatch(control, /button\.disabled\s*=/);
 });
+
+test('Switch all off keeps World on and counts only listed layers in its toast', async () => {
+  const toasts = [];
+  let options = null;
+  const host = {
+    destroyed: false,
+    _contextModeGeneration: 0,
+    _userFacingContextNotificationTokens: new Set(),
+    _syncContextModeButtons() {},
+    setClearBusy() {},
+    showToast: (text) => toasts.push(text),
+    _dataManager: {
+      async clearSelectedLayers(given) {
+        options = given;
+        const targetIds = ['military-awareness', 'flights'];
+        return { targetIds, items: [], clearedIds: targetIds, notClearedIds: [] };
+      },
+    },
+  };
+  await clearSelectedLayers.call(host);
+  assert.deepEqual([...options.keepIds], ['world']);
+  assert.deepEqual(toasts, ['Cleared 1 data layer']);
+});

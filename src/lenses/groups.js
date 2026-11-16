@@ -80,12 +80,18 @@ export const LAYER_GROUPS = Object.freeze([
 ]);
 
 /**
+ * Layers the frame itself switches (World is a view of the bottom bar, not a
+ * row), so "Switch all off" in the layers menu leaves them as they are.
+ */
+export const FRAME_LAYER_IDS = Object.freeze(['world']);
+
+/**
  * Layers that keep working by code, share link and command but have no row:
  * the World Board opens from its own view, and the rest are driven by another
  * surface (awareness by the cockpit, Bhote Koshi by its scene).
  */
 export const LAYERS_WITHOUT_ROWS = Object.freeze([
-  'world',
+  ...FRAME_LAYER_IDS,
   'military-awareness',
   'bhote-koshi-2026',
   'bhote-koshi-locator',

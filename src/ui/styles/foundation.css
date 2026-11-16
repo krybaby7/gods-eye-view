@@ -95,6 +95,11 @@
   --type-body: 400 14px/21px var(--font-sans);
   --type-small: 400 13px/19px var(--font-sans);
   --type-caption: 500 12px/16px var(--font-sans);
+  /* Buttons and menu rows; a group's heading inside a menu; a figure that
+     sits inside a 13px button. */
+  --type-control: 500 13px/19px var(--font-sans);
+  --type-label: 600 13px/19px var(--font-sans);
+  --type-control-figure: 600 13px/19px var(--font-mono);
   --type-figure: 600 15px/20px var(--font-mono);
   --type-code: 500 12px/18px var(--font-mono);
   /* The frame, at a window 1366 wide or more; narrower windows use the values

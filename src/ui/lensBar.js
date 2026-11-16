@@ -100,7 +100,7 @@ export function createLensBar({
       attribute(
         button,
         'aria-label',
-        `${lens.label}: ${STATUS_WORDS[status] || status},${enabledCount} of ${availableCount} available layers on. ${details.join('. ')}`,
+        `${lens.label}: ${STATUS_WORDS[status] || status}, ${enabledCount} of ${availableCount} available layers on. ${details.join('. ')}`,
       );
     }
   }

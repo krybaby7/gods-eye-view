@@ -733,11 +733,16 @@ export class LayerPanel {
     // without saying WHICH key leaves a dead control and no next step. Empty
     // when the layer needs no key, or already has one.
     button.title = keyGuidance;
+    // A switch: its on or off is aria-checked, and its name carries the
+    // state in sentence case (the capital code above is only hidden text).
+    button.setAttribute('role', 'switch');
+    button.setAttribute('aria-checked', String(Boolean(layer.enabled)));
+    const stateWord = button.textContent.toLowerCase();
     button.setAttribute(
       'aria-label',
       keyGuidance
-        ? `${panelLabel(layer)}: ${button.textContent}. ${keyGuidance}`
-        : `${panelLabel(layer)}: ${button.textContent}`,
+        ? `${panelLabel(layer)}: ${stateWord}. ${keyGuidance}`
+        : `${panelLabel(layer)}: ${stateWord}`,
     );
   }
 
