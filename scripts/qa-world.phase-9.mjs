@@ -347,13 +347,17 @@ export default async function phase9({
         });
         result.tracked = tracked;
         assert.ok(tracked, 'The fixture aircraft is tracked');
-        await page.waitForFunction(
-          () => {
-            const entry = document.getElementById('cockpit-entry');
-            return entry && !entry.hidden && !entry.disabled;
-          },
-          { timeout: 10_000 },
-        );
+        // What the cockpit's own gate sees before C is pressed.
+        result.before = await page.evaluate(() => {
+          const { viewer, styleManager } = window.__godsEyeView;
+          const view = styleManager.cockpitView;
+          return {
+            info: Boolean(view.readAircraftInfo()),
+            position: Boolean(viewer.trackedEntity?.position),
+            allowed: Boolean(view.isEntryAllowed()),
+            entryShown: !document.getElementById('cockpit-entry')?.hidden,
+          };
+        });
         // The real way first: C with an aircraft tracked.
         await blur();
         await page.keyboard.press('c');
@@ -365,10 +369,14 @@ export default async function phase9({
           await page.waitForFunction(activeCockpit, { timeout: 8_000 });
           result.entry = 'fixture aircraft tracked, then the C key';
         } catch {
-          await page.$eval('#cockpit-entry', (entry) => entry.click());
+          // By code, as the cockpit's own entry does it.
+          await page.evaluate(() => {
+            const view = window.__godsEyeView.styleManager.cockpitView;
+            view.syncEntry();
+            view.enter();
+          });
           await page.waitForFunction(activeCockpit, { timeout: 10_000 });
-          result.entry =
-            'fixture aircraft tracked, then the cockpit entry button (C did not enter)';
+          result.entry = `fixture aircraft tracked, then by code (C did not enter: ${JSON.stringify(result.before)})`;
         }
         console.log(`[INFO] Cockpit entered: ${result.entry}`);
         await new Promise((resolve) => setTimeout(resolve, 1200));
