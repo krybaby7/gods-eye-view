@@ -30,9 +30,13 @@ export default async function phase1({
     'Enable World Board and persist the automatic first turn',
     async () => {
       await toggleWorld();
-      await page.waitForSelector('#world-progress:not([hidden])', {
-        visible: true,
-      });
+      // The progress showed, even if the first turn was quick to finish.
+      await page.waitForFunction(
+        () =>
+          window.__worldProgressSeen === true ||
+          !document.getElementById('world-progress')?.hidden,
+        { timeout: 30_000 },
+      );
       await waitSettled(true);
       await camera(82, 22, 9_000_000);
       await page.waitForFunction(() => {

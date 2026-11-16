@@ -104,6 +104,21 @@ const text = (selector) =>
 // it as the command does, through the data manager, as a person's action.
 async function toggleWorld() {
   await page.evaluate(() => {
+    // Switching by code skips the click's delay, so the first turn's progress
+    // can show and hide before a wait starts; note that it was shown.
+    const progress = document.getElementById('world-progress');
+    window.__worldProgressSeen = false;
+    window.__worldProgressObserver?.disconnect();
+    if (progress) {
+      const note = () => {
+        if (!progress.hidden) window.__worldProgressSeen = true;
+      };
+      window.__worldProgressObserver = new MutationObserver(note);
+      window.__worldProgressObserver.observe(progress, {
+        attributes: true,
+        attributeFilter: ['hidden'],
+      });
+    }
     const manager = window.__godsEyeView.dataManager;
     manager.setEnabled('world', !manager.isEnabled('world'), {
       origin: 'user',
