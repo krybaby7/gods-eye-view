@@ -43,13 +43,20 @@ function hiddenDisplay(node, list) {
 }
 
 /** The page as the frame runs it: the body carries the frame's state. */
-function framePage() {
+function framePage({ menuOpen = false } = {}) {
   const nodes = htmlNodes(html);
   const body = nodes.find(({ tag }) => tag === 'body');
   body.classes.add('gev-frame');
   body.attrs.set('class', [...body.classes].join(' '));
   body.attrs.set('data-today', 'open');
   body.attrs.set('data-sheet', 'open');
+  if (menuOpen) {
+    // The layers menu open, so that its closed state's own display: none
+    // does not hide its parts for them.
+    const menu = nodes.find((node) => node.id === 'data-panel');
+    menu.classes.delete('collapsed');
+    menu.attrs.set('class', [...menu.classes].join(' '));
+  }
   return nodes;
 }
 
@@ -86,7 +93,65 @@ function runtimeParts(nodes) {
     );
     return [button, count];
   };
+  // The layers menu's columns, group blocks and a row's parts, as
+  // layerPanel.js builds them inside #data-toggles.
+  const toggles = byId('data-toggles');
+  assert.ok(toggles, 'the layer list is in the page');
+  const column = modelNode(
+    'div',
+    [
+      ['class', 'lcol'],
+      ['id', 'menu-lcol'],
+    ],
+    toggles,
+  );
+  const block = modelNode(
+    'section',
+    [
+      ['class', 'lgroup-block'],
+      ['id', 'menu-lgroup-block'],
+    ],
+    column,
+  );
+  const row = modelNode(
+    'div',
+    [
+      ['class', 'data-toggle-row lrow'],
+      ['id', 'menu-row'],
+    ],
+    block,
+  );
+  const top = modelNode(
+    'div',
+    [
+      ['class', 'data-toggle-top'],
+      ['id', 'menu-row-top'],
+    ],
+    row,
+  );
+  const rowParts = [
+    column,
+    block,
+    top,
+    modelNode(
+      'div',
+      [
+        ['class', 'data-toggle-left'],
+        ['id', 'menu-row-left'],
+      ],
+      top,
+    ),
+    modelNode(
+      'div',
+      [
+        ['class', 'data-toggle-right'],
+        ['id', 'menu-row-right'],
+      ],
+      top,
+    ),
+  ];
   return [
+    ...rowParts,
     ...presetParts(chips, 'menu-preset'),
     ...presetParts(menuRow, 'bar-preset'),
     modelNode(
@@ -110,7 +175,7 @@ function runtimeParts(nodes) {
 }
 
 function hiddenFailures(list) {
-  const nodes = framePage();
+  const nodes = framePage({ menuOpen: true });
   const frameIds = new Set(
     [...`${frameHtml}${menuHtml}`.matchAll(/\sid="([^"]+)"/g)].map(
       (match) => match[1],
@@ -150,6 +215,13 @@ test('a display rule that beats the browser’s [hidden] is caught', () => {
     // own (an icon button and a grid), so they too rest on the guard.
     'frame-legend-whole',
     'frame-legend-popup',
+    // The layers menu's list and the parts built inside it at run time.
+    'data-toggles',
+    'menu-lcol',
+    'menu-lgroup-block',
+    'menu-row-top',
+    'menu-row-left',
+    'menu-row-right',
   ])
     assert.ok(failures.includes(id), `${id} would show while hidden`);
 });
@@ -186,4 +258,20 @@ test('the layers menu shows only while open, and its hidden parts stay hidden', 
   ))
     if (node.attrs.has('hidden'))
       assert.equal(hiddenDisplay(node, list).display, 'none', node.id);
+});
+
+test('the Tools panel’s View heading goes with its controls while a scene plays', () => {
+  // Scene playback hides #globe-navigation (recording.css); its group, and so
+  // its heading, must not stand over nothing.
+  const list = sheets.flatMap((css) => rules(css));
+  const nodes = framePage();
+  const body = nodes.find(({ tag }) => tag === 'body');
+  const group = nodes.find((node) => node.id === 'frame-group-view');
+  assert.ok(group, 'the View group is in the frame');
+  const display = () =>
+    winners(group, list, DISPLAY).display?.decl.value.trim() ?? 'block';
+  assert.notEqual(display(), 'none', 'shown while no scene plays');
+  body.classes.add('scene-playback-mode');
+  body.attrs.set('class', [...body.classes].join(' '));
+  assert.equal(display(), 'none');
 });

@@ -224,6 +224,10 @@ body #data-panel.layers-menu:focus-visible {
   scrollbar-gutter: auto;
 }
 
+.layers-menu #data-toggles.data-toggle-list[hidden] {
+  display: none;
+}
+
 .layers-menu .lcol {
   display: flex;
   flex-direction: column;
@@ -325,7 +329,9 @@ body #data-panel.layers-menu:focus-visible {
   min-height: 0;
   padding: 0;
   border: 1px solid var(--line-strong);
-  border-radius: 999px;
+  /* Appendix D has no pill radius; the control radius (10px) is half the
+     switch's 20px height, so the track is still fully round. */
+  border-radius: var(--radius-control);
   background: var(--surface-3);
   color: transparent;
   font-size: 0;
@@ -399,7 +405,11 @@ body #data-panel.layers-menu:focus-visible {
    window's width and margin). */
 body.cockpit-mode {
   --cockpit-menu-top: calc(clamp(18px, 3vh, 34px) + 72px);
-  --cockpit-menu-bottom: calc(clamp(84px, 11vh, 118px) + 100px);
+  /* The compass's own offset (cockpit.css) plus its drawn, tilted height
+     (about 195 px, rounded up to 200) and a gap, so the menu ends above it. */
+  --cockpit-menu-bottom: calc(
+    clamp(44px, 7vh, 72px) + 200px + var(--space-3)
+  );
   --cockpit-menu-width: min(
     640px,
     max(
