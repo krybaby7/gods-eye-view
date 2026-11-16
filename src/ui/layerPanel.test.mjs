@@ -1,34 +1,117 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { runInNewContext } from 'node:vm';
 
-test('panel presentation places Transit between Street Traffic and Bike Share in Movement', () => {
-  const source = readFileSync(
-    new URL('./layerPanel.js', import.meta.url),
-    'utf8',
-  );
-  const declarations = source.slice(
-    source.indexOf('const PANEL_GROUPS ='),
-    source.indexOf('const PANEL_POSITIONS ='),
-  );
-  const order = JSON.parse(
-    runInNewContext(`${declarations}\nJSON.stringify(PANEL_ORDER)`),
-  );
-  assert.deepEqual(
-    order.filter(({ label }) => label === 'Movement').map(({ id }) => id),
-    [
-      'satellites',
-      'flights',
-      'military',
-      'local-adsb',
-      'ais-live-vessels',
-      'traffic',
-      'transit',
-      'bikeshare',
-    ],
-  );
-  assert.equal(order.filter(({ id }) => id === 'transit').length, 1);
+function mountRows(ids, { enabled = () => false, extra = {} } = {}) {
+  return import('./railTestFixture.mjs').then(async ({ railFixture }) => {
+    const { LayerPanel } = await import('./layerPanel.js');
+    const f = railFixture();
+    const layers = ids.map((id) => ({
+      id,
+      name: `catalog ${id}`,
+      icon: '*',
+      source: 'Source',
+      enabled: enabled(id),
+      showInTogglePanel: true,
+      stats: {},
+    }));
+    const calls = [];
+    const panel = new LayerPanel({
+      getLayers: () => layers,
+      isEnabled: (id) => enabled(id),
+      setEnabled: (...args) => calls.push(args),
+      setLayerParams() {},
+      hasRowControls: () => false,
+      subscribeRowControls() {},
+      getRowControls: () => null,
+      ...extra,
+    });
+    return { f, panel, calls, layers };
+  });
+}
+
+test('rows follow the group table: three columns, table names, no World row, unknown layers last', async () => {
+  const previousDocument = globalThis.document;
+  const { f, panel } = await mountRows([
+    'bikeshare',
+    'world',
+    'transit',
+    'flights',
+    'traffic',
+    'mystery-layer',
+    'news',
+  ]);
+  globalThis.document = f.document;
+  try {
+    panel.mount(f.container);
+    const columns = f.container.children;
+    assert.deepEqual(
+      columns.map((column) => column.dataset.column),
+      ['1', '2', '3'],
+    );
+    const groups = (column) =>
+      column.children.map((section) => [
+        section.children[0].textContent,
+        section.children.slice(1).map((row) => row.dataset.layerId),
+      ]);
+    assert.deepEqual(groups(columns[0]), [['Air', ['flights']]]);
+    assert.deepEqual(groups(columns[1]), [['News', ['news']]]);
+    assert.deepEqual(groups(columns[2]), [
+      ['City', ['traffic', 'transit', 'bikeshare']],
+      ['Other layers', ['mystery-layer']],
+    ]);
+    assert.equal(
+      f.find((node) => node.dataset?.layerId === 'world'),
+      null,
+      'World keeps working by code and command but has no row',
+    );
+    const traffic = f.find((node) => node.dataset?.layerId === 'traffic');
+    assert.equal(
+      traffic.querySelector('.data-name').textContent,
+      'Street traffic',
+    );
+    assert.equal(traffic.querySelector('.st').textContent, 'Off');
+    const mystery = f.find((node) => node.dataset?.layerId === 'mystery-layer');
+    assert.equal(
+      mystery.querySelector('.data-name').textContent,
+      'catalog mystery-layer',
+    );
+  } finally {
+    panel.destroy();
+    globalThis.document = previousDocument;
+  }
+});
+
+test('a click anywhere on a row switches it, and Search layers only opens its panel', async () => {
+  const previousDocument = globalThis.document;
+  const { f, panel, calls } = await mountRows(['traffic', 'searches']);
+  globalThis.document = f.document;
+  const opened = [];
+  f.container.ownerDocument.querySelector = (selector) =>
+    selector === '[data-open-panel-for="searches-panel"]'
+      ? { click: () => opened.push(selector) }
+      : null;
+  try {
+    panel.mount(f.container);
+    const traffic = f.find((node) => node.dataset?.layerId === 'traffic');
+    traffic.querySelector('.data-name').click();
+    assert.deepEqual(calls, [['traffic', true, { origin: 'user' }]]);
+    const searches = f.find((node) => node.dataset?.layerId === 'searches');
+    assert.equal(
+      searches.querySelector('.st').textContent,
+      'Asks before it runs',
+    );
+    searches.querySelector('.data-name').click();
+    searches.querySelector('.data-toggle-btn').click();
+    assert.equal(opened.length, 2);
+    assert.equal(
+      calls.length,
+      1,
+      'opening the panel never switches or runs a search',
+    );
+  } finally {
+    panel.destroy();
+    globalThis.document = previousDocument;
+  }
 });
 
 test('partial feed controls distinguish incomplete records from stale data and outages', async () => {
