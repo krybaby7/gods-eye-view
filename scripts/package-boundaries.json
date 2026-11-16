@@ -2448,6 +2448,8 @@
       "src/ui/worldPanelModel.js",
       "src/ui/frame.js",
       "src/ui/layersMenu.js",
+      "src/ui/toolsMenu.js",
+      "src/ui/menuSections.js",
       "src/ui/frameGauges.js",
       "src/ui/frameLegend.js",
       "src/ui/worldWords.js",

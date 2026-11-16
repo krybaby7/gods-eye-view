@@ -67,7 +67,7 @@ Start with the included data sources, then add your own. Each layer is a separat
 - **🌐 Global Context:** Stage the full situational picture with one switch — and get your exact view back when you leave.
 - **🎥 Scene director:** Capture cinematic camera tours for clips and demos.
 - **🔗 Share Links:** Camera, style, layers, and even one tracked target serialize into a URL — a live target is a handoff, not a bookmark.
-- **🏠 Reset Globe:** One control — or one sentence — back to the full Earth.
+- **🏠 Reset Globe:** One control (**Menu ▸ Tools ▸ View**) — or one sentence — back to the full Earth.
 - **🌦️ Weather:** Animate GFS or ECMWF forecast wind, replay observed radar, satellite clouds and lightning on one timeline, and follow NHC/CPHC cyclone tracks. No key needed.
 - **📷 Mapped ALPR cameras:** License-plate-reader camera locations tagged in OpenStreetMap, one city at a time. Locations and tags only; no key needed.
 - **🔭 Satellite passes:** Ask by voice when any loaded satellite next rises over you: rise, peak and set times, and whether you can see it.
@@ -97,7 +97,7 @@ cameras, radio, and launches are available without keys.
 For photorealistic 3D, add a **Cesium ion token** for eligible personal,
 non-commercial use, or a **Google Maps key** for the direct, metered route and
 Google place search. Provider terms and quotas apply. Add keys through the
-app's **POWER UP** panel; [Keys & Costs](#-api-keys) explains the options.
+app's menu (**Menu ▸ Data sources and keys**); [Keys & Costs](#-api-keys) explains the options.
 
 > **Already installed?** Update to the latest version. Older versions query
 > public OpenStreetMap Overpass servers, which now refuse them, so Traffic,
@@ -147,8 +147,9 @@ configured keys straight from the Keychain. It starts keyless too.
 
 ### Then power it up — in the app, not in a file
 
-Keys are upgrades, not prerequisites. When you want one, click the **POWER UP**
-chip in the bottom-right corner: Provider Settings lists every supported key,
+Keys are upgrades, not prerequisites. When you want one, open **Menu ▸ Data
+sources and keys ▸ Open provider keys** (the menu is the last button in the top
+bar): Provider Settings lists every supported key,
 what it switches on, and where to get it. Paste, hit **SAVE KEYS**, and the app
 restarts itself with the new capability on. Once everything is configured the
 chip reads **POWERED UP** — and if a compact layout hides it, `?setup=1`
@@ -211,7 +212,7 @@ Choose a first-run mission, or try these in order. The GIFs show Google Photorea
 ![Cycling a dense live globe through CRT, FLIR, and NVG in one continuous view](docs/media/01-style-sweep.gif)
 
 7. **Talk to it** _(needs an OpenAI key)_: _"Take me to LAX and select the nearest airborne aircraft."_
-8. **Come home.** Hit **Reset Globe** — or just say _"zoom out to a globe view."_
+8. **Come home.** Hit **Reset Globe** in **Menu ▸ Tools ▸ View** — or just say _"zoom out to a globe view."_
 
 **Keyboard:** `1`–`7` visual styles · `H` HUD · `D` detection · `C` cockpit · `` ` `` frame rate · `Esc` out. Trackpad pinch zooms the globe.
 
@@ -261,7 +262,7 @@ Thirty tools, four jobs — the commands below come straight from the product's 
 
 > 🗣️ _"Outline the state of Texas."_ · _"Annotate the Texas State Capitol and its grounds"_ — it draws the **actual enclosing boundary**, not a circle. · _"How far is the Eiffel Tower from the Louvre?"_ — a connector arrow appears and it speaks the distance. Everything persists until you say _"clear the map."_
 
-**✍️ Or draw it yourself** — DISPLAY ▸ **Draw**: pick Area, Line or Pin, click the vertices on the real world, double-click to finish, label it. Same whiteboard, same persistence, no microphone needed.
+**✍️ Or draw it yourself** — **Menu ▸ Tools ▸ Draw**: pick Area, Line or Pin, click the vertices on the real world, double-click to finish, label it. Same whiteboard, same persistence, no microphone needed.
 
 ![Zilker Park and Lady Bird Lake drawing onto the 3D city as persistent vector annotations, by voice](docs/media/01-voice-annotate-zilker.gif)
 
@@ -431,7 +432,7 @@ See [`docs/CURRENT-STATE.md`](docs/CURRENT-STATE.md) for the authoritative runti
 
 🟢 **No key** · 🟡 **Free key** · 🔴 **Metered**
 
-Use **POWER UP → Provider Settings** to add keys. The tables below explain what
+Use **Menu ▸ Data sources and keys ▸ Open provider keys** to add keys. The tables below explain what
 each provider enables; none is required to start. See the
 [setup instructions](#then-power-it-up--in-the-app-not-in-a-file) for storage
 and configuration details.

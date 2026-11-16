@@ -7,6 +7,7 @@ import { createSituationPanel } from '../ui/situationPanel.js';
 import { createSearchesPanel } from '../ui/searchesPanel.js';
 import { createWorldPanel } from '../ui/worldPanel.js';
 import { createFrame } from '../ui/frame.js';
+import { createToolsMenu } from '../ui/toolsMenu.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
 import { installViews, isEmbeddedInline } from './embed.js';
 import { installScopeMask, destroyScopeMask } from '../scopeMask.js';
@@ -232,6 +233,10 @@ export function createApplicationTools({
     world,
   });
   defer(() => frame.destroy());
+  // The top bar's menu takes the original tools off the globe, after the
+  // voice control has placed itself in the dock and the frame is up.
+  const toolsMenu = createToolsMenu({ document, dataManager, news });
+  defer(() => toolsMenu.destroy());
   defer(
     installViews({
       shell: styleManager,

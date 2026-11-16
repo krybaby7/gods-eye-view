@@ -863,34 +863,6 @@ body.gev-frame #top-center-actions {
   left: var(--frame-globe-centre);
 }
 
-body.gev-frame #globe-navigation {
-  right: calc(var(--frame-right) + var(--space-4));
-  bottom: calc(var(--frame-bottom) + var(--frame-status) + var(--space-3));
-}
-
-/* With Today and the sheet both open, a globe under 1800 px of window is too
-   narrow for the dock and the navigation side by side, so the navigation
-   lifts above the dock (dock bottom 90 px, about 74 px tall, 12 px gap). */
-@media (max-width: 1799px) {
-  body.gev-frame[data-sheet='open']:not([data-today='folded'])
-    #globe-navigation {
-    bottom: calc(var(--frame-bottom) + var(--frame-status) + 98px);
-  }
-}
-
-/* Below 1366 px the globe is too narrow with the sheet open even with Today
-   folded (812 px at 1280). */
-@media (max-width: 1365px) {
-  body.gev-frame[data-sheet='open'] #globe-navigation {
-    bottom: calc(var(--frame-bottom) + var(--frame-status) + 98px);
-  }
-}
-
-/* Zoom lives in the bottom bar; the cockpit keeps its own. */
-body.gev-frame:not(.cockpit-mode) #globe-navigation .map-zoom-controls {
-  display: none;
-}
-
 /* Above the bar, the status line and the credit: 52 + 26 + 12 px, written as
    one length so the attribution model can resolve it. */
 body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(
@@ -1027,13 +999,6 @@ body.gev-frame :is(#traffic-sync-chip, #cctv-sync-chip) {
 
 body.gev-frame #cctv-sync-chip {
   top: calc(var(--frame-top) + 132px);
-}
-
-/* The key setup chip sits in the globe's region above the status line. */
-body.gev-frame #key-setup-chip {
-  left: calc(var(--frame-left) + 12px);
-  right: auto;
-  bottom: calc(var(--frame-bottom) + var(--frame-status) + 12px);
 }
 
 body.gev-frame .hud-ais-vessel {

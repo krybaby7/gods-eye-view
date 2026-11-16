@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Rendered acceptance for DISPLAY ▸ Draw: real clicks, real keys, real teardown. */
+/** Rendered acceptance for Menu ▸ Tools ▸ Draw: real clicks, real keys, real teardown. */
 import fs from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer';
@@ -55,8 +55,20 @@ const shot = (name) =>
   });
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** A clip of the globe canvas, clear of the panels on every side. */
-const CANVAS_CLIP = { x: 340, y: 200, width: 560, height: 380 };
+/**
+ * A clip of the globe, clear of the panels on every side: the design clip
+ * (340, 200, 560 × 380 on the design window below) placed at the same
+ * fractions of the open globe.
+ */
+async function canvasClip() {
+  const open = await openGlobe();
+  return {
+    x: Math.round(open.left + (340 / DESIGN.width) * open.width),
+    y: Math.round(open.top + (200 / DESIGN.height) * open.height),
+    width: Math.round((560 / DESIGN.width) * open.width),
+    height: Math.round((380 / DESIGN.height) * open.height),
+  };
+}
 
 /**
  * How many amber pixels the clip contains. The drawn area's stroke and fill are
@@ -68,7 +80,7 @@ const CANVAS_CLIP = { x: 340, y: 200, width: 560, height: 380 };
  */
 async function amberPixels() {
   const shot64 = await page.screenshot({
-    clip: CANVAS_CLIP,
+    clip: await canvasClip(),
     type: 'png',
     encoding: 'base64',
   });
@@ -106,10 +118,75 @@ async function pressFinish() {
 
 /**
  * The window the fixed points below were chosen for, when the globe's canvas
- * filled it. The canvas now sits inside the frame's globe region, so each
- * fixed point is kept as the same fraction of today's canvas.
+ * filled it and nothing lay over it. The globe now sits inside the frame,
+ * with the layer list and the preset strip at its left and the menu's Tools
+ * panel at its right, so each fixed point is kept as the same fraction of
+ * the open globe between them (roadmap 1.5).
  */
 const DESIGN = { width: 1280, height: 860 };
+
+/**
+ * The open globe in window pixels: right of Today (or its rail) and of the
+ * left stack's panels, left of the sheet and of an open menu panel, below
+ * the top bar and above the status line.
+ */
+const openGlobe = () =>
+  page.evaluate(() => {
+    const drawn = (element) => {
+      if (!element) return null;
+      const style = getComputedStyle(element);
+      if (style.display === 'none' || style.visibility !== 'visible')
+        return null;
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 ? rect : null;
+    };
+    const canvas =
+      window.__godsEyeView.viewer.scene.canvas.getBoundingClientRect();
+    let left = canvas.left;
+    let right = canvas.right;
+    let top = canvas.top;
+    let bottom = canvas.bottom;
+    const atLeft = [
+      '#frame-today',
+      '#frame-rail',
+      '#data-panel',
+      '#lens-bar',
+      '#left-panel-stack > *',
+    ];
+    for (const selector of atLeft)
+      for (const element of document.querySelectorAll(selector)) {
+        const rect = drawn(element);
+        if (rect) left = Math.max(left, rect.right + 8);
+      }
+    for (const selector of ['#frame-sheet', '#frame-tools > .tools-panel'])
+      for (const element of document.querySelectorAll(selector)) {
+        const rect = drawn(element);
+        if (rect) right = Math.min(right, rect.left - 8);
+      }
+    const bar = drawn(document.getElementById('frame-top'));
+    if (bar) top = Math.max(top, bar.bottom + 8);
+    const status =
+      drawn(document.querySelector('#intel-hud .hud-status')) ??
+      drawn(document.getElementById('frame-bottom'));
+    if (status) bottom = Math.min(bottom, status.top - 8);
+    return { left, top, width: right - left, height: bottom - top };
+  });
+
+/** Opens the Tools section of the top bar's menu, unless it is open. */
+async function openToolsSection() {
+  const open = await page.evaluate(
+    () => document.getElementById('frame-menu-tools')?.hidden === false,
+  );
+  if (open) return;
+  await page.click('#frame-menu');
+  await page.waitForSelector('#frame-menu-list:not([hidden])', {
+    timeout: 10_000,
+  });
+  await page.click('#frame-menu-item-tools');
+  await page.waitForSelector('#frame-menu-tools:not([hidden])', {
+    timeout: 10_000,
+  });
+}
 
 /** The globe canvas's rectangle in window pixels. */
 const canvasRect = () =>
@@ -125,14 +202,14 @@ const canvasRect = () =>
   });
 
 /**
- * One click on the globe canvas, the way a person makes one, at a point given
- * on the design window and placed at the same fraction of the canvas.
+ * One click on the globe, the way a person makes one, at a point given on the
+ * design window and placed at the same fraction of the open globe.
  */
 async function clickWorld(x, y, options = {}) {
-  const rect = await canvasRect();
+  const open = await openGlobe();
   await page.mouse.click(
-    rect.left + (x / DESIGN.width) * rect.width,
-    rect.top + (y / DESIGN.height) * rect.height,
+    open.left + (x / DESIGN.width) * open.width,
+    open.top + (y / DESIGN.height) * open.height,
     options,
   );
   await wait(options.settle ?? 140);
@@ -231,21 +308,16 @@ try {
     );
   check('visible tile content settles before drawing', settled);
 
-  // The DISPLAY rail starts collapsed on a first run: open it the way a user does.
-  await page.evaluate(() => {
-    const rail = document.getElementById('pp-toggles');
-    if (rail?.classList.contains('collapsed'))
-      document
-        .querySelector('.panel-collapse-btn[data-collapse-target="pp-toggles"]')
-        ?.click();
-  });
+  // The Draw control lives in the top bar's menu, under Tools: open it the
+  // way a user does. The panel stays open while drawing.
+  await openToolsSection();
   await page.waitForFunction(
     () =>
       document.getElementById('draw-toggle')?.getBoundingClientRect().width > 0,
     { timeout: 10_000 },
   );
   check(
-    'the Draw control is on the DISPLAY rail and starts off',
+    'the Draw control is in the Tools section of the menu and starts off',
     await page.evaluate(() => {
       const toggle = document.getElementById('draw-toggle');
       return (
@@ -514,13 +586,7 @@ try {
   );
 
   // ── Clear wipes the board ───────────────────────────────────────────────
-  await page.evaluate(() => {
-    const rail = document.getElementById('pp-toggles');
-    if (rail?.classList.contains('collapsed'))
-      document
-        .querySelector('.panel-collapse-btn[data-collapse-target="pp-toggles"]')
-        ?.click();
-  });
+  await openToolsSection();
   await page.waitForFunction(
     () =>
       document.getElementById('draw-toggle')?.getBoundingClientRect().width > 0,

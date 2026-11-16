@@ -525,6 +525,16 @@ presets, zoom, voice, the sheet's close button) by clicking their own
 elements, so it holds none of their state. Layout itself is CSS in
 `styles/frame.css`, keyed on `data-today` and `data-sheet`.
 
+`src/ui/toolsMenu.js` (the top bar's menu, roadmap 1.5) belongs with the frame
+in `application-components`. It imports only `menuSections.js`, a leaf holding
+the section names and the `gev:open-menu-section` event name, which any part
+may import to open a section without importing the menu (`src/voice/gevActions.js`
+does). The menu receives `document`, `dataManager` and the War Monitor's `news`
+service from `src/app/tools.js`; it reaches the original controls by id and
+moves them, and the key dialog through its own chip, so it holds none of their
+state. Its placement is CSS in `styles/tools-menu.css`, loaded after
+`frame.css`.
+
 `src/overlays/canvasFrame.js` is a leaf that imports nothing: the canvas's
 rectangle in the window and converters between canvas and window pixels. Code
 in `src/ui`, `src/data`, `src/annotations` and the layer renderers may import

@@ -26,7 +26,7 @@ export const PANEL_COVER_SELECTORS = Object.freeze([
   '#frame-presets-menu',
   '.world-board-hud:not(#world-hover)',
   '#command-dock',
-  '#globe-navigation',
+  '.tools-panel:not([hidden])',
   '#cesium-credits',
   '#intel-hud.active .hud-status',
   '#cockpit-context',

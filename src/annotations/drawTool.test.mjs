@@ -138,11 +138,21 @@ test('nothing promises a GeoJSON export for drawn shapes', () => {
       `${file} still claims a GeoJSON export`,
     );
   }
+  // The Draw control sat in the DISPLAY rail and now sits in the top bar's
+  // menu. CHANGELOG.md keeps the old words as history, so both are anchors,
+  // tried in this order; the first one found marks the Draw description.
+  const anchors = [
+    'DISPLAY ▸ **Draw**',
+    'DISPLAY ▸ Draw',
+    'Menu ▸ Tools ▸ **Draw**',
+    'Menu ▸ Tools ▸ Draw',
+  ];
   for (const file of ['README.md', 'CHANGELOG.md', 'docs/CURRENT-STATE.md']) {
     const source = read(file);
-    const at = source.indexOf('DISPLAY ▸ **Draw**');
-    const start = at >= 0 ? at : source.indexOf('DISPLAY ▸ Draw');
-    assert.ok(start >= 0, `${file} should describe the Draw control`);
+    const start = anchors
+      .map((anchor) => source.indexOf(anchor))
+      .find((at) => at >= 0);
+    assert.ok(start !== undefined, `${file} should describe the Draw control`);
     const section = source.slice(start, start + 1200);
     assert.doesNotMatch(
       section,

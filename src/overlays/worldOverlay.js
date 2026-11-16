@@ -103,6 +103,7 @@ export const WORLD_OVERLAY_OCCLUDER_SELECTORS = Object.freeze([
   '#frame-presets-menu',
   '.weather-summary',
   '#pp-toggles',
+  '.tools-panel:not([hidden])',
   '#command-dock',
   '#gev-voice-control',
   '#cesium-credits',
