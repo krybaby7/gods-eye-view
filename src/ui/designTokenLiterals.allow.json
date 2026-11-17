@@ -1,0 +1,768 @@
+[
+  {
+    "path": "src/data/bhoteKoshiEvent.js",
+    "kind": "cesium",
+    "count": 2,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/data/bhoteKoshiLocator.js",
+    "kind": "cesium",
+    "count": 1,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/data/cctvGizmo.js",
+    "kind": "cesium",
+    "count": 6,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/designTokens.js",
+    "kind": "palette",
+    "count": 17,
+    "reason": "Shared canvas palette; CSS parity is checked by designTokensParity.test.mjs."
+  },
+  {
+    "path": "src/layers/awareness/rendering.js",
+    "kind": "cesium",
+    "count": 1,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/layers/bikeshare/policy.js",
+    "kind": "cesium",
+    "count": 5,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/layers/cctv/policy.js",
+    "kind": "cesium",
+    "count": 10,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/layers/directions/index.js",
+    "kind": "cesium",
+    "count": 2,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/layers/flights/policy.js",
+    "kind": "cesium",
+    "count": 2,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/layers/launches/launchPad.js",
+    "kind": "cesium",
+    "count": 1,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/layers/launches/model.js",
+    "kind": "cesium",
+    "count": 10,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/layers/launches/orbitRendering.js",
+    "kind": "cesium",
+    "count": 1,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/layers/launches/rendering.js",
+    "kind": "cesium",
+    "count": 3,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/layers/military/policy.js",
+    "kind": "cesium",
+    "count": 2,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/layers/radio/rendering.js",
+    "kind": "cesium",
+    "count": 1,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/layers/satellites/policy.js",
+    "kind": "cesium",
+    "count": 1,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/layers/traffic/policy.js",
+    "kind": "cesium",
+    "count": 5,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/layers/world/assetOverlay.js",
+    "kind": "cesium",
+    "count": 1,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/layers/world/geometry.js",
+    "kind": "cesium",
+    "count": 4,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/ui/imageryBoxTool.js",
+    "kind": "cesium",
+    "count": 1,
+    "reason": "Cesium canvas paint cannot consume CSS custom properties."
+  },
+  {
+    "path": "src/ui/sceneSharing.js",
+    "kind": "color",
+    "count": 9
+  },
+  {
+    "path": "src/ui/sceneSharing.js",
+    "kind": "family",
+    "count": 1
+  },
+  {
+    "path": "src/ui/sceneSharing.js",
+    "kind": "font",
+    "count": 1
+  },
+  {
+    "path": "src/ui/sceneSharing.js",
+    "kind": "radius",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/bhote-koshi.css",
+    "kind": "backdrop",
+    "count": 1
+  },
+  {
+    "path": "src/ui/styles/bhote-koshi.css",
+    "kind": "color",
+    "count": 46
+  },
+  {
+    "path": "src/ui/styles/bhote-koshi.css",
+    "kind": "family",
+    "count": 1
+  },
+  {
+    "path": "src/ui/styles/bhote-koshi.css",
+    "kind": "font",
+    "count": 15
+  },
+  {
+    "path": "src/ui/styles/bhote-koshi.css",
+    "kind": "radius",
+    "count": 7
+  },
+  {
+    "path": "src/ui/styles/bhote-koshi.css",
+    "kind": "shadow",
+    "count": 4
+  },
+  {
+    "path": "src/ui/styles/cctv.css",
+    "kind": "backdrop",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/cctv.css",
+    "kind": "color",
+    "count": 52
+  },
+  {
+    "path": "src/ui/styles/cctv.css",
+    "kind": "font",
+    "count": 9
+  },
+  {
+    "path": "src/ui/styles/cctv.css",
+    "kind": "radius",
+    "count": 9
+  },
+  {
+    "path": "src/ui/styles/cctv.css",
+    "kind": "shadow",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/cockpit.css",
+    "kind": "backdrop",
+    "count": 4
+  },
+  {
+    "path": "src/ui/styles/cockpit.css",
+    "kind": "color",
+    "count": 150
+  },
+  {
+    "path": "src/ui/styles/cockpit.css",
+    "kind": "font",
+    "count": 82
+  },
+  {
+    "path": "src/ui/styles/cockpit.css",
+    "kind": "radius",
+    "count": 26
+  },
+  {
+    "path": "src/ui/styles/cockpit.css",
+    "kind": "shadow",
+    "count": 24
+  },
+  {
+    "path": "src/ui/styles/command-dock-compact.css",
+    "kind": "color",
+    "count": 11
+  },
+  {
+    "path": "src/ui/styles/command-dock-compact.css",
+    "kind": "font",
+    "count": 10
+  },
+  {
+    "path": "src/ui/styles/command-dock-compact.css",
+    "kind": "radius",
+    "count": 4
+  },
+  {
+    "path": "src/ui/styles/command-dock-compact.css",
+    "kind": "shadow",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/command-dock-sliding.css",
+    "kind": "backdrop",
+    "count": 6
+  },
+  {
+    "path": "src/ui/styles/command-dock-sliding.css",
+    "kind": "color",
+    "count": 48
+  },
+  {
+    "path": "src/ui/styles/command-dock-sliding.css",
+    "kind": "font",
+    "count": 4
+  },
+  {
+    "path": "src/ui/styles/command-dock-sliding.css",
+    "kind": "radius",
+    "count": 4
+  },
+  {
+    "path": "src/ui/styles/command-dock-sliding.css",
+    "kind": "shadow",
+    "count": 10
+  },
+  {
+    "path": "src/ui/styles/command-dock-trays.css",
+    "kind": "backdrop",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/command-dock-trays.css",
+    "kind": "color",
+    "count": 24
+  },
+  {
+    "path": "src/ui/styles/command-dock-trays.css",
+    "kind": "font",
+    "count": 12
+  },
+  {
+    "path": "src/ui/styles/command-dock-trays.css",
+    "kind": "radius",
+    "count": 7
+  },
+  {
+    "path": "src/ui/styles/command-dock-trays.css",
+    "kind": "shadow",
+    "count": 4
+  },
+  {
+    "path": "src/ui/styles/command-dock.css",
+    "kind": "backdrop",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/command-dock.css",
+    "kind": "color",
+    "count": 18
+  },
+  {
+    "path": "src/ui/styles/command-dock.css",
+    "kind": "font",
+    "count": 7
+  },
+  {
+    "path": "src/ui/styles/command-dock.css",
+    "kind": "radius",
+    "count": 5
+  },
+  {
+    "path": "src/ui/styles/command-dock.css",
+    "kind": "shadow",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/controls.css",
+    "kind": "backdrop",
+    "count": 12
+  },
+  {
+    "path": "src/ui/styles/controls.css",
+    "kind": "color",
+    "count": 65
+  },
+  {
+    "path": "src/ui/styles/controls.css",
+    "kind": "family",
+    "count": 1
+  },
+  {
+    "path": "src/ui/styles/controls.css",
+    "kind": "font",
+    "count": 31
+  },
+  {
+    "path": "src/ui/styles/controls.css",
+    "kind": "radius",
+    "count": 24
+  },
+  {
+    "path": "src/ui/styles/controls.css",
+    "kind": "shadow",
+    "count": 22
+  },
+  {
+    "path": "src/ui/styles/first-run.css",
+    "kind": "backdrop",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/first-run.css",
+    "kind": "color",
+    "count": 27
+  },
+  {
+    "path": "src/ui/styles/first-run.css",
+    "kind": "font",
+    "count": 16
+  },
+  {
+    "path": "src/ui/styles/first-run.css",
+    "kind": "radius",
+    "count": 3
+  },
+  {
+    "path": "src/ui/styles/first-run.css",
+    "kind": "shadow",
+    "count": 1
+  },
+  {
+    "path": "src/ui/styles/foundation.css",
+    "kind": "backdrop",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/foundation.css",
+    "kind": "color",
+    "count": 25
+  },
+  {
+    "path": "src/ui/styles/foundation.css",
+    "kind": "family",
+    "count": 1
+  },
+  {
+    "path": "src/ui/styles/foundation.css",
+    "kind": "font",
+    "count": 8
+  },
+  {
+    "path": "src/ui/styles/foundation.css",
+    "kind": "radius",
+    "count": 3
+  },
+  {
+    "path": "src/ui/styles/foundation.css",
+    "kind": "shadow",
+    "count": 5
+  },
+  {
+    "path": "src/ui/styles/frame.css",
+    "kind": "font",
+    "count": 8
+  },
+  {
+    "path": "src/ui/styles/frame.css",
+    "kind": "radius",
+    "count": 8
+  },
+  {
+    "path": "src/ui/styles/layers-menu.css",
+    "kind": "radius",
+    "count": 1
+  },
+  {
+    "path": "src/ui/styles/layers.css",
+    "kind": "backdrop",
+    "count": 6
+  },
+  {
+    "path": "src/ui/styles/layers.css",
+    "kind": "color",
+    "count": 166
+  },
+  {
+    "path": "src/ui/styles/layers.css",
+    "kind": "family",
+    "count": 15
+  },
+  {
+    "path": "src/ui/styles/layers.css",
+    "kind": "font",
+    "count": 39
+  },
+  {
+    "path": "src/ui/styles/layers.css",
+    "kind": "radius",
+    "count": 19
+  },
+  {
+    "path": "src/ui/styles/layers.css",
+    "kind": "shadow",
+    "count": 17
+  },
+  {
+    "path": "src/ui/styles/lens-bar.css",
+    "kind": "radius",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/location.css",
+    "kind": "backdrop",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/location.css",
+    "kind": "color",
+    "count": 15
+  },
+  {
+    "path": "src/ui/styles/location.css",
+    "kind": "font",
+    "count": 8
+  },
+  {
+    "path": "src/ui/styles/location.css",
+    "kind": "radius",
+    "count": 5
+  },
+  {
+    "path": "src/ui/styles/location.css",
+    "kind": "shadow",
+    "count": 3
+  },
+  {
+    "path": "src/ui/styles/overlays.css",
+    "kind": "color",
+    "count": 12
+  },
+  {
+    "path": "src/ui/styles/overlays.css",
+    "kind": "font",
+    "count": 3
+  },
+  {
+    "path": "src/ui/styles/overlays.css",
+    "kind": "radius",
+    "count": 1
+  },
+  {
+    "path": "src/ui/styles/overlays.css",
+    "kind": "shadow",
+    "count": 1
+  },
+  {
+    "path": "src/ui/styles/provider-settings.css",
+    "kind": "backdrop",
+    "count": 4
+  },
+  {
+    "path": "src/ui/styles/provider-settings.css",
+    "kind": "color",
+    "count": 58
+  },
+  {
+    "path": "src/ui/styles/provider-settings.css",
+    "kind": "font",
+    "count": 19
+  },
+  {
+    "path": "src/ui/styles/provider-settings.css",
+    "kind": "radius",
+    "count": 13
+  },
+  {
+    "path": "src/ui/styles/provider-settings.css",
+    "kind": "shadow",
+    "count": 3
+  },
+  {
+    "path": "src/ui/styles/radio.css",
+    "kind": "color",
+    "count": 143
+  },
+  {
+    "path": "src/ui/styles/radio.css",
+    "kind": "family",
+    "count": 6
+  },
+  {
+    "path": "src/ui/styles/radio.css",
+    "kind": "font",
+    "count": 39
+  },
+  {
+    "path": "src/ui/styles/radio.css",
+    "kind": "radius",
+    "count": 19
+  },
+  {
+    "path": "src/ui/styles/radio.css",
+    "kind": "shadow",
+    "count": 19
+  },
+  {
+    "path": "src/ui/styles/recent-imagery.css",
+    "kind": "backdrop",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/recent-imagery.css",
+    "kind": "color",
+    "count": 25
+  },
+  {
+    "path": "src/ui/styles/recent-imagery.css",
+    "kind": "font",
+    "count": 14
+  },
+  {
+    "path": "src/ui/styles/recent-imagery.css",
+    "kind": "radius",
+    "count": 8
+  },
+  {
+    "path": "src/ui/styles/recent-imagery.css",
+    "kind": "shadow",
+    "count": 6
+  },
+  {
+    "path": "src/ui/styles/responsive.css",
+    "kind": "font",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/scenes.css",
+    "kind": "backdrop",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/scenes.css",
+    "kind": "color",
+    "count": 37
+  },
+  {
+    "path": "src/ui/styles/scenes.css",
+    "kind": "font",
+    "count": 10
+  },
+  {
+    "path": "src/ui/styles/scenes.css",
+    "kind": "radius",
+    "count": 8
+  },
+  {
+    "path": "src/ui/styles/scenes.css",
+    "kind": "shadow",
+    "count": 5
+  },
+  {
+    "path": "src/ui/styles/searches-panel.css",
+    "kind": "font",
+    "count": 5
+  },
+  {
+    "path": "src/ui/styles/searches-panel.css",
+    "kind": "radius",
+    "count": 1
+  },
+  {
+    "path": "src/ui/styles/situation.css",
+    "kind": "color",
+    "count": 4
+  },
+  {
+    "path": "src/ui/styles/situation.css",
+    "kind": "font",
+    "count": 35
+  },
+  {
+    "path": "src/ui/styles/situation.css",
+    "kind": "radius",
+    "count": 6
+  },
+  {
+    "path": "src/ui/styles/situation.css",
+    "kind": "shadow",
+    "count": 1
+  },
+  {
+    "path": "src/ui/styles/status.css",
+    "kind": "backdrop",
+    "count": 8
+  },
+  {
+    "path": "src/ui/styles/status.css",
+    "kind": "color",
+    "count": 45
+  },
+  {
+    "path": "src/ui/styles/status.css",
+    "kind": "family",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/status.css",
+    "kind": "font",
+    "count": 14
+  },
+  {
+    "path": "src/ui/styles/status.css",
+    "kind": "radius",
+    "count": 7
+  },
+  {
+    "path": "src/ui/styles/status.css",
+    "kind": "shadow",
+    "count": 9
+  },
+  {
+    "path": "src/ui/styles/street-level.css",
+    "kind": "backdrop",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/street-level.css",
+    "kind": "color",
+    "count": 30
+  },
+  {
+    "path": "src/ui/styles/street-level.css",
+    "kind": "font",
+    "count": 5
+  },
+  {
+    "path": "src/ui/styles/street-level.css",
+    "kind": "radius",
+    "count": 9
+  },
+  {
+    "path": "src/ui/styles/street-level.css",
+    "kind": "shadow",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/voice-card.css",
+    "kind": "backdrop",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/voice-card.css",
+    "kind": "color",
+    "count": 29
+  },
+  {
+    "path": "src/ui/styles/voice-card.css",
+    "kind": "font",
+    "count": 10
+  },
+  {
+    "path": "src/ui/styles/voice-card.css",
+    "kind": "radius",
+    "count": 7
+  },
+  {
+    "path": "src/ui/styles/voice-card.css",
+    "kind": "shadow",
+    "count": 3
+  },
+  {
+    "path": "src/ui/styles/voice-cost.css",
+    "kind": "color",
+    "count": 9
+  },
+  {
+    "path": "src/ui/styles/voice-cost.css",
+    "kind": "font",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/voice-cost.css",
+    "kind": "radius",
+    "count": 1
+  },
+  {
+    "path": "src/ui/styles/weather.css",
+    "kind": "backdrop",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/weather.css",
+    "kind": "color",
+    "count": 12
+  },
+  {
+    "path": "src/ui/styles/weather.css",
+    "kind": "font",
+    "count": 15
+  },
+  {
+    "path": "src/ui/styles/weather.css",
+    "kind": "radius",
+    "count": 4
+  },
+  {
+    "path": "src/ui/styles/weather.css",
+    "kind": "shadow",
+    "count": 1
+  },
+  {
+    "path": "src/ui/styles/world-phase-4.css",
+    "kind": "color",
+    "count": 2,
+    "reason": "Approved phase-4 badge and qualifier colors retain their existing meanings pending a token decision."
+  },
+  {
+    "path": "src/ui/worldOverview.js",
+    "kind": "color",
+    "count": 1
+  },
+  {
+    "path": "src/ui/worldPanel.js",
+    "kind": "color",
+    "count": 1
+  }
+]

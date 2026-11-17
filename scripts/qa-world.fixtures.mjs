@@ -90,7 +90,13 @@ export function createFixtureWorld(cacheDir, extraAdapters) {
   };
 }
 
-export async function installFixtures(page, origin, world, report) {
+export async function installFixtures(
+  page,
+  origin,
+  world,
+  report,
+  { strict = false } = {},
+) {
   const imagery = await fs.readFile(
     new URL(
       '../node_modules/cesium/Build/Cesium/Assets/Textures/NaturalEarthII/0/0/0.jpg',
@@ -108,16 +114,25 @@ export async function installFixtures(page, origin, world, report) {
     .png()
     .toBuffer();
   const client = await page.createCDPSession();
+  if (strict) {
+    await client.send('Network.enable');
+    await client.send('Network.setBypassServiceWorker', { bypass: true });
+    await client.send('Network.setBlockedURLs', {
+      urls: ['ws://*', 'wss://*'],
+    });
+  }
   // Local modules and Cesium workers load normally. Only provider transport
   // is paused, and every paused request is fulfilled without going upstream.
-  await client.send('Fetch.enable', {
-    patterns: [origin + '/api/*', 'https://*/*'].map((urlPattern) => ({
-      urlPattern,
-    })),
-  });
   client.on('Fetch.requestPaused', async ({ requestId, request }) => {
-    const url = new URL(request.url);
+    let url;
+    if (strict)
+      report.transport.requests = (report.transport.requests ?? 0) + 1;
     function reply(value, status = 200, contentType = 'application/json') {
+      if (strict) {
+        report.transport.fulfilled = (report.transport.fulfilled ?? 0) + 1;
+        if (status === 404)
+          report.transport.blocked = (report.transport.blocked ?? 0) + 1;
+      }
       const body =
         contentType === 'application/json' ? JSON.stringify(value) : value;
       return client.send('Fetch.fulfillRequest', {
@@ -131,7 +146,16 @@ export async function installFixtures(page, origin, world, report) {
       });
     }
     try {
-      if (url.origin === origin) {
+      url = new URL(request.url);
+      if (
+        strict &&
+        url.origin === origin &&
+        url.pathname !== '/api' &&
+        !url.pathname.startsWith('/api/')
+      ) {
+        report.transport.continued = (report.transport.continued ?? 0) + 1;
+        await client.send('Fetch.continueRequest', { requestId });
+      } else if (url.origin === origin) {
         if (url.pathname === '/api/world' && request.method === 'GET') {
           report.transport.snapshots++;
           await reply(await world.snapshot({ compact: true }));
@@ -243,14 +267,23 @@ export async function installFixtures(page, origin, world, report) {
         error.message,
       );
       if (
-        (url.pathname.startsWith('/api/world') &&
+        (url?.pathname.startsWith('/api/world') &&
           !(abandoned && url.pathname === '/api/world/progress')) ||
         !abandoned
       )
-        report.errors.push(`Fixture ${url.pathname}: ${error.message}`);
+        report.errors.push(
+          `Fixture ${url?.pathname ?? request.url}: ${error.message}`,
+        );
       await client
         .send('Fetch.failRequest', { requestId, errorReason: 'Failed' })
         .catch(() => {});
     }
+  });
+  await client.send('Fetch.enable', {
+    patterns: (strict ? ['*'] : [origin + '/api/*', 'https://*/*']).map(
+      (urlPattern) => ({
+        urlPattern,
+      }),
+    ),
   });
 }
