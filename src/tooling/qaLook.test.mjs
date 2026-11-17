@@ -348,3 +348,110 @@ test('after popup rejects missing, clipped, hidden or scrollable content', async
   );
   assert.ok(popupContentFailures({ ...content, scrollable: ['popup'] }).length);
 });
+
+test('proxy survives a reset while rejecting CONNECT and upgrade sockets', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const script = `
+    import net from 'node:net';
+    import { createDenyProxy } from ${JSON.stringify(new URL('./qaLookProxy.mjs', import.meta.url).href)};
+    const originalEnd = net.Socket.prototype.end;
+    let resets = 0;
+    net.Socket.prototype.end = function(chunk, ...args) {
+      if (typeof chunk === 'string' && chunk.startsWith('HTTP/1.1 403')) {
+        resets++;
+        const code = resets === 1 ? 'ECONNRESET' : 'EPIPE';
+        queueMicrotask(() => this.emit('error', Object.assign(new Error(code), {code})));
+      }
+      return originalEnd.call(this, chunk, ...args);
+    };
+    const proxy = await createDenyProxy('http://127.0.0.1:5314');
+    const url = new URL(proxy.address);
+    async function attempt(request) {
+      await new Promise((resolve, reject) => {
+        const socket = net.connect(Number(url.port), url.hostname, () => socket.write(request));
+        socket.on('error', reject); socket.on('data', () => {}); socket.on('end', resolve);
+      });
+    }
+    await attempt('CONNECT example.invalid:443 HTTP/1.1\\r\\nHost: example.invalid\\r\\n\\r\\n');
+    await attempt('GET http://example.invalid/ HTTP/1.1\\r\\nHost: example.invalid\\r\\nConnection: Upgrade\\r\\nUpgrade: websocket\\r\\n\\r\\n');
+    await proxy.close();
+    if (resets !== 2 || proxy.totals.tunnels !== 1 || proxy.totals.upgrades !== 1) throw new Error('denial paths did not run');
+    process.stdout.write('closed after two rejected resets');
+  `;
+  const child = spawnSync(
+    process.execPath,
+    ['--input-type=module', '-e', script],
+    { encoding: 'utf8', timeout: 10000 },
+  );
+  assert.equal(child.status, 0, `child failed: ${child.stderr}`);
+  assert.match(child.stdout, /closed after two rejected resets/);
+});
+
+test('proxy reports unexpected raw socket errors on close', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const script = `
+    import net from 'node:net';
+    import { createDenyProxy } from ${JSON.stringify(new URL('./qaLookProxy.mjs', import.meta.url).href)};
+    const originalEnd = net.Socket.prototype.end;
+    net.Socket.prototype.end = function(chunk, ...args) {
+      if (typeof chunk === 'string' && chunk.startsWith('HTTP/1.1 403')) queueMicrotask(() => this.emit('error', Object.assign(new Error('unexpected I/O'), {code:'EIO'})));
+      return originalEnd.call(this, chunk, ...args);
+    };
+    const proxy = await createDenyProxy('http://127.0.0.1:5314');
+    const url = new URL(proxy.address);
+    await new Promise((resolve, reject) => { const socket = net.connect(Number(url.port), url.hostname, () => socket.write('CONNECT example.invalid:443 HTTP/1.1\\r\\nHost: example.invalid\\r\\n\\r\\n')); socket.on('data', () => {}); socket.on('error', reject); socket.on('end', resolve); });
+    try { await proxy.close(); throw new Error('close unexpectedly succeeded'); }
+    catch (error) { if (error.code !== 'EIO') throw error; }
+    process.stdout.write('reported EIO');
+  `;
+  const child = spawnSync(
+    process.execPath,
+    ['--input-type=module', '-e', script],
+    { encoding: 'utf8', timeout: 10000 },
+  );
+  assert.equal(child.status, 0, `child failed: ${child.stderr}`);
+  assert.match(child.stdout, /reported EIO/);
+});
+
+test('rejected CONNECT and upgrade half-open clients cannot stall proxy close', async () => {
+  const net = await import('node:net');
+  const { createDenyProxy } = await import('./qaLookProxy.mjs');
+  const proxy = await createDenyProxy('http://127.0.0.1:5314');
+  const url = new URL(proxy.address);
+  const sockets = [];
+  async function reject(method) {
+    return await new Promise((resolve, reject) => {
+      const socket = net.connect({
+        host: url.hostname,
+        port: Number(url.port),
+        allowHalfOpen: true,
+      });
+      sockets.push(socket);
+      let text = '';
+      socket.on('connect', () =>
+        socket.write(
+          `${method} ${method === 'CONNECT' ? 'example.invalid:443' : 'http://example.invalid/'} HTTP/1.1\r\nHost: example.invalid\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n`,
+        ),
+      );
+      socket.on('data', (chunk) => {
+        text += chunk;
+      });
+      socket.on('end', () => resolve(text));
+      socket.on('error', reject);
+    });
+  }
+  try {
+    assert.match(await reject('CONNECT'), /403 Forbidden/);
+    assert.match(await reject('GET'), /403 Forbidden/);
+    await Promise.race([
+      proxy.close(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('proxy close stalled')), 1500),
+      ),
+    ]);
+    assert.equal(proxy.totals.tunnels, 1);
+    assert.equal(proxy.totals.upgrades, 1);
+  } finally {
+    for (const socket of sockets) socket.destroy();
+  }
+});

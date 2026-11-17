@@ -25,6 +25,7 @@ export function proxyAllowed(origin, method, target) {
 }
 
 export async function createDenyProxy(origin) {
+  let socketError;
   const totals = {
     allowed: 0,
     denied: 0,
@@ -80,7 +81,16 @@ export async function createDenyProxy(origin) {
   for (const event of ['connect', 'upgrade'])
     server.on(event, (_request, socket) => {
       totals[event === 'connect' ? 'tunnels' : 'upgrades']++;
-      socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
+      // HTTP hands these sockets to us without its usual error handler.
+      socket.on('error', (error) => {
+        if (error.code !== 'ECONNRESET' && error.code !== 'EPIPE')
+          socketError ??= error;
+        socket.destroy();
+      });
+      socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n', () => {
+        // Finish our side after the reply flushes, without waiting for peer EOF.
+        socket.destroy();
+      });
     });
   await new Promise((resolve, reject) => {
     server.once('error', reject);
@@ -91,7 +101,11 @@ export async function createDenyProxy(origin) {
     totals,
     close: () =>
       new Promise((resolve, reject) =>
-        server.close((error) => (error ? reject(error) : resolve())),
+        server.close((error) => {
+          const failure = error ?? socketError;
+          if (failure) reject(failure);
+          else resolve();
+        }),
       ),
   };
 }
