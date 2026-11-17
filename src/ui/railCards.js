@@ -10,6 +10,7 @@ export function createRailCards({
   container,
   document = container?.ownerDocument,
   cardClassName = '',
+  kit = false,
   badgeClassName = '',
   onParams = () => {},
   onOpen = () => {},
@@ -38,7 +39,7 @@ export function createRailCards({
         if (!row) {
           const element = make(
             'article',
-            `rail-card${cardClassName ? ` ${cardClassName}` : ''}`,
+            `rail-card${kit ? ' kit-card' : ''}${cardClassName ? ` ${cardClassName}` : ''}`,
             container,
           );
           element.dataset.cardId = card.id;
@@ -68,6 +69,7 @@ export function createRailCards({
             container: body,
             cardId: card.id,
             onParams,
+            kit,
           });
           const click = () => onOpen(card.id);
           header.addEventListener('click', click);
@@ -92,6 +94,7 @@ export function createRailCards({
         set(row.icon, 'hidden', !card.icon);
         set(row.badge, 'textContent', card.badge || '');
         set(row.badge, 'hidden', !card.badge);
+        row.element.classList.toggle('dashed', Boolean(kit && card.forecast));
         const open = card.open !== false;
         set(row.element.dataset, 'open', String(open));
         row.element.classList.toggle('is-open', open);

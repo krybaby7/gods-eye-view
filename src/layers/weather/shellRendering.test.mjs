@@ -529,6 +529,32 @@ test('a new frame keeps the previous image until decoded, then swaps the uniform
   h.shell.clear();
 });
 
+test('shell tile failures report whether an observation was retained at notification time', async () => {
+  const errors = [];
+  let fail = true;
+  let h;
+  h = harness({
+    fetchImpl: async () => {
+      if (fail) throw new Error('offline');
+      return response();
+    },
+    onChange: () => errors.push(h.shell.getDiagnostics().error),
+  });
+  assert.equal(await h.shell.setFrame(snapshot(), times[0]), false);
+  assert.ok(errors.includes('Weather tiles unavailable'));
+  assert.equal(h.shell.getDiagnostics().time, null);
+  fail = false;
+  assert.equal(await show(h, times[0]), true);
+  errors.length = 0;
+  fail = true;
+  assert.equal(await h.shell.setFrame(snapshot(), times[1]), false);
+  assert.ok(
+    errors.includes('Weather tiles unavailable · previous frame retained'),
+  );
+  assert.equal(h.shell.getDiagnostics().time, times[0]);
+  h.shell.clear();
+});
+
 for (const outcome of ['fetch', 'decode', 'dimensions', 'timeout']) {
   test(`${outcome} failure retains the previous frame and reports it`, async (t) => {
     t.mock.timers.enable({ apis: ['setTimeout'] });

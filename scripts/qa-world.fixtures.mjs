@@ -95,7 +95,7 @@ export async function installFixtures(
   origin,
   world,
   report,
-  { strict = false, firePerimeter = null } = {},
+  { strict = false, firePerimeter = null, weather = null } = {},
 ) {
   const imagery = await fs.readFile(
     new URL(
@@ -125,6 +125,7 @@ export async function installFixtures(
   // is paused, and every paused request is fulfilled without going upstream.
   client.on('Fetch.requestPaused', async ({ requestId, request }) => {
     let url;
+    let weatherReply;
     if (strict)
       report.transport.requests = (report.transport.requests ?? 0) + 1;
     function reply(value, status = 200, contentType = 'application/json') {
@@ -182,6 +183,15 @@ export async function installFixtures(
           );
           if (detail) await reply(detail);
           else await reply({ error: 'Unknown World Board detail lens.' }, 404);
+        } else if (
+          weather &&
+          request.method === 'GET' &&
+          (weatherReply = await weather(url))
+        ) {
+          const key = url.pathname;
+          const counts = (report.transport.weatherReplies ??= {});
+          counts[key] = (counts[key] ?? 0) + 1;
+          await reply(weatherReply.value, 200, weatherReply.contentType);
         } else if (
           firePerimeter &&
           url.pathname === '/api/fire-perimeters' &&

@@ -524,7 +524,7 @@ test('no control changes place in the tree, no block is hidden and every fixed-h
           ? header?.find((node) => node.classList.contains('rail-card-title'))
           : null,
         'rail-card-nowrap',
-        cssRule('./styles/weather.css', '.rail-card-nowrap'),
+        cssRule('./styles/kit.css', '.rail-card-nowrap'),
         /white-space: nowrap/,
       ],
     };

@@ -342,6 +342,7 @@ export function createCyclonesLayer({
         readout: true,
         summary: {
           label: 'Cyclones · NHC / CPHC',
+          source: snapshot?.source || 'NOAA NHC / CPHC',
           coverage: 'Atlantic · E/C Pacific',
           compact: snapshot?.storms.length
             ? `${snapshot.storms.length} active storm${snapshot.storms.length === 1 ? '' : 's'}${storm ? ` · ${storm.name} selected` : ''}`

@@ -14,9 +14,18 @@ const order = (parent, nodes) =>
   });
 
 /** Optional, ordered blocks without disclosure state. All controls are keyed. */
-export function createRailCardBlocks({ container, cardId, onParams }) {
+export function createRailCardBlocks({
+  container,
+  cardId,
+  onParams,
+  kit = false,
+}) {
   const document = container.ownerDocument;
   const blocks = new Map();
+  const chipAppearance = kit ? 'kit-chip pick' : '';
+  const actionClass = kit
+    ? 'data-toggle-chip kit-chip pick'
+    : 'data-toggle-chip';
   const make = (tag, className, parent) => {
     const node = document.createElement(tag);
     node.className = className;
@@ -65,11 +74,14 @@ export function createRailCardBlocks({ container, cardId, onParams }) {
               container: root,
               cardId,
               onParams,
+              kit,
             });
           } else if (props.type === 'setting') {
             block.label = make(
               'span',
-              'rail-card-setting-label panel-title',
+              kit
+                ? 'rail-card-setting-label'
+                : 'rail-card-setting-label panel-title',
               root,
             );
             block.chips = make('div', 'rail-card-chips', root);
@@ -93,8 +105,12 @@ export function createRailCardBlocks({ container, cardId, onParams }) {
             });
           } else if (props.type === 'result') {
             block.header = make('div', 'rail-card-result-header', root);
-            block.label = make('span', 'panel-title', block.header);
-            block.clear = make('button', 'data-toggle-chip', block.header);
+            block.label = make(
+              'span',
+              kit ? 'rail-card-result-label' : 'panel-title',
+              block.header,
+            );
+            block.clear = make('button', actionClass, block.header);
             block.clear.type = 'button';
             block.clear.dataset.actionId = 'clear';
             block.clear.textContent = '×';
@@ -107,11 +123,12 @@ export function createRailCardBlocks({ container, cardId, onParams }) {
               container: make('div', 'rail-card-result-lines', root),
               cardId,
               onParams,
+              kit,
             });
           } else if (props.type === 'legend') {
             block.ramp = make('div', 'rail-card-ramp', root);
             block.zero = make('span', 'rail-card-zero', block.ramp);
-            block.zero.setAttribute('aria-hidden', 'true');
+            block.zero.textContent = '0°C';
             block.scale = make('div', 'rail-card-scale', root);
             block.entries = make('div', 'rail-card-legend-entries', root);
           } else if (props.type === 'actions') {
@@ -134,9 +151,14 @@ export function createRailCardBlocks({ container, cardId, onParams }) {
         else if (props.type === 'setting') {
           set(block.label, 'textContent', props.label);
           attribute(block.chips, 'aria-label', props.label);
-          syncChipGroup(block.chips, props.chips);
-        } else if (props.type === 'list') syncRowList(block.root, props.list);
-        else if (props.type === 'result') {
+          syncChipGroup(block.chips, props.chips, {
+            appearance: chipAppearance,
+          });
+        } else if (props.type === 'list') {
+          syncRowList(block.root, props.list, {
+            appearance: kit ? 'kit-btn quiet' : '',
+          });
+        } else if (props.type === 'result') {
           set(block.label, 'textContent', props.label);
           set(block.clear, 'hidden', !props.clear);
           block.children.update([
@@ -181,6 +203,7 @@ export function createRailCardBlocks({ container, cardId, onParams }) {
           }
           const zeroVisible =
             visible &&
+            !legend.categorical &&
             legend.units === '°C' &&
             Number.isInteger(legend.zeroIndex) &&
             legend.zeroIndex >= 0 &&
@@ -218,7 +241,7 @@ export function createRailCardBlocks({ container, cardId, onParams }) {
             let action = block.actions.get(actionProps.id);
             if (!action) {
               const tag = actionProps.href ? 'a' : 'button';
-              const node = make(tag, 'data-toggle-chip', block.root);
+              const node = make(tag, actionClass, block.root);
               node.dataset.actionId = actionProps.id;
               if (tag === 'button') node.type = 'button';
               else {

@@ -214,7 +214,7 @@
   background: linear-gradient(to right, var(--glass-border), transparent);
 }
 
-.panel-collapse-btn {
+.panel-collapse-btn:not(:where(.kit-iconbtn)) {
   width: 22px;
   height: 22px;
   border-radius: 6px;
@@ -231,7 +231,7 @@
     color var(--transition-fast);
 }
 
-.panel-collapse-btn:hover {
+.panel-collapse-btn:not(:where(.kit-iconbtn)):hover {
   border-color: var(--glass-border-hover);
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.07);

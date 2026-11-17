@@ -1,16 +1,15 @@
   <!-- Global Context is deliberately independent from the left layer accordion. -->
   <aside id="right-context-rail">
-    <div id="weather-panel" class="panel-collapsible" data-panel-id="weather-panel" hidden>
-      <div class="weather-panel-inner" data-rail-scroller>
-        <div class="panel-header">
-          <span class="panel-title">WEATHER</span>
+    <section id="weather-panel" class="panel-collapsible" data-panel-id="weather-panel" aria-labelledby="weather-panel-title" hidden>
+      <div class="weather-panel-inner kit-panel" data-rail-scroller>
+        <header class="kit-panel-head">
+          <h2 id="weather-panel-title" class="panel-title kit-panel-title">Weather</h2>
           <span id="weather-panel-count" aria-label="Active weather products">0</span>
-          <span class="panel-divider"></span>
-          <button class="panel-collapse-btn" data-collapse-target="weather-panel" type="button" title="Collapse panel">▼</button>
-        </div>
-        <div id="weather-panel-body" data-rail-scroller></div>
+          <button class="panel-collapse-btn kit-iconbtn" data-collapse-target="weather-panel" type="button" aria-controls="weather-panel-body" aria-expanded="true" aria-label="Collapse Weather" title="Collapse Weather">▶</button>
+        </header>
+        <div id="weather-panel-body" class="kit-panel-body" data-rail-scroller></div>
       </div>
-    </div>
+    </section>
     <div id="recent-imagery-panel" class="panel-collapsible" data-panel-id="recent-imagery-panel" hidden>
       <div class="recent-imagery-panel-inner" data-rail-scroller>
         <div class="panel-header">

@@ -1,5 +1,6 @@
 import * as Cesium from 'cesium';
 import { createWeatherRendering } from './rendering.js';
+import { weatherSourceCredit } from './source.js';
 import { imageryHostStatus } from './imageryHost.js';
 import {
   RADAR_MAX_GAP_MS,
@@ -87,6 +88,8 @@ export function createWeatherLayer({
     imageryHost?.() ?? { collection: viewer?.imageryLayers, kind: 'globe' };
   const notify = () => listener?.();
   const shownTime = () => (noFrame ? null : rendering?.getDiagnostics().time);
+  const observationError = (message) =>
+    shownTime() ? `${message}; previous observation retained` : message;
   const unsubscribeClock = clock?.subscribe(() => {
     if (!clock.getState().playing || suspended()) rendering?.cancelPrefetch?.();
     notify();
@@ -227,7 +230,7 @@ export function createWeatherLayer({
         rendering.setHidden?.(false);
         void warmNext(time);
       }
-      error = ok ? null : 'Frame unavailable; previous observation retained';
+      error = ok ? null : observationError('Frame unavailable');
       if (!ok) stop();
       return ok;
     } catch {
@@ -338,7 +341,7 @@ export function createWeatherLayer({
         if (!enabled || controller.signal.aborted || request !== controller)
           return false;
         if (snapshot.unavailable) {
-          error = 'Weather source unavailable; previous observation retained';
+          error = observationError('Weather source unavailable');
           stop();
           return true;
         }
@@ -550,11 +553,12 @@ export function createWeatherLayer({
               : product === 'clouds'
                 ? 'Global · 60°S–60°N'
                 : 'North America',
+          source: weatherSourceCredit(product),
           shownTime: time,
           maxGapMinutes: maxGap() / 60_000,
           detail: time
             ? `${followLatest ? 'Observed' : 'History'} · ${utc(time)} · ${lag}${relation}`
-            : missing
+            : missing || error
               ? 'Observation unavailable'
               : 'Waiting for observation',
           status:
@@ -650,19 +654,19 @@ export function createWeatherLayer({
           ? [
               {
                 id: 'region',
-                label: 'REGION',
+                label: 'Region',
                 chips: controls.chips.filter(({ params }) => params.product),
               },
               {
                 id: 'image',
-                label: 'IMAGE',
+                label: 'Image',
                 chips: controls.chips.filter(({ params }) => params.infrared),
               },
             ]
           : []),
         {
           id: 'opacity',
-          label: 'OPACITY',
+          label: 'Opacity',
           chips: controls.chips.filter(({ params }) => params.opacity),
         },
       ];
