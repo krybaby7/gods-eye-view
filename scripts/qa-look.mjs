@@ -53,6 +53,7 @@ try {
       '--proxy-bypass-list=<-loopback>',
     ],
   });
+  await verifyWorkerIsolation();
   page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
   await installFixtures(page, options.url.origin, world, report, {
@@ -65,7 +66,6 @@ try {
     waitUntil: 'domcontentloaded',
     timeout: wait.timeout,
   });
-  await verifyWorkerIsolation();
   await page.waitForFunction(
     () =>
       window.__godsEyeView?.viewer &&
@@ -272,7 +272,39 @@ async function verifyWorkerIsolation() {
     sentinel.once('error', reject);
     sentinel.listen(0, '127.0.0.1', resolve);
   });
+  let probePage;
   try {
+    probePage = await browser.newPage();
+    const diagnostics = [];
+    report.workerProbe = { diagnostics, pending: true };
+    probePage.on('pageerror', (error) =>
+      diagnostics.push(error.stack || error.message),
+    );
+    probePage.on('console', (message) => {
+      if (message.type() === 'error') diagnostics.push(message.text());
+    });
+    probePage.on('requestfailed', (request) =>
+      diagnostics.push(`${request.url()}: ${request.failure()?.errorText}`),
+    );
+    const probePath = new URL('/__look-network-probe', options.url.origin).href;
+    const client = await probePage.createCDPSession();
+    client.on('Fetch.requestPaused', ({ requestId }) =>
+      client.send('Fetch.fulfillRequest', {
+        requestId,
+        responseCode: 200,
+        responseHeaders: [{ name: 'Content-Type', value: 'text/html' }],
+        body: Buffer.from(
+          '<!doctype html><title>Network probe</title>',
+        ).toString('base64'),
+      }),
+    );
+    await client.send('Fetch.enable', {
+      patterns: [{ urlPattern: probePath }],
+    });
+    await probePage.goto(probePath, {
+      waitUntil: 'domcontentloaded',
+      timeout: wait.timeout,
+    });
     const external = `http://127.0.0.1:${sentinel.address().port}/worker-probe`;
     const api = new URL('/api/look-worker-probe', options.url.origin).href;
     const snapshot = () => ({
@@ -280,7 +312,7 @@ async function verifyWorkerIsolation() {
       suppressed: [...(report.transport.suppressedUrls ?? [])],
     });
     const before = snapshot();
-    const results = await page.evaluate(
+    const results = await probePage.evaluate(
       async ({ external, api }) => {
         const code = `self.onmessage = async ({data}) => { const results = []; for (const url of data) { try { const response = await fetch(url, {cache:'no-store'}); results.push({url,status:response.status}); } catch (error) { results.push({url,error:String(error)}); } } self.postMessage(results); };`;
         const blob = URL.createObjectURL(
@@ -313,6 +345,7 @@ async function verifyWorkerIsolation() {
     );
     const after = snapshot();
     report.workerProbe = {
+      diagnostics,
       sentinelUrl: external,
       apiUrl: api,
       results,
@@ -322,7 +355,11 @@ async function verifyWorkerIsolation() {
     };
     validateWorkerProbe(report.workerProbe);
   } finally {
-    await new Promise((resolve) => sentinel.close(resolve));
+    try {
+      if (probePage) await probePage.close();
+    } finally {
+      await new Promise((resolve) => sentinel.close(resolve));
+    }
   }
 }
 
