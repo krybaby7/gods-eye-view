@@ -35,7 +35,7 @@ function notify(node, attribute) {
       observer.callback([]);
 }
 
-function page({ links = [] } = {}) {
+function page({ links = [], railFixture = false } = {}) {
   observers.length = 0;
   globalThis.MutationObserver = FakeObserver;
   const byId = new Map();
@@ -106,6 +106,9 @@ function page({ links = [] } = {}) {
       },
       getAttribute(name) {
         return this.attributes.get(name) ?? null;
+      },
+      removeAttribute(name) {
+        this.attributes.delete(name);
       },
       addEventListener(type, callback, options) {
         on(node, type, callback, options);
@@ -211,6 +214,45 @@ function page({ links = [] } = {}) {
   menu.querySelectorAll = (selector) =>
     selector === '[data-menu-section]' ? footLinks : [];
 
+  let rail, overlapping, separate;
+  if (railFixture) {
+    rail = element('right-context-rail', document.body);
+    overlapping = element('overlap', rail, {
+      classes: ['collapsed'],
+      dataset: { panelId: 'overlap' },
+    });
+    separate = element('separate', rail, {
+      classes: ['collapsed'],
+      dataset: { panelId: 'separate' },
+    });
+    rail.children = [overlapping, separate];
+    menu.rect = {
+      left: 0,
+      top: 0,
+      right: 100,
+      bottom: 100,
+      width: 100,
+      height: 100,
+    };
+    overlapping.rect = {
+      left: 80,
+      top: 20,
+      right: 120,
+      bottom: 60,
+      width: 40,
+      height: 40,
+    };
+    separate.rect = {
+      left: 150,
+      top: 20,
+      right: 190,
+      bottom: 60,
+      width: 40,
+      height: 40,
+    };
+    for (const node of [menu, overlapping, separate])
+      node.getBoundingClientRect = () => node.rect;
+  }
   const controller = new AbortController();
   const made = [];
   const menuApi = createLayersMenu({
@@ -240,6 +282,9 @@ function page({ links = [] } = {}) {
     window,
     controller,
     menuApi,
+    rail,
+    overlapping,
+    separate,
     node: (id) => byId.get(id),
     fire,
     isOpen: () => !menu.classList.contains('collapsed'),
@@ -515,4 +560,49 @@ test('leaving cockpit closes Layers as well as Presets', () => {
   p.document.body.classList.remove('cockpit-mode');
   assert.equal(p.presets.hidden, true);
   assert.equal(p.presets.parent, p.bar);
+});
+
+test('Layers hides only intersecting rail panels and restores them on resize and Escape', () => {
+  const p = page({ railFixture: true });
+  const marked = (panel) => panel.getAttribute('data-layers-obscured') !== null;
+  p.button.click();
+  assert.equal(marked(p.overlapping), true);
+  assert.equal(
+    marked(p.separate),
+    false,
+    'separate floating panel remains available',
+  );
+  p.separate.rect.left = 50;
+  p.separate.rect.right = 90;
+  p.fire(p.rail, 'transitionend');
+  assert.equal(
+    marked(p.separate),
+    true,
+    'moving into the menu hides the panel',
+  );
+  p.separate.rect.left = 150;
+  p.separate.rect.right = 190;
+  p.fire(p.rail, 'transitionend');
+  assert.equal(marked(p.separate), false, 'moving away restores the panel');
+  p.menu.rect = {
+    left: 0,
+    top: 0,
+    right: 70,
+    bottom: 100,
+    width: 70,
+    height: 100,
+  };
+  p.fire(p.window, 'resize');
+  assert.equal(marked(p.overlapping), false, 'resizing away restores the rail');
+  p.menu.rect.right = 100;
+  p.menu.rect.width = 100;
+  p.fire(p.window, 'resize');
+  assert.equal(marked(p.overlapping), true);
+  p.fire(p.menu, 'keydown', { key: 'Escape' });
+  assert.equal(marked(p.overlapping), false);
+  assert.equal(p.overlapping.classList.contains('collapsed'), true);
+  assert.equal(p.separate.classList.contains('collapsed'), true);
+  p.button.click();
+  p.menuApi.destroy();
+  assert.equal(marked(p.overlapping), false, 'destroy clears suppression');
 });
