@@ -113,7 +113,6 @@ try {
     } else {
       document.getElementById('clear-selected-layers').click();
     }
-    await manager.setEnabled('world', false, { origin: 'user' });
     const source = await (await fetch('/src/layers/world/geometry.js')).text();
     const specifier = source.match(
       /from\s+["']([^"']*cesium\.js[^"']*)["']/,
@@ -147,14 +146,22 @@ try {
         };
       },
     };
-    await manager.setEnabled('world', true, { origin: 'user' });
+    // First start already enables the board. Leave its fixture request
+    // running while positioning the camera; toggling off aborts that request.
+    if (!manager.isEffectivelyEnabled('world'))
+      await manager.setEnabled('world', true, { origin: 'user' });
   }, options.panel);
-  await page.waitForFunction(
-    () =>
-      window.__godsEyeView.dataManager.isEffectivelyEnabled('world') &&
-      document.querySelector('#world-turn')?.textContent === 'Turn 1',
-    wait,
-  );
+  await page.waitForFunction(() => {
+    const manager = window.__godsEyeView.dataManager;
+    const snapshot = manager.layers.get('world').module.getSnapshot();
+    return (
+      manager.isEffectivelyEnabled('world') &&
+      snapshot.visible &&
+      !snapshot.loading &&
+      snapshot.countries.IND &&
+      document.querySelector('#world-turn')?.textContent === 'Turn 1'
+    );
+  }, wait);
   stage = 'country-pick';
   await markFrameStage(stage);
   const pick = await page.waitForFunction(() => {
