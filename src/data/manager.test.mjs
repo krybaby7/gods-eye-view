@@ -107,6 +107,8 @@ test('renders ordinary layer rows without recreating a panel-hidden coordinator'
       addEventListener() {},
       removeEventListener() {},
       setAttribute(name, value) { this.attributes[name] = String(value); },
+      getAttribute(name) { return this.attributes[name] ?? null; },
+      removeAttribute(name) { delete this.attributes[name]; },
       querySelector(selector) {
         // Rows sit inside group blocks and columns, so both lookups search deep.
         const id = selector.startsWith('[data-layer-id="') ? selector.slice(16, -2) : null;

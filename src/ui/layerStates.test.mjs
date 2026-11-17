@@ -15,7 +15,7 @@ test('switching and uncertain lifecycles say so before anything else', () => {
   );
   assert.equal(
     words({ enabled: true, lifecycleUncertain: true, stats: { count: 4 } }),
-    'Checking its state',
+    'State uncertain',
   );
 });
 

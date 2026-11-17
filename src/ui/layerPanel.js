@@ -316,13 +316,16 @@ export class LayerPanel {
         console.warn(`[Data] ${layer.id} toggle error:`, error);
       } finally {
         const current = this.getAll().find(({ id }) => id === layer.id);
-        if (!this._destroyed && current && this._generation === generation)
+        if (!this._destroyed && current && this._generation === generation) {
           this._syncToggleButton(toggle, current);
+          this._syncRowState(row, current);
+        }
       }
     });
 
     const state = document.createElement('span');
     state.className = 'st';
+    state.id = `layer-state-${layer.id}`;
 
     const readout = Boolean(this._rowControlsFor(layer.id)?.readout);
     right.appendChild(state);
@@ -333,11 +336,10 @@ export class LayerPanel {
 
     const bottomRow = document.createElement('div');
     bottomRow.className = 'data-toggle-meta';
-    bottomRow.textContent = this._buildMetaText(layer);
 
     row.appendChild(topRow);
     row.appendChild(bottomRow);
-    this._syncRowState(row, layer, bottomRow.textContent);
+    this._syncRowState(row, layer);
     // The whole row is the switch's target; its own controls keep theirs.
     this._bind(row, 'click', (event) => {
       const target = event.target;
@@ -415,14 +417,26 @@ export class LayerPanel {
   }
 
   /** The row's plain-word state, its `.na` mark, and its full detail as a tooltip. */
-  _syncRowState(row, layer, metaText) {
+  _syncRowState(row, layer) {
     const { words, na, reason } = layerStateWords(layer);
     const state = row.querySelector('.st');
     if (state && state.textContent !== words) state.textContent = words;
     const toggle = row.querySelector('.data-toggle-btn');
-    toggle?.classList.toggle('switch', true);
-    toggle?.classList.toggle('na', na);
+    if (toggle) {
+      toggle.classList.toggle('switch', true);
+      toggle.classList.toggle('na', na);
+      const description = toggle.getAttribute('aria-describedby');
+      if (state && toggle.dataset.feedState === 'uncertain') {
+        if (description !== state.id)
+          toggle.setAttribute('aria-describedby', state.id);
+      } else if (description) {
+        toggle.removeAttribute('aria-describedby');
+      }
+    }
     row.classList.toggle('on', Boolean(layer.enabled));
+    const meta = row.querySelector('.data-toggle-meta');
+    const metaText = this._buildMetaText(layer);
+    if (meta && meta.textContent !== metaText) meta.textContent = metaText;
     const title = [reason, metaText].filter(Boolean).join(' · ');
     if (row.title !== title) row.title = title;
   }
@@ -598,11 +612,7 @@ export class LayerPanel {
         count.textContent = this._layerCountText(layer.stats);
       }
 
-      const meta = row.querySelector('.data-toggle-meta');
-      if (meta) {
-        meta.textContent = this._buildMetaText(layer);
-      }
-      this._syncRowState(row, layer, meta?.textContent || '');
+      this._syncRowState(row, layer);
 
       this._syncRowControls(
         row.querySelector('.data-toggle-controls'),

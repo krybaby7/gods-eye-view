@@ -2,9 +2,8 @@
 // Layers and Presets buttons (roadmap 1.4, stage two).
 const SECTIONS = ['sources', 'display', 'tools'];
 
-// The cockpit's instruments a menu must stay clear of. The two rims are
-// arcs whose boxes span the visor; they are measured and reported, not
-// failed (their drawn arcs, not their boxes, are what a menu could cover).
+// The named central instrument boxes and controls a menu must stay clear of.
+// Rim bounding boxes are reported only; overlap can include arcs and labels.
 const INSTRUMENTS = [
   ['top line', '.cockpit-topline'],
   ['compass', '.cockpit-compass'],
@@ -321,7 +320,7 @@ export default async function phase9({
   );
 
   await step(
-    'In the cockpit its own Layers and Presets open the same menus, clear of the instruments',
+    'In the cockpit Layers and Presets open the same menus, clear of the named central instrument boxes and controls',
     async () => {
       await resize(1440, 900);
       await closeAll();
@@ -593,7 +592,7 @@ export default async function phase9({
         await onlyOpen(['layers'], 'Layers is open when leaving cockpit');
         if (result.layersRims?.length || result.presetsRims?.length)
           console.log(
-            `[INFO] Cockpit menu boxes meet the rims' boxes (arcs, reported only): layers ${JSON.stringify(result.layersRims)}, presets ${JSON.stringify(result.presetsRims)}`,
+            `[INFO] Cockpit menu boxes overlap rim bounding boxes (reported only; arcs and labels may be covered): layers ${JSON.stringify(result.layersRims)}, presets ${JSON.stringify(result.presetsRims)}`,
           );
       } finally {
         await page
