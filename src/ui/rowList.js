@@ -5,7 +5,7 @@ const attribute = (node, key, value) => {
   if (node.getAttribute(key) !== value) node.setAttribute(key, value);
 };
 /** Reconcile ordered layer/card lists without replacing focused items. */
-export function syncRowList(container, list) {
+export function syncRowList(container, list, { appearance = '' } = {}) {
   const document = container?.ownerDocument ?? globalThis.document;
   if (!container) return;
   const items = list?.items || [];
@@ -16,6 +16,7 @@ export function syncRowList(container, list) {
   for (const node of [...container.children]) {
     if (node.dataset?.listItemId) stale.set(node.dataset.listItemId, node);
   }
+  const skin = appearance ? ` ${appearance}` : '';
   let index = 0;
   let activeButton = null;
   for (const item of items) {
@@ -52,7 +53,7 @@ export function syncRowList(container, list) {
     set(
       button,
       'className',
-      `data-row-list-item${item.disabled ? ' note' : ''}${item.active ? ' active' : ''}${item.current ? ' current' : ''}`,
+      `data-row-list-item${item.disabled ? ' note' : ''}${item.active ? ' active' : ''}${item.current ? ' current' : ''}${skin}`,
     );
     attribute(button, 'aria-current', item.current ? 'step' : 'false');
     attribute(button, 'aria-pressed', item.active ? 'true' : 'false');

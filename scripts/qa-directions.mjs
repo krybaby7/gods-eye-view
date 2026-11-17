@@ -334,7 +334,7 @@ try {
   );
   check(
     'the armed chip tells the operator to click the map',
-    state.chips.find((chip) => chip.id === 'set-a')?.label === 'CLICK MAP',
+    state.chips.find((chip) => chip.id === 'set-a')?.label === 'Click map',
   );
 
   let at = await screenAt(FERRY.lat, FERRY.lon);

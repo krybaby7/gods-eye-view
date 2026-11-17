@@ -36,10 +36,14 @@ export function parseLookArgs(args) {
   const label = values.get('--label');
   if (!['before', 'after'].includes(label))
     throw new Error('Expected --label before|after');
-  if (values.get('--panel') !== 'legend')
-    throw new Error('Only --panel legend is supported');
+  const panel = values.get('--panel');
+  if (!['legend', 'layers'].includes(panel))
+    throw new Error('Expected --panel legend|layers');
   const state = values.get('--state') ?? 'filled';
-  if (state !== 'filled') throw new Error('Legend only supports filled state');
+  if (!['empty', 'filled'].includes(state))
+    throw new Error('Expected --state empty|filled');
+  if (panel === 'legend' && state !== 'filled')
+    throw new Error('Legend only supports filled state');
   url.searchParams.set('welcome', '0');
   url.searchParams.set('world-fixtures', '1');
   for (const query of queries) {
@@ -57,9 +61,11 @@ export function parseLookArgs(args) {
   return {
     url,
     label,
-    panel: 'legend',
+    panel,
     state,
-    out: path.resolve(values.get('--out') ?? 'qa-artifacts/restyle-1.3/legend'),
+    out: path.resolve(
+      values.get('--out') ?? `qa-artifacts/restyle-1.3/${panel}`,
+    ),
   };
 }
 export function collisions(frames, panels) {

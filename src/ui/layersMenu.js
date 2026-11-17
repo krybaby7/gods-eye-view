@@ -22,7 +22,7 @@ import {
  * @param {object} options
  * @param {Document} options.document
  * @param {AbortSignal} options.signal Ends every listener.
- * @param {MutationObserver[]} options.observers Disconnected by the caller.
+ * @param {(MutationObserver|ResizeObserver)[]} options.observers Disconnected by the caller.
  * @returns {{close: Function, closePresets: Function, destroy: Function}}
  */
 export function createLayersMenu({ document, signal, observers }) {
@@ -45,10 +45,10 @@ export function createLayersMenu({ document, signal, observers }) {
     inCockpit() && cockpitButton && !cockpitButton.hidden
       ? cockpitButton
       : frameButton;
-  const watch = (node, attributeFilter, callback) => {
+  const watch = (node, attributeFilter, callback, options) => {
     if (!node || typeof MutationObserver === 'undefined') return;
     const observer = new MutationObserver(callback);
-    observer.observe(node, { attributes: true, attributeFilter });
+    observer.observe(node, { attributes: true, attributeFilter, ...options });
     observers.push(observer);
   };
   const listen = (node, type, callback, capture = false) =>
@@ -125,6 +125,91 @@ export function createLayersMenu({ document, signal, observers }) {
     return { close() {}, closePresets, destroy() {} };
   }
 
+  // Measure the rail independently of its visibility so covered panels can
+  // reappear as soon as the popup moves or shrinks away from them.
+  const rail = find('right-context-rail');
+  let covered = new Set();
+  const coveredAttribute = 'data-layers-obscured';
+  function syncRail() {
+    if (!rail) return;
+    const open = isOpen();
+    if (!open && covered.size === 0) return;
+    const next = new Set();
+    if (
+      open &&
+      !menu.hidden &&
+      !inCockpit() &&
+      menu.checkVisibility?.({
+        opacityProperty: true,
+        visibilityProperty: true,
+      }) !== false
+    ) {
+      const box = menu.getBoundingClientRect();
+      if (box.width && box.height) {
+        for (const panel of rail.children) {
+          if (!panel.dataset.panelId || panel.hidden) continue;
+          const rect = panel.getBoundingClientRect();
+          if (
+            rect.width &&
+            rect.height &&
+            rect.left < box.right &&
+            rect.right > box.left &&
+            rect.top < box.bottom &&
+            rect.bottom > box.top
+          )
+            next.add(panel);
+        }
+      }
+    }
+    for (const panel of covered)
+      if (!next.has(panel)) panel.removeAttribute(coveredAttribute);
+    for (const panel of next)
+      if (!covered.has(panel)) panel.setAttribute(coveredAttribute, '');
+    covered = next;
+  }
+  if (rail) {
+    const resize =
+      typeof ResizeObserver === 'function'
+        ? new ResizeObserver(syncRail)
+        : null;
+    function observeRailSizes() {
+      if (!resize) return;
+      resize.disconnect();
+      resize.observe(menu);
+      resize.observe(rail);
+      for (const panel of rail.children)
+        if (panel.dataset.panelId) resize.observe(panel);
+    }
+    if (resize) {
+      observers.push(resize);
+      observeRailSizes();
+    }
+    watch(
+      rail,
+      ['class', 'hidden', 'style'],
+      (records) => {
+        if (
+          records.some(
+            ({ type, target }) => type === 'childList' && target === rail,
+          )
+        )
+          observeRailSizes();
+        if (
+          records.some(
+            ({ target }) => target === rail || target.parentElement === rail,
+          )
+        )
+          syncRail();
+      },
+      { childList: true, subtree: true },
+    );
+    watch(document.body, ['data-today', 'data-sheet'], syncRail);
+    listen(document.defaultView, 'resize', syncRail);
+    listen(rail, 'transitionend', syncRail);
+    listen(rail, 'transitioncancel', syncRail);
+    syncRail();
+  }
+
   // The section links show only where the top bar's Menu offers the section.
   const links = [...(menu.querySelectorAll?.('[data-menu-section]') ?? [])];
   function syncLinks() {
@@ -140,6 +225,7 @@ export function createLayersMenu({ document, signal, observers }) {
     const open = isOpen();
     pressed(button, open);
     pressed(cockpitLayers, open);
+    syncRail();
     if (open === wasOpen) return;
     wasOpen = open;
     if (open) {
@@ -158,12 +244,13 @@ export function createLayersMenu({ document, signal, observers }) {
   pressed(button, wasOpen);
   pressed(cockpitLayers, wasOpen);
   syncLinks();
-  watch(menu, ['class'], syncOpen);
+  watch(menu, ['class', 'hidden', 'style'], syncOpen);
   // The frame's Menu is hidden in the cockpit. Leaving also puts both
   // menus back in their closed state at the bottom bar.
   let wasCockpit = inCockpit();
   watch(document.body, ['class'], () => {
     const cockpit = inCockpit();
+    syncRail();
     if (cockpit === wasCockpit) return;
     wasCockpit = cockpit;
     syncLinks();
@@ -251,6 +338,8 @@ export function createLayersMenu({ document, signal, observers }) {
     close: closeMenu,
     closePresets,
     destroy() {
+      for (const panel of covered) panel.removeAttribute(coveredAttribute);
+      covered.clear();
       if (presets) {
         presets.hidden = true;
         placePresets(false);

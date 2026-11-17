@@ -235,7 +235,7 @@ export class LayerPanel {
       section.className = 'lgroup-block';
       section.dataset.groupId = block.id;
       const heading = document.createElement('h3');
-      heading.className = 'lgroup data-layer-group-heading';
+      heading.className = 'kit-sec-h';
       heading.textContent = block.label;
       section.appendChild(heading);
       for (const layer of block.layers)
@@ -260,7 +260,7 @@ export class LayerPanel {
   _renderRow(layer, generation) {
     const opensPanel = layerRowFor(layer.id)?.row.opensPanel || '';
     const row = document.createElement('div');
-    row.className = 'data-toggle-row lrow';
+    row.className = 'data-toggle-row';
     row.dataset.layerId = layer.id;
     if (opensPanel) row.dataset.opensPanel = opensPanel;
 
@@ -288,7 +288,7 @@ export class LayerPanel {
 
     const toggle = document.createElement('button');
     toggle.type = 'button';
-    toggle.className = `data-toggle-btn${layer.enabled ? ' active' : ''}`;
+    toggle.className = 'data-toggle-btn kit-switch';
     this._syncToggleButton(toggle, layer);
     this._bind(toggle, 'click', async () => {
       // A tool row that opens a panel switches on through that panel, so
@@ -324,7 +324,7 @@ export class LayerPanel {
     });
 
     const state = document.createElement('span');
-    state.className = 'st';
+    state.className = 'data-toggle-state';
     state.id = `layer-state-${layer.id}`;
 
     const readout = Boolean(this._rowControlsFor(layer.id)?.readout);
@@ -419,11 +419,10 @@ export class LayerPanel {
   /** The row's plain-word state, its `.na` mark, and its full detail as a tooltip. */
   _syncRowState(row, layer) {
     const { words, na, reason } = layerStateWords(layer);
-    const state = row.querySelector('.st');
+    const state = row.querySelector('.data-toggle-state');
     if (state && state.textContent !== words) state.textContent = words;
     const toggle = row.querySelector('.data-toggle-btn');
     if (toggle) {
-      toggle.classList.toggle('switch', true);
       toggle.classList.toggle('na', na);
       const description = toggle.getAttribute('aria-describedby');
       if (state && toggle.dataset.feedState === 'uncertain') {
@@ -524,7 +523,10 @@ export class LayerPanel {
     const info = container._rowControlsInfo || null;
     const firstLegend = container.querySelector('.data-toggle-legend-item');
 
-    syncChipGroup(container, chips, { before: firstLegend || info });
+    syncChipGroup(container, chips, {
+      before: firstLegend || info,
+      appearance: 'kit-chip pick',
+    });
 
     const legendSignature = JSON.stringify(
       legend.map(({ label, color, count, blurb }) => [
@@ -585,7 +587,7 @@ export class LayerPanel {
    * @param {{ariaLabel?: string, items?: Array<object>}|null} list Descriptor.
    */
   _syncRowList(container, list) {
-    syncRowList(container, list);
+    syncRowList(container, list, { appearance: 'kit-btn quiet' });
   }
 
   _refreshTogglePanel() {
