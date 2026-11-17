@@ -151,3 +151,49 @@ test('Context async action buttons remain focused while busy', () => {
   assert.match(control, /button\.setAttribute\('aria-busy', String\(busy\)\)/);
   assert.doesNotMatch(control, /button\.disabled\s*=/);
 });
+
+test('Switch all off keeps World and the War Monitor on and counts only listed layers in its toast', async () => {
+  const toasts = [];
+  let options = null;
+  let result = null;
+  const host = {
+    destroyed: false,
+    _contextModeGeneration: 0,
+    _userFacingContextNotificationTokens: new Set(),
+    _syncContextModeButtons() {},
+    setClearBusy() {},
+    showToast: (text) => toasts.push(text),
+    _dataManager: {
+      async clearSelectedLayers(given) {
+        options = given;
+        return result;
+      },
+    },
+  };
+  const targetIds = ['military-awareness', 'flights'];
+  result = { targetIds, items: [], clearedIds: targetIds, notClearedIds: [] };
+  await clearSelectedLayers.call(host);
+  assert.deepEqual([...options.keepIds], ['world', 'news']);
+  assert.deepEqual(toasts, ['Cleared 1 data layer']);
+
+  // A layer with no row that stays on is not counted as one the list failed
+  // to clear; a listed one is.
+  toasts.length = 0;
+  result = {
+    targetIds: ['military-awareness', 'flights', 'traffic'],
+    items: [],
+    clearedIds: ['flights'],
+    notClearedIds: ['military-awareness', 'traffic'],
+  };
+  await clearSelectedLayers.call(host);
+  assert.deepEqual(toasts, ['1 data layer could not be cleared']);
+  toasts.length = 0;
+  result = {
+    targetIds: ['military-awareness', 'flights'],
+    items: [],
+    clearedIds: ['flights'],
+    notClearedIds: ['military-awareness'],
+  };
+  await clearSelectedLayers.call(host);
+  assert.deepEqual(toasts, ['Cleared 1 data layer']);
+});

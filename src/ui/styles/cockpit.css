@@ -893,6 +893,23 @@ body.cockpit-mode:has(
 #view-switcher .material-symbols-outlined {
   font-size: 16px;
 }
+/* Layers and Presets show only in the cockpit (layersMenu.js), where the
+   bottom bar is not drawn. They take the switcher's shape, in the app's
+   control type so their words are readable. */
+#view-switcher .cockpit-menu-route {
+  display: none;
+}
+body.cockpit-mode:not(.recording-mode):not(.ui-clean-view)
+  #view-switcher
+  .cockpit-menu-route:not([hidden]) {
+  display: inline-flex;
+  font: var(--type-control);
+  letter-spacing: normal;
+}
+body.cockpit-mode #view-switcher .cockpit-menu-route[aria-expanded='true'] {
+  border-color: var(--accent);
+  color: var(--text-1);
+}
 body.cockpit-mode #view-switcher {
   right: auto;
   bottom: max(clamp(128px, 15vh, 150px), env(safe-area-inset-bottom));

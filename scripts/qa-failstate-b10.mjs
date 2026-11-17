@@ -122,7 +122,9 @@ async function captureLayerControl(page, layerId, filename) {
   fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
   const dataPanel = await page.$('#data-panel');
   const panelCollapsed = await dataPanel?.evaluate((element) => element.classList.contains('collapsed'));
-  if (panelCollapsed) await page.click('#data-panel .panel-collapse-btn');
+  // The layers menu's disclosure is hidden; the app opens the menu through it.
+  if (panelCollapsed)
+    await page.$eval('#data-panel .panel-collapse-btn', (button) => button.click());
   const row = await page.$(`[data-layer-id="${layerId}"]`);
   if (!row) throw new Error(`Layer control not found for screenshot: ${layerId}`);
   await row.evaluate((element) => element.scrollIntoView({ block: 'center' }));

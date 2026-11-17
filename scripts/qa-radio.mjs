@@ -471,7 +471,8 @@ async function main() {
         && uncertainPresentation.miniStation === 'RADIO STATE UNCERTAIN'
         && uncertainPresentation.dataRailText === 'UNCERTAIN'
         && uncertainPresentation.dataRailState === 'uncertain'
-        && /uncertain/i.test(uncertainPresentation.dataRailLabel)
+        // The switch's label is the layer's name; its state is the row's.
+        && /radio/i.test(uncertainPresentation.dataRailLabel)
         && /uncertain/i.test(uncertainPresentation.dataRailMeta)
         && uncertainPresentation.directSelect === false
         && uncertainPresentation.directPlay === false

@@ -56,7 +56,9 @@ test('Cockpit has one reset action beside its bottom exit path', () => {
   );
   const topCenterActions = html.match(/<nav id="top-center-actions"[\s\S]*?<\/nav>/);
   assert.ok(topCenterActions, 'Top-center map tools are missing');
-  assert.match(topCenterActions[0], /id="clear-selected-layers"[\s\S]*?id="share-btn"/);
+  // Switch all off lives in the layers menu's head since piece 1.4.
+  assert.doesNotMatch(topCenterActions[0], /id="clear-selected-layers"/);
+  assert.match(html, /<header class="layers-menu-head"[\s\S]*?id="clear-selected-layers"[\s\S]*?<\/header>/);
   const globeNavigation = html.match(/<nav id="globe-navigation"[\s\S]*?<\/nav>/);
   assert.ok(globeNavigation, 'Globe navigation controls are missing');
   assert.match(globeNavigation[0], /id="north-up-view"[\s\S]*?id="tilt-map-view"[\s\S]*?id="reset-globe-view"[\s\S]*?id="zoom-map-out"[\s\S]*?id="zoom-map-in"/);
@@ -275,7 +277,7 @@ test('Cockpit owns a focused shared Display portal and compact Radio controls', 
   assert.match(html, /data-cockpit-display-slot="hud"/);
   assert.match(html, /data-cockpit-display-slot="detection"[\s\S]*?data-cockpit-display-slot="parameters"[\s\S]*?data-cockpit-display-slot="models3d"/);
   assert.doesNotMatch(html, /data-cockpit-display-slot="presets"/);
-  assert.match(html, /id="clear-selected-layers"[^>]*aria-label="Clear selected data layers"/);
+  assert.match(html, /id="clear-selected-layers"[^>]*aria-label="Switch all layers off"/);
   assert.match(html, /id="reset-globe-view"[^>]*aria-label="Reset to full globe view"/);
   assert.match(css, /#top-center-actions\s*\{[\s\S]*?left:\s*50%;[\s\S]*?display:\s*flex;[\s\S]*?transform:\s*translateX\(-50%\)/);
   assert.match(
@@ -809,7 +811,7 @@ test('Global Context names its mixed contact cycle without changing the stable m
 test('Global Context uses its dedicated right rail without a duplicate Data Layers row', () => {
   assert.match(contextLayer, /id:\s*'military-awareness'[\s\S]*?showInTogglePanel:\s*false/);
   const panel = fs.readFileSync(path.join(ROOT, 'src', 'ui', 'layerPanel.js'), 'utf8');
-  assert.match(panel, /if \(!layer\.showInTogglePanel\) continue;/);
+  assert.match(panel, /\.filter\(\(layer\) => layer\?\.showInTogglePanel\)/);
   assert.match(fs.readFileSync(path.join(ROOT, 'src', 'app', 'layerPresentation.js'), 'utf8'), /getLayers: \(\) => this\.manager\.getAll\(\)/);
   assert.match(html, /id="global-context-panel"/);
   assert.match(html, /id="global-context-flights-btn"/);

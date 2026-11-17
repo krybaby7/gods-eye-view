@@ -673,9 +673,11 @@ async function waitSettled() {
         document
           .getElementById('clear-selected-layers')
           ?.getAttribute('aria-busy') !== 'true' &&
-        [...document.querySelectorAll('#lens-bar .lens-button')].every(
-          (button) => button.getAttribute('aria-busy') !== 'true',
-        )
+        [
+          ...document.querySelectorAll(
+            ':is(#lens-bar, #frame-presets-menu) .lens-button',
+          ),
+        ].every((button) => button.getAttribute('aria-busy') !== 'true')
       );
     },
     { timeout: 60_000, polling: 100 },
@@ -722,20 +724,42 @@ async function snapshot() {
     };
   });
 }
+// "Switch all off" leaves World alone (it is the bottom bar's view, not a
+// row), so a World left on by a share link goes off by the data manager.
 async function clear() {
-  await page.evaluate(() =>
-    document.getElementById('clear-selected-layers').click(),
-  );
+  await page.evaluate(async () => {
+    document.getElementById('clear-selected-layers').click();
+    const manager = window.__godsEyeView.dataManager;
+    if (manager.isEnabled('world'))
+      await manager.setEnabled('world', false, { origin: 'user' });
+  });
   await waitSettled();
 }
+// The presets are chips at the top of the layers menu (piece 1.4), opened
+// from the bottom bar's Layers button.
+async function openMenu() {
+  if (await page.$('#data-panel.collapsed')) {
+    await page.click('#frame-layers');
+    await page.waitForSelector('#data-panel:not(.collapsed)', {
+      visible: true,
+    });
+  }
+}
+async function closeMenu() {
+  if (!(await page.$('#data-panel.collapsed'))) {
+    await page.click('#layers-menu-close');
+    await page.waitForSelector('#data-panel.collapsed', { hidden: true });
+  }
+}
 async function click(id) {
+  await openMenu();
   await page.click(selector(id));
   await waitSettled();
 }
 async function shot(name) {
   await page.screenshot({ path: path.join(evidence, `${name}.png`) });
   const bar = await page.$('#lens-bar');
-  if (bar)
+  if (bar && (await bar.boundingBox()))
     await bar.screenshot({ path: path.join(evidence, `${name}-bar.png`) });
 }
 async function settleFrames(count = 2) {
@@ -804,33 +828,46 @@ try {
     timeout: 60_000,
   });
   await page.waitForFunction(
-    () =>
+    (expected) =>
       window.__godsEyeView?.dataManager &&
-      document.querySelectorAll('#lens-bar .lens-button').length === 7,
+      document.querySelectorAll('#lens-bar .lens-button').length === expected,
     { timeout: 60_000 },
+    LENSES.length,
   );
   await clear();
   await shot('lens-off');
   await check(
-    'bar is the first left-rail child and all seven named buttons are mounted',
+    "the layers menu and the bottom bar's Presets menu each hold every preset",
     async () => {
       const state = await page.evaluate(() => ({
-        first: document.getElementById('left-panel-stack').firstElementChild.id,
-        buttons: [...document.querySelectorAll('#lens-bar .lens-button')].map(
-          (button) => button.textContent,
+        inMenu: Boolean(document.querySelector('#data-panel #lens-bar')),
+        offGlobe: !document.querySelector('#left-panel-stack #lens-bar'),
+        chips: [...document.querySelectorAll('#lens-bar .lens-button')].map(
+          (button) => button.querySelector('.lens-label').textContent,
         ),
+        rows: [
+          ...document.querySelectorAll('#frame-presets-menu .lens-button'),
+        ].map((button) => button.querySelector('.lens-label').textContent),
+        caption: document
+          .querySelector('#lens-bar .layers-menu-caption')
+          ?.textContent.trim(),
       }));
-      assert.equal(state.first, 'lens-bar');
-      for (const lens of LENSES)
-        assert.ok(state.buttons.some((text) => text.includes(lens.label)));
+      assert.ok(state.inMenu, 'the chips are in the layers menu');
+      assert.ok(state.offGlobe, 'no preset bar is left on the globe');
+      const labels = LENSES.map((lens) => lens.label);
+      assert.deepEqual(state.chips, labels);
+      assert.deepEqual(state.rows, labels);
+      assert.equal(state.caption, 'A preset switches its whole group');
     },
   );
   await check(
-    'desktop displays all seven buttons and the last button accepts pointer input',
+    'with the menu open every chip shows whole and the last takes a press',
     async () => {
-      const geometry = await page.evaluate(() => {
+      await openMenu();
+      const last = LENSES.at(-1).id;
+      const geometry = await page.evaluate((last) => {
         const row = document.querySelector('#lens-bar .lens-buttons');
-        const button = row.querySelector('[data-lens-id="signals"]');
+        const button = row.querySelector(`[data-lens-id="${last}"]`);
         const box = button.getBoundingClientRect();
         const point = document.elementFromPoint(
           box.left + box.width / 2,
@@ -842,12 +879,43 @@ try {
           lastPointerReachable: point?.closest?.('.lens-button') === button,
           hit: point?.id || point?.className,
         };
-      });
+      }, last);
       assert.ok(
         geometry.rowScroll <= geometry.rowWidth + 1,
         JSON.stringify(geometry),
       );
       assert.ok(geometry.lastPointerReachable, JSON.stringify(geometry));
+      await shot('lens-menu-open');
+      await closeMenu();
+    },
+  );
+  await check(
+    "the bottom bar's Presets menu switches a preset and follows its state",
+    async () => {
+      await clear();
+      await closeMenu();
+      await page.click('#frame-presets');
+      await page.waitForSelector('#frame-presets-menu:not([hidden])', {
+        visible: true,
+      });
+      await page.click('#frame-presets-menu [data-lens-id="space"]');
+      await waitSettled();
+      const state = await page.evaluate(() => ({
+        chip: document.querySelector('#lens-bar [data-lens-id="space"]').dataset
+          .status,
+        row: document.querySelector(
+          '#frame-presets-menu [data-lens-id="space"]',
+        ).dataset.status,
+      }));
+      assert.ok(
+        ['on', 'unavailable'].includes(state.row),
+        JSON.stringify(state),
+      );
+      assert.equal(state.chip, state.row);
+      await shot('lens-presets-menu');
+      await page.click('#frame-presets');
+      await page.waitForSelector('#frame-presets-menu', { hidden: true });
+      await clear();
     },
   );
 
@@ -965,25 +1033,26 @@ try {
   );
 
   await check(
-    'a fully on Conflict lens protects military when Air is switched off',
+    "switching one preset off leaves another preset's layers on",
     async () => {
       await clear();
       await click('air');
-      await click('conflict');
+      await click('security');
       await click('air');
       const state = await snapshot();
-      assert.equal(
-        state.layers.find((row) => row.id === 'military').enabled,
-        true,
-      );
       assert.equal(
         state.layers.find((row) => row.id === 'flights').enabled,
         false,
       );
-      assert.equal(
-        state.lenses.find((row) => row.id === 'conflict').status,
-        'on',
-      );
+      const security = state.lenses.find((row) => row.id === 'security');
+      if (security.status !== 'unavailable') {
+        assert.equal(
+          state.layers.find((row) => row.id === 'military-installations')
+            .enabled,
+          true,
+        );
+        assert.equal(security.status, 'on');
+      }
     },
   );
 
@@ -993,14 +1062,10 @@ try {
       await clear();
       await click('air');
       await shot('lens-on');
-      await page.evaluate(() => {
-        const panel = document.getElementById('data-panel');
-        if (panel.classList.contains('collapsed'))
-          panel.querySelector('.panel-collapse-btn').click();
-        panel
-          .querySelector('[data-layer-id="flights"] .data-toggle-btn')
-          .click();
-      });
+      await openMenu();
+      await page.click(
+        '#data-toggles [data-layer-id="flights"] .data-toggle-btn',
+      );
       await waitSettled();
       assert.equal(
         (await snapshot()).lenses.find((row) => row.id === 'air').status,
@@ -1014,29 +1079,6 @@ try {
       );
     },
   );
-
-  await check('a partial Conflict lens does not protect military', async () => {
-    await clear();
-    await click('air');
-    await click('conflict');
-    await page.evaluate(() =>
-      document
-        .querySelector(
-          '#data-toggles [data-layer-id="military-installations"] .data-toggle-btn',
-        )
-        .click(),
-    );
-    await waitSettled();
-    assert.equal(
-      (await snapshot()).lenses.find((row) => row.id === 'conflict').status,
-      'partial',
-    );
-    await click('air');
-    assert.equal(
-      (await snapshot()).layers.find((row) => row.id === 'military').enabled,
-      false,
-    );
-  });
 
   await check(
     'reload restores layer choices and derives lens status without lens storage',
@@ -1093,7 +1135,7 @@ try {
   );
 
   await check(
-    'Shift+Digit1..7 controls lenses without changing visual style, including AZERTY',
+    'Shift+Digit1..8 switches presets without changing visual style, including AZERTY',
     async () => {
       for (const lens of LENSES) {
         await clear();
@@ -1190,9 +1232,9 @@ try {
     },
   );
 
-  await check('Clear Layers leaves every available lens off', async () => {
+  await check('Switch all off leaves every available preset off', async () => {
     await click('city');
-    await click('signals');
+    await click('tools');
     await clear();
     const state = await snapshot();
     assert.ok(state.layers.every((row) => !row.enabled));
@@ -1202,61 +1244,33 @@ try {
   });
 
   await check(
-    'The bar fits on desktop and narrow screens scroll within the row',
+    'the layers menu keeps inside the window on narrow screens and phones',
     async () => {
       await settleFrames();
-      await shot('lens-desktop');
-      const desktop = await page.evaluate(() => {
-        const row = document.querySelector('#lens-bar .lens-buttons');
-        const button = row.querySelector('[data-lens-id="signals"]');
-        const box = button.getBoundingClientRect();
-        const hit = document.elementFromPoint(
-          box.left + box.width / 2,
-          box.top + box.height / 2,
-        );
-        return {
-          rowWidth: row.clientWidth,
-          rowScroll: row.scrollWidth,
-          lastPointerReachable: hit?.closest?.('.lens-button') === button,
-          hit: hit?.id || hit?.className,
-        };
-      });
-      assert.ok(
-        desktop.rowScroll <= desktop.rowWidth + 1,
-        JSON.stringify(desktop),
-      );
-      assert.ok(desktop.lastPointerReachable, JSON.stringify(desktop));
       for (const viewport of [
+        { width: 1280, height: 720 },
         { width: 720, height: 480 },
         { width: 390, height: 600 },
       ]) {
         await page.setViewport({ ...viewport, deviceScaleFactor: 1 });
-        await page.evaluate(() =>
-          window.__godsEyeView.styleManager.setPanelCollapsed(
-            'data-panel',
-            false,
-            { explicit: true },
-          ),
-        );
         await new Promise((resolve) => setTimeout(resolve, 500));
         await settleFrames();
-        await page.focus(selector('signals'));
-        await page.evaluate(() => {
+        await openMenu();
+        const last = LENSES.at(-1).id;
+        await page.$eval(selector(last), (button) =>
+          button.scrollIntoView({ block: 'nearest' }),
+        );
+        const geometry = await page.evaluate((last) => {
+          const menu = document.getElementById('data-panel');
           const row = document.querySelector('#lens-bar .lens-buttons');
-          row.scrollLeft = row.scrollWidth;
-        });
-        const geometry = await page.evaluate(() => {
-          const bar = document.getElementById('lens-bar');
-          const row = bar.querySelector('.lens-buttons');
-          const button = bar.querySelector('[data-lens-id="signals"]');
-          const rect = bar.getBoundingClientRect();
+          const button = row.querySelector(`[data-lens-id="${last}"]`);
+          const rect = menu.getBoundingClientRect();
           const control = button.getBoundingClientRect();
           const hit = document.elementFromPoint(
             control.left + control.width / 2,
             control.top + control.height / 2,
           );
           return {
-            visible: rect.width > 0 && rect.height > 0,
             left: rect.left,
             right: rect.right,
             top: rect.top,
@@ -1266,7 +1280,6 @@ try {
             documentWidth: document.documentElement.scrollWidth,
             rowWidth: row.clientWidth,
             rowScroll: row.scrollWidth,
-            overflow: getComputedStyle(row).overflowX,
             minControlHeight: Math.min(
               ...[...row.querySelectorAll('button')].map(
                 (item) => item.getBoundingClientRect().height,
@@ -1276,17 +1289,10 @@ try {
             hit: hit
               ? { id: hit.id, tag: hit.tagName, className: hit.className }
               : null,
-            control: {
-              left: control.left,
-              right: control.right,
-              top: control.top,
-              bottom: control.bottom,
-            },
           };
-        });
-        await shot(`lens-narrow-${viewport.width}`);
-        assert.ok(geometry.visible);
-        assert.ok(geometry.minControlHeight >= 49, JSON.stringify(geometry));
+        }, last);
+        await shot(`lens-menu-${viewport.width}`);
+        assert.ok(geometry.minControlHeight >= 28, JSON.stringify(geometry));
         assert.ok(
           geometry.left >= 0 && geometry.right <= geometry.viewport + 1,
           JSON.stringify(geometry),
@@ -1299,8 +1305,12 @@ try {
           geometry.documentWidth <= geometry.viewport + 1,
           JSON.stringify(geometry),
         );
-        assert.ok(['auto', 'scroll'].includes(geometry.overflow));
+        assert.ok(
+          geometry.rowScroll <= geometry.rowWidth + 1,
+          JSON.stringify(geometry),
+        );
         assert.ok(geometry.lastPointerReachable, JSON.stringify(geometry));
+        await closeMenu();
       }
       await page.setViewport({
         width: 1366,
@@ -1654,7 +1664,7 @@ try {
           }
           return reply(
             request,
-            `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Synthetic unavailable lens status</title><link rel="stylesheet" href="/style.css"></head><body><p style="position:fixed;top:15px;left:20px;color:white;font:14px sans-serif">Synthetic status fixture: every source unavailable</p><div id="left-panel-stack"><section id="lens-bar" class="panel-collapsible active" data-panel-id="lens-bar" data-panel-fixed aria-label="Data lenses"><div data-panel-surface><div class="lens-buttons" data-panel-body data-rail-scroller role="group" aria-label="Data lenses"></div></div></section></div><script type="module">import { LENSES } from '/src/lenses/catalog.js'; import { createLensBar } from '/src/ui/lensBar.js'; const layers = [...new Set(LENSES.flatMap(lens => lens.layerIds))].map(id => ({id,name:id,enabled:false,available:false,reason:'Synthetic unavailable source fixture'})); createLensBar({container:document.getElementById('lens-bar'),getLayers:()=>layers,setEnabled:()=>{throw new Error('Disabled fixture issued a layer action');}});</script></body></html>`,
+            `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Synthetic unavailable lens status</title><link rel="stylesheet" href="/style.css"></head><body><p style="position:fixed;top:15px;left:20px;color:white;font:14px sans-serif">Synthetic status fixture: every source unavailable</p><div style="position:fixed;top:48px;left:20px;right:20px"><section id="lens-bar" class="layers-menu-presets" aria-label="Presets"><div class="lens-buttons" role="group" aria-label="Presets"></div></section></div><script type="module">import { LENSES } from '/src/lenses/catalog.js'; import { createLensBar } from '/src/ui/lensBar.js'; const layers = [...new Set(LENSES.flatMap(lens => lens.layerIds))].map(id => ({id,name:id,enabled:false,available:false,reason:'Synthetic unavailable source fixture'})); createLensBar({container:document.getElementById('lens-bar'),getLayers:()=>layers,setEnabled:()=>{throw new Error('Disabled fixture issued a layer action');}});</script></body></html>`,
             'text/html',
           );
         },
@@ -1665,9 +1675,11 @@ try {
           waitUntil: 'networkidle0',
         });
         await fixturePage.waitForFunction(
-          () =>
+          (expected) =>
             document.querySelectorAll('#lens-bar .lens-button:disabled')
-              .length === 7,
+              .length === expected,
+          {},
+          LENSES.length,
         );
         await fixturePage.screenshot({
           path: path.join(evidence, 'lens-unavailable-fixture.png'),

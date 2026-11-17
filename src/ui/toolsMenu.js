@@ -1,4 +1,9 @@
-import { MENU_SECTIONS, MENU_SECTION_EVENT } from './menuSections.js';
+import {
+  MENU_OPEN_EVENT,
+  MENU_SECTIONS,
+  MENU_SECTION_EVENT,
+  announceMenuOpen,
+} from './menuSections.js';
 
 export { MENU_SECTIONS, MENU_SECTION_EVENT };
 
@@ -43,9 +48,10 @@ export function openMenuSection(name) {
  * The top bar's menu (roadmap 1.5): the original app's tools, out of the way
  * of the globe. A three-line button opens a short list; each entry opens a
  * floating panel that holds the original controls, moved there whole.
- * Panels open only when chosen and close by their close button or Escape,
- * not on a click on the globe, so drawing and picking places still work
- * while one is open.
+ * Panels open only when chosen and close by their close button, Escape or a
+ * click outside, but not on a click on the globe, so drawing and picking
+ * places still work while one is open. Like every menu, the list and the
+ * panels close when another menu opens (MENU_OPEN_EVENT).
  *
  * @param {object} options
  * @param {Document} [options.document]
@@ -76,6 +82,7 @@ export function createToolsMenu({
     MENU_SECTIONS.map((name) => [name, find(`frame-menu-${name}`)]),
   );
   let openName = null;
+  let panelReturnFocus = button;
 
   // ── Move the original controls into their slots ──
   for (const [section, slots] of Object.entries(SLOTS)) {
@@ -127,8 +134,10 @@ export function createToolsMenu({
   function setListOpen(state, { focus = false } = {}) {
     list.hidden = !state;
     button.setAttribute('aria-expanded', String(state));
-    if (state) enabledItems()[0]?.focus();
-    else if (focus) button.focus();
+    if (state) {
+      announceMenuOpen(document, 'menu');
+      enabledItems()[0]?.focus();
+    } else if (focus) button.focus();
   }
 
   listen(button, 'click', () => {
@@ -170,7 +179,7 @@ export function createToolsMenu({
   });
 
   // ── The section panels ──
-  function open(name) {
+  function open(name, { returnFocus = button } = {}) {
     const panel = panels[name];
     const index = MENU_SECTIONS.indexOf(name);
     if (!panel || index < 0 || items[index]?.hidden) return false;
@@ -179,15 +188,19 @@ export function createToolsMenu({
       if (node && other !== name) node.hidden = true;
     panel.hidden = false;
     openName = name;
+    panelReturnFocus = returnFocus;
+    announceMenuOpen(document, 'menu');
     panel.focus();
     return true;
   }
   function close({ focus = false } = {}) {
     if (!openName) return;
     const panel = panels[openName];
+    const back = panelReturnFocus;
     openName = null;
+    panelReturnFocus = button;
     if (panel) panel.hidden = true;
-    if (focus) button.focus();
+    if (focus) back.focus();
   }
   for (const panel of Object.values(panels)) {
     if (!panel) continue;
@@ -210,13 +223,33 @@ export function createToolsMenu({
     );
   }
 
+  // A press outside an open panel closes it, except on the globe (drawing,
+  // picking a place) or in a dialog a panel's control opened (the keys).
+  listen(document, 'pointerdown', (event) => {
+    const panel = openName ? panels[openName] : null;
+    const target = event.target;
+    if (!panel || panel.contains(target)) return;
+    if (button.parentNode?.contains?.(target)) return;
+    const onGlobe = ['cesiumContainer', 'world-overlay-root'].some((id) =>
+      find(id)?.contains?.(target),
+    );
+    if (onGlobe || target?.closest?.('dialog')) return;
+    close();
+  });
+  // One menu at a time: another menu opening closes the list and the panel.
+  listen(document, MENU_OPEN_EVENT, (event) => {
+    if (event?.detail?.menu === 'menu') return;
+    if (!list.hidden) setListOpen(false);
+    close();
+  });
+
   listen(document, MENU_SECTION_EVENT, (event) => {
     const name = event?.detail?.section;
     const only = event?.detail?.only;
     if (name === null || name === 'none') {
       // `only`: close that section if it is the one open, and nothing else.
       if (!only || only === openName) close();
-    } else open(name);
+    } else open(name, { returnFocus: event?.detail?.returnFocus });
   });
 
   // ── Data sources and keys ──
@@ -227,33 +260,55 @@ export function createToolsMenu({
     const note = find('frame-keys-note');
     const openKeys = find('frame-keys-open');
     if (!note || !openKeys) return;
+    // Writes only on a change: a page-wide observer below would otherwise
+    // see its own write and call this again without end.
     function sync() {
       const dialog = find('key-setup');
       const chip = find('key-setup-chip');
-      if (!dialog || !chip) {
-        note.textContent = KEYS_ABSENT;
-        openKeys.hidden = true;
-        return;
-      }
-      const ready = dialog.dataset?.keySetupReady === 'true';
-      note.textContent = ready ? KEYS_READY : KEYS_PENDING;
-      openKeys.hidden = !ready;
+      const ready =
+        Boolean(dialog && chip) && dialog.dataset?.keySetupReady === 'true';
+      const words =
+        !dialog || !chip ? KEYS_ABSENT : ready ? KEYS_READY : KEYS_PENDING;
+      if (note.textContent !== words) note.textContent = words;
+      if (openKeys.hidden !== !ready) openKeys.hidden = !ready;
     }
     sync();
     listen(openKeys, 'click', () => {
       // The chip owns opening the dialog (src/keySetup.js); it stays hidden.
       find('key-setup-chip')?.click();
     });
-    const dialog = find('key-setup');
-    if (dialog && typeof MutationObserver !== 'undefined') {
-      const observer = new MutationObserver(sync);
-      observer.observe(dialog, {
-        attributes: true,
-        attributeFilter: ['data-key-setup-ready'],
+    if (typeof MutationObserver === 'undefined') return;
+    // The note follows the dialog: its readiness, and the dialog itself
+    // when it is put into the page after the menu was set up.
+    let watched = null;
+    const readiness = new MutationObserver(sync);
+    cleanups.push(() => readiness.disconnect());
+    let arrival = null;
+    function watch() {
+      const dialog = find('key-setup');
+      if (dialog && dialog !== watched) {
+        watched = dialog;
+        readiness.observe(dialog, {
+          attributes: true,
+          attributeFilter: ['data-key-setup-ready'],
+        });
+        if (dialog.parentNode)
+          readiness.observe(dialog.parentNode, { childList: true });
+      }
+      if (dialog && find('key-setup-chip')) {
+        arrival?.disconnect();
+        arrival = null;
+      }
+    }
+    watch();
+    const root = document.body ?? document.documentElement;
+    if (root && !(watched && find('key-setup-chip'))) {
+      arrival = new MutationObserver(() => {
+        watch();
+        sync();
       });
-      if (dialog.parentNode)
-        observer.observe(dialog.parentNode, { childList: true });
-      cleanups.push(() => observer.disconnect());
+      arrival.observe(root, { childList: true, subtree: true });
+      cleanups.push(() => arrival?.disconnect());
     }
   }
 

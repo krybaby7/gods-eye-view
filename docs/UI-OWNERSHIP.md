@@ -39,6 +39,56 @@ exist and their order; the frame only shows the first four and puts the rest
 under More, so a new first tab (Overview) needs no frame change. A control the
 frame cannot connect is hidden, never shown dead.
 
+### The layers menu (roadmap 1.4)
+
+The bottom bar's **Layers** button opens the layers menu and its **Presets**
+button opens a small menu of the eight presets. Neither sits on the globe any
+more: the old left-rail Data Layers panel and lens bar are gone from it.
+
+| Owner | Responsibility |
+| --- | --- |
+| `src/lenses/groups.js` | The one table of groups, row names, columns, preset hotkeys, the tool row that opens a panel, and the layers that have no row (World and the layers another surface drives) |
+| `src/lenses/catalog.js` | The eight presets, read from that table |
+| `templates/layers-menu.html` | The menu's head ("Layers", the on count, Switch all off, close), the preset chips, and the foot: links to Data sources and keys, Display, and Scenes, recording and drawing, then its sentence |
+| `styles/layers-menu.css` | The floating menu's size and place at each width (three columns, two, one, a full-width sheet at 720 px and under) |
+| `styles/lens-bar.css` | The preset chips in the menu and the rows of the Presets menu |
+| `layersMenu.js` | Opening and closing: the Layers buttons, Escape, the close button, a press outside, focus in and back, the on count on the button and in the head, the Presets menu, the foot links (each closes the menu and opens its section of the top bar's menu); the F key goes through `layersMenuToggle.js` |
+| `layerPanel.js` | The rows and their switches, built from the group table |
+| `layerStates.js` | The plain words a row says: live, stale, waiting for a key |
+
+The menu is still `#data-panel`, a collapsible panel, so voice and Escape
+keep opening and closing it as before. A menu is not a panel, though: it starts
+closed on every load. Its stored collapsed state is cleared and not read
+(`panelPositionControls.js`), and share links no longer carry it; an old link's
+`d` token is still read, and ignored. The bottom bar, the top bar and the
+command dock stay the frame's and roadmap 1.5's.
+
+World has no switch on screen, on purpose: it is the frame's own view, not a
+layer in the list. Until the bottom bar's Countries view arrives it is switched
+by code (`dataManager.setEnabled('world', …)`, which the browser checks use),
+by command and by share link.
+
+The War Monitor has no row: its switch is in Menu > Data sources and keys, and,
+like World, "Switch all off" and the presets leave it alone.
+
+In the cockpit the bars are not drawn, so the cockpit's own **Layers** and
+**Presets** buttons (`#cockpit-layers`, `#cockpit-presets` in `#view-switcher`,
+shown only in cockpit mode) open the same two menus, centred between the
+cockpit's side windows, under its top line and above its compass. The Layers
+footer links are hidden while the top bar's Menu is unavailable in cockpit mode.
+Leaving the cockpit closes both menus and restores the links for available Menu
+sections. The Presets menu moves to the body while open in the cockpit and
+returns to the bottom bar when it closes. F opens and closes the layers menu in
+the frame and in the cockpit. Recording, the clean view and embedded views draw
+neither menu and have no route to Layers or Presets; F does nothing there.
+
+One menu at a time: the layers menu, the Presets menu, the top bar's menu list
+and its panels, the sheet's More menu and the legend's popover each dispatch
+`gev:menu-open` (`MENU_OPEN_EVENT` in `menuSections.js`) when they open, and
+every other one closes on it. Escape closes only the menu that is open; the
+layers and Presets menus take it first, so it does not also leave the cockpit
+or let go of a tracked aircraft.
+
 `#cesiumContainer` and `#world-overlay-root` are inset to the globe's region,
 so the canvas no longer fills the window. Anything that mixes Cesium's canvas
 pixels with window pixels converts through `src/overlays/canvasFrame.js`, and
@@ -73,9 +123,11 @@ lines), as three floating panels inside `#frame-tools`:
 share links and tests still find them. A moved panel is marked
 `data-panel-fixed` and kept open; its dock or rail disclosure no longer
 applies. A control that is absent hides its group, and a section with nothing
-in it hides its entry. Panels open only when chosen and close by their close
-button or Escape (focus returns to the menu button), not on a click on the
-globe, so drawing and picking places work while one is open. Below 720 px the
+in it hides its entry. Panels close on a press outside or when another menu
+opens. A press on the globe or in a dialog leaves them open, so drawing and
+picking places work while one is open. Closing a panel with its close button or
+Escape returns focus to the bottom bar's Layers button if it opened from a Layers
+footer link, or the top bar's Menu button otherwise. Below 720 px the
 panels are full-width sheets above the bottom bar. The holder is a frame
 region, so the panels are not drawn in the cockpit, while recording, in the
 clean view or when embedded.
@@ -83,6 +135,12 @@ clean view or when embedded.
 Voice is reached only from `#frame-voice`; the dock keeps the voice card and
 its error tray, and its pill is not drawn. Zoom is only in the bottom bar. The
 cockpit is still entered from a selected aircraft's card.
+
+The zoom pair is coupled, and hidden: `body.gev-frame .map-zoom-controls
+{ display: none !important }` (`styles/tools-menu.css`) hides the original
+zoom buttons everywhere in the frame, and the bottom bar's zoom buttons click
+that hidden pair, so the camera's zoom keeps one owner. Moving, renaming or
+removing `.map-zoom-controls` or its buttons breaks the bottom bar's zoom.
 
 Other parts open a section with `openMenuSection(name)` from `toolsMenu.js`, or,
 without importing the menu, by dispatching `gev:open-menu-section`

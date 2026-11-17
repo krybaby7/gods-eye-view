@@ -133,9 +133,19 @@ test('a lens on across all available layers still protects shared layers', () =>
   );
 });
 
-test('unavailable layers are omitted from every change, including an off plan', () => {
+test('unavailable layers are never switched on, but one left on is switched off with its preset', () => {
+  // A layer can go unavailable after it is on (waiting for a key); the
+  // preset's off plan still takes it, so nothing of the group is left on.
   assert.deepEqual(
     planLensClick(air, lenses, rows(air.layerIds, ['local-adsb'])),
+    [
+      { layerId: 'flights', enabled: false },
+      { layerId: 'military', enabled: false },
+      { layerId: 'local-adsb', enabled: false },
+    ],
+  );
+  assert.deepEqual(
+    planLensClick(air, lenses, rows(['flights', 'military'], ['local-adsb'])),
     [
       { layerId: 'flights', enabled: false },
       { layerId: 'military', enabled: false },

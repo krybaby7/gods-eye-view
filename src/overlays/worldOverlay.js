@@ -98,6 +98,9 @@ export const WORLD_OVERLAY_OCCLUDER_SELECTORS = Object.freeze([
   '#cctv-sync-chip',
   '#left-panel-stack',
   '#right-context-rail',
+  // The layers menu and the Presets menu float over the globe while open.
+  '#data-panel.layers-menu',
+  '#frame-presets-menu',
   '.weather-summary',
   '#pp-toggles',
   '.tools-panel:not([hidden])',

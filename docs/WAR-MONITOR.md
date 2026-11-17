@@ -26,8 +26,8 @@ Sources and terms: the War monitor section of
 
 ## Using it
 
-1. Turn on **War Monitor** in the layer panel's Events group. The **Situation**
-   panel opens in the right rail.
+1. Turn on **War Monitor** in **Menu > Data sources and keys** (it has no row
+   in the layers menu). The **Situation** panel opens in the right rail.
 2. Headlines start arriving within a minute. The **Raw feed** tab shows them by
    folder (Reporting, Official, Local, Armed group, Verification,
    Humanitarian, Analysis). Each item is marked as not digested yet,

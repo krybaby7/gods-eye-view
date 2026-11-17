@@ -1,7 +1,7 @@
 import { LayerLifecycle } from '../data/lifecycle.js';
 import { LayerPresentation } from './layerPresentation.js';
 import { LENSES } from '../lenses/catalog.js';
-import { createLensBar } from '../ui/lensBar.js';
+import { createLensBar, createPresetBusy } from '../ui/lensBar.js';
 import { lensLayerSnapshots } from './lensLayers.js';
 /** Register the application layer catalog before allowing state restoration. */
 export function createApplicationData({
@@ -58,16 +58,25 @@ export function createApplicationData({
     });
   }
   presentation.mount(document.getElementById('data-toggles'));
-  const lensBar = createLensBar({
-    container: document.getElementById('lens-bar'),
-    getLayers: () => lensLayerSnapshots(dataManager, catalog),
-    setEnabled: (id, enabled, options) =>
-      dataManager.setEnabled(id, enabled, options),
-    subscribeActivity: (listener) => dataManager.subscribeActivity(listener),
-    onLayout: () =>
-      styleManager._scheduleLeftPanelLayout?.({ reconsiderAutoCollapse: true }),
+  // The presets twice: as chips in the layers menu, and as the bottom bar's
+  // Presets menu. Both read and switch the same layers, and share which
+  // preset is still switching.
+  const presetBusy = createPresetBusy();
+  const presetBar = (id) =>
+    createLensBar({
+      container: document.getElementById(id),
+      getLayers: () => lensLayerSnapshots(dataManager, catalog),
+      setEnabled: (layerId, enabled, options) =>
+        dataManager.setEnabled(layerId, enabled, options),
+      subscribeActivity: (listener) => dataManager.subscribeActivity(listener),
+      busy: presetBusy,
+    });
+  const lensBar = presetBar('lens-bar');
+  const presetsMenu = presetBar('frame-presets-menu');
+  defer(() => {
+    lensBar.destroy();
+    presetsMenu.destroy();
   });
-  defer(() => lensBar.destroy());
   const localAdsb = catalog.get?.('local-adsb');
   for (const session of [localAdsb?.receiver, localAdsb?.feeds]) {
     if (typeof session?.subscribe === 'function')

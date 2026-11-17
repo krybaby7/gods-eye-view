@@ -21,6 +21,9 @@ export const PANEL_COVER_SELECTORS = Object.freeze([
   '#top-center-actions',
   '#left-panel-stack > [data-panel-id]',
   '#right-context-rail > [data-panel-id]',
+  // The layers menu and the Presets menu float over the globe while open.
+  '#data-panel.layers-menu',
+  '#frame-presets-menu',
   '.world-board-hud:not(#world-hover)',
   '#command-dock',
   '.tools-panel:not([hidden])',

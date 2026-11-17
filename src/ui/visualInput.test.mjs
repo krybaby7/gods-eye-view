@@ -89,7 +89,7 @@ test('number keys retain the seven style mappings', () => {
 
 test('Shift plus physical digit keys toggles each lens without selecting a style', () => {
   const f = shortcuts();
-  const shiftedKeys = ['!', '@', '#', '$', '%', '^', '&'];
+  const shiftedKeys = ['!', '@', '#', '$', '%', '^', '&', '*'];
   for (let index = 0; index < shiftedKeys.length; index++) {
     f.press(shiftedKeys[index], new Element(), {
       code: `Digit${index + 1}`,
@@ -104,7 +104,7 @@ test('Shift plus physical digit keys toggles each lens without selecting a style
 
 test('AZERTY Shift digits toggle lenses without also changing the visual style', () => {
   const f = shortcuts();
-  for (let hotkey = 1; hotkey <= 7; hotkey++) {
+  for (let hotkey = 1; hotkey <= 8; hotkey++) {
     f.press(String(hotkey), new Element(), {
       code: `Digit${hotkey}`,
       shiftKey: true,
@@ -112,14 +112,14 @@ test('AZERTY Shift digits toggle lenses without also changing the visual style',
   }
   assert.deepEqual(
     f.calls,
-    Array.from({ length: 7 }, (_, index) => ['toggleLens', index + 1]),
+    Array.from({ length: 8 }, (_, index) => ['toggleLens', index + 1]),
   );
 });
 
 test('lens shortcuts require Shift and a supported physical digit key', () => {
   const f = shortcuts();
   f.press('!', new Element(), { code: 'Digit1' });
-  for (const code of ['Digit0', 'Digit8', 'Numpad1', 'KeyA', undefined]) {
+  for (const code of ['Digit0', 'Digit9', 'Numpad1', 'KeyA', undefined]) {
     f.press('1', new Element(), { code, shiftKey: true });
   }
   assert.deepEqual(f.calls, []);

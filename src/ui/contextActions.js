@@ -2,6 +2,7 @@ import {
   settleUserFacingContextAction,
   contextModeWord,
 } from '../contextModePolicy.js';
+import { FRAME_LAYER_IDS, LAYERS_WITHOUT_ROWS } from '../lenses/groups.js';
 
 export async function _runUserFacingContextAction(
   operation,
@@ -217,19 +218,27 @@ export function clearSelectedLayers() {
   const managerOperation = this._dataManager.clearSelectedLayers({
     origin: 'user',
     notificationToken,
+    keepIds: FRAME_LAYER_IDS,
   });
   this._clearSelectedLayersManagerPromise = managerOperation;
   const operation = managerOperation
     .then((result) => {
+      // Count the layers the menu lists, as its "N on." head does; hidden
+      // coordinators are still cleared but are not rows anyone switched on.
+      const listed = (id) => !LAYERS_WITHOUT_ROWS.includes(id);
+      const cleared = result.clearedIds.filter(listed).length;
+      const notCleared = result.notClearedIds.filter(listed).length;
       if (result.targetIds.length === 0) {
         this.showToast('No selected data layers');
-      } else if (result.notClearedIds.length > 0) {
+      } else if (notCleared > 0) {
         this.showToast(
-          `${result.notClearedIds.length} data layer${result.notClearedIds.length === 1 ? '' : 's'} could not be cleared`,
+          `${notCleared} data layer${notCleared === 1 ? '' : 's'} could not be cleared`,
         );
+      } else if (cleared === 0) {
+        this.showToast('No selected data layers');
       } else {
         this.showToast(
-          `Cleared ${result.clearedIds.length} data layer${result.clearedIds.length === 1 ? '' : 's'}`,
+          `Cleared ${cleared} data layer${cleared === 1 ? '' : 's'}`,
         );
       }
       return result;

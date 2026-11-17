@@ -20,7 +20,7 @@
     <button id="world-refresh" class="frame-iconbtn" type="button" aria-label="Refresh the board" title="Refresh the board" hidden>
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 11-1.6-3.7M13 2.5v2.6h-2.6" /></svg>
     </button>
-    <div class="frame-more frame-menu">
+    <div class="frame-menu">
       <button id="frame-menu" class="frame-iconbtn" type="button" aria-haspopup="menu" aria-controls="frame-menu-list" aria-expanded="false" aria-label="Menu: data sources, display and tools" title="Menu">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M3 8h10M3 11.5h10" /></svg>
       </button>
@@ -107,8 +107,11 @@
     </button>
     <div id="frame-legend-popup" class="frame-popup frame-legend-popup" role="dialog" aria-label="The whole legend" tabindex="-1" hidden></div>
     <span class="frame-grow"></span>
-    <button id="frame-layers" class="frame-btn" type="button" aria-controls="data-panel" aria-expanded="false">Layers</button>
-    <button id="frame-presets" class="frame-btn" type="button" aria-controls="lens-bar" aria-expanded="true">Presets</button>
+    <button id="frame-layers" class="frame-btn" type="button" aria-controls="data-panel" aria-expanded="false">Layers<span id="frame-layers-count" class="frame-layers-count" hidden></span></button>
+    <div class="frame-presets">
+      <button id="frame-presets" class="frame-btn" type="button" aria-controls="frame-presets-menu" aria-expanded="false">Presets</button>
+      <div id="frame-presets-menu" class="frame-popup frame-presets-menu" role="group" aria-label="Presets" hidden><div class="lens-buttons"></div></div>
+    </div>
     <div class="frame-seg frame-zoom" role="group" aria-label="Zoom">
       <button id="frame-zoom-out" type="button" aria-label="Zoom out" title="Zoom out">−</button>
       <button id="frame-zoom-in" type="button" aria-label="Zoom in" title="Zoom in">+</button>

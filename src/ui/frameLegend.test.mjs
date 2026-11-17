@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createFakeDocument } from '../testSupport/fakeDocument.mjs';
 import { createFrameLegend } from './frameLegend.js';
+import { MENU_OPEN_EVENT } from './menuSections.js';
 
 const CLASS_COLOURS = ['rgb(219, 71, 79)', 'rgb(232, 147, 63)'];
 // The bar's legend band, its line heights and the height of a line of 12 px
@@ -663,4 +664,20 @@ test('a popover closed by a fit gives focus back to the button, or to the presse
   elsewhere.model.noteWidth = 120;
   elsewhere.sync();
   assert.equal(elsewhere.document.activeElement, elsewhere.outside);
+});
+
+test('the popover is one menu among the others: it announces itself and closes when another opens', () => {
+  const page = setup({ noteWidth: 900 });
+  const heard = [];
+  page.document.addEventListener(MENU_OPEN_EVENT, (event) =>
+    heard.push(event.detail.menu),
+  );
+  page.button.click();
+  assert.deepEqual(heard, ['legend']);
+  page.document.dispatchEvent({
+    type: MENU_OPEN_EVENT,
+    detail: { menu: 'layers' },
+  });
+  assert.equal(page.popup.hidden, true);
+  assert.equal(page.button.getAttribute('aria-expanded'), 'false');
 });

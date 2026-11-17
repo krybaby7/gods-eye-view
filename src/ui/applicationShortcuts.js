@@ -29,7 +29,7 @@ export function bindApplicationShortcuts({
       event.target === searchInput;
     if (isFormControl && event.key !== 'Escape') return;
 
-    if (event.shiftKey && /^Digit[1-7]$/.test(event.code)) {
+    if (event.shiftKey && /^Digit[1-8]$/.test(event.code)) {
       if (
         event.repeat ||
         event.isComposing ||

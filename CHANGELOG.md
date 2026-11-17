@@ -1,5 +1,16 @@
 # Changelog
 
+- The original app's floating panels move into two menus of the frame. The
+  top bar's Menu holds three panels: Data sources and keys (the provider-keys
+  dialog, which the POWER UP chip used to open, and the War Monitor's switch),
+  Display (render styles and the DISPLAY rail's toggles) and Tools (go to a
+  place, the view buttons, Draw, scenes and recording, Share). The bottom
+  bar's Layers button opens the layers menu, the old DATA LAYERS list in
+  three columns of groups with a switch per row, the presets above it and
+  links into the Menu below it; Presets opens the same presets on their own.
+  The layers menu starts closed on every load. In the cockpit both open from
+  its own Layers and Presets buttons. Zoom is in the bottom bar.
+
 - War Monitor Refresh and Situation Brief use the owner’s Claude plan by
   default and share one Claude run slot with Search Layers. Perplexity remains
   available through `NEWS_DIGEST_AGENT=perplexity` with its existing daily

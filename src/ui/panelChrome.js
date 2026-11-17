@@ -12,10 +12,12 @@ import {
   collapsePanelOnEscape,
   createHoverDisclosure,
 } from './panelDisclosure.js';
+// The layers menu (#data-panel) is a menu, not a panel: it starts closed on
+// every load, so it is neither written into a share link nor restored from
+// one. sharelink.js still decodes its old 'd' token, so older links load.
 const SHARE_PANEL_STATE_SPECS = Object.freeze([
   { id: 'control-panel', pinnable: true },
   { id: 'location-bar', pinnable: true },
-  { id: 'data-panel' },
   { id: 'cctv-panel' },
   { id: 'weather-panel' },
   { id: 'recent-imagery-panel' },

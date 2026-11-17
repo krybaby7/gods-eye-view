@@ -39,7 +39,15 @@ export function planLensClick(lens, lenses, layers) {
       .filter((other) => lensStatus(other, layers).status === 'on')
       .flatMap((other) => other.layerIds),
   );
-  return available
+  // Switching off also takes a layer that went unavailable after it was
+  // switched on (Street level waiting for a Mapillary key), so a preset never
+  // leaves one of its own layers behind. Nothing unavailable is switched on.
+  const byId = new Map(layers.map((layer) => [layer.id, layer]));
+  return lens.layerIds
+    .map((id) => byId.get(id))
+    .filter(
+      (layer) => layer && (layer.available !== false || layer.enabled === true),
+    )
     .filter((layer) => !protectedLayers.has(layer.id))
     .map(({ id }) => ({ layerId: id, enabled: false }));
 }

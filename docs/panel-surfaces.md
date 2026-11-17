@@ -64,6 +64,15 @@ fit when those contents should instead scroll.
 | Slot inside `#frame-tools` (the top bar's menu) | A moved panel is kept open (`data-panel-fixed`), loses its dock or rail chrome, and takes the menu panel's type and width (`styles/tools-menu.css`) | Keep the panel's id and wiring; add its slot in `templates/frame.html` and its entry in `SLOTS` in `src/ui/toolsMenu.js`. The menu owns opening, closing, focus and placement. |
 | `dialog[data-panel-surface]`          | The same surface/body skin; a closed dialog remains hidden                                          | Set width/max-height, use `showModal()` or `show()` and `close()`, and own labels, initial/return focus and dismissal. Do not put `panel-collapsible` on a dialog.                                       |
 
+The layers menu (`#data-panel`) is the one collapsible panel that is not in a
+rail: it floats over the globe's region, opened from the bottom bar, and
+`styles/layers-menu.css` places it from the frame's `--frame-*` variables. It
+keeps `panel-collapsible` and its hidden `.panel-collapse-btn`, so
+`setPanelCollapsed`, persistence and Escape still own its open state. The
+bottom bar's Presets menu is a frame popup, not a panel surface. Neither the
+preset bar (`#lens-bar`) nor the menu is a child of `#left-panel-stack` any
+more.
+
 For rails, `--panel-expanded-width` and `--panel-collapsed-width` customize
 the desired widths within the rail; otherwise the surface tokens supply them. `--left-panel-allocated-height` and
 `--right-panel-allocated-height` belong

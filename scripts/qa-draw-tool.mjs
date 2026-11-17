@@ -71,16 +71,16 @@ async function canvasClip() {
 }
 
 /**
- * How many amber pixels the clip contains. The drawn area's stroke and fill are
+ * How many amber pixels the given clip contains. The drawn area's stroke and fill are
  * the only amber in this scene, so the count going UP after a shape is finished
  * is the shape actually painting — which is what CESIUM_3D_TILE-only
  * classification failed to do on a keyless boot while still reporting a mark on
  * the board. Decoding happens in the page because Node here has no image
  * decoder.
  */
-async function amberPixels() {
+async function amberPixels(clip) {
   const shot64 = await page.screenshot({
-    clip: await canvasClip(),
+    clip,
     type: 'png',
     encoding: 'base64',
   });
@@ -455,7 +455,10 @@ try {
   // ── an area, coloured and labelled, finished with a double-click ────────
   await page.click('.pp-mode-btn[data-shape="area"]');
   await page.select('#draw-color-select', 'amber');
-  const amberBefore = await amberPixels();
+  // One clip for both counts: the open globe can change when the Tools panel
+  // moves, and a before and after over different regions compare nothing.
+  const amberClip = await canvasClip();
+  const amberBefore = await amberPixels(amberClip);
   await page.click('#draw-label-input');
   await page.keyboard.type('Civic Center block');
   await clickWorld(400, 280);
@@ -489,7 +492,7 @@ try {
     JSON.stringify(areaMark),
   );
   await wait(1200);
-  const amberAfter = await amberPixels();
+  const amberAfter = await amberPixels(amberClip);
   check(
     'the finished area actually PAINTS — amber pixels appear on this surface',
     amberAfter - amberBefore > 500,

@@ -156,6 +156,33 @@ export async function installFixtures(page, origin, world, report) {
           );
           if (detail) await reply(detail);
           else await reply({ error: 'Unknown World Board detail lens.' }, 404);
+        } else if (
+          url.pathname === '/api/flights' &&
+          request.method === 'GET' &&
+          report.transport.flightFixture
+        ) {
+          // Only while a phase asks for it (the cockpit check): one
+          // synthetic aircraft, so the cockpit is entered the real way.
+          const { id, callsign, lon, lat } = report.transport.flightFixture;
+          const now = Math.floor(Date.now() / 1000);
+          report.transport.flightFixtureReplies =
+            (report.transport.flightFixtureReplies ?? 0) + 1;
+          await reply({
+            time: now,
+            states: [
+              [
+                id,
+                callsign,
+                'Synthetic',
+                now,
+                now,
+                lon,
+                lat,
+                9000,
+                false,
+              ].concat([230, 90, 0, null, 9000, null, false, 0]),
+            ],
+          });
         } else {
           report.transport.suppressedApis.push(url.pathname);
           await reply({}, 404);

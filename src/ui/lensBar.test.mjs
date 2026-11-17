@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { createLensBar } from './lensBar.js';
+import { createLensBar, createPresetBusy } from './lensBar.js';
 import { railFixture } from './railTestFixture.mjs';
 
 const lenses = [
@@ -9,7 +8,13 @@ const lenses = [
   { id: 'sea', label: 'Sea', icon: '⚓', hotkey: 2, layerIds: ['b', 'c'] },
 ];
 
-function fixture({ rows, setEnabled, onWrite, withContainer = true } = {}) {
+function fixture({
+  rows,
+  setEnabled,
+  onWrite,
+  withContainer = true,
+  busy,
+} = {}) {
   const f = railFixture(onWrite);
   const buttons = f.document.createElement('div');
   buttons.className = 'lens-buttons';
@@ -34,6 +39,7 @@ function fixture({ rows, setEnabled, onWrite, withContainer = true } = {}) {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
+    ...(busy ? { busy } : {}),
   });
   return {
     ...f,
@@ -61,6 +67,10 @@ test('lens buttons derive off, partial, on and unavailable from available layers
   assert.equal(air.getAttribute('aria-pressed'), 'mixed');
   assert.equal(air.querySelector('.lens-count').textContent, '1/2');
   assert.equal(air.querySelector('.lens-count').hidden, false);
+  assert.match(
+    air.getAttribute('aria-label'),
+    /^Air: partly on, 1 of 2 available layers on\. /,
+  );
   f.update(f.rows().map((row) => ({ ...row, enabled: true })));
   assert.equal(air.dataset.status, 'on');
   assert.equal(air.getAttribute('aria-pressed'), 'true');
@@ -70,9 +80,9 @@ test('lens buttons derive off, partial, on and unavailable from available layers
   );
   assert.equal(air.dataset.status, 'unavailable');
   assert.equal(air.disabled, true);
-  assert.match(air.title, /Aircraft: UNAVAILABLE — No source/);
-  assert.match(air.title, /Military: UNAVAILABLE — No source/);
-  assert.match(air.getAttribute('aria-label'), /Air: UNAVAILABLE/);
+  assert.match(air.title, /Aircraft: not available — No source/);
+  assert.match(air.title, /Military: not available — No source/);
+  assert.match(air.getAttribute('aria-label'), /Air: not available/);
   assert.deepEqual(
     f.calls,
     [],
@@ -138,6 +148,34 @@ test('busy clicks dispatch their complete intent synchronously and allow rapid r
   await second;
   assert.equal(f.button('air').getAttribute('aria-busy'), 'false');
   f.view.destroy();
+});
+
+test('two bars sharing their busy state show a preset busy in both until it settles', async () => {
+  const busy = createPresetBusy();
+  const resolve = [];
+  const slow = () => new Promise((done) => resolve.push(done));
+  const chips = fixture({ busy, setEnabled: slow });
+  const menu = fixture({ busy, setEnabled: slow });
+  const work = chips.view.click('air');
+  assert.equal(chips.button('air').getAttribute('aria-busy'), 'true');
+  assert.equal(
+    menu.button('air').getAttribute('aria-busy'),
+    'true',
+    'the other bar reads the preset as busy too',
+  );
+  assert.equal(menu.button('sea').getAttribute('aria-busy'), 'false');
+  resolve.forEach((done) => done(true));
+  await work;
+  assert.equal(chips.button('air').getAttribute('aria-busy'), 'false');
+  assert.equal(menu.button('air').getAttribute('aria-busy'), 'false');
+  // Bars that do not share keep their own.
+  const alone = fixture({ setEnabled: slow });
+  const own = alone.view.click('air');
+  assert.equal(alone.button('air').getAttribute('aria-busy'), 'true');
+  assert.equal(menu.button('air').getAttribute('aria-busy'), 'false');
+  resolve.forEach((done) => done(true));
+  await own;
+  for (const bar of [chips, menu, alone]) bar.view.destroy();
 });
 
 test('a fully on peer protects a shared layer without a remembered lens click', async () => {
@@ -208,7 +246,7 @@ test('tooltips use supplied names and reasons as plain text and reflect feed hea
       { id: 'b', name: 'Military', enabled: false, available: false, reason },
     ],
   });
-  assert.match(f.button('air').title, /Aircraft: STALE/);
+  assert.match(f.button('air').title, /Aircraft: stale/);
   assert.ok(f.button('air').title.includes(reason));
   assert.equal(
     f.find((node) => node.tagName === 'IMG'),
@@ -280,22 +318,4 @@ test('a missing mount returns an inert API without reading state or subscribing'
   view.refresh();
   await view.click('air');
   view.destroy();
-});
-
-test('the static lens bar is the first rail child with the shared surface contract', () => {
-  const html = readFileSync(
-    new URL('./templates/layer-panels.html', import.meta.url),
-    'utf8',
-  );
-  assert.match(html, /id="left-panel-stack">\s*<section\s+id="lens-bar"/);
-  const markup = html.slice(
-    html.indexOf('id="lens-bar"'),
-    html.indexOf('</section>'),
-  );
-  assert.match(markup, /data-panel-id="lens-bar"/);
-  assert.match(markup, /data-panel-fixed/);
-  assert.match(
-    markup,
-    /<div[^>]*data-panel-surface[^>]*>\s*<div[^>]*class="lens-buttons"[^>]*data-panel-body[^>]*data-rail-scroller/,
-  );
 });
