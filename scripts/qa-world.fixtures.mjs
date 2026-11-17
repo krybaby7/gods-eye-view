@@ -130,8 +130,10 @@ export async function installFixtures(
     function reply(value, status = 200, contentType = 'application/json') {
       if (strict) {
         report.transport.fulfilled = (report.transport.fulfilled ?? 0) + 1;
-        if (status === 404)
+        if (status === 404) {
           report.transport.blocked = (report.transport.blocked ?? 0) + 1;
+          (report.transport.suppressedUrls ??= []).push(request.url);
+        }
       }
       const body =
         contentType === 'application/json' ? JSON.stringify(value) : value;

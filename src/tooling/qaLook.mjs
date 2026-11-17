@@ -83,3 +83,20 @@ export function collisions(frames, panels) {
   }
   return results;
 }
+
+export function validateWorkerProbe(probe) {
+  if (probe.sentinelHits !== 0) throw new Error('worker reached sentinel');
+  for (const url of [probe.sentinelUrl, probe.apiUrl]) {
+    const beforeDenied = probe.before.denied[url] ?? 0;
+    const afterDenied = probe.after.denied[url] ?? 0;
+    const count = (rows) => rows.filter((value) => value === url).length;
+    if (
+      afterDenied <= beforeDenied &&
+      count(probe.after.suppressed) <= count(probe.before.suppressed)
+    )
+      throw new Error(`No exact denial recorded for ${url}`);
+    const result = probe.results.find((entry) => entry.url === url);
+    if (!result || (![403, 404].includes(result.status) && !result.error))
+      throw new Error(`Unexpected worker response for ${url}`);
+  }
+}

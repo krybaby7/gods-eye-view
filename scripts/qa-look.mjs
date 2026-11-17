@@ -5,7 +5,11 @@ import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
 import puppeteer from 'puppeteer';
-import { parseLookArgs, collisions } from '../src/tooling/qaLook.mjs';
+import {
+  parseLookArgs,
+  collisions,
+  validateWorkerProbe,
+} from '../src/tooling/qaLook.mjs';
 import { createDenyProxy } from '../src/tooling/qaLookProxy.mjs';
 import { createFixtureWorld, installFixtures } from './qa-world.fixtures.mjs';
 
@@ -271,12 +275,11 @@ async function verifyWorkerIsolation() {
   try {
     const external = `http://127.0.0.1:${sentinel.address().port}/worker-probe`;
     const api = new URL('/api/look-worker-probe', options.url.origin).href;
-    const before = {
-      deniedApi: proxy.totals.deniedApi,
-      suppressed: report.transport.suppressedApis.filter(
-        (path) => path === '/api/look-worker-probe',
-      ).length,
-    };
+    const snapshot = () => ({
+      denied: structuredClone(proxy.totals.deniedTargets),
+      suppressed: [...(report.transport.suppressedUrls ?? [])],
+    });
+    const before = snapshot();
     const results = await page.evaluate(
       async ({ external, api }) => {
         const code = `self.onmessage = async ({data}) => { const results = []; for (const url of data) { try { const response = await fetch(url, {cache:'no-store'}); results.push({url,status:response.status}); } catch (error) { results.push({url,error:String(error)}); } } self.postMessage(results); };`;
@@ -308,23 +311,16 @@ async function verifyWorkerIsolation() {
       },
       { external, api },
     );
-    const after = {
-      deniedApi: proxy.totals.deniedApi,
-      suppressed: report.transport.suppressedApis.filter(
-        (path) => path === '/api/look-worker-probe',
-      ).length,
+    const after = snapshot();
+    report.workerProbe = {
+      sentinelUrl: external,
+      apiUrl: api,
+      results,
+      sentinelHits: hits,
+      before,
+      after,
     };
-    report.workerProbe = { results, sentinelHits: hits, before, after };
-    assert.equal(hits, 0, 'worker reached another loopback origin');
-    assert.ok(
-      results.every((result) => [403, 404].includes(result.status)),
-      `worker probe did not receive controlled denial: ${JSON.stringify(results)}`,
-    );
-    assert.ok(
-      after.deniedApi > before.deniedApi ||
-        after.suppressed > before.suppressed,
-      'worker API request was not intercepted',
-    );
+    validateWorkerProbe(report.workerProbe);
   } finally {
     await new Promise((resolve) => sentinel.close(resolve));
   }

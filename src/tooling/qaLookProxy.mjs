@@ -30,12 +30,15 @@ export async function createDenyProxy(origin) {
     denied: 0,
     deniedApi: 0,
     deniedOrigin: 0,
+    deniedTargets: {},
     tunnels: 0,
     upgrades: 0,
   };
   const server = http.createServer((request, response) => {
     if (!proxyAllowed(origin, request.method, request.url)) {
       totals.denied++;
+      totals.deniedTargets[request.url] =
+        (totals.deniedTargets[request.url] ?? 0) + 1;
       try {
         const url = new URL(request.url);
         if (

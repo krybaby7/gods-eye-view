@@ -212,3 +212,35 @@ test('proxy forwards only local static requests and rejects API, origins and tun
     await new Promise((resolve) => upstream.close(resolve));
   }
 });
+
+test('worker probe accepts rejected fetch only with exact denial and zero sentinel hits', async () => {
+  const { validateWorkerProbe } = await import('./qaLook.mjs');
+  const result = {
+    sentinelUrl: 'http://127.0.0.1:9999/probe',
+    apiUrl: 'http://127.0.0.1:5314/api/look-worker-probe',
+    sentinelHits: 0,
+    results: [
+      {
+        url: 'http://127.0.0.1:9999/probe',
+        error: 'TypeError: Failed to fetch',
+      },
+      { url: 'http://127.0.0.1:5314/api/look-worker-probe', status: 404 },
+    ],
+    before: { denied: {}, suppressed: [] },
+    after: {
+      denied: { 'http://127.0.0.1:9999/probe': 1 },
+      suppressed: ['http://127.0.0.1:5314/api/look-worker-probe'],
+    },
+  };
+  assert.doesNotThrow(() => validateWorkerProbe(result));
+  assert.throws(() => validateWorkerProbe({ ...result, sentinelHits: 1 }));
+  assert.throws(() =>
+    validateWorkerProbe({ ...result, after: { ...result.after, denied: {} } }),
+  );
+  assert.throws(() =>
+    validateWorkerProbe({
+      ...result,
+      after: { ...result.after, suppressed: [] },
+    }),
+  );
+});
