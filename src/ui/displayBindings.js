@@ -1,6 +1,7 @@
 import { createFrameRateMonitor } from './frameRateMonitor.js';
 import { bindApplicationShortcuts } from './visualInput.js';
 import { bindDisplayControls } from './displayControls.js';
+import { toggleLayersMenu } from './layersMenuToggle.js';
 import { canonicalizeDensity } from '../data/detectionPolicy.js';
 
 /** Own keyboard/display event subscriptions; settings remain with their state owners. */
@@ -85,8 +86,9 @@ export class DisplayBindings {
         },
         toggleOrbit: () => this._toggleOrbit(),
         toggleCleanView: () => this.toggleCleanView(),
-        toggleLayers: () =>
-          document.getElementById('data-panel').classList.toggle('active'),
+        // F opens or closes the layers menu in every mode that draws it
+        // (the frame and the cockpit; not recording or the clean view).
+        toggleLayers: () => toggleLayersMenu(document),
         cycleDetection: () => {
           this.shareLinkManager?.claimRestoreLane?.('visual');
           this.claimDetection();

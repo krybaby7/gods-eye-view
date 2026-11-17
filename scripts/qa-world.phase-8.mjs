@@ -487,6 +487,8 @@ export default async function phase8({
       let withButton;
       let withoutButton;
       try {
+        await resize(1280, 720);
+        await page.click('#world-lens-bar [data-world-lens="strength"]');
         withButton = await legendAt(1280, 720, 'tools-menu');
         await page.$eval('#frame-top .frame-menu', (node) => {
           node.style.display = 'none';
@@ -500,6 +502,30 @@ export default async function phase8({
           .catch(() => {});
         await page.setViewport(desktop);
       }
+      assert.ok(
+        withButton?.drawn && withButton.width > 0,
+        'The Strength legend is drawn with positive width',
+      );
+      assert.ok(
+        withoutButton?.drawn && withoutButton.width > 0,
+        'The comparison legend is drawn with positive width',
+      );
+      assert.equal(
+        withButton?.lens,
+        'strength',
+        'The baseline comparison uses Strength',
+      );
+      assert.equal(
+        withoutButton?.lens,
+        withButton?.lens,
+        'Both measurements use the same lens',
+      );
+      assert.equal(
+        withButton?.width,
+        withoutButton?.width,
+        'The menu button does not narrow the same legend',
+      );
+      report.toolsMenu.legendBaseline = { lens: 'strength', width: 481 };
       report.toolsMenu.legendBand1280 = withButton?.width ?? null;
       report.toolsMenu.legendBand1280WithoutButton =
         withoutButton?.width ?? null;

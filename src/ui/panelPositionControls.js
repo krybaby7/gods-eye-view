@@ -9,6 +9,9 @@ const PANEL_LAYOUT_STORAGE_VERSION = 'v6';
  * resetting every panel's open/closed preference.
  */
 const PANEL_POSITION_STORAGE_VERSION = 'v8';
+// Menus share the panel chrome but start closed on every load: their open
+// state is never stored or restored (the layers menu, #data-panel).
+const STARTS_CLOSED_PANEL_IDS = new Set(['data-panel']);
 /** Z ladder: panels promote within [100, 139]; voice pill 150, toast 200, clean-view-exit 300. */
 const PANEL_Z_BASE = 100;
 const PANEL_Z_MAX = 139;
@@ -309,6 +312,19 @@ export class PanelPositionControls {
   _restorePanelCollapsedState(panelId, { allowStored = true } = {}) {
     const panelEl = document.getElementById(panelId);
     if (!panelEl) return;
+    if (STARTS_CLOSED_PANEL_IDS.has(panelId)) {
+      // A menu starts closed on every load. An open state saved before it
+      // became a menu is cleared, never obeyed.
+      try {
+        localStorage.removeItem(this._panelCollapseStorageKey(panelId));
+      } catch {
+        // storage unavailable
+      }
+      panelEl.classList.add('collapsed');
+      if (panelEl.dataset) panelEl.dataset.collapsedPreference = 'default';
+      this._syncPanelCollapseButton(panelEl);
+      return;
+    }
     let collapsed = panelEl.classList.contains('collapsed');
     let stored = null;
     if (allowStored) {
@@ -342,6 +358,7 @@ export class PanelPositionControls {
   }
 
   _savePanelCollapsedState(panelId, collapsed) {
+    if (STARTS_CLOSED_PANEL_IDS.has(panelId)) return;
     try {
       localStorage.setItem(
         this._panelCollapseStorageKey(panelId),

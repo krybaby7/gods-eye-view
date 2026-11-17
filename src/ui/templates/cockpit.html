@@ -317,6 +317,10 @@
   </section>
 
   <nav id="view-switcher" aria-label="View switcher">
+    <!-- Cockpit only (layersMenu.js): the bottom bar is not drawn here, so
+         these open the same layers and Presets menus. -->
+    <button id="cockpit-layers" class="cockpit-menu-route" type="button" aria-controls="data-panel" aria-expanded="false">Layers</button>
+    <button id="cockpit-presets" class="cockpit-menu-route" type="button" aria-controls="frame-presets-menu" aria-expanded="false">Presets</button>
     <button id="cockpit-reset-globe" type="button" aria-label="Reset cockpit to full globe view" title="Exit cockpit and return to full globe view" hidden>
       <span class="material-symbols-outlined" aria-hidden="true">public</span>
       <span>RESET</span>

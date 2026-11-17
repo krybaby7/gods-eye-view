@@ -1,27 +1,9 @@
   <div id="left-panel-stack">
-  <section id="lens-bar" class="panel-collapsible active" data-panel-id="lens-bar" data-panel-fixed aria-label="Data lenses">
-    <div data-panel-surface>
-      <div class="lens-buttons" data-panel-body data-rail-scroller role="group" aria-label="Data lenses"></div>
-    </div>
-  </section>
-  <!-- Data Layer Toggle Panel -->
-  <div id="data-panel" class="panel-collapsible collapsed active" data-panel-id="data-panel">
-    <div class="data-panel-inner">
-      <div class="panel-header">
-        <span class="panel-title">DATA LAYERS</span>
-        <span class="panel-divider"></span>
-        <button class="panel-collapse-btn" data-collapse-target="data-panel" title="Collapse panel">+</button>
-      </div>
-      <button type="button" class="panel-surface-control search-layers-shortcut" data-open-search-layers aria-controls="searches-panel" hidden>Open Search Layers</button>
-      <div id="data-toggles" class="data-toggle-list"></div>
-    </div>
-  </div>
-
   <!-- CCTV Coverage Panel -->
   <div id="cctv-panel" class="panel-collapsible collapsed" data-panel-id="cctv-panel">
     <div class="cctv-panel-inner" data-rail-scroller>
       <div class="panel-header">
-        <span class="panel-title">CCTV</span>
+        <span class="panel-title">Cameras</span>
         <span class="panel-divider"></span>
         <button class="panel-collapse-btn" data-collapse-target="cctv-panel" title="Collapse panel">+</button>
       </div>
@@ -31,14 +13,14 @@
         <canvas id="cctv-video" class="cctv-frame" hidden></canvas>
       </div>
       <div id="cctv-source-badge" role="status" aria-live="polite">SOURCE · UNKNOWN</div>
-      <div id="cctv-meta">Enable CCTV to load camera intersections</div>
+      <div id="cctv-meta">Switch cameras on to load camera intersections</div>
       <div class="cctv-controls">
-        <button id="cctv-enable-btn" class="scene-btn">CCTV OFF</button>
+        <button id="cctv-enable-btn" class="scene-btn">Cameras off</button>
         <button id="cctv-nearest-btn" class="scene-btn">NEAREST</button>
       </div>
       <div class="cctv-controls">
         <button id="cctv-prev-btn" class="scene-btn">PREV</button>
-        <select id="cctv-camera-select" aria-label="CCTV camera"></select>
+        <select id="cctv-camera-select" aria-label="Camera"></select>
         <button id="cctv-next-btn" class="scene-btn">NEXT</button>
       </div>
       <div class="cctv-controls">
@@ -70,7 +52,7 @@
         </div>
       </div>
       <div class="cctv-summary-label">SCENE SUMMARY</div>
-      <div id="cctv-summary">Enable CCTV to start camera-linked intelligence summaries.</div>
+      <div id="cctv-summary">Switch cameras on to start camera-linked summaries.</div>
       </div>
     </div>
   </div>

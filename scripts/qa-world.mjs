@@ -68,7 +68,6 @@ const report = {
   errors: [],
   console: [],
 };
-const toggle = '#data-toggles [data-layer-id="world"] .data-toggle-btn';
 const lens = (id) => `#world-lens-bar [data-world-lens="${id}"]`;
 const area = (id) => `#world-lens-bar [data-world-area="${id}"]`;
 const tab = (id) => `[data-world-tab="${id}"]`;
@@ -100,16 +99,13 @@ async function shot(name) {
 const text = (selector) =>
   page.$eval(selector, (element) => element.textContent.trim());
 
+// The World Board has no row in the layers menu (piece 1.4): it is the
+// application's own view, switched by code and by command. The test switches
+// it as the command does, through the data manager, as a person's action.
 async function toggleWorld() {
-  if (await page.$('#data-panel.collapsed')) {
-    await page.click('[data-collapse-target="data-panel"]');
-    await page.waitForSelector('#data-panel:not(.collapsed)', {
-      visible: true,
-    });
-  }
   await page.evaluate(() => {
-    // A quick first turn's progress can show and hide before a wait starts;
-    // note that it was shown.
+    // Switching by code skips the click's delay, so the first turn's progress
+    // can show and hide before a wait starts; note that it was shown.
     const progress = document.getElementById('world-progress');
     window.__worldProgressSeen = false;
     window.__worldProgressObserver?.disconnect();
@@ -123,12 +119,15 @@ async function toggleWorld() {
         attributeFilter: ['hidden'],
       });
     }
+    const manager = window.__godsEyeView.dataManager;
+    manager.setEnabled('world', !manager.isEnabled('world'), {
+      origin: 'user',
+    });
   });
-  await page.click(toggle);
 }
 async function waitSettled(enabled) {
   await page.waitForFunction(
-    (buttonSelector, expected) => {
+    (expected) => {
       const manager = window.__godsEyeView?.dataManager;
       return (
         manager &&
@@ -137,13 +136,10 @@ async function waitSettled(enabled) {
           .getAll()
           .every(
             (row) => !['enabling', 'disabling'].includes(row.lifecycleState),
-          ) &&
-        document.querySelector(buttonSelector)?.getAttribute('aria-busy') !==
-          'true'
+          )
       );
     },
     wait,
-    toggle,
     enabled,
   );
 }
@@ -754,12 +750,15 @@ async function frameLayout(width, height, label) {
           .filter(([, element]) => shown(element))
           .map(([name, element]) => box(name, element));
         const panels = [
+          // The layers menu and the Presets menu float only while open; a
+          // closed one is not drawn and is skipped.
           '#data-panel',
+          '#frame-presets-menu',
+          '#lens-bar',
           '#right-context-rail > [data-panel-id]',
           '#command-dock',
           // The original tools live in the top bar's menu (roadmap 1.5).
           '#frame-tools > .tools-panel',
-          '#lens-bar',
           '#world-hover',
         ]
           .flatMap((selector) => [...document.querySelectorAll(selector)])
@@ -877,6 +876,331 @@ async function frameLayout(width, height, label) {
   return data;
 }
 
+// The layers menu and the Presets menu (piece 1.4). Closed, neither is drawn
+// and nothing of the layer list is over the globe. Open, each sits inside the
+// window and clear of the bars, Today, the rail and the sheet; they float
+// over the globe and may cover its other floating panels while open.
+async function menusLayout(width, height, label) {
+  await page.setViewport({ width, height, deviceScaleFactor: 1 });
+  const measure = (selector) =>
+    page.evaluate((selector) => {
+      const shown = (element) => {
+        if (!element) return false;
+        const style = getComputedStyle(element);
+        return (
+          style.display !== 'none' &&
+          style.visibility === 'visible' &&
+          element.getClientRects().length > 0
+        );
+      };
+      const box = (element) => {
+        const { left, top, right, bottom } = element.getBoundingClientRect();
+        return { left, top, right, bottom };
+      };
+      const regions = [
+        ['top bar', '#frame-top'],
+        ['bottom bar', '#frame-bottom'],
+        ['Today', '#frame-today'],
+        ['rail', '#frame-rail'],
+        ['sheet', '#frame-sheet'],
+      ]
+        .map(([name, regionSelector]) => [
+          name,
+          document.querySelector(regionSelector),
+        ])
+        .filter(([, element]) => shown(element))
+        .map(([name, element]) => ({ name, ...box(element) }));
+      const drawn = ['#data-panel', '#lens-bar', '#frame-presets-menu'].filter(
+        (other) => shown(document.querySelector(other)),
+      );
+      const element = selector && document.querySelector(selector);
+      return {
+        today: document.body.dataset.today,
+        sheet: document.body.dataset.sheet,
+        regions,
+        drawn,
+        menu: element && shown(element) ? box(element) : null,
+        window: { width: innerWidth, height: innerHeight },
+      };
+    }, selector);
+  const settle = () =>
+    page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        ),
+    );
+  const problems = (data, name) => {
+    const found = [];
+    const { menu, regions } = data;
+    if (!menu) return [`${name} is not drawn`];
+    if (
+      menu.left < 0 ||
+      menu.top < 0 ||
+      menu.right > data.window.width ||
+      menu.bottom > data.window.height
+    )
+      found.push(`${name} leaves the window: ${JSON.stringify(menu)}`);
+    for (const region of regions)
+      if (
+        Math.min(menu.right, region.right) - Math.max(menu.left, region.left) >
+          1 &&
+        Math.min(menu.bottom, region.bottom) - Math.max(menu.top, region.top) >
+          1
+      )
+        found.push(`${name} / ${region.name}`);
+    return found;
+  };
+  const result = { width, height, label };
+  await settle();
+  const closed = await measure(null);
+  result.closed = closed.drawn;
+  assert.deepEqual(
+    closed.drawn,
+    [],
+    `With the menus closed, parts of the layer list are drawn at ${width}×${height} (${label})`,
+  );
+
+  await page.click('#frame-layers');
+  await page.waitForSelector('#data-panel:not(.collapsed)', { visible: true });
+  await settle();
+  const layers = await measure('#data-panel');
+  result.layers = layers;
+  assert.equal(
+    await page.$eval('#frame-layers', (node) =>
+      node.getAttribute('aria-expanded'),
+    ),
+    'true',
+  );
+  await shot(`layers-menu-${width}x${height}-${label}`);
+  await page.click('#layers-menu-close');
+  await page.waitForSelector('#data-panel.collapsed', { hidden: true });
+
+  await page.click('#frame-presets');
+  await page.waitForSelector('#frame-presets-menu:not([hidden])', {
+    visible: true,
+  });
+  await settle();
+  const presets = await measure('#frame-presets-menu');
+  result.presets = presets;
+  await shot(`presets-menu-${width}x${height}-${label}`);
+  await page.click('#frame-presets');
+  await page.waitForSelector('#frame-presets-menu', { hidden: true });
+
+  result.problems = [
+    ...problems(layers, 'layers menu'),
+    ...problems(presets, 'Presets menu'),
+  ];
+  report.menuLayouts ??= [];
+  report.menuLayouts.push(result);
+  assert.deepEqual(
+    result.problems,
+    [],
+    `Menus at ${width}×${height} (${label}, Today ${layers.today}, sheet ${layers.sheet})`,
+  );
+  return result;
+}
+
+// The Cameras and Weather detail panels, after their layers are switched on
+// from the layers menu and the menu is closed: each panel drawn sits inside
+// the window and clear of the bars, Today, the rail and the sheet. The run's
+// fixtures answer the camera and weather feeds with nothing, so a panel that
+// shows only with data may stay hidden; that is reported as not drawn, with
+// its reason, and is not counted as a pass.
+async function detailPanelsLayout(width, height, label) {
+  await page.setViewport({ width, height, deviceScaleFactor: 1 });
+  const panels = [
+    { name: 'Cameras', layerId: 'cctv', selector: '#cctv-panel' },
+    {
+      name: 'Weather',
+      layerId: 'weather-cyclones',
+      selector: '#weather-panel',
+    },
+  ];
+  const settle = () =>
+    page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        ),
+    );
+  const openMenu = async () => {
+    await page.click('#frame-layers');
+    await page.waitForSelector('#data-panel:not(.collapsed)', {
+      visible: true,
+    });
+  };
+  const closeMenu = async () => {
+    await page.click('#layers-menu-close');
+    await page.waitForSelector('#data-panel.collapsed', { hidden: true });
+  };
+  // Switch a row on or off through its switch in the open menu.
+  const setRow = (layerId, on) =>
+    page.evaluate(
+      ({ layerId, on }) => {
+        const button = document.querySelector(
+          `#data-panel [data-layer-id="${layerId}"] .data-toggle-btn`,
+        );
+        if (!button) return { found: false };
+        const was = button.getAttribute('aria-checked') === 'true';
+        if (button.disabled) return { found: true, disabled: true, on: was };
+        if (was !== on) button.click();
+        return { found: true, disabled: false, on: was, clicked: was !== on };
+      },
+      { layerId, on },
+    );
+  // One panel at a time: the right rail folds a panel it has no room for,
+  // so two expanded at once would measure the rail's choice, not the panel.
+  const result = { width, height, label, panels: [], problems: [] };
+  try {
+    for (const panel of panels) {
+      let switched = false;
+      let expanded = false;
+      try {
+        await openMenu();
+        const row = await setRow(panel.layerId, true);
+        switched = Boolean(row.clicked);
+        await closeMenu();
+        // A weather panel with entries shows itself; give it a moment.
+        await page
+          .waitForFunction(
+            (selector) => !document.querySelector(selector)?.hidden,
+            { timeout: 5000 },
+            panel.selector,
+          )
+          .catch(() => {});
+        expanded = await page.$eval(
+          panel.selector,
+          (node, id) => {
+            if (node.hidden || !node.classList.contains('collapsed'))
+              return false;
+            node.querySelector(`[data-collapse-target="${id}"]`)?.click();
+            return true;
+          },
+          panel.selector.slice(1),
+        );
+        await page
+          .waitForFunction(
+            (selector) =>
+              !document
+                .querySelector(selector)
+                ?.classList.contains('collapsed'),
+            { timeout: 3000 },
+            panel.selector,
+          )
+          .catch(() => {});
+        await settle();
+        const data = await page.evaluate((selector) => {
+          const shown = (element) => {
+            if (!element) return false;
+            const style = getComputedStyle(element);
+            return (
+              !element.hidden &&
+              style.display !== 'none' &&
+              style.visibility === 'visible' &&
+              Number(style.opacity) > 0 &&
+              element.getClientRects().length > 0
+            );
+          };
+          const box = (element) => {
+            const { left, top, right, bottom } =
+              element.getBoundingClientRect();
+            return { left, top, right, bottom };
+          };
+          const regions = [
+            ['top bar', '#frame-top'],
+            ['bottom bar', '#frame-bottom'],
+            ['Today', '#frame-today'],
+            ['rail', '#frame-rail'],
+            ['sheet', '#frame-sheet'],
+          ]
+            .map(([name, regionSelector]) => [
+              name,
+              document.querySelector(regionSelector),
+            ])
+            .filter(([, element]) => shown(element))
+            .map(([name, element]) => ({ name, ...box(element) }));
+          const element = document.querySelector(selector);
+          const style = element && getComputedStyle(element);
+          return {
+            today: document.body.dataset.today,
+            sheet: document.body.dataset.sheet,
+            regions,
+            window: { width: innerWidth, height: innerHeight },
+            exists: Boolean(element),
+            hidden: Boolean(element?.hidden),
+            className: element?.className || '',
+            parent: element?.parentElement?.id || '',
+            display: style?.display,
+            visibility: style?.visibility,
+            opacity: style?.opacity,
+            box: shown(element) ? box(element) : null,
+          };
+        }, panel.selector);
+        await shot(`detail-panel-${panel.layerId}-${width}x${height}-${label}`);
+        result.today = data.today;
+        result.sheet = data.sheet;
+        result.panels.push({ name: panel.name, row, ...data });
+        const { box } = data;
+        if (!box) {
+          // A panel that is not drawn cannot be measured, so the step fails:
+          // it never passes without measuring each panel.
+          result.problems.push(
+            `${panel.name} panel is not drawn (hidden ${data.hidden}, display ${data.display})`,
+          );
+          continue;
+        }
+        if (
+          box.left < 0 ||
+          box.top < 0 ||
+          box.right > data.window.width ||
+          box.bottom > data.window.height
+        )
+          result.problems.push(
+            `${panel.name} panel leaves the window: ${JSON.stringify(box)}`,
+          );
+        for (const region of data.regions)
+          if (
+            Math.min(box.right, region.right) -
+              Math.max(box.left, region.left) >
+              1 &&
+            Math.min(box.bottom, region.bottom) -
+              Math.max(box.top, region.top) >
+              1
+          )
+            result.problems.push(`${panel.name} panel / ${region.name}`);
+      } finally {
+        // Leave the page as it was: the panel folded, the layer off again.
+        if (expanded)
+          await page
+            .$eval(
+              panel.selector,
+              (node, id) => {
+                if (!node.classList.contains('collapsed'))
+                  node.querySelector(`[data-collapse-target="${id}"]`)?.click();
+              },
+              panel.selector.slice(1),
+            )
+            .catch(() => {});
+        if (switched) {
+          await openMenu();
+          await setRow(panel.layerId, false);
+          await closeMenu();
+        }
+      }
+    }
+  } finally {
+    report.detailPanelLayouts ??= [];
+    report.detailPanelLayouts.push(result);
+  }
+  assert.deepEqual(
+    result.problems,
+    [],
+    `Detail panels at ${width}×${height} (${label}, Today ${result.today}, sheet ${result.sheet})`,
+  );
+  return result;
+}
+
 try {
   await fs.mkdir(evidence, { recursive: true });
   browser = await puppeteer.launch({
@@ -931,9 +1255,14 @@ try {
     report.rendering.renderer &&
     !/swiftshader|software|llvmpipe|softpipe/i.test(report.rendering.renderer),
   );
-  await page.evaluate(() =>
-    document.getElementById('clear-selected-layers').click(),
-  );
+  // "Switch all off" leaves World on (World is the bottom bar's view, not a
+  // row), so World goes off by the data manager, as the frame's World does.
+  await page.evaluate(async () => {
+    document.getElementById('clear-selected-layers').click();
+    await window.__godsEyeView.dataManager.setEnabled('world', false, {
+      origin: 'user',
+    });
+  });
   await waitSettled(false);
   await page.evaluate(async () => {
     const source = await (await fetch('/src/layers/world/geometry.js')).text();
@@ -978,6 +1307,8 @@ try {
       checkRows,
       layout,
       frameLayout,
+      menusLayout,
+      detailPanelsLayout,
       legendPopover,
       checkLegend,
       legendAt,

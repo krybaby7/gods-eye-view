@@ -10,13 +10,13 @@ import {
   FRAME_GLOBE_MIN_WIDTH,
   FRAME_NARROW_QUERY,
   FRAME_SHARED_QUERY,
-  FRAME_PRESETS_STORAGE_KEY,
   FRAME_SHEET_TABS_SHOWN,
   FRAME_TODAY_OPEN_MIN_WIDTH,
   FRAME_TODAY_STORAGE_KEY,
   createFrame,
 } from './frame.js';
 import { worldSheetTabs } from './worldPanel.js';
+import { MENU_OPEN_EVENT } from './menuSections.js';
 import phase2 from '../layers/world/phase-2.js';
 import phase3 from '../layers/world/phase-3.js';
 import phase4 from '../layers/world/phase-4.js';
@@ -67,6 +67,7 @@ function fakeElement(id) {
   };
   node.append = (...children) => node.children.push(...children);
   node.querySelector = () => null;
+  node.contains = (other) => other === node;
   node.getBoundingClientRect = () => ({ width: 120, height: 26 });
   node.focus = () => {
     node.focused = true;
@@ -125,7 +126,7 @@ const FRAME_IDS = [
   'frame-layers',
   'data-panel',
   'frame-presets',
-  'lens-bar',
+  'frame-presets-menu',
   'frame-zoom-out',
   'frame-zoom-in',
   'zoom-map-out',
@@ -382,7 +383,7 @@ test('the top bar shows the date, the refresh day and only the gauges the board 
   );
 });
 
-test('the bottom bar opens the layers, shows or hides the presets and zooms', (t) => {
+test('the bottom bar opens the layers menu and the presets menu, and zooms', (t) => {
   withObservers(t);
   const h = harness({ ids: FRAME_IDS });
   const collapse = fakeElement('collapse');
@@ -400,11 +401,12 @@ test('the bottom bar opens the layers, shows or hides the presets and zooms', (t
   assert.equal(h.node('frame-layers').getAttribute('aria-expanded'), 'false');
   h.node('frame-layers').click();
   assert.equal(toggled, 1, 'Layers uses the layer list’s own disclosure');
-  assert.equal(h.node('lens-bar').hidden, false, 'presets show by default');
+  assert.equal(h.node('frame-presets-menu').hidden, true, 'presets start shut');
   h.node('frame-presets').click();
-  assert.equal(h.node('lens-bar').hidden, true);
-  assert.equal(h.node('frame-presets').getAttribute('aria-expanded'), 'false');
-  assert.equal(h.store.get(FRAME_PRESETS_STORAGE_KEY), 'hidden');
+  assert.equal(h.node('frame-presets-menu').hidden, false);
+  assert.equal(h.node('frame-presets').getAttribute('aria-expanded'), 'true');
+  h.node('frame-presets').click();
+  assert.equal(h.node('frame-presets-menu').hidden, true);
   h.node('frame-zoom-in').click();
   h.node('frame-zoom-out').click();
   assert.equal(zoomed, 'inout');
@@ -751,4 +753,42 @@ test('the sheet shows Overview, Condition, Strength and Relations, the rest unde
   assets.focus();
   assert.equal(assets.focused, true);
   assert.equal(more.focused, false);
+});
+
+test('More is one menu among the others: it announces itself and closes when another opens', (t) => {
+  withObservers(t);
+  const h = harness({
+    ids: [
+      ...FRAME_IDS,
+      'world-sheet-tabs',
+      'frame-sheet-more',
+      'frame-sheet-more-menu',
+    ],
+  });
+  // The page's events: menus announce themselves on the document.
+  const heard = [];
+  const listeners = [];
+  h.document.addEventListener = (type, listener) =>
+    listeners.push({ type, listener });
+  h.document.dispatchEvent = (event) => {
+    if (event.type === MENU_OPEN_EVENT) heard.push(event.detail.menu);
+    for (const entry of listeners)
+      if (entry.type === event.type) entry.listener(event);
+  };
+  h.node('world-sheet-tabs').children = worldSheetTabs(phaseTabs).map(
+    (tab, i) => fakeTab(tab, i === 0),
+  );
+  const frame = h.create();
+  t.after(() => frame.destroy());
+  const more = h.node('frame-sheet-more');
+  const menu = h.node('frame-sheet-more-menu');
+  more.click();
+  assert.equal(menu.hidden, false);
+  assert.deepEqual(heard, ['sheet-more']);
+  h.document.dispatchEvent({
+    type: MENU_OPEN_EVENT,
+    detail: { menu: 'legend' },
+  });
+  assert.equal(menu.hidden, true, 'the legend opening closes More');
+  assert.equal(more.getAttribute('aria-expanded'), 'false');
 });

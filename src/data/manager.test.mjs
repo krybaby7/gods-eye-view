@@ -108,13 +108,12 @@ test('renders ordinary layer rows without recreating a panel-hidden coordinator'
       removeEventListener() {},
       setAttribute(name, value) { this.attributes[name] = String(value); },
       querySelector(selector) {
-        if (selector.startsWith('[data-layer-id="')) {
-          const id = selector.slice(16, -2);
-          return this.children.find((child) => child.dataset.layerId === id) || null;
-        }
+        // Rows sit inside group blocks and columns, so both lookups search deep.
+        const id = selector.startsWith('[data-layer-id="') ? selector.slice(16, -2) : null;
         const className = selector.startsWith('.') ? selector.slice(1) : '';
         const visit = (node) => {
-          if (String(node.className).split(/\s+/).includes(className)) return node;
+          if (id !== null ? node !== this && node.dataset?.layerId === id
+            : String(node.className).split(/\s+/).includes(className)) return node;
           for (const child of node.children || []) {
             const found = visit(child);
             if (found) return found;
@@ -207,6 +206,27 @@ test('clearSelectedLayers absorbs a hidden coordinator fire-and-forget dependenc
   assert.deepEqual(result.targetIds, ['military-awareness', 'flights']);
   assert.deepEqual(result.notClearedIds, []);
   assert.deepEqual([...mgr.getEnabledLayerIds()], []);
+});
+
+test('clearSelectedLayers leaves keepIds layers on and out of its targets', async () => {
+  const mgr = new DataLayerManager({});
+  const world = makeSlowLayer('world', { updateInterval: -1 });
+  const flights = makeSlowLayer('flights', { updateInterval: -1 });
+  mgr.register(world.module);
+  mgr.register(flights.module);
+  await mgr.setEnabled('world', true);
+  await mgr.setEnabled('flights', true);
+
+  const result = await mgr.clearSelectedLayers({
+    origin: 'user',
+    keepIds: ['world'],
+  });
+
+  assert.deepEqual(result.targetIds, ['flights']);
+  assert.deepEqual(result.clearedIds, ['flights']);
+  assert.equal(world.calls.disable, 0);
+  assert.deepEqual([...mgr.getEnabledLayerIds()], ['world']);
+  await mgr.destroyAll();
 });
 
 test('clearSelectedLayers continues after failures and reports final lifecycle truth', async () => {
@@ -1886,7 +1906,7 @@ test('uncertain lifecycle state overrides ordinary feed status without disabling
   assert.equal(button.textContent, 'UNCERTAIN');
   assert.equal(button.dataset.feedState, 'uncertain');
   assert.equal(button.disabled, false, 'the lifecycle toggle remains available to reconcile authority');
-  assert.equal(attributes.get('aria-label'), 'Radio: UNCERTAIN');
+  assert.equal(attributes.get('aria-label'), 'Radio');
   assert.equal(classes.get('lifecycle-uncertain'), true);
   assert.equal(classes.get('feed-nominal'), false);
   assert.equal(
@@ -2771,13 +2791,12 @@ function makeControlElement() {
       return String(this.className).split(/\s+/).includes(className) ? this : null;
     },
     querySelector(selector) {
-      if (selector.startsWith('[data-layer-id="')) {
-        const id = selector.slice(16, -2);
-        return this.children.find((child) => child.dataset.layerId === id) || null;
-      }
+      // Rows sit inside group blocks and columns, so both lookups search deep.
+      const id = selector.startsWith('[data-layer-id="') ? selector.slice(16, -2) : null;
       const className = selector.startsWith('.') ? selector.slice(1) : '';
       const visit = (node) => {
-        if (String(node.className).split(/\s+/).includes(className)) return node;
+        if (id !== null ? node !== this && node.dataset?.layerId === id
+          : String(node.className).split(/\s+/).includes(className)) return node;
         for (const child of node.children || []) {
           const found = visit(child);
           if (found) return found;

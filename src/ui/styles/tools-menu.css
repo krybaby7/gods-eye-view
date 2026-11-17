@@ -5,9 +5,16 @@
    give them the frame's type, so their dock and rail looks stop applying.
    Nothing of the original app stays over the globe but the status line. */
 
-/* The menu list opens under its button, at the window's right edge. */
+/* The menu button and its list; its own class, not the sheet's More. The
+   list opens under its button, at the window's right edge. */
+.frame-menu {
+  position: relative;
+  display: flex;
+  flex: none;
+}
+
 .frame-menu-list {
-  min-width: 220px;
+  min-width: 220px; /* the list's width; Appendix D has no width token */
 }
 
 /* The panels' holder adds no box of its own; as a frame region it is hidden
@@ -27,7 +34,7 @@
   flex-direction: column;
   box-sizing: border-box;
   width: min(
-    380px,
+    380px /* the panel's width; Appendix D has no width token */,
     calc(100vw - var(--frame-left) - var(--frame-right) - 2 * var(--space-3))
   );
   max-height: calc(
@@ -110,8 +117,8 @@
 }
 
 .tools-switch input {
-  width: 18px;
-  height: 18px;
+  width: var(--space-4);
+  height: var(--space-4);
   margin: 0;
   accent-color: var(--accent);
   cursor: pointer;
@@ -202,8 +209,7 @@ body.gev-frame
   #frame-tools
   .tools-slot
   :not(.material-symbols-outlined, .pp-icon, .btn-icon, svg, svg *) {
-  font-family: var(--font-sans);
-  font-size: 13px;
+  font: var(--type-control);
   letter-spacing: normal;
   text-transform: none;
 }
@@ -212,7 +218,7 @@ body.gev-frame
   #frame-tools
   .tools-slot
   :is(.pp-slider-value, .btn-key, #scene-progress-fill, .pp-stack-status) {
-  font-family: var(--font-mono);
+  font: var(--type-control-figure);
 }
 
 body.gev-frame #frame-tools .tools-slot :is(button, select, input) {
@@ -265,7 +271,7 @@ body.gev-frame #frame-tools :is(.pp-toggle-btn, #clean-view-toggle) {
   align-items: center;
   gap: var(--space-2);
   width: 100%;
-  min-height: 34px;
+  min-height: var(--space-6);
   padding: 0 var(--space-3);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-control);
@@ -300,7 +306,7 @@ body.gev-frame #frame-tools #param-slider-panel {
 }
 
 body.gev-frame #frame-tools :is(.pp-select, .pp-text-input) {
-  height: 30px;
+  height: var(--space-6);
   border-color: var(--line-strong);
   border-radius: var(--radius-chip);
   background: var(--surface-2);
@@ -323,7 +329,7 @@ body.gev-frame #frame-tools .location-search-wrap {
 body.gev-frame #frame-tools #location-search {
   flex: 1 1 auto;
   width: auto;
-  height: 34px;
+  height: var(--space-6);
   padding: 0 var(--space-3);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-control);
@@ -344,8 +350,8 @@ body.gev-frame #frame-tools #globe-navigation {
 
 body.gev-frame #frame-tools #globe-navigation button,
 body.gev-frame #frame-tools #map-navigation-help > summary {
-  width: 40px;
-  height: 40px;
+  width: calc(var(--space-6) + var(--space-2));
+  height: calc(var(--space-6) + var(--space-2));
   border: 1px solid var(--line-strong);
   background: var(--surface-2);
   box-shadow: none;
@@ -382,7 +388,7 @@ body.gev-frame #frame-tools #scene-panel .scene-controls {
 }
 
 body.gev-frame #frame-tools #scene-panel :is(select, .scene-btn) {
-  min-height: 30px;
+  min-height: var(--space-6);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-chip);
   background: var(--surface-2);
@@ -393,7 +399,7 @@ body.gev-frame #frame-tools #share-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  height: 34px;
+  height: var(--space-6);
   padding: 0 var(--space-3);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-control);
@@ -401,8 +407,20 @@ body.gev-frame #frame-tools #share-btn {
   cursor: pointer;
 }
 
-body.gev-frame #frame-tools #share-btn::after {
-  content: 'Copy share link';
+/* Its name is a real text node in its markup (scene-chrome.html); outside
+   the menu the button shows only its icon, as before. */
+#share-btn .share-btn-name {
+  display: none;
+}
+
+body.gev-frame #frame-tools #share-btn .share-btn-name {
+  display: inline;
+}
+
+/* While a scene plays, the view controls are not drawn (recording.css), so
+   their heading goes with them. */
+body.gev-frame.scene-playback-mode #frame-group-view {
+  display: none;
 }
 
 /* ── What leaves the globe ── */
@@ -411,9 +429,8 @@ body.gev-frame #key-setup-chip {
   display: none !important;
 }
 
-/* Share has moved into the menu, so the top-centre holder keeps only the
-   clear-layers button (roadmap 1.4's). The holder draws nothing; it must not
-   take clicks meant for the globe either. */
+/* Share is in the Tools panel and Switch all off is in Layers. The empty
+   top-centre holder lets clicks through to the globe. */
 body.gev-frame #top-center-actions {
   pointer-events: none;
 }

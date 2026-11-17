@@ -1,0 +1,444 @@
+/* ── The layers menu (piece 1.4) ──
+   The old layer list (#data-panel), floated above the bottom bar at the
+   right of the globe. The frame is solid; this menu is one of the few things
+   that float, so it keeps inside the globe's region: clear of the bars,
+   Today and the sheet. Selectors carry the .layers-menu class so they beat
+   the old rail rules for #data-panel, which still exist for the cockpit.
+   1440 and wider: 984 wide, 16 from the right, 86 from the bottom
+   (bar 52 + status 26 + 8). Narrower, it keeps to the globe and its columns
+   wrap from three to two to one, scrolling inside. At 720 and below it is a
+   full-width sheet over the bottom bar. */
+
+body #data-panel.layers-menu {
+  position: fixed;
+  top: auto;
+  right: calc(var(--frame-right) + var(--space-4));
+  bottom: calc(var(--frame-bottom) + var(--frame-status) + var(--space-2));
+  left: auto;
+  z-index: 140;
+  display: flex;
+  box-sizing: border-box;
+  width: min(
+    984px,
+    calc(100vw - var(--frame-left) - var(--frame-right) - 2 * var(--space-4))
+  );
+  max-height: calc(
+    100dvh - var(--frame-top) - var(--frame-bottom) - var(--frame-status) -
+      var(--space-2) - var(--space-4)
+  );
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: none;
+  pointer-events: auto;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-panel);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-pop);
+  color: var(--text-1);
+  font: var(--type-small);
+}
+
+body #data-panel.layers-menu.collapsed,
+body #data-panel.layers-menu[hidden] {
+  display: none;
+}
+
+body #data-panel.layers-menu:focus {
+  outline: none;
+}
+
+body #data-panel.layers-menu:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.layers-menu-inner {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: 0;
+  padding: var(--space-4) var(--space-5);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.layers-menu-inner[hidden],
+.layers-menu-head[hidden],
+.layers-menu-presets[hidden] {
+  display: none;
+}
+
+.layers-menu-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.layers-menu-title {
+  margin: 0;
+  color: var(--text-1);
+  font: var(--type-title);
+}
+
+.layers-menu-count {
+  color: var(--text-2);
+  font: var(--type-small);
+  white-space: nowrap;
+}
+
+.layers-menu-grow {
+  flex: 1 1 auto;
+}
+
+.layers-menu-quiet {
+  flex: none;
+  height: 28px; /* compact secondary action in the header */
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-chip);
+  background: none;
+  color: var(--text-2);
+  font: var(--type-control);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.layers-menu-quiet:is(:hover, :focus-visible) {
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+
+.layers-menu-quiet[hidden] {
+  display: none;
+}
+
+.layers-menu-close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  /* Square close button, sized around the icon and its padding. */
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.layers-menu-close[hidden] {
+  display: none;
+}
+
+.layers-menu-close:is(:hover, :focus-visible) {
+  border-color: var(--line-strong);
+  color: var(--text-1);
+}
+
+.layers-menu-close svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+/* The disclosure the rest of the app opens and closes the menu through. */
+.layers-menu .panel-collapse-btn {
+  display: none;
+}
+
+/* Search layers is its own row now; the old shortcut is only its opener. */
+.layers-menu .search-layers-shortcut {
+  display: none;
+}
+
+.layers-menu-caption,
+.layers-menu-foot {
+  margin: 0;
+  color: var(--text-3);
+  font: var(--type-caption);
+}
+
+/* The foot: three links into the top bar's Menu, then the sentence. */
+.layers-menu-foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line-soft);
+  color: var(--text-2);
+  font: var(--type-small);
+}
+
+.layers-menu-foot[hidden],
+.layers-menu-link[hidden] {
+  display: none;
+}
+
+.layers-menu-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: var(--type-small);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.layers-menu-link:hover,
+.layers-menu-link:focus-visible {
+  text-decoration: underline;
+}
+
+.layers-menu-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.layers-menu-foot-note {
+  margin: 0;
+  color: var(--text-2);
+  font: var(--type-small);
+}
+
+/* ── The three columns of groups ── */
+.layers-menu #data-toggles.data-toggle-list {
+  display: grid;
+  /* Leave room for the switch, layer name and state in each column. */
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  flex: none;
+  gap: var(--space-3) var(--space-5);
+  align-items: start;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+  scrollbar-gutter: auto;
+}
+
+.layers-menu #data-toggles.data-toggle-list[hidden] {
+  display: none;
+}
+
+.layers-menu .lcol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.layers-menu .lcol[hidden],
+.layers-menu .lgroup-block[hidden] {
+  display: none;
+}
+
+.layers-menu .lgroup-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.layers-menu .lgroup.data-layer-group-heading {
+  margin: 0 0 var(--space-1);
+  padding: 0;
+  border: 0;
+  color: var(--text-1);
+  font: var(--type-label);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* A row: switch, name, state words. A click anywhere on it switches it. */
+.layers-menu .data-toggle-row.lrow {
+  padding: 0;
+  border-radius: var(--radius-chip);
+  cursor: pointer;
+}
+
+.layers-menu .data-toggle-row.lrow:hover {
+  background: var(--surface-2);
+}
+
+.layers-menu .data-toggle-top {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto; /* first track fits the switch */
+  align-items: center;
+  gap: 0 var(--space-2);
+  min-height: 30px; /* leaves space above and below the switch */
+}
+
+.layers-menu .data-toggle-left,
+.layers-menu .data-toggle-right {
+  display: contents;
+}
+
+.layers-menu .data-toggle-top[hidden],
+.layers-menu .data-toggle-left[hidden],
+.layers-menu .data-toggle-right[hidden] {
+  display: none;
+}
+
+.layers-menu .data-icon,
+.layers-menu .data-toggle-meta,
+.layers-menu .data-count {
+  display: none;
+}
+
+.layers-menu .data-name {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-1);
+  font: var(--type-small);
+  letter-spacing: normal;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.layers-menu .data-toggle-row .st {
+  grid-column: 3;
+  grid-row: 1;
+  color: var(--text-3);
+  font: var(--type-caption);
+  white-space: nowrap;
+}
+
+.layers-menu .data-toggle-row.on .st {
+  color: var(--text-1);
+}
+
+/* The switch: 34 by 20, its knob 14. */
+.layers-menu .data-toggle-btn.switch {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  box-sizing: border-box;
+  width: 34px;
+  min-width: 0;
+  height: 20px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  /* Appendix D has no pill radius; the control radius (10px) is half the
+     switch's 20px height, so the track is still fully round. */
+  border-radius: var(--radius-control);
+  background: var(--surface-3);
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.layers-menu .data-toggle-btn.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+
+.layers-menu .data-toggle-btn.switch.active {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.layers-menu .data-toggle-btn.switch.active::after {
+  left: 16px;
+  background: var(--on-accent);
+}
+
+.layers-menu .data-toggle-btn.switch.na {
+  opacity: 0.4;
+}
+
+.layers-menu .data-toggle-btn.switch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A row's own controls (chips, lists) sit under its name. */
+.layers-menu .data-toggle-row > :not(.data-toggle-top) {
+  margin-left: calc(34px + var(--space-2)); /* the switch and its gap */
+}
+
+/* ── At 720 and below: a full-width sheet over the bottom bar ── */
+@media (max-width: 720px) {
+  body #data-panel.layers-menu {
+    right: 0;
+    bottom: var(--frame-bottom);
+    left: 0;
+    z-index: 170;
+    width: 100%;
+    max-height: calc(100dvh - var(--frame-top) - var(--frame-bottom));
+    border-width: 1px 0 0;
+    border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+  }
+
+  .layers-menu-inner {
+    padding: var(--space-4);
+  }
+
+  .layers-menu #data-toggles.data-toggle-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── In the cockpit (opened from its own Layers and Presets buttons) ──
+   The frame is not drawn there, so both menus centre between the cockpit's
+   top line and its heading tape, and between its two side windows, inside
+   the window. The lengths are the cockpit's own (src/ui/styles/cockpit.css:
+   the top line's offset, the rail-safe line above the compass, the side
+   window's width and margin). */
+body.cockpit-mode {
+  --cockpit-menu-top: calc(clamp(18px, 3vh, 34px) + 72px);
+  /* The compass's own offset (cockpit.css) plus its drawn, tilted height
+     (about 195 px, rounded up to 200) and a gap, so the menu ends above it. */
+  --cockpit-menu-bottom: calc(
+    clamp(44px, 7vh, 72px) + 200px + var(--space-3)
+  );
+  --cockpit-menu-width: min(
+    640px,
+    max(
+      320px,
+      calc(
+        100vw - 2 * (clamp(24px, 4vw, 58px) + min(340px, 28vw) + var(--space-3))
+      )
+    ),
+    calc(100vw - 2 * var(--space-4))
+  );
+}
+
+body.cockpit-mode #data-panel.layers-menu,
+body.cockpit-mode #frame-presets-menu.frame-presets-menu {
+  top: auto;
+  right: auto;
+  bottom: var(--cockpit-menu-bottom);
+  left: 50%;
+  z-index: 150;
+  max-height: calc(
+    100dvh - var(--cockpit-menu-top) - var(--cockpit-menu-bottom)
+  );
+  transform: translateX(-50%);
+}
+
+body.cockpit-mode #data-panel.layers-menu {
+  width: var(--cockpit-menu-width);
+  border-width: 1px;
+  border-radius: var(--radius-panel);
+}

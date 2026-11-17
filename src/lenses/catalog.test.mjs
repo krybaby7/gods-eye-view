@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LENSES } from './catalog.js';
-import { createApplicationCatalog } from '../app/constructCatalog.js';
+import { LAYER_GROUPS, LAYERS_WITHOUT_ROWS, layerRowFor } from './groups.js';
+import {
+  APPLICATION_LAYER_METADATA,
+  createApplicationCatalog,
+} from '../app/constructCatalog.js';
 import { createSurfaceServices } from '../app/surfaceServices.js';
 import { LayerLifecycle } from '../data/lifecycle.js';
 import { ContextControls } from '../ui/contextControls.js';
@@ -62,14 +66,23 @@ function spaceContext(t) {
   return { manager, controls, click };
 }
 
-test('the seven lenses have unique ids and the ordered hotkeys 1 through 7', () => {
+test('the eight presets follow the menu chips, with hotkeys 1 through 8', () => {
   assert.deepEqual(
-    LENSES.map(({ id }) => id),
-    ['air', 'sea', 'space', 'conflict', 'hazards', 'city', 'signals'],
+    LENSES.map(({ label }) => label),
+    [
+      'Air',
+      'Sea',
+      'Space',
+      'Hazards and weather',
+      'Security',
+      'Infrastructure',
+      'City',
+      'Tools',
+    ],
   );
   assert.deepEqual(
     LENSES.map(({ hotkey }) => hotkey),
-    [1, 2, 3, 4, 5, 6, 7],
+    [1, 2, 3, 4, 5, 6, 7, 8],
   );
   assert.equal(new Set(LENSES.map(({ id }) => id)).size, LENSES.length);
   assert.equal(new Set(LENSES.map(({ hotkey }) => hotkey)).size, LENSES.length);
@@ -97,53 +110,39 @@ test('every lens layer is registered in the real application catalog', (t) => {
   }
 });
 
-test('lens membership preserves the owner decisions and shared layers', () => {
-  const byId = Object.fromEntries(LENSES.map((lens) => [lens.id, lens]));
-  assert.deepEqual(byId.air.layerIds, ['flights', 'military', 'local-adsb']);
-  assert.deepEqual(byId.sea.layerIds, [
-    'ais-live-vessels',
-    'telegeography-submarine-cables',
-  ]);
-  assert.deepEqual(
-    new Set(byId.space.layerIds),
-    new Set(['satellites', 'rocket-launches']),
+test('a preset switches exactly its menu group, never a panel tool, the War Monitor or a rowless layer', () => {
+  for (const lens of LENSES) {
+    const entry = LAYER_GROUPS.find(({ id }) => id === lens.id);
+    assert.ok(entry, lens.id);
+    assert.deepEqual(
+      lens.layerIds,
+      entry.rows.filter((row) => !row.opensPanel).map((row) => row.id),
+      lens.id,
+    );
+  }
+  const assigned = LENSES.flatMap(({ layerIds }) => layerIds);
+  assert.equal(
+    new Set(assigned).size,
+    assigned.length,
+    'no layer in two presets',
   );
-  assert.deepEqual(byId.conflict.layerIds, [
-    'military',
-    'military-installations',
-    'local-firms',
-    'news',
-  ]);
-  assert.deepEqual(byId.hazards.layerIds, [
-    'earthquakes',
-    'weather-cyclones',
-    'local-firms',
-    'fire-perimeters',
-    'weather-radar',
-    'weather-lightning',
-    'wind',
-  ]);
-  assert.deepEqual(byId.city.layerIds, [
-    'traffic',
-    'transit',
-    'bikeshare',
-    'cctv',
-    'alpr-cameras',
-  ]);
-  assert.deepEqual(byId.signals.layerIds, ['radio', 'cctv']);
-  const assigned = new Set(LENSES.flatMap(({ layerIds }) => layerIds));
-  for (const id of [
-    'street-level',
-    'directions',
-    'recent-imagery',
-    'local-datacenters',
-    'local-dams',
-    'weather-satellite',
-    'military-awareness',
-    'bhote-koshi-2026',
-    'bhote-koshi-locator',
-  ])
-    assert.equal(assigned.has(id), false, id);
+  for (const id of ['searches', 'news', ...LAYERS_WITHOUT_ROWS])
+    assert.equal(assigned.includes(id), false, id);
+});
+
+test('every catalog layer has exactly one row or is named as rowless', () => {
+  const rows = LAYER_GROUPS.flatMap((entry) => entry.rows.map(({ id }) => id));
+  assert.equal(new Set(rows).size, rows.length, 'a layer appears in one row');
+  const catalogIds = APPLICATION_LAYER_METADATA.map(({ id }) => id);
+  for (const id of catalogIds)
+    assert.ok(
+      rows.includes(id) !== LAYERS_WITHOUT_ROWS.includes(id),
+      `${id} must have a row or be listed as rowless, not both`,
+    );
+  for (const id of [...rows, ...LAYERS_WITHOUT_ROWS])
+    assert.ok(catalogIds.includes(id), `${id} is not a catalog layer`);
+  for (const id of rows) assert.equal(layerRowFor(id).row.id, id);
+  assert.equal(layerRowFor('world'), null);
 });
 
 test('the lens catalog and its nested memberships are frozen', () => {

@@ -447,7 +447,7 @@ async function main() {
     const readCounters = () =>
       page.evaluate(() => ({ ...window.__qaCounters }));
 
-    console.log('Enabling CCTV layer...');
+    console.log('Enabling the Cameras layer...');
     const c0 = await readCounters();
     await page.evaluate(async () => {
       const dm = window.__godsEyeView.dataManager;
