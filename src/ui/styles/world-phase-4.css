@@ -9,13 +9,13 @@
 }
 
 .world-assets h3 {
-  font-size: 0.94rem;
-  color: #cbe5f4;
+  font: var(--type-heading);
+  color: var(--text-1);
 }
 
 .world-assets a,
 .world-asset-badge a {
-  color: #a6def5;
+  color: var(--link);
 }
 
 .world-asset-badge {
@@ -24,17 +24,19 @@
   align-items: baseline;
   gap: 0.25rem 0.45rem;
   padding: 0.35rem 0.45rem;
-  border: 1px solid rgb(197 218 137 / 48%);
-  border-radius: 0.3rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-chip);
+  /* Retain the existing badge colour. Meaning unread in the token plan. */
   color: #dce6af;
 }
 
 .world-asset-draft {
+  /* Retain the existing qualifier colour. Meaning unread in the token plan. */
   color: #ffd7a1;
 }
 
 .world-asset-meta {
-  color: #aebfcd;
+  color: var(--text-2);
 }
 
 .world-asset-details {
@@ -63,13 +65,13 @@
   display: grid;
   gap: 0.22rem;
   padding: 0.38rem;
-  border: 1px solid rgb(148 192 211 / 23%);
-  border-radius: 0.3rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-chip);
 }
 
 .world-asset-select {
   padding: 0;
-  color: #a6def5;
+  color: var(--link);
   background: none;
   border: 0;
   text-align: left;
@@ -82,18 +84,18 @@
 }
 
 .world-asset-closed .world-asset-select {
-  color: #a2acb3;
+  color: var(--text-2);
   text-decoration: line-through;
 }
 
 .world-asset-disclosure summary {
   padding: 0.25rem 0;
-  color: #b9d9ea;
+  color: var(--text-1);
   cursor: pointer;
 }
 
 body:has(#world-lens-bar [data-world-lens='ownership'][aria-pressed='true'])
   #world-legend
   .world-legend-ramp {
-  background: #519bd4;
+  background: var(--ownership-documented);
 }

@@ -1,3 +1,5 @@
+import { RELATION_RGB } from '../../designTokens.js';
+
 const alliances = new Set(['alliance', 'defence_pact']);
 const partnerships = new Set(['diplomatic_partnership', 'defence_cooperation']);
 
@@ -9,12 +11,12 @@ export const DIPLOMACY_RULES =
   'Sanctions colour applies to state measures. UN voting is shown separately.';
 
 export const DIPLOMACY_CLASSES = [
-  ['at-war', 'At war', [219, 71, 79]],
-  ['sanctions', 'Sanctions', [232, 147, 63]],
-  ['ally', 'Ally', [61, 161, 234]],
-  ['rival', 'Rival', [178, 94, 197]],
-  ['partner', 'Partner', [62, 175, 151]],
-  ['neutral', 'Neutral', [148, 159, 175]],
+  ['at-war', 'At war', RELATION_RGB.war],
+  ['sanctions', 'Sanctions', RELATION_RGB.sanctions],
+  ['ally', 'Ally', RELATION_RGB.ally],
+  ['rival', 'Rival', RELATION_RGB.rival],
+  ['partner', 'Partner', RELATION_RGB.partner],
+  ['neutral', 'Neutral', RELATION_RGB.neutral],
 ];
 
 export function relationPeers(row, actor) {

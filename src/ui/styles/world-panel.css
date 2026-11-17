@@ -1,14 +1,6 @@
 /* World Board content. Where its parts sit (the lens bar and legend in the
    bottom bar, the turn in the top bar, the sheet in the right column) is the
    frame's, in frame.css. */
-.world-board-hud,
-#world-character-sheet,
-#frame-bottom {
-  --world-accent: var(--accent);
-  --world-active: var(--accent-dim);
-  --world-hatching: var(--unknown-hatch);
-}
-
 .world-board-hud[data-panel-surface] {
   position: fixed;
   z-index: 105;
@@ -16,18 +8,18 @@
   gap: 5px;
 }
 
-.world-control,
-.world-kicker,
-.world-flag {
-  font: 600 10px/1.4 var(--font-mono);
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
+.world-control {
+  font: var(--type-control);
+}
+
+.world-kicker {
+  font: var(--type-label);
 }
 
 #world-character-sheet
   .world-control:is([aria-pressed='true'], [aria-selected='true']) {
-  border-color: var(--world-accent);
-  background: var(--world-active);
+  border-color: var(--accent);
+  background: var(--accent-dim);
 }
 
 #world-progress {
@@ -36,7 +28,7 @@
 
 .world-legend-ramp {
   height: 6px;
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
   background: var(--ramp);
 }
 
@@ -49,11 +41,11 @@
 .world-legend-unknown .world-hatch {
   width: 18px;
   height: 9px;
-  border-radius: 2px;
+  border-radius: var(--radius-mark);
 }
 
 .world-hatch {
-  background: var(--world-hatching);
+  background: var(--unknown-hatch);
 }
 
 #world-hover {
@@ -68,18 +60,19 @@
 }
 
 #world-hover-name {
-  color: var(--world-accent);
+  color: var(--accent);
 }
 
-.world-badge,
 .world-slot-id {
-  color: var(--world-accent);
-  font: 700 10px/1.4 var(--font-mono);
+  color: var(--accent);
+  font: var(--type-code);
 }
 
 .world-badge {
-  border: 1px solid var(--glass-border);
-  border-radius: 3px;
+  color: var(--accent);
+  font: var(--type-caption);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-mark);
   padding: 3px 4px;
 }
 
@@ -87,22 +80,21 @@
 .world-score-fill {
   display: block;
   height: 5px;
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
 }
 
 .world-score-track {
   overflow: hidden;
-  background-color: var(--glass-border-hover);
+  background-color: var(--line-strong);
 }
 
 .world-score-fill {
-  background: var(--world-accent);
+  background: var(--accent);
 }
 
 .world-detail {
-  color: var(--text-secondary);
-  font-size: 11px;
-  line-height: 1.4;
+  color: var(--text-2);
+  font: var(--type-small);
 }
 
 .world-detail.panel-surface-error {
@@ -123,9 +115,7 @@
   gap: 4px;
   width: 100%;
   text-align: start;
-  font: 12px/1.4 var(--font-sans);
-  letter-spacing: normal;
-  text-transform: none;
+  font: var(--type-small);
 }
 
 .world-row-heading {
@@ -136,7 +126,11 @@
 }
 
 .world-row-score {
-  font: 600 10px/1.4 var(--font-mono);
+  font: var(--type-caption);
+}
+
+.world-row-number {
+  font: var(--type-control-figure);
 }
 
 .world-flags {
@@ -147,21 +141,21 @@
 
 .world-flag {
   padding: 1px 4px;
-  border: 1px solid var(--glass-border);
-  border-radius: 2px;
-  color: var(--text-secondary);
-  font-size: 9px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-mark);
+  color: var(--text-2);
+  font: var(--type-caption);
 }
 
 .world-why,
 #world-since-turn {
   padding: 7px;
-  border-left: 2px solid var(--glass-border-hover);
+  border-left: 2px solid var(--line-strong);
   overflow-wrap: anywhere;
 }
 
 .world-why a {
-  color: var(--world-accent);
+  color: var(--link);
 }
 
 .world-why-facts {
@@ -172,7 +166,7 @@
 }
 
 .world-why-facts dt {
-  color: var(--text-secondary);
+  color: var(--text-2);
 }
 
 .world-why-facts dd,
