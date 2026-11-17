@@ -78,8 +78,9 @@ export function createWeatherLookFixture(state) {
           ...(state === 'empty'
             ? { unavailable: true, reason: 'Weather source unavailable' }
             : {
-                // Put synthetic observations over the captured globe position.
-                bounds: { west: 18, south: -12, east: 146, north: 52 },
+                // Limit synthetic tiles to a small area around the captured
+                // globe position so the real renderer can stage them quickly.
+                bounds: { west: 74, south: 15, east: 90, north: 29 },
                 times,
                 latest: times.at(-1),
                 tileSize: 256,

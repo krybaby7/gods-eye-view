@@ -26,8 +26,6 @@ export async function captureWeather({
   page,
   options,
   out,
-  width,
-  height,
   report,
   proxy,
   markFrameStage,
@@ -36,12 +34,12 @@ export async function captureWeather({
   const filled = options.state === 'filled';
   const active = filled ? WEATHER_LOOK_IDS : WEATHER_LOOK_IDS.slice(0, 1);
   const observed = active.filter((id) => id !== 'wind');
-  const phase = `${width}x${height} weather`;
-  const stage = (next) => markFrameStage(`${phase} ${next}`);
+  let [width, height] = viewports[0];
+  const stage = (next) => markFrameStage(`${width}x${height} weather ${next}`);
   const errors = [];
   const interactions = {};
   const recordCheck = (condition, message) => {
-    if (!condition) errors.push(message);
+    if (!condition) errors.push(`${width}x${height} weather: ${message}`);
   };
   const inspect = () => page.evaluate(measureWeather);
 
@@ -121,15 +119,8 @@ export async function captureWeather({
     }
   }
 
-  async function capture(
-    view,
-    extra = {},
-    captureWidth = width,
-    captureHeight = height,
-  ) {
-    await markFrameStage(
-      `${captureWidth}x${captureHeight} weather ${view} evidence`,
-    );
+  async function capture(view, extra = {}) {
+    await stage(`${view} evidence`);
     await page.evaluate(async () => {
       await document.fonts.ready;
       await new Promise((resolve) =>
@@ -145,13 +136,13 @@ export async function captureWeather({
     );
     const issues = [...failures];
     if (options.label === 'after') issues.push(...legacy);
-    const stem = `${options.label}-${options.state}-${captureWidth}x${captureHeight}-weather-${view}`;
+    const stem = `${options.label}-${options.state}-${width}x${height}-weather-${view}`;
     data.cropPixels = await captureLookImage(
       page,
       path.join(out, `${stem}-full.png`),
       path.join(out, `${stem}-crop.png`),
       data.target,
-      { width: captureWidth, height: captureHeight },
+      { width, height },
     );
     if (view !== 'inactive' && !data.cropPixels)
       issues.push('Weather rail has no pixels inside the screenshot');
@@ -161,8 +152,8 @@ export async function captureWeather({
       if (JSON.stringify(data[key]) !== JSON.stringify(after[key]))
         issues.push(`Weather ${key} changed during capture`);
     const evidence = {
-      width: captureWidth,
-      height: captureHeight,
+      width,
+      height,
       panel: 'weather',
       view,
       state: options.state,
@@ -180,43 +171,41 @@ export async function captureWeather({
     );
   }
 
-  if (width === viewports[0][0]) await switchLayers(active, true);
-  await stage('mounted rail');
-  await page.waitForSelector(`${panel}:not([hidden])`, seen);
-  if (await page.$(`${panel}.collapsed`)) await page.click(disclosure);
-  await page.waitForSelector(`${panel}:not(.collapsed) ${body}`, seen);
-  await stage('collapse and reopen');
-  await page.focus(disclosure);
-  await page.keyboard.press('Enter');
-  await page.waitForSelector(`${panel}.collapsed`, seen);
-  interactions.collapsed = await inspect();
-  recordCheck(
-    !interactions.collapsed.weather.bodyVisible,
-    'Weather body remains visible when collapsed',
-  );
-  await page.keyboard.press('Enter');
-  await page.waitForSelector(`${panel}:not(.collapsed) ${body}`, seen);
-  interactions.disclosureFocused = await page.$eval(
-    disclosure,
-    (button) => button === document.activeElement,
-  );
-  recordCheck(
-    interactions.disclosureFocused,
-    'Weather disclosure lost keyboard focus',
-  );
+  async function adjustViewport([nextWidth, nextHeight]) {
+    width = nextWidth;
+    height = nextHeight;
+    await stage('viewport');
+    await page.setViewport({ width, height, deviceScaleFactor: 1 });
+  }
 
-  if (!filled) {
-    await stage('unavailable response');
-    await page.waitForFunction(
-      () =>
-        /source unavailable/i.test(
-          document.querySelector('#weather-panel [data-line-id="status"]')
-            ?.textContent ?? '',
-        ),
-      optionsForWait,
+  async function exerciseDisclosure(interactions) {
+    await stage('mounted rail');
+    await page.waitForSelector(`${panel}:not([hidden])`, seen);
+    if (await page.$(`${panel}.collapsed`)) await page.click(disclosure);
+    await page.waitForSelector(`${panel}:not(.collapsed) ${body}`, seen);
+    await stage('collapse and reopen');
+    await page.focus(disclosure);
+    await page.keyboard.press('Enter');
+    await page.waitForSelector(`${panel}.collapsed`, seen);
+    const collapsed = await inspect();
+    interactions.collapseHidBody = !collapsed.weather.bodyVisible;
+    recordCheck(
+      interactions.collapseHidBody,
+      'Weather body remains visible when collapsed',
     );
-    await capture('unavailable');
-  } else {
+    await page.keyboard.press('Enter');
+    await page.waitForSelector(`${panel}:not(.collapsed) ${body}`, seen);
+    interactions.disclosureFocused = await page.$eval(
+      disclosure,
+      (button) => button === document.activeElement,
+    );
+    recordCheck(
+      interactions.disclosureFocused,
+      'Weather disclosure lost keyboard focus',
+    );
+  }
+
+  async function captureLatest(interactions) {
     await stage('populated products');
     const wind = card('wind');
     const forecastFocus = await openCard('wind');
@@ -258,14 +247,8 @@ export async function captureWeather({
       interactions.windReading === '26.2 km/h from WSW',
       'Map-center reading did not use the fixture vectors',
     );
-    const latestState = await inspect();
     await capture('latest', {
-      interactions: {
-        forecastFocus,
-        windReading: interactions.windReading,
-        windMotionPaused: true,
-      },
-      shown: WEATHER_LOOK_TIMES.latest,
+      interactions: { ...interactions },
     });
 
     const scrollBefore = await inspect();
@@ -300,7 +283,9 @@ export async function captureWeather({
         'Weather wheel moved the whole panel',
       );
     }
+  }
 
+  async function enterHistory() {
     await stage('play and step observed clock');
     await page.click(play);
     await page.waitForSelector(`${play}[aria-pressed="true"]`, seen);
@@ -308,6 +293,7 @@ export async function captureWeather({
     await page.waitForSelector(`${play}[aria-pressed="false"]`, seen);
     interactions.clockPlayedAndPaused = true;
     await page.click(latest);
+    await loaded(WEATHER_LOOK_TIMES.latest);
     await page.click(earlier);
     await page.waitForFunction(
       (selector) =>
@@ -317,6 +303,9 @@ export async function captureWeather({
       latest,
     );
     await loaded(WEATHER_LOOK_TIMES.history);
+  }
+
+  async function captureHistory(interactions, latestIndex) {
     const observedFocus = await openCard('weather-radar');
     const observedState = await inspect();
     interactions.observedFocus = observedFocus;
@@ -337,30 +326,84 @@ export async function captureWeather({
     );
     await capture('observed', {
       interactions: { observedFocus },
-      shown: WEATHER_LOOK_TIMES.history,
     });
     await openCard('wind');
     const history = await inspect();
     interactions.historyIndexChanged =
-      history.timeline.index !== latestState.timeline.index;
+      history.timeline.index === latestIndex - 1;
     recordCheck(
       interactions.historyIndexChanged,
       'Earlier observation did not change the range index',
     );
     await capture('history', {
-      interactions: { ...interactions, collapsed: undefined },
-      shown: WEATHER_LOOK_TIMES.history,
+      interactions: {
+        ...interactions,
+        clockPlayedAndPaused: true,
+      },
     });
+  }
+
+  await adjustViewport(viewports[0]);
+  await switchLayers(active, true);
+  const disclosureBySize = new Map();
+  for (const viewport of viewports) {
+    await adjustViewport(viewport);
+    const details = {};
+    await exerciseDisclosure(details);
+    if (filled) {
+      await captureLatest(details);
+    } else {
+      await stage('unavailable response');
+      await page.waitForFunction(
+        () =>
+          /source unavailable/i.test(
+            document.querySelector('#weather-panel [data-line-id="status"]')
+              ?.textContent ?? '',
+          ),
+        optionsForWait,
+      );
+      await capture('unavailable', { interactions: details });
+    }
+    disclosureBySize.set(width, details);
+  }
+
+  if (filled) {
+    // Change the observation clock on the smallest viewport. Wait for both
+    // real frames to settle before resizing the same, already loaded scene.
+    await adjustViewport(viewports[0]);
+    const latestIndex = (await inspect()).timeline.index;
+    await enterHistory();
+    for (const viewport of viewports) {
+      await adjustViewport(viewport);
+      await captureHistory(disclosureBySize.get(width), latestIndex);
+    }
+    await adjustViewport(viewports[0]);
+    await stage('return to latest');
     await page.click(latest);
     await page.waitForSelector(`${latest}[aria-pressed="true"]`, seen);
+    await loaded(WEATHER_LOOK_TIMES.latest);
   }
-  for (const error of errors.splice(0))
-    report.errors.push(`${phase}: ${error}`);
-  if (width !== viewports.at(-1)[0]) return;
   await switchLayers([...active].reverse(), false);
   await stage('inactive after switching off');
   await page.waitForSelector(`${panel}[hidden]`, optionsForWait);
 
+  if (filled) {
+    const latestFrames = report.cases.filter((item) => item.view === 'latest');
+    const smallest = latestFrames.find(
+      (item) => item.width === viewports[0][0],
+    );
+    recordCheck(
+      smallest?.inspectionMarker?.overWeather,
+      'Smallest viewport did not exercise marker overlap with Weather',
+    );
+    recordCheck(
+      latestFrames.some(
+        (item) =>
+          item.width > viewports[0][0] && item.inspectionMarker?.globeExposed,
+      ),
+      'No wider viewport exercised the marker over the exposed globe',
+    );
+  }
   const replies = report.transport.weatherReplies ?? {};
   const consumed = (key) => replies[key] ?? 0;
   recordCheck(
@@ -402,13 +445,9 @@ export async function captureWeather({
     ),
     'A Weather provider request escaped CDP interception',
   );
-  for (const [inactiveWidth, inactiveHeight] of viewports) {
-    await page.setViewport({
-      width: inactiveWidth,
-      height: inactiveHeight,
-      deviceScaleFactor: 1,
-    });
-    await capture('inactive', { interactions }, inactiveWidth, inactiveHeight);
+  for (const viewport of viewports) {
+    await adjustViewport(viewport);
+    await capture('inactive', { interactions });
   }
-  for (const error of errors) report.errors.push(`${phase}: ${error}`);
+  report.errors.push(...errors);
 }

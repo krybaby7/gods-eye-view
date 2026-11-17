@@ -166,7 +166,61 @@ export function measureWeather() {
     );
   const css = getComputedStyle(inner);
   const rect = visible(panel) ? box('Weather', panel) : null;
+  const marker = find('.gev-wind-inspection-marker');
+  const scene = window.__godsEyeView.viewer.scene;
+  let inspectionMarker = null;
+  if (visible(marker)) {
+    const bounds = box('Wind inspection marker', marker);
+    const x = (bounds.left + bounds.right) / 2;
+    const y = (bounds.top + bounds.bottom) / 2;
+    const canvas = scene.canvas;
+    const value = marker.style.getPropertyValue('pointer-events');
+    const priority = marker.style.getPropertyPriority('pointer-events');
+    // Hit testing omits this passive marker. Expose it just for the synchronous
+    // stack query, then restore its original property before any input or paint.
+    try {
+      marker.style.setProperty('pointer-events', 'auto', 'important');
+      const stack = document.elementsFromPoint(x, y);
+      const firstBehindMarker = stack.find((node) => node !== marker);
+      inspectionMarker = {
+        bounds,
+        x,
+        y,
+        overWeather: Boolean(
+          rect &&
+          x >= rect.left &&
+          x <= rect.right &&
+          y >= rect.top &&
+          y <= rect.bottom,
+        ),
+        markerIndex: stack.indexOf(marker),
+        weatherIndex: stack.findIndex((node) => panel.contains(node)),
+        canvasIndex: stack.indexOf(canvas),
+        globeExposed: firstBehindMarker === canvas,
+        firstBehindMarker: firstBehindMarker
+          ? identify(firstBehindMarker)
+          : null,
+        markerZ: getComputedStyle(marker).zIndex,
+        railZ: getComputedStyle(panel.parentElement).zIndex,
+      };
+    } finally {
+      if (value) marker.style.setProperty('pointer-events', value, priority);
+      else marker.style.removeProperty('pointer-events');
+    }
+  }
   return {
+    shown: Object.fromEntries(
+      [...panel.querySelectorAll('.weather-observed-group .weather-card')].map(
+        (card) => {
+          const id = card.dataset.cardId;
+          const { time, loading, error } =
+            window.__godsEyeView.dataManager.layers
+              .get(id)
+              .module.getDiagnostics();
+          return [id, { time, loading, error }];
+        },
+      ),
+    ),
     frames,
     panels,
     target: rect,
@@ -234,6 +288,7 @@ export function measureWeather() {
       text: zero?.textContent.trim(),
       pseudo: zero && getComputedStyle(zero, '::after').content,
     },
+    inspectionMarker,
     text,
   };
 }
@@ -377,9 +432,33 @@ export function weatherFailures(data, view, expectedCount, times) {
         failures.push(
           `Weather observation does not show its expected period: ${observed?.id ?? 'missing card'}`,
         );
+      const shown = data.shown[observed?.id];
+      if (!shown || shown.time !== expected || shown.loading || shown.error)
+        failures.push(
+          `Weather observation has no settled displayed frame: ${observed?.id ?? 'missing card'}`,
+        );
     }
     if (view === 'latest' && timeline.latest !== 'true')
       failures.push('Weather clock is not in latest mode');
+    if (view === 'latest') {
+      const marker = data.inspectionMarker;
+      if (!marker)
+        failures.push(
+          'The real Wind reading did not mount a visible globe marker',
+        );
+      else if (
+        marker.overWeather &&
+        (marker.weatherIndex === -1 ||
+          (marker.markerIndex !== -1 &&
+            marker.markerIndex < marker.weatherIndex))
+      )
+        legacy.push('Wind inspection marker paints over Weather controls');
+      else if (
+        marker.globeExposed &&
+        (marker.markerIndex === -1 || marker.markerIndex >= marker.canvasIndex)
+      )
+        failures.push('Wind inspection marker is covered on the exposed globe');
+    }
     if (
       view !== 'latest' &&
       (timeline.latest !== 'false' ||

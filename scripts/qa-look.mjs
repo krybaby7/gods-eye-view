@@ -274,27 +274,26 @@ try {
     [1440, 900],
     [1920, 1080],
   ];
+  if (options.panel === 'weather') {
+    try {
+      await captureWeather({
+        page,
+        options,
+        out,
+        report,
+        proxy,
+        markFrameStage,
+        viewports,
+      });
+    } catch (error) {
+      const { width, height } = page.viewport();
+      await failure(width, height, 'weather', 'journey', error);
+    }
+  }
   for (const [width, height] of viewports) {
+    if (options.panel === 'weather') break;
     await markFrameStage(`${width}x${height} viewport`);
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
-    if (options.panel === 'weather') {
-      try {
-        await captureWeather({
-          page,
-          options,
-          out,
-          width,
-          height,
-          report,
-          proxy,
-          markFrameStage,
-          viewports,
-        });
-      } catch (error) {
-        await failure(width, height, 'weather', 'journey', error);
-      }
-      continue;
-    }
     if (options.panel === 'layers') {
       try {
         await captureLayers(width, height);
