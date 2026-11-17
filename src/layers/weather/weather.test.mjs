@@ -400,6 +400,33 @@ test('superseded stages cancel requests and cannot resurrect after a late tile r
   assert.equal(h.layers.length, 0);
 });
 
+test('globe tile failures report whether an observation was retained at notification time', async () => {
+  const errors = [];
+  let h;
+  h = renderingHarness({
+    onChange: () => errors.push(h.rendering.getDiagnostics().error),
+  });
+  const first = h.rendering.setFrame(snapshot, times[0]);
+  h.providers[0].errorEvent.emit(new Error('tile missing'));
+  h.postRender.emit();
+  assert.equal(await first, false);
+  assert.ok(errors.includes('Weather tiles unavailable'));
+  assert.equal(h.rendering.getDiagnostics().time, null);
+  const success = h.rendering.setFrame(snapshot, times[0]);
+  h.settle();
+  assert.equal(await success, true);
+  errors.length = 0;
+  const next = h.rendering.setFrame(snapshot, times[1]);
+  h.providers.at(-1).errorEvent.emit(new Error('tile missing'));
+  h.postRender.emit();
+  assert.equal(await next, false);
+  assert.ok(
+    errors.includes('Weather tiles unavailable · previous frame retained'),
+  );
+  assert.equal(h.rendering.getDiagnostics().time, times[0]);
+  h.rendering.clear();
+});
+
 test('failed and timed-out stages retain the previous observation; a healthy replacement clears old errors', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const h = renderingHarness();
