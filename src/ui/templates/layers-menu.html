@@ -1,30 +1,30 @@
   <!-- The layers menu: opened from the bottom bar's Layers button (layersMenu.js).
        It keeps the old layer list's id, so voice, share links and the panel
        disclosure open and close it as before. -->
-  <section id="data-panel" class="layers-menu panel-collapsible collapsed" data-panel-id="data-panel" role="dialog" aria-labelledby="layers-menu-title" tabindex="-1">
-    <div class="layers-menu-inner">
-      <header class="layers-menu-head">
-        <h2 id="layers-menu-title" class="layers-menu-title">Layers</h2>
-        <span id="layers-menu-count" class="layers-menu-count">0 on.</span>
+  <section id="data-panel" class="layers-menu kit-pop panel-collapsible collapsed" data-panel-id="data-panel" role="dialog" aria-labelledby="layers-menu-title" tabindex="-1">
+    <div class="layers-menu-inner kit-pop-body">
+      <header class="layers-menu-head kit-pop-head">
+        <h2 id="layers-menu-title" class="layers-menu-title kit-panel-title">Layers</h2>
+        <span id="layers-menu-count" class="layers-menu-count kit-note">0 on.</span>
         <span class="layers-menu-grow"></span>
-        <button id="clear-selected-layers" class="layers-menu-quiet" type="button" aria-label="Switch all layers off" hidden>Switch all off</button>
-        <button id="layers-menu-close" class="layers-menu-close" type="button" aria-label="Close the layers menu" title="Close the layers menu">
+        <button id="clear-selected-layers" class="layers-menu-quiet kit-btn quiet" type="button" aria-label="Switch all layers off" hidden>Switch all off</button>
+        <button id="layers-menu-close" class="kit-panel-close" type="button" aria-label="Close the layers menu" title="Close the layers menu">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>
         </button>
         <button class="panel-collapse-btn" type="button" data-collapse-target="data-panel" tabindex="-1" aria-hidden="true" hidden></button>
       </header>
       <section id="lens-bar" class="layers-menu-presets" aria-label="Presets">
         <div class="lens-buttons" role="group" aria-label="Presets"></div>
-        <p class="layers-menu-caption">A preset switches its whole group</p>
+        <p class="layers-menu-caption kit-note">A preset switches its whole group</p>
       </section>
       <button type="button" class="search-layers-shortcut" data-open-search-layers data-open-panel-for="searches-panel" aria-controls="searches-panel" hidden>Open Search layers</button>
       <div id="data-toggles" class="data-toggle-list"></div>
-      <footer class="layers-menu-foot">
+      <footer class="layers-menu-foot kit-sec">
         <button type="button" class="layers-menu-link" data-menu-section="sources">Data sources and keys</button>
         <button type="button" class="layers-menu-link" data-menu-section="display">Display</button>
         <button type="button" class="layers-menu-link" data-menu-section="tools">Scenes, recording and drawing</button>
         <span class="layers-menu-grow"></span>
-        <p class="layers-menu-foot-note">Each layer says in plain words whether it is live, stale or waiting for a key.</p>
+        <p class="layers-menu-foot-note kit-note">Each layer says in plain words whether it is live, stale or waiting for a key.</p>
       </footer>
     </div>
   </section>

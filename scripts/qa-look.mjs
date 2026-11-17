@@ -14,6 +14,14 @@ import {
   captureStateFailures,
   popupContentFailures,
 } from '../src/tooling/qaLook.mjs';
+import {
+  LAYERS_FIXTURE_IDS,
+  FIRE_PERIMETER_FIXTURE,
+  measureLayers,
+  layersFailures,
+  measureRailRestoration,
+  railRestorationFailures,
+} from '../src/tooling/qaLookLayers.mjs';
 import { captureLookImage } from '../src/tooling/qaLookImage.mjs';
 import { createDenyProxy } from '../src/tooling/qaLookProxy.mjs';
 import { createFixtureWorld, installFixtures } from './qa-world.fixtures.mjs';
@@ -33,6 +41,12 @@ const report = {
     suppressedHosts: [],
   },
   errors: [],
+  ...(options.panel === 'layers'
+    ? {
+        panel: options.panel,
+        ...{ label: options.label, state: options.state },
+      }
+    : {}),
   cases: [],
 };
 const wait = { timeout: 75000, polling: 125 };
@@ -67,6 +81,10 @@ try {
   await page.evaluateOnNewDocument(installFrameDiagnostics);
   await installFixtures(page, options.url.origin, world, report, {
     strict: true,
+    firePerimeter:
+      options.panel === 'layers' && options.state === 'filled'
+        ? FIRE_PERIMETER_FIXTURE
+        : null,
   });
   page.on('pageerror', (error) =>
     report.errors.push(error.stack || error.message),
@@ -84,10 +102,17 @@ try {
   await page.evaluate(
     () => window.__godsEyeView.styleManager.initialRestorePromise,
   );
-  await page.evaluate(async () => {
-    document.getElementById('clear-selected-layers').click();
+  await page.evaluate(async (panel) => {
     const manager = window.__godsEyeView.dataManager;
-    await manager.setEnabled('world', false, { origin: 'user' });
+    if (panel === 'layers') {
+      const { FRAME_LAYER_IDS } = await import('/src/lenses/groups.js');
+      await manager.clearSelectedLayers({
+        origin: 'user',
+        keepIds: FRAME_LAYER_IDS,
+      });
+    } else {
+      document.getElementById('clear-selected-layers').click();
+    }
     const source = await (await fetch('/src/layers/world/geometry.js')).text();
     const specifier = source.match(
       /from\s+["']([^"']*cesium\.js[^"']*)["']/,
@@ -121,14 +146,22 @@ try {
         };
       },
     };
-    await manager.setEnabled('world', true, { origin: 'user' });
-  });
-  await page.waitForFunction(
-    () =>
-      window.__godsEyeView.dataManager.isEffectivelyEnabled('world') &&
-      document.querySelector('#world-turn')?.textContent === 'Turn 1',
-    wait,
-  );
+    // First start already enables the board. Leave its fixture request
+    // running while positioning the camera; toggling off aborts that request.
+    if (!manager.isEffectivelyEnabled('world'))
+      await manager.setEnabled('world', true, { origin: 'user' });
+  }, options.panel);
+  await page.waitForFunction(() => {
+    const manager = window.__godsEyeView.dataManager;
+    const snapshot = manager.layers.get('world').module.getSnapshot();
+    return (
+      manager.isEffectivelyEnabled('world') &&
+      snapshot.visible &&
+      !snapshot.loading &&
+      snapshot.countries.IND &&
+      document.querySelector('#world-turn')?.textContent === 'Turn 1'
+    );
+  }, wait);
   stage = 'country-pick';
   await markFrameStage(stage);
   const pick = await page.waitForFunction(() => {
@@ -195,6 +228,27 @@ try {
       document.body.dataset.sheet === 'open',
     wait,
   );
+  if (options.panel === 'layers' && options.state === 'filled') {
+    stage = 'layers-fixture';
+    await page.evaluate(async (ids) => {
+      const manager = window.__godsEyeView.dataManager;
+      for (const id of ids) {
+        await manager.setEnabled(id, true, { origin: 'user' });
+        if (!manager.isEffectivelyEnabled(id))
+          throw new Error(`Could not enable local fixture layer ${id}`);
+      }
+    }, LAYERS_FIXTURE_IDS);
+    await page.waitForFunction(() => {
+      const manager = window.__godsEyeView.dataManager;
+      return manager
+        .getAll()
+        .some(({ id, stats }) => id === 'fire-perimeters' && stats.count === 1);
+    }, wait);
+    if (!report.transport.firePerimeterReplies)
+      throw new Error(
+        'Fire perimeter data did not load through the local fixture',
+      );
+  }
   stage = 'matrix';
   for (const [width, height] of [
     [1280, 720],
@@ -203,6 +257,17 @@ try {
   ]) {
     await markFrameStage(`${width}x${height} viewport`);
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
+    if (options.panel === 'layers') {
+      try {
+        await captureLayers(width, height);
+      } catch (error) {
+        await failure(width, height, 'layers', 'menu', error);
+      } finally {
+        if (await page.$('#data-panel:not(.collapsed)'))
+          await page.keyboard.press('Escape');
+      }
+      continue;
+    }
     const lenses = await page.$$eval(
       '#world-lens-bar [data-world-lens]',
       (nodes) => nodes.map((node) => node.dataset.worldLens),
@@ -517,7 +582,9 @@ async function failure(width, height, lens, view, error) {
   const failed = {
     width,
     height,
-    lens,
+    ...(options.panel === 'layers'
+      ? { panel: options.panel, state: options.state }
+      : { lens }),
     view,
     error: error.stack || error.message,
     transport: structuredClone(report.transport),
@@ -535,6 +602,82 @@ async function failure(width, height, lens, view, error) {
       captureBeyondViewport: false,
     });
   } catch {}
+}
+
+async function captureLayers(width, height) {
+  const phase = `${width}x${height} layers`;
+  const expectedOn = options.state === 'filled' ? LAYERS_FIXTURE_IDS : [];
+  await markFrameStage(`${phase} open menu`);
+  if (await page.$('#data-panel:not(.collapsed)'))
+    await page.keyboard.press('Escape');
+  const railBefore = await page.evaluate(measureRailRestoration);
+  await page.click('#frame-layers');
+  await page.waitForSelector('#data-panel:not(.collapsed)', {
+    ...wait,
+    visible: true,
+  });
+  await markFrameStage(`${phase} geometry`);
+  const data = await page.evaluate(measureLayers, {
+    width,
+    height,
+    settle: true,
+  });
+  data.collisions = collisions(data.frames, data.panels);
+  const errors = layersFailures(data, expectedOn, options.label);
+  const stem = `${options.label}-${options.state}-${width}x${height}-layers-menu`;
+  await markFrameStage(`${phase} screenshot`);
+  try {
+    data.cropPixels = await captureLookImage(
+      page,
+      path.join(out, `${stem}-full.png`),
+      path.join(out, `${stem}-crop.png`),
+      data.target,
+      { width, height },
+    );
+    if (!data.cropPixels)
+      errors.push('Layers menu has no pixels inside the screenshot');
+    await markFrameStage(`${phase} after screenshot`);
+    const after = await page.evaluate(measureLayers, {
+      width,
+      height,
+      settle: false,
+    });
+    errors.push(...captureStateFailures(data.frameState, after.frameState));
+    for (const key of ['target', 'rows', 'controls', 'menu']) {
+      if (JSON.stringify(data[key]) !== JSON.stringify(after[key]))
+        errors.push(`Layers ${key} changed during capture`);
+    }
+  } catch (error) {
+    errors.push(`Screenshot evidence failed: ${error.message}`);
+  }
+  await page.keyboard.press('Escape');
+  data.focusReturned = await page.$eval(
+    '#frame-layers',
+    (button) =>
+      button === document.activeElement &&
+      button.getAttribute('aria-expanded') === 'false',
+  );
+  if (!data.focusReturned)
+    errors.push('Escape did not close Layers and restore focus');
+  data.railBefore = railBefore;
+  data.railAfter = await page.evaluate(measureRailRestoration);
+  if (options.label === 'after')
+    errors.push(...railRestorationFailures(data.railBefore, data.railAfter));
+  if (errors.length) data.error = errors.join('; ');
+  data.transport = structuredClone(report.transport);
+  data.proxy = { ...proxy.totals };
+  await fs.writeFile(
+    path.join(out, `${stem}.json`),
+    JSON.stringify(data, null, 2),
+  );
+  report.cases.push({
+    width,
+    height,
+    panel: 'layers',
+    view: 'menu',
+    state: options.state,
+    ...data,
+  });
 }
 
 async function capture(width, height, lens, view) {

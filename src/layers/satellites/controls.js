@@ -505,7 +505,7 @@ export function createControls({ state: layerState, services, parts, source }) {
         chips: [
           {
             id: 'catalog',
-            label: loading ? 'DENSE ···' : failed ? 'DENSE ✕' : 'DENSE',
+            label: loading ? 'Dense ···' : failed ? 'Dense ✕' : 'Dense',
             active,
             busy: loading,
             disabled: loading,

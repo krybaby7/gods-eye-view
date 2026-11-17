@@ -164,14 +164,14 @@ test('row chips: modes, arming, and command availability follow the state', () =
     'clear',
   ]);
   assert.equal(chips.find((c) => c.id === 'mode-car').active, true);
-  assert.equal(chips.find((c) => c.id === 'set-a').label, 'SET A');
+  assert.equal(chips.find((c) => c.id === 'set-a').label, 'Set A');
   assert.deepEqual(chips.find((c) => c.id === 'set-a').params, { arm: 'a' });
   assert.equal(chips.find((c) => c.id === 'fly').disabled, true);
   assert.equal(chips.find((c) => c.id === 'swap').disabled, true);
   assert.equal(chips.find((c) => c.id === 'clear').disabled, true);
 
   const armed = directionsRowControls({ ...idle, armed: 'a' }).chips;
-  assert.equal(armed.find((c) => c.id === 'set-a').label, 'CLICK MAP');
+  assert.equal(armed.find((c) => c.id === 'set-a').label, 'Click map');
   assert.deepEqual(
     armed.find((c) => c.id === 'set-a').params,
     { arm: null },
@@ -425,7 +425,7 @@ test('the FLY chip reports a flight in progress', () => {
     route,
     flightStep: 1,
   }).chips.find((chip) => chip.id === 'fly');
-  assert.equal(flying.label, 'FLYING');
+  assert.equal(flying.label, 'Flying');
   assert.equal(flying.busy, true);
   assert.equal(flying.active, true);
 });
