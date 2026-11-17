@@ -9,8 +9,9 @@ Piece 2, costume off and board on, was built unattended on 2026-11-12 and merged
 pull request 26, after an independent review. Piece 4, words for numbers and the Overview tab, was
 merged the same day as pull request 27 under decision 33. Piece 3, the frame, was merged on
 2026-11-16 as pull request 28, also under decision 33, and the tools menu (1.5) the same day as pull
-request 29. From 2026-11-17 a Codex agent continues the build (decision 34). Section 10 gives the
-order of building and the state of each piece. Builds on
+request 29. The layers menu (1.4) was merged on 2026-11-17 as pull request 30 under the same leave.
+Codex directs the work, with GPT-6.1 Sol implementing and GPT-6.1 Terra testing (decisions 34 and
+35). Section 10 gives the order of building and the state of each piece. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
 what the first review could not see and section 8.1 what the second one found.
@@ -250,9 +251,11 @@ board's later stylesheets. Then move every original panel onto the same componen
 pull request, in this order: layer list, weather, cameras, street level, recent imagery, radio,
 context, settings and keys, welcome, and the aircraft cockpit last.
 
-**1.4 Layers regrouped.** The layer list is generated from the catalog under topic headings that
-match the presets (appendix B). World Board, War Monitor and Searches leave the list: the first is
-the frame, the second feeds Today, the third becomes a tool.
+**1.4 Layers regrouped.** The bottom bar opens Layers and Presets separately. The layer list uses
+the eight topic groups that match the presets (Appendix B). World Board belongs to the frame, the
+War Monitor switch is in Menu ▸ Data sources and keys, and Search layers opens its tool. The
+cockpit has its own Layers and Presets buttons. Merged as pull request 30 on 2026-11-17
+(section 10).
 
 **1.5 The original tools move out of the way.** The cockpit, voice, scenes and recording, drawing,
 and the render styles (night vision, thermal, CRT and the others) keep working. They open from a
@@ -609,6 +612,10 @@ Added on 2026-11-17, when the owner moved the building to Codex:
     the same day whether Codex may merge finished pieces without asking, the owner answered "Yes,
     same leave": the leave of decision 33 passes to Codex, with its limits.
 
+35. **Codex directs, Sol implements, Terra tests.** The owner directed Codex to orchestrate the
+    work, assign implementation to GPT-6.1 Sol and assign testing to GPT-6.1 Terra. The independent
+    read and the merge checks in decisions 33 and 34 still apply.
+
 ## 6. Risks
 
 - **Stage 1 is bigger than it looks.** Most of its lines are in panels the owner did not write.
@@ -929,17 +936,17 @@ asks. Decision 33 lets a reviewed piece be merged without asking until the app i
 table is the order and the state. The session that finishes a piece updates its row, the status
 line at the top of this file and the owner's status page.
 
-| Order  | Piece                                                                                                               | State on 2026-11-17                                         |
-| ------ | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                                   |
-| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)                     |
-| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13                     |
-| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16                     |
-| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13                     |
-| 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16                     |
-| 6      | The layers menu (1.4)                                                                                               | Both stages built (pull request 30, a draft); not yet gated |
-| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Next: 1.3 (scoped; the plan is below), then 1.6             |
-| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock                        |
+| Order  | Piece                                                                                                               | State on 2026-11-17                     |
+| ------ | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25               |
+| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30) |
+| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13 |
+| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16 |
+| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13 |
+| 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16 |
+| 6      | The layers menu (1.4)                                                                                               | Merged as pull request 30 on 2026-11-17 |
+| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | 1.3 under way (A1), then 1.6            |
+| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock    |
 
 **Piece 2, costume off and board on.** Merged on 2026-11-13 as pull request 26 (merge commit
 `c9c6beee`), on the owner's word. Before the merge a separate agent ran the five gates again and
@@ -1164,30 +1171,59 @@ evidence. The review left these:
 The logs of both full runs, of the builder's five browser runs, and the captures are in the main
 folder under `qa-artifacts/tools-menu/`, not committed.
 
-**Piece 6, the layers menu (1.4): where it stands on 2026-11-17.** Both stages are built and pushed
-(pull request 30, a draft, at `4e2be4c9`). The piece is not merged. The second stage joined the
-branch to `main` after the tools menu, took the War Monitor's row out of the list, gave the menu its
-three foot links, made the menus open one at a time, gave the cockpit its own Layers and Presets,
-and cleared what the tools menu's review had left to it. The tests the builders touched and the
-three small checks passed. Nothing after the first builder's third browser run is proved in a
-browser. That run, on `d07c31b1`, passed 37 World Board steps and failed one: in the cockpit the
-menu lay over the compass at 1440×900. A later commit raises the menu, by arithmetic and not by
-measure, and the run that was to measure it was cut off when the session stopped. No full run was
-made on the final commit. One of two independent readers finished. It found one fault to cure before
-the merge: in the cockpit the menu's three foot links close the menu and open nothing, because the
-region that holds the panels is hidden there. The second reader, on the tests and the evidence, did
-not finish. Still to do: cure that fault, read the whole second stage, make one full run alone on
-the final commit, then merge and record as for piece 5.
+**Piece 6, the layers menu (1.4).** Merged on 2026-11-17 at 13:00 Cairo time as pull request 30
+(merge commit `bad1d88a9ddfc64a31caf6f90e96e4f00e513407`), under decisions 33 and 34. Layers and
+Presets open from the bottom bar. Layers shows eight topic groups, an on count, Switch all off,
+and plain state words. The two preset bars share their busy state. Search layers opens its tool.
+World and the War Monitor have no list rows. Presets and Switch all off leave those two frame
+layers alone, and the count covers the layers in the list. The War Monitor stays under Menu ▸ Data
+sources and keys until Today takes the news over. These are the director's readings for the owner
+to confirm.
+
+The three footer links open the matching Menu panels. Escape or the close button returns focus
+to Layers for a panel opened from the footer, and to Menu for the other routes. The cockpit has
+its own Layers and Presets buttons and hides the footer links while the top bar is unavailable.
+Leaving the cockpit closes both menus and returns Presets to the bottom bar. Layers, Presets,
+the top-bar Menu and its panels, the sheet's More menu and the legend popover open one at a time.
+
+The directing context read the whole second stage. An independent Sol context reviewed the final
+app fixes, test changes and local gate runner changes. Three new behaviour tests failed against
+the previous app code and passed with the fixes. The local runner safeguards were checked with
+synthetic cases. The runner and its evidence are kept locally outside Git.
+
+The full run was alone on the PC on 2026-11-17 from 12:29 to 12:58 Cairo time, on
+`1655243ee2aa1fa4c3935595bbd1f578b6bdaa0a`. All nine steps exited 0. Format, boundaries, layer
+tokens and the production build passed. Of 7,200 tests, 7,190 passed, none failed and 10 were
+skipped. The World Board fixture passed 38 of 38 steps, news passed 30, searches passed 11, and
+presets and lenses passed 23 with one performance check skipped. The checkout was clean before
+and after, the server stopped and the shared lock was removed. The merged `main` tree matches the
+tested head. The run, screenshots and evidence manifest are under
+`qa-artifacts/layers-menu/layers14b-codex-final-1655243e/` in the main folder, outside Git.
+
+At 1280×720 the Strength legend was 481 px wide with and without the Menu button, matching the
+Strength baseline. The cockpit fixture entered with the C key on a tracked synthetic aircraft.
+Both menus cleared the named instruments at 1440×900. The new route buttons and menu boxes fitted
+inside 390×844. The old cockpit HUD still crowds at that width and some icons fall back to text
+in the fixture. The cockpit restyle is 1.3 K. This run used fixtures. Live keys, aircraft and
+imagery, a real phone, the microphone, a paid War Monitor Refresh and a real Search Layers run
+are untested. The keyless server can still fetch free feeds, and its mobile-data use was unmeasured.
+
+Six edited scripts outside the gate remain unrun: `qa-radio.mjs`, `qa-failstate-b10.mjs`,
+`qa-map-source-tray.mjs`, `qa-weather-journey.mjs`, `qa-draw-tool.mjs` and `qa-cctv-v2.mjs`.
+`qa-cockpit-utility.mjs`, `qa-directions.mjs`, `qa-transit.mjs` and `qa-overpass-offload.mjs`
+were unchanged and unrun. Neither a PR 30 server nor a test run remains active. A1 of One look
+(1.3) is under way.
 
 **One look (1.3): the plan.** Scoped on 2026-11-16 by six readers and a challenger, from the code
-and the mock; nothing is built and nothing was looked at in a browser. The plan is in the main
+and the mock. The scoping review used no browser. The plan is in the main
 folder, `qa-artifacts/handoff-2026-11-13b/briefs/piece-1.3-plan.md`, not committed. The readers
 counted, by script, 1,632 colours, 54 font families and 342 sizes under 12 px written in place in
-the app's source. All 51 tokens of Appendix D are already in `src/ui/styles/foundation.css` with the
-approved values, but little outside the frame and the two menus uses them.
+the app's source. The 51 tokens from the approved mock are in `src/ui/styles/foundation.css`, and
+piece 1.4 added three control type tokens in Appendix D. Little outside the frame and the two
+menus uses them.
 
-It is built as twelve pull requests, one at a time, each with the full local run and an independent
-read:
+The scope covers thirteen pull requests: A1 and A2, ten panel pieces from B to K, and L. Each
+gets the full local run and an independent read, one at a time.
 
 - **A1, the tokens and the board's later sheets.** The seven old tokens that equal an approved one
   become its alias. The world sheets, `panel-surfaces.css` and the last colour written in
@@ -1205,9 +1241,9 @@ read:
   the agent's panel, toasts, credits and the sync chips. "No colour or font written in place" cannot
   be met without them.
 
-A1 shares only two or three small files with the layers menu and could be built beside it. It is
-built after 1.4 merges instead, on the new `main`, so that it is gated once and the two do not share
-the PC. Everything else needs 1.4 or the kit first.
+A1 started on 2026-11-17 after 1.4 merged, in `gev-one-look-tokens` on `feat/one-look-tokens`
+from `bad1d88a`. Sol is preparing the brief and implementing, and Terra is responsible for tests.
+Everything else needs 1.4 or the kit first.
 
 These are the director's readings, taken on the plan's recommendation and not yet put to the owner:
 
@@ -1400,6 +1436,10 @@ own", the value is unchanged from today's code.
   --frame-rail: 48px;
   --font-sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  /* Control type added by the layers menu (1.4). */
+  --type-control: 500 13px/19px var(--font-sans);
+  --type-label: 600 13px/19px var(--font-sans);
+  --type-control-figure: 600 13px/19px var(--font-mono);
 }
 ```
 
