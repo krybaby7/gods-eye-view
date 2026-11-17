@@ -146,6 +146,15 @@ export function measureWeather() {
             text: part.textContent.trim(),
             selector: identify(node),
             fontSize: Number.parseFloat(style.fontSize),
+            minimumFontSize:
+              !/^\p{L}|\s\p{L}/u.test(part.textContent.trim()) ||
+              Boolean(
+                node.closest(
+                  '.rail-card-badge, .rail-card-scale, .rail-card-zero, .rail-timeline-endpoints',
+                ),
+              )
+                ? 12
+                : 13,
             fontFamily: style.fontFamily,
             lineHeight: style.lineHeight,
             transform: style.textTransform,
@@ -229,7 +238,7 @@ export function measureWeather() {
   };
 }
 
-export function weatherFailures(data, view, expectedCount) {
+export function weatherFailures(data, view, expectedCount, times) {
   const failures = requiredContextFailures(data);
   const legacy = [];
   const {
@@ -296,11 +305,13 @@ export function weatherFailures(data, view, expectedCount) {
     legacy.push('Weather title is not a sentence-case h2');
   if (weather.backgroundAlpha !== 1 || weather.backdropFilter !== 'none')
     legacy.push('Weather surface is not solid');
-  const tooSmall = data.text.filter(({ fontSize }) => fontSize < 12);
+  const tooSmall = data.text.filter(
+    ({ fontSize, minimumFontSize }) => fontSize < minimumFontSize,
+  );
   const faint = data.text.filter(({ contrast }) => Math.min(...contrast) < 4.5);
   const clipped = data.text.filter((item) => item.clipped);
   for (const [label, items] of [
-    ['Text below 12px', tooSmall],
+    ['Text below 13px (12px for captions or figures)', tooSmall],
     ['Text below 4.5:1', faint],
     ['Clipped text', clipped],
   ]) {
@@ -323,8 +334,20 @@ export function weatherFailures(data, view, expectedCount) {
       legacy.push(
         'Unavailable clock still presents a latest observation readout',
       );
+    if (/previous observation retained/i.test(cards[0]?.lines.status ?? ''))
+      legacy.push(
+        'Unavailable source claims it retained an observation on first activation',
+      );
+    if (!/^Observation unavailable$/i.test(cards[0]?.lines.time ?? ''))
+      legacy.push(
+        'Empty observation period does not explicitly say unavailable',
+      );
   } else {
     const wind = cards.find(({ id }) => id === 'wind');
+    const radar = cards.find(({ id }) => id === 'weather-radar');
+    const satellite = cards.find(({ id }) => id === 'weather-satellite');
+    const utc = (iso) => iso.slice(5, 16).replace('T', ' ') + ' UTC';
+    const expectedTimes = view === 'latest' ? times.latest : times.history;
     if (
       !timeline.visible ||
       timeline.disabled ||
@@ -335,19 +358,44 @@ export function weatherFailures(data, view, expectedCount) {
       failures.push(
         'Expected six observed ticks across two products and a distinct wind forecast',
       );
-    if (!wind?.open || !/forecast.*valid.*issued/i.test(wind.lines.time ?? ''))
+    const forecastPeriod = `Forecast · valid ${utc(times.forecast.validIso)} · issued ${utc(times.forecast.runIso)}`;
+    if (view !== 'observed' && !wind?.open)
+      failures.push('Expected the Wind forecast card to be expanded');
+    if (!wind?.lines.time?.includes(forecastPeriod))
       failures.push(
-        'Wind forecast is missing its visible valid and issued times',
+        'Wind forecast does not show the expected valid and issued times',
       );
+    if (!/NOAA GFS/.test(wind?.lines.source ?? ''))
+      legacy.push('Wind forecast has no explicit NOAA GFS source');
+    if (!/NOAA.*MRMS/.test(radar?.lines.source ?? ''))
+      legacy.push('Radar observation has no explicit NOAA MRMS source');
+    if (!/NOAA.*GOES|NESDIS.*GOES/i.test(satellite?.lines.source ?? ''))
+      legacy.push('Satellite observation has no explicit GOES source');
+    for (const observed of [radar, satellite]) {
+      const expected = expectedTimes[observed?.id];
+      if (!expected || !observed.lines.time?.includes(utc(expected)))
+        failures.push(
+          `Weather observation does not show its expected period: ${observed?.id ?? 'missing card'}`,
+        );
+    }
     if (view === 'latest' && timeline.latest !== 'true')
       failures.push('Weather clock is not in latest mode');
     if (
-      view === 'history' &&
+      view !== 'latest' &&
       (timeline.latest !== 'false' ||
         !/does not follow history/i.test(wind?.lines.time ?? ''))
     )
       failures.push('History selection changed the forecast context');
-    if (!zero.visible || zero.text !== '0°C')
+    if (view === 'observed' && (!radar?.open || wind?.open))
+      failures.push('History view did not expand just the observed Radar card');
+    const clockTime = utc(
+      view === 'latest'
+        ? expectedTimes['weather-satellite']
+        : expectedTimes['weather-radar'],
+    );
+    if (timeline.utc !== clockTime)
+      failures.push(`Observed clock did not select ${clockTime}`);
+    if (view !== 'observed' && (!zero.visible || zero.text !== '0°C'))
       legacy.push('Freezing-point label is missing from actual text');
   }
   return { failures, legacy, overlaps };

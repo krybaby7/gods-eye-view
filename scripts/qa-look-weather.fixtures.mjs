@@ -1,18 +1,32 @@
 import sharp from 'sharp';
 
 export const WEATHER_LOOK_IDS = ['weather-radar', 'weather-satellite', 'wind'];
+export const WEATHER_LOOK_REFERENCE = Date.parse('2026-11-18T00:00:00Z');
+const time = (minutes) =>
+  new Date(WEATHER_LOOK_REFERENCE + minutes * 60000).toISOString();
+const radarTimes = [-15, -10, -5].map(time);
+const satelliteTimes = [-13, -8, -3].map(time);
+export const WEATHER_LOOK_TIMES = {
+  latest: {
+    'weather-radar': radarTimes.at(-1),
+    'weather-satellite': satelliteTimes.at(-1),
+  },
+  history: {
+    'weather-radar': radarTimes.at(-1),
+    'weather-satellite': satelliteTimes.at(-2),
+  },
+  forecast: { validIso: time(60), runIso: time(-60) },
+};
 
 export function createWeatherLookFixture(state) {
-  const anchor = Math.floor(Date.now() / 60000) * 60000;
-  const time = (minutes) => new Date(anchor + minutes * 60000).toISOString();
   const products = {
-    radar: { times: [-15, -10, -5].map(time), color: '#23c282' },
-    'clouds-regional': { times: [-13, -8, -3].map(time), color: '#becde2' },
+    radar: { times: radarTimes, color: '#23c282' },
+    'clouds-regional': { times: satelliteTimes, color: '#becde2' },
   };
   const images = new Map();
   const grid = { nx: 360, ny: 181, lo1: 0, la1: 90, dx: 1, dy: 1 };
   const count = grid.nx * grid.ny;
-  const cycle = { validIso: time(60), runIso: time(-60) };
+  const cycle = WEATHER_LOOK_TIMES.forecast;
   const runGrid = (temperature) => {
     const values = new Float32Array(count * (temperature ? 3 : 2));
     values.fill(7, 0, count);

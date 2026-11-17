@@ -25,7 +25,10 @@ import {
 import { captureLookImage } from '../src/tooling/qaLookImage.mjs';
 import { createDenyProxy } from '../src/tooling/qaLookProxy.mjs';
 import { createFixtureWorld, installFixtures } from './qa-world.fixtures.mjs';
-import { createWeatherLookFixture } from './qa-look-weather.fixtures.mjs';
+import {
+  createWeatherLookFixture,
+  WEATHER_LOOK_REFERENCE,
+} from './qa-look-weather.fixtures.mjs';
 import { captureWeather } from './qa-look-weather.mjs';
 
 const options = parseLookArgs(process.argv.slice(2));
@@ -81,6 +84,16 @@ try {
   page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
   await page.evaluateOnNewDocument(installFrameDiagnostics);
+  if (options.panel === 'weather') {
+    report.weatherReference = new Date(WEATHER_LOOK_REFERENCE).toISOString();
+    await page.evaluateOnNewDocument((reference) => {
+      // Shift wall time for fixture freshness without virtualizing timers or
+      // freezing elapsed-time checks in the application.
+      const realNow = Date.now.bind(Date);
+      const offset = reference - realNow();
+      Date.now = () => realNow() + offset;
+    }, WEATHER_LOOK_REFERENCE);
+  }
   await installFixtures(page, options.url.origin, world, report, {
     strict: true,
     weather:
@@ -256,11 +269,12 @@ try {
       );
   }
   stage = 'matrix';
-  for (const [width, height] of [
+  const viewports = [
     [1280, 720],
     [1440, 900],
     [1920, 1080],
-  ]) {
+  ];
+  for (const [width, height] of viewports) {
     await markFrameStage(`${width}x${height} viewport`);
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     if (options.panel === 'weather') {
@@ -274,6 +288,7 @@ try {
           report,
           proxy,
           markFrameStage,
+          viewports,
         });
       } catch (error) {
         await failure(width, height, 'weather', 'journey', error);
