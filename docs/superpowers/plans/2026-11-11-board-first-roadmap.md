@@ -618,6 +618,23 @@ Added on 2026-11-17, when the owner moved the building to Codex:
     work, assign implementation to GPT-6.1 Sol and assign testing to GPT-6.1 Terra. The independent
     read and the merge checks in decisions 33 and 34 still apply.
 
+Added later on 2026-11-17, after Codex's first run:
+
+36. **Codex fixes what Claude's read found, before A2.** Claude checked pull requests 30 and 31
+    the same day. The trees on `main` equal the tested trees, both gate summaries are clean, and a
+    read by Opus agents, each finding then challenged by a second agent, found nothing that breaks
+    the app. It found five small faults: panel titles outside the board are spaced too widely; the
+    cockpit check and its record say "clear of the instruments" although the open Layers menu
+    covers part of the speed and altitude scales; a layer whose state is uncertain is no longer
+    announced as uncertain; two status colours changed without a recorded reading; and the new
+    readability test barely draws the Exposure sheet. Asked who should fix them, the owner chose
+    "Codex, before A2": Codex fixes items 1 to 5 as one small pull request before A2, under the
+    same rules, gate and leave, and records them by adding to the history of a piece, not by
+    replacing it. The findings are in the main folder,
+    `qa-artifacts/handoff-2026-11-17/claude-read-of-codex-run.md`, not committed. Two things
+    still wait for the owner's word: decision 35 in their own words, and whether a read by a
+    fresh Codex context counts as the independent read of decisions 33 and 34.
+
 ## 6. Risks
 
 - **Stage 1 is bigger than it looks.** Most of its lines are in panels the owner did not write.
