@@ -405,14 +405,16 @@ body.gev-frame {
    as many lines as the band holds and the note takes a line under them, cut
    with an ellipsis. A stop is drawn whole or not at all; while the legend is
    in the bar its title and unknown key are whole. frameLegend.js measures
-   what is drawn: more than the band holds closes up to the dense line, then
+   what is drawn: tighter spacing gives the marks more room, then
    stops leave from the last back, then the note goes, and where even the
    title and the unknown key do not fit the legend leaves the bar
    (data-away); whatever is left out or cut is read whole in the popover
    behind the info button. The band's height is fixed, not a
-   cap, so a short legend sits centred with room above and below its first
-   and last lines (whose type is taller than the dense line). */
+   cap, so a short legend sits centred with room above and below it. */
 .frame-legend {
+  --legend-gap: var(--space-2);
+  --legend-ramp-width: 104px;
+  --legend-hatch-width: calc(var(--space-4) + var(--space-1));
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -422,13 +424,15 @@ body.gev-frame {
   /* The bar's height less its border and a pixel of air either side. */
   height: calc(var(--frame-bar) - 4px);
   overflow: hidden;
-  font: 500 12px/15px var(--font-sans);
+  font: var(--type-caption);
   color: var(--text-2);
   pointer-events: none;
 }
 
 .frame-legend[data-dense] {
-  line-height: 12px;
+  --legend-gap: var(--space-1);
+  --legend-ramp-width: 64px;
+  --legend-hatch-width: var(--space-4);
 }
 
 /* Where the band cannot hold even the title and the unknown key whole (a
@@ -453,9 +457,9 @@ body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
   margin: 0;
 }
 
-.frame-legend-row > *,
+.frame-legend-row > :not(#world-legend-stops),
 #world-legend-stops > span {
-  margin-right: 10px;
+  margin-inline-end: var(--legend-gap);
 }
 
 /* A stop or class is one unbreakable box: it moves to the next line whole
@@ -481,24 +485,25 @@ body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
 
 .frame-legend .world-legend-ramp {
   display: inline-block;
-  width: 116px;
-  height: 8px;
-  border-radius: 4px;
+  width: var(--legend-ramp-width);
+  height: var(--space-2);
+  border-radius: var(--radius-pill);
   vertical-align: middle;
 }
 
 .frame-legend .world-legend-unknown {
-  display: inline;
+  display: inline-block;
+  margin-inline-end: 0;
   white-space: nowrap;
 }
 
 .frame-legend .world-legend-unknown .world-hatch {
   display: inline-block;
-  width: 22px;
-  height: 9px;
-  margin-right: 6px;
+  width: var(--legend-hatch-width);
+  height: var(--space-2);
+  margin-inline-end: var(--space-1);
   border: 1px solid var(--line-strong);
-  border-radius: 3px;
+  border-radius: var(--radius-mark);
   vertical-align: middle;
 }
 
@@ -513,8 +518,8 @@ body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
     padding: 0 8px;
   }
 
-  .frame-legend .world-legend-ramp {
-    width: 72px;
+  .frame-legend:not([data-dense]) {
+    --legend-ramp-width: 72px;
   }
 }
 
@@ -532,26 +537,36 @@ body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
   display: none;
 }
 
-/* Shown only when the bar cuts part of the legend, or on a phone, where the
-   bar has no room for it at all. */
-.frame-legend-whole {
-  width: 28px;
-  height: 28px;
-}
-
 .frame-legend-popup {
-  bottom: calc(100% + 8px);
-  left: 8px;
+  --legend-popup-width: min(
+    420px,
+    calc(100vw - var(--frame-left) - var(--frame-right) - 2 * var(--space-2))
+  );
+  position: absolute;
+  z-index: 130;
+  bottom: calc(100% + var(--frame-status) + var(--space-2));
+  left: clamp(
+    calc(var(--frame-left) + var(--space-2)),
+    var(--legend-popup-anchor, 0px),
+    calc(
+      100vw - var(--frame-right) - var(--legend-popup-width) - var(--space-2)
+    )
+  );
   display: grid;
-  gap: 8px;
-  width: min(420px, calc(100vw - 16px));
-  max-height: calc(100vh - var(--frame-bar) - 16px);
+  gap: var(--space-2);
+  width: var(--legend-popup-width);
+  max-height: calc(
+    100dvh - var(--frame-top) - var(--frame-bottom) - var(--frame-status) -
+      var(--space-4)
+  );
   overflow: auto;
+  overflow-wrap: anywhere;
   color: var(--text-2);
+  font: var(--type-caption);
 }
 
-.frame-legend-popup:focus {
-  outline: none;
+.frame-legend-popup[hidden] {
+  display: none;
 }
 
 .frame-legend-popup-title {
@@ -561,13 +576,13 @@ body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
 
 .frame-legend-popup .frame-legend-popup-ramp {
   display: block;
-  height: 8px;
+  height: var(--space-2);
 }
 
 .frame-legend-popup-stops {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 14px;
+  gap: var(--space-1) var(--space-3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -576,28 +591,29 @@ body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
 .frame-legend-popup-stops li {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1);
 }
 
 .frame-legend-popup-swatch {
   flex: none;
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-mark);
 }
 
 .frame-legend-popup .frame-legend-popup-unknown {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1);
   margin: 0;
 }
 
 .frame-legend-popup .frame-legend-popup-unknown .world-hatch {
-  width: 22px;
-  height: 10px;
+  flex: none;
+  width: var(--space-5);
+  height: var(--space-2);
   border: 1px solid var(--line-strong);
-  border-radius: 3px;
+  border-radius: var(--radius-mark);
 }
 
 .frame-legend-popup-note {

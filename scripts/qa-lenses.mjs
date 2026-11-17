@@ -22,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer';
 import sharp from 'sharp';
 import { LENSES } from '../src/lenses/catalog.js';
+import { worldFixtureUnavailable } from '../src/tooling/qaWorldIsolation.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
@@ -334,6 +335,8 @@ async function intercept(request) {
   }
   if (!pathname.startsWith('/api/')) return request.continue();
   transport.apiRequests.push(pathname);
+  const worldUnavailable = worldFixtureUnavailable(pathname, 'lenses');
+  if (worldUnavailable) return request.respond(worldUnavailable);
   if (pathname === '/api/firms/status')
     return reply(request, {
       hasKey: fullHazards,
