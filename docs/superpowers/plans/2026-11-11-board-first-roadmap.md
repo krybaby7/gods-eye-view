@@ -10,6 +10,8 @@ pull request 26, after an independent review. Piece 4, words for numbers and the
 merged the same day as pull request 27 under decision 33. Piece 3, the frame, was merged on
 2026-11-16 as pull request 28, also under decision 33, and the tools menu (1.5) the same day as pull
 request 29. The layers menu (1.4) was merged on 2026-11-17 as pull request 30 under the same leave.
+One look began with the shared tokens and World Board styles (A1), merged the same day as pull
+request 31.
 Codex directs the work, with GPT-6.1 Sol implementing and GPT-6.1 Terra testing (decisions 34 and
 35). Section 10 gives the order of building and the state of each piece. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
@@ -936,17 +938,17 @@ asks. Decision 33 lets a reviewed piece be merged without asking until the app i
 table is the order and the state. The session that finishes a piece updates its row, the status
 line at the top of this file and the owner's status page.
 
-| Order  | Piece                                                                                                               | State on 2026-11-17                     |
-| ------ | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25               |
-| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30) |
-| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13 |
-| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16 |
-| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13 |
-| 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16 |
-| 6      | The layers menu (1.4)                                                                                               | Merged as pull request 30 on 2026-11-17 |
-| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | 1.3 under way (A1), then 1.6            |
-| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock    |
+| Order  | Piece                                                                                                               | State on 2026-11-17                                                          |
+| ------ | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                                                    |
+| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)                                      |
+| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13                                      |
+| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16                                      |
+| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13                                      |
+| 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16                                      |
+| 6      | The layers menu (1.4)                                                                                               | Merged as pull request 30 on 2026-11-17                                      |
+| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | 1.3 A1 merged as pull request 31. A2 next, then remaining 1.3 pieces and 1.6 |
+| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock                                         |
 
 **Piece 2, costume off and board on.** Merged on 2026-11-13 as pull request 26 (merge commit
 `c9c6beee`), on the owner's word. Before the merge a separate agent ran the five gates again and
@@ -1211,16 +1213,15 @@ are untested. The keyless server can still fetch free feeds, and its mobile-data
 Six edited scripts outside the gate remain unrun: `qa-radio.mjs`, `qa-failstate-b10.mjs`,
 `qa-map-source-tray.mjs`, `qa-weather-journey.mjs`, `qa-draw-tool.mjs` and `qa-cctv-v2.mjs`.
 `qa-cockpit-utility.mjs`, `qa-directions.mjs`, `qa-transit.mjs` and `qa-overpass-offload.mjs`
-were unchanged and unrun. Neither a PR 30 server nor a test run remains active. A1 of One look
-(1.3) is under way.
+were unchanged and unrun.
 
 **One look (1.3): the plan.** Scoped on 2026-11-16 by six readers and a challenger, from the code
 and the mock. The scoping review used no browser. The plan is in the main
 folder, `qa-artifacts/handoff-2026-11-13b/briefs/piece-1.3-plan.md`, not committed. The readers
 counted, by script, 1,632 colours, 54 font families and 342 sizes under 12 px written in place in
-the app's source. The 51 tokens from the approved mock are in `src/ui/styles/foundation.css`, and
-piece 1.4 added three control type tokens in Appendix D. Little outside the frame and the two
-menus uses them.
+the app's source. The 51 tokens from the approved mock are in `src/ui/styles/foundation.css`.
+Piece 1.4 added three control type tokens and A1 added seven more tokens and applied shared styles
+to the World Board and common panel surfaces. The other panels follow in later pieces.
 
 The scope covers thirteen pull requests: A1 and A2, ten panel pieces from B to K, and L. Each
 gets the full local run and an independent read, one at a time.
@@ -1241,9 +1242,40 @@ gets the full local run and an independent read, one at a time.
   the agent's panel, toasts, credits and the sync chips. "No colour or font written in place" cannot
   be met without them.
 
-A1 started on 2026-11-17 after 1.4 merged, in `gev-one-look-tokens` on `feat/one-look-tokens`
-from `bad1d88a`. Sol is preparing the brief and implementing, and Terra is responsible for tests.
-Everything else needs 1.4 or the kit first.
+**One look (1.3), A1, the tokens and the World Board sheets.** Merged on 2026-11-17 at 13:45 Cairo
+time as pull request 31 (merge commit `274b9a1a5907509a26ec09ca327e68129ad33491`), under decisions
+33–35. Seven legacy names now refer to the matching shared values for the background, menus,
+borders, panel and button corners, panel shadow and primary text. The global focus ring uses
+the primary text colour at its existing width and offset. The World Board sheets and common
+panel surfaces use the shared colours, radii and type. The frame tabs and area selector use the
+control type and the globe status line uses the space surface at 72% opacity. Captions use at
+least 12 px and reading text at least 13 px in the scoped sheets. Known scores can use the figure
+face. Band words, periods, score phrases and unknown labels use the reading face.
+
+`src/designTokens.js` supplies the CSS palette values to the globe for relation fills and
+lines, the five score ramp stops, the civil, military, sea and space defaults and the documented
+ownership fill. A Node test checks that palette against the stylesheet. The type test exercises
+the rendered sheet tree in both cascade orders with the eagerly loaded World Board styles.
+
+The independent read cleared the change. Nine behaviour cases failed on the baseline and
+passed with the implementation. The rendered-tree assertions added afterwards passed in the
+targeted run. The targeted checks passed 208 tests, the focus checks passed 12 and the three
+light checks passed. The full gate ran from 13:21 to 13:43 Cairo time on
+`31e39eb1d23e93cd826d51033cfb6325258af90c`. All nine steps exited 0. Of 7,214 unit tests,
+7,204 passed, none failed and 10 were skipped. World Board passed 38 steps, news 30, searches
+11, and lenses 23 with one performance check skipped. The checkout stayed clean at the tested
+head. The server stopped, its port closed and the lock was removed. The merged `main` tree
+matches the tested tree, `7b7a217c7e100bd99bc1f2159a8d305da914299f`. Gate evidence is filed
+locally at `qa-artifacts/one-look-a1/one-look-a1-final-31e39eb1/`.
+
+Comparisons of the Condition explanation, People, Exposure, Ownership and the frame at three
+sizes showed the same sampled values and globe colours, with larger sentence-case labels and
+no new clipping in those views. The area picker now wraps to three rows and extends farther
+upwards. It passed the bounds check. The Strength legend measured 481 px. The browser used
+keyless fixtures. No test run or server remains active.
+
+A2 is next and has yet to start. It covers the shared panel components, the check for style
+literals, the panel capture script, and the lens bar and legend type.
 
 These are the director's readings, taken on the plan's recommendation and not yet put to the owner:
 
@@ -1258,12 +1290,14 @@ These are the director's readings, taken on the plan's recommendation and not ye
   these panels changes one sheet.
 - **States the mock does not draw.** Hover lifts a surface one step (`--surface-2`). Disabled is
   dimmed. Inputs use `--surface-0`, `--line-strong` and `--radius-control`.
-- **Tokens beyond Appendix D.** `--link`, one cyan for links; `--status-reduced` `#ffc47b` and
-  `--status-disrupted` `#ff9aa0`; `--radius-pill` 999px and `--radius-mark` 2px; `--cat-*` for the
-  radio's categories; and `--rel-armed` `#f4525d`, because the mock and the globe draw the
-  armed-conflict line in that red and not in `--rel-war` `#db474f`. Each joins Appendix D when its
-  piece is built. The two colours for draft and estimate in `world-phase-4.css` stay as they are
-  until their meaning is read.
+- **A1 colour and shape readings.** Board links share the existing light cyan `--link`
+  (`#a3dfff`), and panel errors use the crisis red `--alert-crisis` (`#ff5d6c`). The
+  armed-conflict line uses the mock's `--rel-armed` (`#f4525d`), and the at-war country fill
+  uses `--rel-war` (`#db474f`). The Ownership swatch matches the globe's existing `#519bd4`
+  fill for one category, documented foreign ownership. It marks a host country with assets
+  owned or operated from the selected country. Grey dashes still mark documented military
+  presence. Appendix D records the seven added tokens. The phase 4 badge and draft text
+  colours stay as they were until their meaning is read. The radio's `--cat-*` tokens are for G.
 - **Welcome.** It takes the kit on its present layout, and that is its finished look until 2.5
   replaces it.
 - **Settings and keys.** The dialog is named "Data sources and keys" and sits centred on the globe
@@ -1331,25 +1365,30 @@ appears to be unused; the README's layer table omits nine layers.
 
 ## Appendix C: where things are, for builders
 
-- **Frame and templates.** `index.html` holds nine `gev:template` markers expanded from
+- **Frame and templates.** `index.html` holds eleven `gev:template` markers expanded from
   `src/ui/templates/` by `build/application-html.js` (an allowlist). Shell owners are listed in
   `docs/UI-OWNERSHIP.md`. Panel rules are in `docs/panel-surfaces.md`; right-rail rules in
   `docs/CODE-BOUNDARIES.md`.
-- **Tokens.** `src/ui/styles/foundation.css` (colours, fonts, radius, motion; no spacing, shadow
-  or type scale), `panel-surfaces.css`, and `src/overlays/worldOverlayTokens.js` for text drawn on
-  the globe.
-- **Board interface.** `src/ui/worldPanel.js` and its siblings `world*.js`; markup in
-  `src/ui/templates/context.html`; styles in `src/ui/styles/world-panel.css` and
-  `world-phase-2.css` to `world-phase-6.css`, the latter loaded by
-  `src/layers/world/phaseRegistry.js`.
+- **Tokens.** `src/ui/styles/foundation.css` defines the shared colours, type, spacing, radii,
+  shadow and motion. `src/ui/styles/panel-surfaces.css` applies them to panel surfaces.
+  `src/designTokens.js` mirrors the globe colours, checked by `src/designTokensParity.test.mjs`.
+  `src/overlays/worldOverlayTokens.js` holds the overlay type and theme and uses the shared
+  default live colours.
+- **Board interface.** The board header controls, country sheet, lens switch and legend are in
+  `src/ui/templates/frame.html`. `src/ui/frame.js` owns the frame and `src/ui/worldPanel.js`
+  and its sibling modules render the board. The main stylesheet is
+  `src/ui/styles/world-panel.css`. `src/layers/world/phaseRegistry.js` eagerly loads
+  `world-phase-*.css`. `src/ui/worldOverview.js` and `src/ui/worldScoreWords.js` eagerly load
+  `world-words.css`.
 - **Board data.** `server/providers/world/` (routes in `index.js`, scores in `scores.js`, turns in
   `turn.js`, live flags in `conditionEvents.js`); reference data in `public/world/`; state in
   `.gev-cache/world/`.
 - **News.** `server/providers/news/`, `src/layers/news/`, `src/ui/situationPanel.js`,
   `src/ui/situationBrief.js`, theaters in `public/news/theaters/`, guide in `docs/WAR-MONITOR.md`.
-- **Layer list.** Groups and labels are hard-coded in `src/ui/layerPanel.js` (`PANEL_GROUPS`,
-  `PANEL_LABELS`); the catalog is built in `src/app/constructCatalog.js`; presets are in
-  `src/lenses/catalog.js` and `src/ui/lensBar.js`.
+- **Layers and presets.** `src/lenses/groups.js` owns the groups, row labels, preset membership
+  and exclusions. `src/app/constructCatalog.js` builds the application layer catalogue.
+  `src/ui/layerPanel.js` builds the visible rows. `src/lenses/catalog.js` and
+  `src/ui/lensBar.js` supply the preset catalogue and controls.
 - **Clicks.** Each layer installs its own click handler; `src/data/pickRegistry.js` only stops
   them competing. Cards draw through `src/overlays/worldOverlay.js`. Stage 4.1 needs one selection
   model in front of these.
@@ -1367,7 +1406,8 @@ appears to be unused; the README's layer table omits nine layers.
 
 ## Appendix D: the approved look (stage 0 mock, decision 30)
 
-Copied from the mock's style sheet on the day of approval. A name says what a value is for, so a
+Copied from the mock's style sheet on the day of approval, with the control type additions from
+1.4 and seven additions from 1.3 A1. A name says what a value is for, so a
 light set can be added later under the same names (decision 6). Where a comment says "the app's
 own", the value is unchanged from today's code.
 
@@ -1385,6 +1425,7 @@ own", the value is unchanged from today's code.
   --text-1: #e8eaed;
   --text-2: #aab0bb;
   --text-3: #868c99;
+  --link: #a3dfff; /* A1 */
   /* One accent, the app's own, with its glow dropped. */
   --accent: #00d4ff;
   --accent-dim: rgba(0, 212, 255, 0.15);
@@ -1405,8 +1446,11 @@ own", the value is unchanged from today's code.
   --alert-watch: #e6c453;
   --alert-strained: #f0935a;
   --alert-crisis: #ff5d6c;
+  --status-reduced: #ffc47b; /* A1 */
+  --status-disrupted: #ff9aa0; /* A1 */
   /* Relations and live objects: the app's own colours, now named. */
   --rel-war: #db474f;
+  --rel-armed: #f4525d; /* A1 */
   --rel-sanctions: #e8933f;
   --rel-ally: #3da1ea;
   --rel-rival: #b25ec5;
@@ -1416,10 +1460,13 @@ own", the value is unchanged from today's code.
   --live-military: #ffb347;
   --live-sea: #3fe0c8;
   --live-space: #bda4ff;
+  --ownership-documented: #519bd4; /* A1 */
   /* Shape, depth and motion: the app's own values. Spacing is new. */
   --radius-panel: 16px;
   --radius-control: 10px;
   --radius-chip: 6px;
+  --radius-pill: 999px; /* A1 */
+  --radius-mark: 2px; /* A1 */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
