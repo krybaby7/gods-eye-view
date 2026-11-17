@@ -16,6 +16,7 @@ import {
 } from '../src/tooling/qaLook.mjs';
 import {
   LAYERS_FIXTURE_IDS,
+  FIRE_PERIMETER_FIXTURE,
   measureLayers,
   layersFailures,
 } from '../src/tooling/qaLookLayers.mjs';
@@ -78,6 +79,10 @@ try {
   await page.evaluateOnNewDocument(installFrameDiagnostics);
   await installFixtures(page, options.url.origin, world, report, {
     strict: true,
+    firePerimeter:
+      options.panel === 'layers' && options.state === 'filled'
+        ? FIRE_PERIMETER_FIXTURE
+        : null,
   });
   page.on('pageerror', (error) =>
     report.errors.push(error.stack || error.message),
@@ -224,6 +229,16 @@ try {
           throw new Error(`Could not enable local fixture layer ${id}`);
       }
     }, LAYERS_FIXTURE_IDS);
+    await page.waitForFunction(() => {
+      const manager = window.__godsEyeView.dataManager;
+      return manager
+        .getAll()
+        .some(({ id, stats }) => id === 'fire-perimeters' && stats.count === 1);
+    }, wait);
+    if (!report.transport.firePerimeterReplies)
+      throw new Error(
+        'Fire perimeter data did not load through the local fixture',
+      );
   }
   stage = 'matrix';
   for (const [width, height] of [

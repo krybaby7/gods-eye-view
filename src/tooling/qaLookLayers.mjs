@@ -1,13 +1,40 @@
 import { requiredContextFailures } from './qaLook.mjs';
 
-// Both infrastructure rows load their bundled local GeoJSON through the
-// application layer manager. No preset or provider-backed layer is enabled.
-export const LAYERS_FIXTURE_IDS = ['local-datacenters', 'local-dams'];
+// Data centres uses bundled GeoJSON. Fire perimeters uses a synthetic CDP
+// response modeled on the perimeter ownership test. Directions is opened
+// without setting either endpoint, so its local chips do not request a route.
+export const LAYERS_FIXTURE_IDS = [
+  'local-datacenters',
+  'fire-perimeters',
+  'directions',
+];
+export const FIRE_PERIMETER_FIXTURE = {
+  stableId: '2026-NMGNF-000123',
+  name: 'Fixture Fire',
+  acres: 512.5,
+  containedPct: 40,
+  state: 'US-NM',
+  category: 'WF',
+  discoveredTime: 1757900000000,
+  updatedTime: 1757950000000,
+  polygons: [
+    [
+      [
+        [-108.1, 35.2],
+        [-108.0, 35.2],
+        [-108.0, 35.3],
+        [-108.1, 35.2],
+      ],
+    ],
+  ],
+};
 
 export function measureLayers({ width, height, settle }) {
   const find = (selector) => document.querySelector(selector);
   const visible = (element) => {
     if (!element?.getClientRects().length) return false;
+    const { width, height } = element.getBoundingClientRect();
+    if (width <= 0 || height <= 0) return false;
     for (let node = element; node; node = node.parentElement) {
       const css = getComputedStyle(node);
       if (
@@ -110,7 +137,7 @@ export function measureLayers({ width, height, settle }) {
       .map(([name, element]) => box(name, element));
     const panels = [
       ...document.querySelectorAll(
-        '#data-panel, #frame-presets-menu, #lens-bar, #right-context-rail > [data-panel-id], #command-dock, #frame-tools > .tools-panel, #world-hover',
+        '#data-panel, #frame-presets-menu, #right-context-rail > [data-panel-id], #command-dock, #frame-tools > .tools-panel, #world-hover',
       ),
     ]
       .filter(visible)
@@ -120,6 +147,15 @@ export function measureLayers({ width, height, settle }) {
       const toggle = row.querySelector('.data-toggle-btn');
       const layer = layers.get(id);
       return {
+        legend: [...row.querySelectorAll('.data-toggle-legend-item')]
+          .filter(visible)
+          .map(information),
+        chips: [...row.querySelectorAll('[data-chip-id]')]
+          .filter(visible)
+          .map((chip) => ({
+            id: chip.dataset.chipId,
+            ...information(chip),
+          })),
         id,
         title: information(row.querySelector('.data-name')),
         state: information(row.querySelector(`[id="layer-state-${id}"]`)),
@@ -142,16 +178,19 @@ export function measureLayers({ width, height, settle }) {
       const css = getComputedStyle(element);
       // The legacy switch's internal code is invisible and has an ARIA name.
       if (
-        Number.parseFloat(css.fontSize) === 0 &&
         element.matches('button[aria-label]') &&
-        css.color === 'rgba(0, 0, 0, 0)'
+        (Number.parseFloat(css.fontSize) === 0 ||
+          css.color === 'rgba(0, 0, 0, 0)' ||
+          css.color === 'transparent')
       )
         return [];
       return nodes.map((node) => ({
         name: identify(element),
         value: node.textContent.trim(),
         ...information(element),
-        reading: element.matches('.data-name, .layers-menu-foot-note'),
+        reading: element.matches(
+          '.data-name, .layers-menu-foot-note, .data-toggle-controls-info',
+        ),
         clipped:
           element.clientWidth > 0 &&
           element.scrollWidth > element.clientWidth + 1 &&
@@ -293,9 +332,26 @@ export function layersFailures(data, expectedOn, label) {
       errors.push(`Missing or inaccessible Layers row content: ${row.id}`);
     if (
       enabled &&
+      row.id !== 'directions' &&
       (!(row.records > 0) || !['On', 'Live'].includes(row.state.text))
     )
       errors.push(`Missing loaded local data for ${row.id}`);
+  }
+  if (expectedOn.includes('fire-perimeters')) {
+    const legend =
+      data.rows.find((row) => row.id === 'fire-perimeters')?.legend ?? [];
+    if (
+      legend.length !== 4 ||
+      legend.some((entry) => !entry.reachable) ||
+      !legend.some((entry) => entry.text === 'Under 50% contained 1')
+    )
+      errors.push('Loaded perimeter must appear in the containment legend');
+  }
+  if (expectedOn.includes('directions')) {
+    const chips = data.rows.find((row) => row.id === 'directions')?.chips ?? [];
+    for (const id of ['set-a', 'set-b'])
+      if (!chips.some((chip) => chip.id === id && chip.text && chip.reachable))
+        errors.push(`Missing or inaccessible Directions chip: ${id}`);
   }
   for (const item of data.text) {
     if (!item.reachable || item.clipped)
@@ -303,7 +359,8 @@ export function layersFailures(data, expectedOn, label) {
     if (
       label === 'after' &&
       (Number.parseFloat(item.fontSize) < (item.reading ? 13 : 12) ||
-        item.transform === 'uppercase')
+        item.transform === 'uppercase' ||
+        (/monospace/i.test(item.fontFamily) && /[a-z]{2}/i.test(item.value)))
     )
       errors.push(
         `Unreadable Layers type for ${item.value}: ${item.fontSize}, ${item.transform}`,

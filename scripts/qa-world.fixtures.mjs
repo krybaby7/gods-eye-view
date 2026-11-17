@@ -95,7 +95,7 @@ export async function installFixtures(
   origin,
   world,
   report,
-  { strict = false } = {},
+  { strict = false, firePerimeter = null } = {},
 ) {
   const imagery = await fs.readFile(
     new URL(
@@ -182,6 +182,14 @@ export async function installFixtures(
           );
           if (detail) await reply(detail);
           else await reply({ error: 'Unknown World Board detail lens.' }, 404);
+        } else if (
+          firePerimeter &&
+          url.pathname === '/api/fire-perimeters' &&
+          request.method === 'GET'
+        ) {
+          report.transport.firePerimeterReplies =
+            (report.transport.firePerimeterReplies ?? 0) + 1;
+          await reply({ rows: [firePerimeter] });
         } else if (
           url.pathname === '/api/flights' &&
           request.method === 'GET' &&
