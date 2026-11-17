@@ -139,6 +139,15 @@ export function requiredContextFailures(data) {
   return failures;
 }
 
+export function captureStateFailures(before, after) {
+  return ['today', 'sheet', 'lens']
+    .filter((key) => before[key] !== after[key])
+    .map(
+      (key) =>
+        `${key} changed during capture: ${before[key] ?? 'none'} → ${after[key] ?? 'none'}`,
+    );
+}
+
 export function popupContentFailures(data) {
   const failures = [];
   const expected = [

@@ -455,3 +455,99 @@ test('rejected CONNECT and upgrade half-open clients cannot stall proxy close', 
     for (const socket of sockets) socket.destroy();
   }
 });
+
+test('look evidence crops the exact full viewport image without a second browser capture', async () => {
+  const { captureLookImage } = await import('./qaLookImage.mjs');
+  const fs = await import('node:fs/promises');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const sharp = (await import('sharp')).default;
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'look-image-test-'));
+  const pixels = Buffer.from([
+    255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 0, 255, 0, 255, 0, 255, 255,
+  ]);
+  const calls = [];
+  const page = {
+    screenshot: async (options) => {
+      calls.push(options);
+      await sharp(pixels, { raw: { width: 3, height: 2, channels: 3 } })
+        .png()
+        .toFile(options.path);
+    },
+  };
+  try {
+    const full = path.join(dir, 'full.png'),
+      crop = path.join(dir, 'crop.png');
+    await captureLookImage(
+      page,
+      full,
+      crop,
+      { left: 1, top: 0, right: 4, bottom: 2 },
+      { width: 3, height: 2 },
+    );
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].path, full);
+    assert.equal(calls[0].captureBeyondViewport, false);
+    assert.equal(calls[0].clip, undefined);
+    const output = await sharp(crop)
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    assert.equal(output.info.width, 2);
+    assert.equal(output.info.height, 2);
+    assert.deepEqual(
+      [...output.data],
+      [0, 255, 0, 0, 0, 255, 255, 0, 255, 0, 255, 255],
+    );
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('look evidence flags changed context during screenshot capture', async () => {
+  const { captureStateFailures } = await import('./qaLook.mjs');
+  const before = { today: 'open', sheet: 'open', lens: 'diplomacy' };
+  assert.deepEqual(captureStateFailures(before, { ...before }), []);
+  assert.match(
+    captureStateFailures(before, { ...before, today: 'folded' })[0],
+    /today/i,
+  );
+  assert.match(
+    captureStateFailures(before, { ...before, sheet: 'closed' })[0],
+    /sheet/i,
+  );
+  assert.match(
+    captureStateFailures(before, { ...before, lens: 'strength' })[0],
+    /lens/i,
+  );
+});
+
+test('look evidence rejects screenshot whose pixels do not match scale-one viewport', async () => {
+  const { captureLookImage } = await import('./qaLookImage.mjs');
+  const fs = await import('node:fs/promises');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const sharp = (await import('sharp')).default;
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'look-scale-test-'));
+  const page = {
+    screenshot: async ({ path }) =>
+      sharp({
+        create: { width: 4, height: 4, channels: 3, background: '#fff' },
+      })
+        .png()
+        .toFile(path),
+  };
+  try {
+    await assert.rejects(
+      captureLookImage(
+        page,
+        path.join(dir, 'full.png'),
+        path.join(dir, 'crop.png'),
+        { left: 0, top: 0, right: 2, bottom: 2 },
+        { width: 2, height: 2 },
+      ),
+      /viewport|scale/i,
+    );
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});

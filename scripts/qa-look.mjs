@@ -11,8 +11,10 @@ import {
   afterLegendFailures,
   missingCoreLenses,
   requiredContextFailures,
+  captureStateFailures,
   popupContentFailures,
 } from '../src/tooling/qaLook.mjs';
+import { captureLookImage } from '../src/tooling/qaLookImage.mjs';
 import { createDenyProxy } from '../src/tooling/qaLookProxy.mjs';
 import { createFixtureWorld, installFixtures } from './qa-world.fixtures.mjs';
 
@@ -62,6 +64,7 @@ try {
   stage = 'app-startup';
   page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
+  await page.evaluateOnNewDocument(installFrameDiagnostics);
   await installFixtures(page, options.url.origin, world, report, {
     strict: true,
   });
@@ -127,6 +130,7 @@ try {
     wait,
   );
   stage = 'country-pick';
+  await markFrameStage(stage);
   const pick = await page.waitForFunction(() => {
     const { C } = window.lookQa;
     if (
@@ -197,6 +201,7 @@ try {
     [1440, 900],
     [1920, 1080],
   ]) {
+    await markFrameStage(`${width}x${height} viewport`);
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     const lenses = await page.$$eval(
       '#world-lens-bar [data-world-lens]',
@@ -210,6 +215,7 @@ try {
     if (!lenses.length) continue;
     for (const lens of lenses) {
       try {
+        await markFrameStage(`${width}x${height} ${lens} select`);
         const selector = `#world-lens-bar [data-world-lens="${lens}"]`;
         await page.click(selector);
         await page.waitForFunction(
@@ -248,6 +254,7 @@ try {
       try {
         const button = await page.$('#frame-legend-whole');
         if (button && (await button.isVisible())) {
+          await markFrameStage(`${width}x${height} ${lens} open popover`);
           await button.click();
           try {
             await page.waitForSelector('#frame-legend-popup:not([hidden])', {
@@ -308,6 +315,15 @@ try {
   }
 } finally {
   try {
+    if (page) {
+      try {
+        report.frameTimeline = await page.evaluate(
+          () => window.lookFrameDiagnostics?.timeline ?? [],
+        );
+      } catch (error) {
+        report.frameTimelineError = error.message;
+      }
+    }
     if (browser)
       await browser.close().catch((error) => report.errors.push(error.message));
     if (proxy) {
@@ -328,6 +344,70 @@ if (
   report.cases.some((item) => item.error || item.collisions?.length)
 )
   process.exitCode = 1;
+
+function installFrameDiagnostics() {
+  const diagnostics = {
+    stage: 'app-startup',
+    timeline: [],
+    snapshot: () => ({
+      today: document.body?.dataset.today ?? null,
+      sheet: document.body?.dataset.sheet ?? null,
+      lens:
+        document.querySelector('#world-lens-bar [aria-pressed="true"]')?.dataset
+          .worldLens ?? null,
+      innerWidth: window.innerWidth,
+      visualWidth: window.visualViewport?.width ?? null,
+    }),
+  };
+  window.lookFrameDiagnostics = diagnostics;
+  const record = (event, detail) => {
+    let storedToday = null;
+    try {
+      storedToday = localStorage.getItem('gev.frame.today');
+    } catch {}
+    diagnostics.timeline.push({
+      timeMs: performance.now(),
+      stage: diagnostics.stage,
+      event,
+      ...diagnostics.snapshot(),
+      storedToday,
+      ...detail,
+    });
+  };
+  for (const query of ['(max-width: 720px)', '(max-width: 1179px)']) {
+    window.matchMedia(query).addEventListener('change', (event) => {
+      record('media-change', { query, matches: event.matches });
+    });
+  }
+  new MutationObserver((changes) => {
+    for (const change of changes) {
+      if (change.target === document.body)
+        record('today-attribute', { previousToday: change.oldValue });
+    }
+  }).observe(document, {
+    subtree: true,
+    attributes: true,
+    attributeOldValue: true,
+    attributeFilter: ['data-today'],
+  });
+  document.addEventListener(
+    'click',
+    (event) => {
+      const control = event.target?.closest?.(
+        '#frame-today-fold, #frame-today-open',
+      );
+      if (control) record('today-click', { control: control.id });
+    },
+    true,
+  );
+}
+
+async function markFrameStage(next) {
+  return page.evaluate((value) => {
+    window.lookFrameDiagnostics.stage = value;
+    return window.lookFrameDiagnostics.snapshot();
+  }, next);
+}
 
 // A local sentinel proves worker requests cannot bypass the proxy. The API probe
 // must be stopped either by the CDP fixture owner or by the proxy, never Vite.
@@ -450,11 +530,16 @@ async function failure(width, height, lens, view, error) {
     JSON.stringify(failed, null, 2),
   );
   try {
-    await page.screenshot({ path: path.join(out, `${stem}-full.png`) });
+    await page.screenshot({
+      path: path.join(out, `${stem}-full.png`),
+      captureBeyondViewport: false,
+    });
   } catch {}
 }
 
 async function capture(width, height, lens, view) {
+  const phase = `${width}x${height} ${lens} ${view}`;
+  await markFrameStage(`${phase} geometry`);
   const data = await page.evaluate(
     async ({ width, height, view }) => {
       const visible = (element) => {
@@ -672,6 +757,7 @@ async function capture(width, height, lens, view) {
           selected: document.querySelector(
             '#world-lens-bar [aria-pressed="true"]',
           )?.dataset.worldLens,
+          frameState: window.lookFrameDiagnostics.snapshot(),
           expected: window.lookQa.expected(),
           buttonVisible: visible(button),
           keyOmitted:
@@ -789,16 +875,31 @@ async function capture(width, height, lens, view) {
     if (missing.length)
       addError(`Popover missing legend parts: ${JSON.stringify(missing)}`);
   }
-  await page.screenshot({ path: path.join(out, `${stem}-full.png`) });
-  const left = Math.max(0, target.left),
-    top = Math.max(0, target.top),
-    right = Math.min(width, target.right),
-    bottom = Math.min(height, target.bottom);
-  if (right > left && bottom > top)
-    await page.screenshot({
-      path: path.join(out, `${stem}-crop.png`),
-      clip: { x: left, y: top, width: right - left, height: bottom - top },
-    });
+  data.screenshotBefore = await markFrameStage(`${phase} screenshot`);
+  captureStateFailures(data.frameState, data.screenshotBefore).forEach(
+    addError,
+  );
+  try {
+    data.cropPixels = await captureLookImage(
+      page,
+      path.join(out, `${stem}-full.png`),
+      path.join(out, `${stem}-crop.png`),
+      target,
+      { width, height },
+    );
+    if (!data.cropPixels)
+      addError('Target has no pixels inside the screenshot');
+  } catch (error) {
+    addError(`Screenshot failed: ${error.message}`);
+  }
+  try {
+    data.screenshotAfter = await markFrameStage(`${phase} after screenshot`);
+    captureStateFailures(data.screenshotBefore, data.screenshotAfter).forEach(
+      addError,
+    );
+  } catch (error) {
+    addError(`Screenshot state could not be read: ${error.message}`);
+  }
   await fs.writeFile(
     path.join(out, `${stem}.json`),
     JSON.stringify(data, null, 2),
