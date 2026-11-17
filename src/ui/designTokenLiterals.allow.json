@@ -410,11 +410,6 @@
     "count": 4
   },
   {
-    "path": "src/ui/styles/layers-menu.css",
-    "kind": "radius",
-    "count": 1
-  },
-  {
     "path": "src/ui/styles/layers.css",
     "kind": "backdrop",
     "count": 6
@@ -422,7 +417,7 @@
   {
     "path": "src/ui/styles/layers.css",
     "kind": "color",
-    "count": 166
+    "count": 164
   },
   {
     "path": "src/ui/styles/layers.css",
@@ -432,12 +427,12 @@
   {
     "path": "src/ui/styles/layers.css",
     "kind": "font",
-    "count": 39
+    "count": 38
   },
   {
     "path": "src/ui/styles/layers.css",
     "kind": "radius",
-    "count": 19
+    "count": 18
   },
   {
     "path": "src/ui/styles/layers.css",
@@ -517,7 +512,7 @@
   {
     "path": "src/ui/styles/radio.css",
     "kind": "color",
-    "count": 143
+    "count": 127
   },
   {
     "path": "src/ui/styles/radio.css",
@@ -527,17 +522,17 @@
   {
     "path": "src/ui/styles/radio.css",
     "kind": "font",
-    "count": 39
+    "count": 36
   },
   {
     "path": "src/ui/styles/radio.css",
     "kind": "radius",
-    "count": 19
+    "count": 18
   },
   {
     "path": "src/ui/styles/radio.css",
     "kind": "shadow",
-    "count": 19
+    "count": 15
   },
   {
     "path": "src/ui/styles/recent-imagery.css",
