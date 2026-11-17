@@ -19,6 +19,8 @@ import {
   FIRE_PERIMETER_FIXTURE,
   measureLayers,
   layersFailures,
+  measureRailRestoration,
+  railRestorationFailures,
 } from '../src/tooling/qaLookLayers.mjs';
 import { captureLookImage } from '../src/tooling/qaLookImage.mjs';
 import { createDenyProxy } from '../src/tooling/qaLookProxy.mjs';
@@ -601,6 +603,7 @@ async function captureLayers(width, height) {
   await markFrameStage(`${phase} open menu`);
   if (await page.$('#data-panel:not(.collapsed)'))
     await page.keyboard.press('Escape');
+  const railBefore = await page.evaluate(measureRailRestoration);
   await page.click('#frame-layers');
   await page.waitForSelector('#data-panel:not(.collapsed)', {
     ...wait,
@@ -649,6 +652,10 @@ async function captureLayers(width, height) {
   );
   if (!data.focusReturned)
     errors.push('Escape did not close Layers and restore focus');
+  data.railBefore = railBefore;
+  data.railAfter = await page.evaluate(measureRailRestoration);
+  if (options.label === 'after')
+    errors.push(...railRestorationFailures(data.railBefore, data.railAfter));
   if (errors.length) data.error = errors.join('; ');
   data.transport = structuredClone(report.transport);
   data.proxy = { ...proxy.totals };

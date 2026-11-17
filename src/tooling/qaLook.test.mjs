@@ -590,3 +590,33 @@ test('layers capture accepts empty and filled states without relaxing legend val
     ]),
   );
 });
+
+test('rail restoration rejects missing or changed visibility and disclosure state', async () => {
+  const { railRestorationFailures } = await import('./qaLookLayers.mjs');
+  const before = [
+    {
+      id: 'context',
+      visible: true,
+      buttonVisible: true,
+      collapsed: true,
+      hidden: false,
+      expanded: 'false',
+    },
+  ];
+  assert.deepEqual(
+    railRestorationFailures(before, structuredClone(before)),
+    [],
+  );
+  assert.notEqual(railRestorationFailures([], []).length, 0);
+  for (const change of [
+    { visible: false },
+    { buttonVisible: false },
+    { collapsed: false },
+    { hidden: true },
+    { expanded: 'true' },
+  ])
+    assert.notEqual(
+      railRestorationFailures(before, [{ ...before[0], ...change }]).length,
+      0,
+    );
+});

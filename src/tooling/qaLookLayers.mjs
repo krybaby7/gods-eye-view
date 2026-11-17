@@ -368,3 +368,46 @@ export function layersFailures(data, expectedOn, label) {
   }
   return errors;
 }
+
+// Compare the actual rail before opening Layers and after Escape. Visibility
+// and disclosure state must return together; a missing rail is not a pass.
+export function railRestorationFailures(before, after) {
+  if (
+    !before.length ||
+    !before.some((panel) => panel.visible && panel.buttonVisible)
+  )
+    return ['No visible rail disclosure before opening Layers'];
+  return JSON.stringify(before) === JSON.stringify(after)
+    ? []
+    : ['Right rail visibility or disclosure state changed after Escape'];
+}
+
+export function measureRailRestoration() {
+  const visible = (el) => {
+    if (!el?.getClientRects().length) return false;
+    for (let node = el; node; node = node.parentElement) {
+      const css = getComputedStyle(node);
+      if (
+        node.hidden ||
+        css.display === 'none' ||
+        css.visibility !== 'visible' ||
+        Number(css.opacity) === 0
+      )
+        return false;
+    }
+    return true;
+  };
+  return [
+    ...document.querySelectorAll('#right-context-rail [data-panel-id]'),
+  ].map((panel) => {
+    const button = panel.querySelector('.panel-collapse-btn');
+    return {
+      id: panel.id,
+      visible: visible(panel),
+      buttonVisible: visible(button),
+      collapsed: panel.classList.contains('collapsed'),
+      hidden: panel.hidden,
+      expanded: button?.getAttribute('aria-expanded') ?? null,
+    };
+  });
+}
