@@ -1,4 +1,4 @@
-import { weatherTileUrl } from './source.js';
+import { weatherSourceCredit, weatherTileUrl } from './source.js';
 import { orderWeatherImagery } from './imageryOrder.js';
 import { imageryHostStatus } from './imageryHost.js';
 import { createRasterTileProvider } from './rasterTiles.js';
@@ -334,11 +334,7 @@ function createGlobeRendering({
             : undefined,
         );
         const credit = new cesium.Credit(
-          snapshot.product === 'lightning'
-            ? 'NOAA/NWS lightning density · derived from Vaisala NLDN/GLD360'
-            : snapshot.product === 'radar'
-              ? 'NOAA nowCOAST · NWS/OAR MRMS'
-              : 'NOAA nowCOAST · NESDIS GOES / global satellite partners',
+          weatherSourceCredit(snapshot.product),
           false,
         );
         const provider = global

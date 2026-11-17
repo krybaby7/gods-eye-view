@@ -26,7 +26,8 @@ export function createRailTimeline({
   const makeButton = (label, title, parent) => {
     const node = document.createElement('button');
     node.type = 'button';
-    node.className = 'data-toggle-chip';
+    node.className = 'data-toggle-chip kit-chip pick';
+    if (label === '‹' || label === '›') node.setAttribute('aria-label', title);
     node.textContent = label;
     node.title = title;
     parent.appendChild(node);
@@ -51,7 +52,7 @@ export function createRailTimeline({
   readout.className = 'rail-timeline-readout';
   controls.appendChild(readout);
   const label = document.createElement('div');
-  label.className = 'panel-title';
+  label.className = 'kit-sec-h';
   label.textContent = 'Observed history';
   const endpoints = document.createElement('div');
   endpoints.className = 'rail-timeline-endpoints';
@@ -122,12 +123,8 @@ export function createRailTimeline({
       'disabled',
       Boolean(props.disabled || props.index >= props.ticks.length - 1),
     );
-    set(
-      latest,
-      'className',
-      `data-toggle-chip${props.mode === 'latest' ? ' active' : ''}`,
-    );
-    set(play, 'className', `data-toggle-chip${props.playing ? ' active' : ''}`);
+    latest.classList.toggle('active', props.mode === 'latest');
+    play.classList.toggle('active', Boolean(props.playing));
     set(play, 'textContent', props.playing ? 'Pause' : 'Play');
     for (const [node, active] of [
       [latest, props.mode === 'latest'],

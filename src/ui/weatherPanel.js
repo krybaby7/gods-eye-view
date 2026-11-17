@@ -73,7 +73,7 @@ export function createWeatherPanel({
   observedGroup.className = 'weather-observed-group';
   observedGroup.setAttribute('aria-label', 'Observed history');
   const heading = document.createElement('h3');
-  heading.className = 'panel-title';
+  heading.className = 'kit-sec-h';
   heading.textContent = 'Observed history';
   const scope = document.createElement('div');
   scope.className = 'weather-observed-scope';
@@ -105,6 +105,7 @@ export function createWeatherPanel({
   const cardOptions = {
     document,
     cardClassName: 'weather-card',
+    kit: true,
     badgeClassName: 'weather-coverage',
     onParams: (id, params) => setLayerParams(id, params, { origin: 'user' }),
     onOpen: (id) => {
@@ -154,9 +155,11 @@ export function createWeatherPanel({
       playing: Boolean(state.playing),
       disabled: !showTimeline || state.timeline.length < 2,
       readout:
-        state.mode === 'latest'
-          ? 'LATEST · newest per product'
-          : historyTime(state.target),
+        state.timeline.length === 0
+          ? 'No observation times available'
+          : state.mode === 'latest'
+            ? 'Latest · newest per product'
+            : historyTime(state.target),
     });
     const models = active.map(({ id, icon, summary, legend = [], list }) => {
       let detail = summary.detail;
@@ -181,6 +184,9 @@ export function createWeatherPanel({
       const lines = [
         { id: 'time', text: detail, muted: true },
         { id: 'status', text: summary.status },
+        ...(summary.source
+          ? [{ id: 'source', text: `Source · ${summary.source}`, muted: true }]
+          : []),
       ];
       for (const line of summary.lines || []) lines.push(line);
       const actions = (summary.actions || []).map((action) => ({
@@ -217,6 +223,7 @@ export function createWeatherPanel({
         icon,
         title: summary.label,
         badge: summary.coverage,
+        forecast: id === 'wind',
         open: id === openId,
         compact:
           summary.status ||
