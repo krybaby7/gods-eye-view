@@ -1,12 +1,5 @@
+import { SCORE_RAMP_RGB } from '../../designTokens.js';
 import { newsMapMode } from '../news/hotspots.js';
-
-const RAMP = [
-  [194, 65, 12],
-  [240, 140, 58],
-  [217, 197, 143],
-  [74, 168, 216],
-  [29, 111, 209],
-];
 
 export function boardMapMode(height, previous) {
   const mode = newsMapMode(height, previous === 'board' ? 'bubbles' : 'pins');
@@ -25,9 +18,11 @@ export function lensValue(country, lens, area, year) {
 
 export function scoreColor(score) {
   const position = Math.max(0, Math.min(100, score)) / 25;
-  const index = Math.min(RAMP.length - 2, Math.floor(position));
-  return RAMP[index].map((value, channel) =>
-    Math.round(value + (RAMP[index + 1][channel] - value) * (position - index)),
+  const index = Math.min(SCORE_RAMP_RGB.length - 2, Math.floor(position));
+  const from = SCORE_RAMP_RGB[index];
+  const to = SCORE_RAMP_RGB[index + 1];
+  return from.map((value, channel) =>
+    Math.round(value + (to[channel] - value) * (position - index)),
   );
 }
 

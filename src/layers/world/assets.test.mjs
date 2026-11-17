@@ -164,7 +164,10 @@ test('ownership is limited to independently documented owners abroad', () => {
     ownershipColor({ iso3: 'FRA' }, { ...snapshot, selected: 'CHN' }),
     null,
   );
-  assert.ok(ownershipColor({ iso3: 'DEU' }, { ...snapshot, selected: 'CHN' }));
+  assert.deepEqual(
+    ownershipColor({ iso3: 'DEU' }, { ...snapshot, selected: 'CHN' }),
+    [81, 155, 212],
+  );
   assert.equal(ownershipColor({ iso3: 'DEU' }, snapshot), null);
   assert.equal(
     ownershipColor({ iso3: 'DEU' }, { ...snapshot, selected: 'GBR' }),
