@@ -119,6 +119,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Keep the reading marker above globe overlays and below the rail and frame. */
+.gev-wind-inspection-marker {
+  z-index: 8;
+}
+
 body.ui-clean-view .gev-wind-inspection-marker,
 body.recording-mode .gev-wind-inspection-marker {
   opacity: 0 !important;
