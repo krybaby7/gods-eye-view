@@ -523,7 +523,10 @@ export class LayerPanel {
     const info = container._rowControlsInfo || null;
     const firstLegend = container.querySelector('.data-toggle-legend-item');
 
-    syncChipGroup(container, chips, { before: firstLegend || info });
+    syncChipGroup(container, chips, {
+      before: firstLegend || info,
+      appearance: 'kit-chip pick',
+    });
 
     const legendSignature = JSON.stringify(
       legend.map(({ label, color, count, blurb }) => [
@@ -584,7 +587,7 @@ export class LayerPanel {
    * @param {{ariaLabel?: string, items?: Array<object>}|null} list Descriptor.
    */
   _syncRowList(container, list) {
-    syncRowList(container, list);
+    syncRowList(container, list, { appearance: 'kit-btn quiet' });
   }
 
   _refreshTogglePanel() {

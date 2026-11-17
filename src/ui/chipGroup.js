@@ -6,12 +6,17 @@ const attribute = (node, key, value) => {
 };
 
 /** Keyed chips shared by layer rows and rail cards; the caller owns dispatch. */
-export function syncChipGroup(container, chips = [], { before = null } = {}) {
+export function syncChipGroup(
+  container,
+  chips = [],
+  { before = null, appearance = '' } = {},
+) {
   if (!container) return;
   const document = container.ownerDocument ?? globalThis.document;
   const stale = new Map();
   for (const node of [...container.children])
     if (node.dataset?.chipId) stale.set(node.dataset.chipId, node);
+  const skin = appearance ? ` ${appearance}` : '';
   const ordered = [];
   for (const chip of chips) {
     let button = stale.get(chip.id);
@@ -25,7 +30,7 @@ export function syncChipGroup(container, chips = [], { before = null } = {}) {
     set(
       button,
       'className',
-      `data-toggle-chip chip-${state}${chip.active ? ' active' : ''}`,
+      `data-toggle-chip chip-${state}${chip.active ? ' active' : ''}${skin}`,
     );
     set(button, 'textContent', chip.label);
     // Optional per-chip colour; CSS decides how it is used.

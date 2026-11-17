@@ -39,6 +39,13 @@ body #data-panel.layers-menu[hidden] {
   display: none;
 }
 
+/* The menu occupies the right rail's space. Keep the rail's layout and open
+   panels intact so dismissing the menu restores their previous positions. */
+body:not(.cockpit-mode):has(#data-panel.layers-menu:not(.collapsed, [hidden]))
+  :is(#right-context-rail, #right-context-rail *) {
+  visibility: hidden;
+}
+
 body #data-panel.layers-menu:focus {
   outline: none;
 }
@@ -254,6 +261,76 @@ body #data-panel.layers-menu:focus-visible {
 /* A row's own controls (chips, lists) sit under its name. */
 .layers-menu .data-toggle-row > :not(.data-toggle-top) {
   margin-left: calc(34px + var(--space-2)); /* the switch and its gap */
+}
+
+.layers-menu .kit-chip.pick {
+  max-width: 100%;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.layers-menu .kit-chip.chip-loading {
+  border-style: dotted;
+  border-color: var(--line-strong);
+  opacity: 0.85;
+  cursor: wait;
+}
+
+.layers-menu .kit-chip.chip-error {
+  border-color: var(--status-disrupted);
+  color: var(--status-disrupted);
+}
+
+.layers-menu .data-toggle-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  color: var(--text-2);
+  font: var(--type-small);
+}
+
+.layers-menu .data-toggle-legend-item[hidden] {
+  display: none;
+}
+
+.layers-menu .data-toggle-legend-swatch {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  /* Keep the exact data colour, with an outline for dark swatches. */
+  outline: 1px solid var(--line-strong);
+}
+
+.layers-menu .data-toggle-controls-info {
+  flex-basis: 100%;
+  padding-top: var(--space-1);
+  color: var(--text-2);
+  font: var(--type-small);
+  overflow-wrap: anywhere;
+}
+
+.layers-menu .data-row-list-item {
+  justify-content: flex-start;
+}
+
+.layers-menu .data-row-list-item:focus-visible {
+  outline-offset: -2px;
+}
+
+.layers-menu .data-row-list-item::before {
+  color: var(--text-2);
+  font: var(--type-code);
+  opacity: 1;
+}
+
+.layers-menu .data-row-list-lead {
+  font: var(--type-code);
+}
+
+.layers-menu .data-row-list-item.note {
+  opacity: 0.85;
 }
 
 /* ── At 720 and below: a full-width sheet over the bottom bar ── */

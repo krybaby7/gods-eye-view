@@ -2,13 +2,13 @@
  * @module layers/directions
  * @description Keyless A→B directions on the globe: drive, walk or cycle.
  *
- * The row's chips arm a click ("SET A", then click the globe; "SET B", click
+ * The row's chips arm a click ("Set A", then click the globe; "Set B", click
  * again). With both ends placed the layer asks the existing `/api/route`
  * proxy (OSRM on the FOSSGIS servers, © OpenStreetMap contributors) for the
  * street-following route with turn-by-turn steps, drapes it on the terrain
  * and 3D tiles with the same flowing dashes the voice "route from A to B"
  * annotation uses, and drops one dot per maneuver. Click a dot for the
- * instruction; "FLY" rides the camera along the route through the shared
+ * instruction; "Fly" rides the camera along the route through the shared
  * route-flight cinematic (`flyRoute`), the way voice's `fly_route` does.
  *
  * Needs no key, no geocoder and no microphone. A route that cannot be found
@@ -107,7 +107,7 @@ export function directionsRowControls(state) {
   const routing = status === 'routing';
   const chips = Object.entries(DIRECTIONS_MODES).map(([id, spec]) => ({
     id: `mode-${id}`,
-    label: spec.chip,
+    label: spec.word,
     active: mode === id,
     state: mode === id ? 'active' : 'idle',
     title: `${spec.word} — reroute for ${spec.word.toLowerCase()}`,
@@ -115,7 +115,7 @@ export function directionsRowControls(state) {
   }));
   chips.push({
     id: 'set-a',
-    label: armed === 'a' ? 'CLICK MAP' : a ? 'A ✓' : 'SET A',
+    label: armed === 'a' ? 'Click map' : a ? 'A ✓' : 'Set A',
     active: armed === 'a',
     state: armed === 'a' ? 'active' : 'idle',
     title:
@@ -126,7 +126,7 @@ export function directionsRowControls(state) {
   });
   chips.push({
     id: 'set-b',
-    label: armed === 'b' ? 'CLICK MAP' : b ? 'B ✓' : 'SET B',
+    label: armed === 'b' ? 'Click map' : b ? 'B ✓' : 'Set B',
     active: armed === 'b',
     state: armed === 'b' ? 'active' : 'idle',
     title:
@@ -146,7 +146,7 @@ export function directionsRowControls(state) {
   const flying = Number.isInteger(flightStep);
   chips.push({
     id: 'fly',
-    label: routing ? 'FLY ···' : flying ? 'FLYING' : 'FLY',
+    label: routing ? 'Fly ···' : flying ? 'Flying' : 'Fly',
     disabled: !route || routing,
     busy: routing || flying,
     active: flying,
@@ -156,7 +156,7 @@ export function directionsRowControls(state) {
   });
   chips.push({
     id: 'clear',
-    label: 'CLEAR',
+    label: 'Clear',
     disabled: !a && !b && !route,
     state: 'idle',
     title: 'Remove the route and both markers',

@@ -633,7 +633,7 @@
   display: none;
 }
 
-.data-toggle-chip {
+.data-toggle-chip:not(:where(.kit-chip)) {
   padding: 2px 7px;
   font-family: var(--font-mono);
   font-size: 8px;
@@ -651,14 +651,14 @@
   outline: none;
 }
 
-.data-toggle-chip:hover,
-.data-toggle-chip:focus-visible {
+.data-toggle-chip:not(:where(.kit-chip)):hover,
+.data-toggle-chip:not(:where(.kit-chip)):focus-visible {
   border-color: var(--glass-border-hover);
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-secondary);
 }
 
-.data-toggle-chip.active {
+.data-toggle-chip:not(:where(.kit-chip)).active {
   color: var(--accent);
   border-color: var(--accent);
   background: var(--accent-dim);
@@ -666,41 +666,20 @@
 
 /* Async sub-controls: a chip must never read ACTIVE before the data it turns
    on actually exists, so loading and failure are their own visible states. */
-.data-toggle-chip:disabled {
+.data-toggle-chip:not(:where(.kit-chip)):disabled {
   cursor: wait;
   opacity: 0.7;
 }
 
-.data-toggle-chip.chip-loading {
+.data-toggle-chip:not(:where(.kit-chip)).chip-loading {
   color: var(--text-secondary);
   border-color: rgba(255, 255, 255, 0.18);
 }
 
-.data-toggle-chip.chip-error {
+.data-toggle-chip:not(:where(.kit-chip)).chip-error {
   color: #ff8585;
   border-color: rgba(255, 92, 92, 0.6);
   background: rgba(255, 60, 60, 0.08);
-}
-
-.data-toggle-legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.5px;
-  color: var(--text-dim);
-  cursor: default;
-}
-
-.data-toggle-legend-swatch {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  /* The swatch IS the datum — keep it exactly the point color, with only a
-     hairline ring so a near-black class still reads on the panel glass. */
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
-  flex: none;
 }
 
 /* Optional per-layer ordered list: the turn-by-turn directions under the
@@ -726,10 +705,13 @@
   gap: 6px;
   width: 100%;
   padding: 2px 4px;
+  text-align: left;
+}
+
+.data-row-list-item:not(:where(.kit-btn)) {
   font-family: var(--font-mono);
   font-size: 8px;
   letter-spacing: 0.4px;
-  text-align: left;
   color: var(--text-dim);
   background: none;
   border: 1px solid transparent;
@@ -751,14 +733,14 @@
   flex: none;
 }
 
-.data-row-list-item:hover,
-.data-row-list-item:focus-visible {
+.data-row-list-item:not(:where(.kit-btn)):hover,
+.data-row-list-item:not(:where(.kit-btn)):focus-visible {
   border-color: var(--glass-border-hover);
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
 }
 
-.data-row-list-item.active {
+.data-row-list-item:not(:where(.kit-btn)).active {
   color: var(--accent);
   border-color: var(--accent);
   background: var(--accent-dim);
@@ -785,20 +767,12 @@
 }
 
 /* A list line that states a limit rather than offering an action. */
-.data-row-list-item.note {
+.data-row-list-item:not(:where(.kit-btn)).note {
   cursor: default;
   opacity: 0.75;
   font-style: italic;
 }
 
-.data-toggle-controls-info {
-  flex-basis: 100%;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--text-secondary);
-  padding-top: 3px;
-  overflow-wrap: anywhere;
-}
 /* ── Local RTL-SDR card (FM + Local ADS-B receiver) ── */
 .sdr-radio-card {
   display: grid;
