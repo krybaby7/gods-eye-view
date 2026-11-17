@@ -131,6 +131,8 @@ test('legend validates colors, preserves the freezing anchor and ignores CSSOM n
   const zero = f.find((n) => n.className === 'rail-card-zero');
   const ramp = f.find((n) => n.className === 'rail-card-ramp');
   assert.equal(zero.hidden, false);
+  assert.equal(zero.textContent, '0\u00b0C');
+  assert.notEqual(zero.getAttribute('aria-hidden'), 'true');
   assert.equal(zero.style.left, '50%');
   Object.defineProperty(ramp.style, 'background', {
     get: () =>

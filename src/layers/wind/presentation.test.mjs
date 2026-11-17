@@ -14,7 +14,7 @@ test('captured reading reformats without changing its sample and produces a port
   assert.equal(section.lines.find(({ id }) => id === 'scalar').text, 'Air temperature · 2 m · 12 °C');
   assert.equal(section.lines.find(({ id }) => id === 'wind').text, '11.2 mph from SW');
   assert.equal(section.lines.find(({ id }) => id === 'meta').text, 'NOAA GFS · valid 09-21 12:00 UTC');
-  assert.equal(section.label, 'WIND AT 41.9°N 87.6°W');
+  assert.equal(section.label, 'Wind at 41.9°N 87.6°W');
   assert.deepEqual(section.clear.params, { inspect: false });
   assert.equal(formatWindReading({ ...sample, from: 'Calm' }, 'm/s').wind, '5.0 m/s · calm');
   assert.equal(formatWindReading(null, 'km/h'), null);

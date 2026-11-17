@@ -20,3 +20,12 @@ test('component selection includes only requested markup and refuses filesystem 
   assert.doesNotMatch(html, /id="cesiumContainer"/);
   assert.throws(() => expandApplicationHtml('<!-- gev:template ../../.env -->'), /Unknown application template/);
 });
+
+test('Weather is a hidden, semantically labelled panel until a product is active', () => {
+  const source = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+  const html = expandApplicationHtml(source);
+  assert.match(html, /<section\b(?=[^>]*\bid="weather-panel")(?=[^>]*\baria-labelledby="weather-panel-title")(?=[^>]*\bhidden\b)[^>]*>/);
+  assert.match(html, /<h2\b(?=[^>]*\bid="weather-panel-title")(?=[^>]*\bclass="[^"]*\bpanel-title\b)[^>]*>\s*Weather\s*<\/h2>/);
+  assert.match(html, /id="weather-panel-body"/);
+  assert.match(html, /data-collapse-target="weather-panel"/);
+});

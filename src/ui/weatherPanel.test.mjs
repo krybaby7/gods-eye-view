@@ -9,6 +9,7 @@ const wind = {
   summary: {
     label: 'Wind motion',
     coverage: 'Global · 1° grid',
+    source: 'ECMWF',
     validTime: ticks[0],
     issuedTime: ticks[0],
   },
@@ -86,8 +87,17 @@ test('timeline stays visible with any observed product; native preview and trans
   assert.equal(f.find((n) => n.tagName === 'INPUT').disabled, true);
   f.state({ timeline: [] });
   assert.equal(timelineHost(f).hidden, false);
+  assert.equal(
+    f.find((n) => n.className === 'rail-timeline-readout').textContent,
+    'No observation times available',
+  );
+  assert.equal(f.find((n) => n.tagName === 'INPUT').disabled, true);
   f.state({ timeline: ticks });
   assert.equal(timelineHost(f).hidden, false);
+  assert.equal(
+    f.find((n) => n.className === 'rail-timeline-readout').textContent,
+    'Latest \u00b7 newest per product',
+  );
   const slider = f.find((n) => n.tagName === 'INPUT');
   slider.value = '0';
   slider.dispatchEvent(new Event('input'));
@@ -115,6 +125,7 @@ test('ordered articles omit Controls and retain history labels, forecast dates a
     f.find((n) => n.dataset.weatherOpen),
     null,
   );
+  assert.equal(line(f, 'wind', 'source').textContent, 'Source · ECMWF');
   assert.match(
     line(f, 'wind', 'time').textContent,
     /Forecast · valid .*UTC · issued .*UTC/,
@@ -319,7 +330,7 @@ test('settings, reading and footer actions pass the layer id, params and user or
   const result = f.find((n) => n.className === 'rail-card-result');
   const header = result.children[0];
   assert.equal(header.className, 'rail-card-result-header');
-  assert.equal(header.children[0].textContent, 'WIND AT 26.59°N 123.34°W');
+  assert.equal(header.children[0].textContent, 'Wind at 26.59°N 123.34°W');
   assert.equal(header.children[1].textContent, '×');
   assert.equal(header.children[1].getAttribute('aria-label'), 'Clear reading');
   assert.deepEqual(

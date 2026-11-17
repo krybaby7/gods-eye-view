@@ -347,7 +347,7 @@ test('sample stays fixed across model, field and unit changes; dismissal and dis
   assert.match(changed.wind, /mph/);
   assert.equal(samples, 1, 'units do not resample');
   assert.equal(layer.getRowControls().summary.result.id, 'reading');
-  assert.deepEqual(layer.getRowControls().summary.settings.map(({ label }) => label), ['MODEL', 'FIELD', 'UNITS', 'MOTION']);
+  assert.deepEqual(layer.getRowControls().summary.settings.map(({ label }) => label), ['Model', 'Field', 'Units', 'Motion']);
   assert.equal(nodes.length, 1);
   assert.equal(typeof listener, 'function');
   viewer.camera.pickEllipsoid = () => { samples++; return { longitude: 70, latitude: 20 }; };
