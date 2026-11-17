@@ -25,6 +25,11 @@ import {
 import { captureLookImage } from '../src/tooling/qaLookImage.mjs';
 import { createDenyProxy } from '../src/tooling/qaLookProxy.mjs';
 import { createFixtureWorld, installFixtures } from './qa-world.fixtures.mjs';
+import {
+  createWeatherLookFixture,
+  WEATHER_LOOK_REFERENCE,
+} from './qa-look-weather.fixtures.mjs';
+import { captureWeather } from './qa-look-weather.mjs';
 
 const options = parseLookArgs(process.argv.slice(2));
 const out =
@@ -41,7 +46,7 @@ const report = {
     suppressedHosts: [],
   },
   errors: [],
-  ...(options.panel === 'layers'
+  ...(options.panel !== 'legend'
     ? {
         panel: options.panel,
         ...{ label: options.label, state: options.state },
@@ -79,8 +84,22 @@ try {
   page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
   await page.evaluateOnNewDocument(installFrameDiagnostics);
+  if (options.panel === 'weather') {
+    report.weatherReference = new Date(WEATHER_LOOK_REFERENCE).toISOString();
+    await page.evaluateOnNewDocument((reference) => {
+      // Shift wall time for fixture freshness without virtualizing timers or
+      // freezing elapsed-time checks in the application.
+      const realNow = Date.now.bind(Date);
+      const offset = reference - realNow();
+      Date.now = () => realNow() + offset;
+    }, WEATHER_LOOK_REFERENCE);
+  }
   await installFixtures(page, options.url.origin, world, report, {
     strict: true,
+    weather:
+      options.panel === 'weather'
+        ? createWeatherLookFixture(options.state)
+        : null,
     firePerimeter:
       options.panel === 'layers' && options.state === 'filled'
         ? FIRE_PERIMETER_FIXTURE
@@ -104,7 +123,7 @@ try {
   );
   await page.evaluate(async (panel) => {
     const manager = window.__godsEyeView.dataManager;
-    if (panel === 'layers') {
+    if (panel !== 'legend') {
       const { FRAME_LAYER_IDS } = await import('/src/lenses/groups.js');
       await manager.clearSelectedLayers({
         origin: 'user',
@@ -250,11 +269,29 @@ try {
       );
   }
   stage = 'matrix';
-  for (const [width, height] of [
+  const viewports = [
     [1280, 720],
     [1440, 900],
     [1920, 1080],
-  ]) {
+  ];
+  if (options.panel === 'weather') {
+    try {
+      await captureWeather({
+        page,
+        options,
+        out,
+        report,
+        proxy,
+        markFrameStage,
+        viewports,
+      });
+    } catch (error) {
+      const { width, height } = page.viewport();
+      await failure(width, height, 'weather', 'journey', error);
+    }
+  }
+  for (const [width, height] of viewports) {
+    if (options.panel === 'weather') break;
     await markFrameStage(`${width}x${height} viewport`);
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     if (options.panel === 'layers') {
@@ -582,7 +619,7 @@ async function failure(width, height, lens, view, error) {
   const failed = {
     width,
     height,
-    ...(options.panel === 'layers'
+    ...(options.panel !== 'legend'
       ? { panel: options.panel, state: options.state }
       : { lens }),
     view,

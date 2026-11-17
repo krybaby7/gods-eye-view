@@ -103,7 +103,7 @@ test('observed history label and endpoint times track the advertised tick range'
   const view = createRailTimeline(f);
   view.update(props);
   assert.equal(
-    f.find((n) => n.className === 'panel-title').textContent,
+    f.find((n) => n.className === 'kit-sec-h').textContent,
     'Observed history',
   );
   const endpoints = f.find((n) => n.className === 'rail-timeline-endpoints');

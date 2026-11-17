@@ -400,6 +400,33 @@ test('superseded stages cancel requests and cannot resurrect after a late tile r
   assert.equal(h.layers.length, 0);
 });
 
+test('globe tile failures report whether an observation was retained at notification time', async () => {
+  const errors = [];
+  let h;
+  h = renderingHarness({
+    onChange: () => errors.push(h.rendering.getDiagnostics().error),
+  });
+  const first = h.rendering.setFrame(snapshot, times[0]);
+  h.providers[0].errorEvent.emit(new Error('tile missing'));
+  h.postRender.emit();
+  assert.equal(await first, false);
+  assert.ok(errors.includes('Weather tiles unavailable'));
+  assert.equal(h.rendering.getDiagnostics().time, null);
+  const success = h.rendering.setFrame(snapshot, times[0]);
+  h.settle();
+  assert.equal(await success, true);
+  errors.length = 0;
+  const next = h.rendering.setFrame(snapshot, times[1]);
+  h.providers.at(-1).errorEvent.emit(new Error('tile missing'));
+  h.postRender.emit();
+  assert.equal(await next, false);
+  assert.ok(
+    errors.includes('Weather tiles unavailable · previous frame retained'),
+  );
+  assert.equal(h.rendering.getDiagnostics().time, times[0]);
+  h.rendering.clear();
+});
+
 test('failed and timed-out stages retain the previous observation; a healthy replacement clears old errors', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const h = renderingHarness();
@@ -516,6 +543,32 @@ function layerHarness({
     clears: () => clearCount,
   };
 }
+
+test('unavailable source distinguishes an initial failure from a retained observation', async () => {
+  let current = { unavailable: true };
+  const h = layerHarness({ feed: { getSnapshot: async () => current } });
+  await h.layer.update();
+  let summary = h.layer.getRowControls().summary;
+  assert.equal(summary.status, 'Weather source unavailable');
+  assert.equal(summary.detail, 'Observation unavailable');
+  assert.equal(summary.shownTime, null);
+
+  current = snapshot;
+  const update = h.layer.update();
+  await flush();
+  h.stages[0].finish();
+  await update;
+  current = { unavailable: true };
+  await h.layer.update();
+  summary = h.layer.getRowControls().summary;
+  assert.equal(
+    summary.status,
+    'Weather source unavailable; previous observation retained',
+  );
+  assert.equal(summary.shownTime, times[2]);
+  assert.match(summary.detail, /Observed/);
+  h.layer.destroy();
+});
 
 test('history has one owned timer, stops while hidden, and releases all work on disable/destroy', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
@@ -1889,7 +1942,7 @@ test('observed descriptors keep configuration only and label satellite clouds by
     assert.equal(controls.summary.sections, undefined);
     assert.deepEqual(
       controls.summary.settings.map(({ label }) => label),
-      id === 'weather-satellite' ? ['REGION', 'IMAGE', 'OPACITY'] : ['OPACITY'],
+      id === 'weather-satellite' ? ['Region', 'Image', 'Opacity'] : ['Opacity'],
     );
     assert.deepEqual(
       controls.summary.settings.flatMap(({ chips }) => chips),

@@ -30,7 +30,7 @@ export function windUnitChips(units) {
 export function windReadingResult(reading) {
   return {
     id: 'reading',
-    label: `WIND AT ${reading.coordinates.replace(' · ', ' ')}`,
+    label: `Wind at ${reading.coordinates.replace(' · ', ' ')}`,
     lines: [
       {
         id: 'wind',

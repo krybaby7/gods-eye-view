@@ -1,5 +1,13 @@
 import { readResponseJsonCapped } from '../../sources/httpBody.js';
 
+// The map and the Weather rail share the upstream credits for each product.
+export function weatherSourceCredit(product) {
+  if (product === 'lightning')
+    return 'NOAA/NWS lightning density · derived from Vaisala NLDN/GLD360';
+  if (product === 'radar') return 'NOAA nowCOAST · NWS/OAR MRMS';
+  return 'NOAA nowCOAST · NESDIS GOES / global satellite partners';
+}
+
 export const WEATHER_PRODUCTS = Object.freeze([
   'radar',
   'clouds',

@@ -355,3 +355,199 @@
 )[hidden] {
   display: none;
 }
+
+/* Rail-card disclosure and block layout for the shared renderer. */
+.rail-card-nowrap {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rail-card [hidden] {
+  display: none !important;
+}
+
+.rail-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.rail-card-header {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rail-card-compact {
+  grid-column: 1 / -1;
+}
+
+.rail-card-line {
+  white-space: pre-line;
+}
+
+.rail-card-labels,
+.rail-card-heading {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.rail-card-labels {
+  flex-wrap: wrap;
+}
+
+.rail-card-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.kit-card.rail-card {
+  padding: 0;
+}
+
+.kit-card.rail-card:focus-within,
+.kit-card.rail-card:hover,
+.kit-card.rail-card.is-open {
+  border-color: var(--line-strong);
+}
+
+.kit-card.rail-card .rail-card-header {
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: inherit;
+  font: var(--type-small);
+}
+
+.kit-card.rail-card .rail-card-header:focus-visible {
+  outline-offset: -2px;
+}
+
+.kit-card.rail-card .rail-card-labels,
+.kit-card.rail-card .rail-card-heading {
+  gap: var(--space-1) var(--space-2);
+}
+
+.kit-card.rail-card .rail-card-title {
+  color: var(--text-1);
+  font: var(--type-label);
+  white-space: normal;
+}
+
+.kit-card.rail-card .rail-card-disclosure,
+.kit-card.rail-card .rail-card-compact,
+.kit-card.rail-card .rail-card-line.muted,
+.kit-card.rail-card .rail-card-action-hint {
+  color: var(--text-2);
+}
+
+.kit-card.rail-card .rail-card-badge {
+  color: var(--text-2);
+  font: var(--type-caption);
+}
+
+.kit-card.rail-card .rail-card-body {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0 var(--space-2) var(--space-2);
+}
+
+.kit-card.rail-card .rail-card-lines,
+.kit-card.rail-card .rail-card-setting,
+.kit-card.rail-card .rail-card-settings {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.kit-card.rail-card .rail-card-setting-label,
+.kit-card.rail-card .rail-card-result-label {
+  color: var(--text-1);
+  font: var(--type-label);
+}
+
+.kit-card.rail-card .rail-card-actions,
+.kit-card.rail-card .rail-card-chips,
+.kit-card.rail-card .rail-card-result-header,
+.kit-card.rail-card .rail-card-legend-entry {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.kit-card.rail-card .rail-card-result-label {
+  flex: 1;
+}
+
+.kit-card.rail-card .rail-card-result {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-control);
+  background: var(--surface-0);
+}
+
+.kit-card.rail-card .data-row-list {
+  padding-left: 0;
+  margin-left: 0;
+}
+
+.kit-card.rail-card .data-row-list-item::before {
+  color: var(--text-2);
+  font: var(--type-code);
+  opacity: 1;
+}
+
+.kit-card.rail-card .data-row-list-text {
+  white-space: normal;
+}
+
+.rail-card-ramp {
+  position: relative;
+  height: var(--space-2);
+  border-radius: var(--radius-mark);
+}
+
+.kit-card.rail-card .rail-card-scale {
+  margin-top: var(--space-1);
+  color: var(--text-2);
+  font: var(--type-code);
+  text-align: right;
+}
+
+.rail-card-ramp:has(.rail-card-zero:not([hidden])) {
+  margin-bottom: var(--space-5);
+}
+
+.rail-card-zero {
+  position: absolute;
+  top: 100%;
+  padding-top: var(--space-1);
+  color: var(--text-1);
+  font: var(--type-code);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.rail-card-zero::before {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  height: var(--space-2);
+  border-left: 1px solid var(--text-1);
+  content: '';
+}
+
+.rail-card-legend-swatch {
+  width: var(--space-3);
+  height: var(--space-1);
+  flex: 0 0 var(--space-3);
+}

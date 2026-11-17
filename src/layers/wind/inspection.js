@@ -133,7 +133,7 @@ export function createWindInspectionMarker({ container, viewer, cesium }) {
       marker.className = 'gev-wind-inspection-marker';
       marker.setAttribute('aria-hidden', 'true');
       marker.style.cssText =
-        'position:absolute;width:18px;height:18px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 2px #153440,0 0 0 5px rgba(102,225,242,.35);transform:translate(-50%,-50%);pointer-events:none;z-index:150;';
+        'position:absolute;width:18px;height:18px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 2px #153440,0 0 0 5px rgba(102,225,242,.35);transform:translate(-50%,-50%);pointer-events:none;';
       container.appendChild(marker);
       const occluder = new cesium.EllipsoidalOccluder(
         scene.globe?.ellipsoid || cesium.Ellipsoid.WGS84,

@@ -715,31 +715,6 @@
     "count": 1
   },
   {
-    "path": "src/ui/styles/weather.css",
-    "kind": "backdrop",
-    "count": 2
-  },
-  {
-    "path": "src/ui/styles/weather.css",
-    "kind": "color",
-    "count": 12
-  },
-  {
-    "path": "src/ui/styles/weather.css",
-    "kind": "font",
-    "count": 15
-  },
-  {
-    "path": "src/ui/styles/weather.css",
-    "kind": "radius",
-    "count": 4
-  },
-  {
-    "path": "src/ui/styles/weather.css",
-    "kind": "shadow",
-    "count": 1
-  },
-  {
     "path": "src/ui/styles/world-phase-4.css",
     "kind": "color",
     "count": 2,

@@ -291,6 +291,7 @@ export function createWindLayer({
         summary: {
           label,
           coverage: 'Global · 1° grid',
+          source: model === 'ifs' ? 'ECMWF IFS' : 'NOAA GFS',
           validTime: manifest?.cycle?.validIso,
           issuedTime: manifest?.cycle?.runIso,
           detail: `${model === 'ifs' ? 'ECMWF IFS' : 'GFS'} forecast · ${valid || 'Unavailable'}`,
@@ -385,12 +386,12 @@ export function createWindLayer({
         chips: controls.chips.filter((chip) => chip.id.startsWith(prefix)),
       });
       controls.summary.settings = [
-        setting('model', 'MODEL', 'model-'),
-        setting('field', 'FIELD', 'overlay-'),
+        setting('model', 'Model', 'model-'),
+        setting('field', 'Field', 'overlay-'),
         ...(controls.chips.some(({ id }) => id.startsWith('units-'))
-          ? [{ id: 'units', label: 'UNITS', chips: windUnitChips(units) }]
+          ? [{ id: 'units', label: 'Units', chips: windUnitChips(units) }]
           : []),
-        setting('motion', 'MOTION', 'motion'),
+        setting('motion', 'Motion', 'motion'),
       ];
       controls.summary.actions = controls.chips.filter(
         ({ id }) => id === 'read-wind',
