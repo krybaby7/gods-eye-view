@@ -517,6 +517,32 @@ function layerHarness({
   };
 }
 
+test('unavailable source distinguishes an initial failure from a retained observation', async () => {
+  let current = { unavailable: true };
+  const h = layerHarness({ feed: { getSnapshot: async () => current } });
+  await h.layer.update();
+  let summary = h.layer.getRowControls().summary;
+  assert.equal(summary.status, 'Weather source unavailable');
+  assert.equal(summary.detail, 'Observation unavailable');
+  assert.equal(summary.shownTime, null);
+
+  current = snapshot;
+  const update = h.layer.update();
+  await flush();
+  h.stages[0].finish();
+  await update;
+  current = { unavailable: true };
+  await h.layer.update();
+  summary = h.layer.getRowControls().summary;
+  assert.equal(
+    summary.status,
+    'Weather source unavailable; previous observation retained',
+  );
+  assert.equal(summary.shownTime, times[2]);
+  assert.match(summary.detail, /Observed/);
+  h.layer.destroy();
+});
+
 test('history has one owned timer, stops while hidden, and releases all work on disable/destroy', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const h = layerHarness();
