@@ -630,7 +630,9 @@ export function createWeatherShell({
     if (incoming !== frame) return;
     incoming = null;
     close(frame);
-    lastError = 'Weather tiles unavailable · previous frame retained';
+    lastError = current
+      ? 'Weather tiles unavailable · previous frame retained'
+      : 'Weather tiles unavailable';
     frame.resolve(false);
     scene.requestRender();
     onChange();

@@ -294,7 +294,9 @@ function createGlobeRendering({
             );
           }
         } else {
-          lastError = 'Weather tiles unavailable · previous frame retained';
+          lastError = current
+            ? 'Weather tiles unavailable · previous frame retained'
+            : 'Weather tiles unavailable';
           remove(frame);
         }
         frame.resolve(ok);
