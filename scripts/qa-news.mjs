@@ -27,6 +27,7 @@ import {
   normalizeLayerState,
 } from '../src/data/layerState.js';
 import { assignHotspots } from '../server/providers/news/hotspots.js';
+import { worldFixtureUnavailable } from '../src/tooling/qaWorldIsolation.mjs';
 
 export const ARTIFACT_DIR = 'qa-artifacts/news';
 const VIEWPORT = { width: 1440, height: 900 };
@@ -1020,6 +1021,11 @@ async function serveFixtures(page, state) {
   await page.setRequestInterception(true);
   page.on('request', (request) => {
     const url = new URL(request.url());
+    const worldUnavailable = worldFixtureUnavailable(url.pathname, 'news');
+    if (worldUnavailable) {
+      void request.respond(worldUnavailable);
+      return;
+    }
     if (!url.pathname.startsWith('/api/news')) {
       void request.continue();
       return;

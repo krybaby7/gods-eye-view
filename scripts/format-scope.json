@@ -1036,5 +1036,19 @@
   "scripts/bench-searches.test.mjs",
   "server/providers/search/agents/toolkit.test.mjs",
   "src/ui/toolsMenu.test.mjs",
-  "src/ui/styles/tools-menu.css"
+  "src/ui/styles/tools-menu.css",
+  "scripts/qa-look.mjs",
+  "src/tooling/qaLook.mjs",
+  "src/tooling/qaLook.test.mjs",
+  "src/tooling/qaWorldIsolation.mjs",
+  "src/tooling/qaWorldIsolation.test.mjs",
+  "src/testSupport/designTokenLiterals.mjs",
+  "src/testSupport/designTokenLiterals.test.mjs",
+  "src/ui/designTokenLiterals.test.mjs",
+  "src/ui/designTokenLiterals.allow.json",
+  "src/tooling/qaLookProxy.mjs",
+  "src/ui/styles/kit.css",
+  "src/ui/kit.test.mjs",
+  "src/ui/legendCaption.test.mjs",
+  "src/tooling/qaLookImage.mjs"
 ]

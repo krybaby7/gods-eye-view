@@ -9,7 +9,7 @@ import { announceMenuOpen, closeWhenAnotherOpens } from './menuSections.js';
  * band holds, and the note takes a line under them, cut short with an
  * ellipsis. The rule: a colour class is shown whole or not at all, and while
  * the legend is in the bar its title and the Unknown key are whole. When the
- * marks need more room than the band has they close up to the dense line;
+ * marks need more room than the band has they use tighter spacing;
  * stops that still do not fit leave the bar, from the last one back; if even
  * that is not enough the note goes (and the stops that then fit come back).
  * Where the band cannot hold even the title and the Unknown key whole (a
@@ -130,7 +130,7 @@ export function createFrameLegend({ document, window, signal, observers }) {
       legend.setAttribute('data-away', '');
       return true;
     }
-    // The usual line height where what is left fits it.
+    // Use the usual spacing when the remaining marks fit it.
     if (legend.hasAttribute('data-dense')) {
       legend.removeAttribute('data-dense');
       if (!whole(stops)) legend.setAttribute('data-dense', '');
@@ -198,17 +198,15 @@ export function createFrameLegend({ document, window, signal, observers }) {
     if (noteText) parts.push(make('p', 'frame-legend-popup-note', noteText));
     popup.replaceChildren(...parts);
   }
-  /** Keeps the popover inside the window, over the button where it can. */
+  /** Aim at the button. CSS bounds the popover to the frame's insets. */
   function place() {
     const bar = popup.offsetParent ?? popup.parentElement;
     const barBox = bar?.getBoundingClientRect?.();
     const buttonBox = button.getBoundingClientRect?.();
     if (!barBox || !buttonBox) return;
-    const viewport = window?.innerWidth ?? barBox.width;
     const width = popup.getBoundingClientRect?.().width ?? 0;
-    const want = buttonBox.right - width;
-    const left = Math.max(8, Math.min(want, viewport - width - 8));
-    popup.style.left = `${Math.round(left - barBox.left)}px`;
+    const anchor = Math.round(buttonBox.right - width - barBox.left);
+    popup.style.setProperty('--legend-popup-anchor', `${anchor}px`);
   }
 
   const isOpen = () => !popup.hidden;

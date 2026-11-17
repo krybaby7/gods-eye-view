@@ -6,6 +6,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import puppeteer from 'puppeteer';
 import { LAYER_STATE_REGISTRY } from '../src/data/layerState.js';
+import { worldFixtureUnavailable } from '../src/tooling/qaWorldIsolation.mjs';
 import { decorateSearchSnapshots } from '../server/providers/search/dedupe.js';
 import {
   buildRunSnapshot,
@@ -404,6 +405,14 @@ function fixtureServer() {
     await page.setRequestInterception(true);
     page.on('request', (request) => {
       const url = new URL(request.url());
+      const worldUnavailable = worldFixtureUnavailable(
+        url.pathname,
+        'searches',
+      );
+      if (worldUnavailable) {
+        void request.respond(worldUnavailable);
+        return;
+      }
       const method = request.method();
       const isSearch = /^\/api\/searches(?:\/|$)/.test(url.pathname);
       const isNews = /^\/api\/news(?:\/|$)/.test(url.pathname);
