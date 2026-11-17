@@ -85,7 +85,7 @@
 }
 
 .world-energy-status[data-status='normal'] {
-  color: var(--accent);
+  color: var(--status-normal);
 }
 
 .world-energy-status[data-status='reduced'] {

@@ -358,3 +358,29 @@ test('an omitted source is visibly unavailable and cannot be toggled on', async 
     'an active layer can always be switched off',
   );
 });
+
+test('uncertain switch exposes its status as a description and clears it on reconciliation', async () => {
+  const previousDocument = globalThis.document;
+  const { f, panel, layers } = await mountRows(['traffic'], {
+    enabled: () => true,
+  });
+  globalThis.document = f.document;
+  layers[0].lifecycleUncertain = true;
+  try {
+    panel.mount(f.container);
+    const row = f.find((node) => node.dataset?.layerId === 'traffic');
+    const button = row.querySelector('.data-toggle-btn');
+    const meta = row.querySelector('.st');
+    assert.equal(button.getAttribute('aria-describedby'), meta.id);
+    assert.ok(meta.id, 'description references a real element');
+    assert.match(meta.textContent, /uncertain/i);
+    assert.equal(button.getAttribute('aria-label'), 'Street traffic');
+    layers[0].lifecycleUncertain = false;
+    panel._refreshTogglePanel();
+    assert.equal(button.getAttribute('aria-describedby'), null);
+    assert.doesNotMatch(meta.textContent, /uncertain/i);
+  } finally {
+    panel.destroy();
+    globalThis.document = previousDocument;
+  }
+});

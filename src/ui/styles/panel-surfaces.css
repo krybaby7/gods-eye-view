@@ -123,6 +123,7 @@
   min-width: 0;
   color: var(--panel-surface-title);
   font: var(--type-label);
+  letter-spacing: 0.1em;
   overflow-wrap: anywhere;
 }
 

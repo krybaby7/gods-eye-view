@@ -5,6 +5,7 @@ import { expandApplicationHtml } from '../../build/application-html.js';
 import { readStylesheet } from '../testSupport/readStylesheet.mjs';
 import {
   ancestorsOf,
+  htmlNodes,
   customProperties,
   modelNode,
   resolveVars,
@@ -12,7 +13,7 @@ import {
   winners,
 } from '../testSupport/cssCascade.mjs';
 import { createFakeDocument } from '../testSupport/fakeDocument.mjs';
-import { renderExposure } from './worldEnergyPanels.js';
+import { renderChokepoint, renderExposure } from './worldEnergyPanels.js';
 import { renderRelationsTab } from './worldRelationsTab.js';
 import { renderAssetsTab } from './worldAssetPanels.js';
 import { renderPeopleTab } from './worldPeopleTab.js';
@@ -198,6 +199,28 @@ test('rendered board tabs and evidence keep readable text through the real sheet
       { iso3: 'PAK', name: 'Pakistan' },
     ],
     features: {
+      'energy-dependencies': {
+        mode: 'fixture',
+        exposure: {
+          IND: [
+            {
+              gate: 'chokepoint1',
+              item: 'crude oil',
+              shares: { all: 0.3, seaborne: 0.4 },
+              route: ['chokepoint1'],
+            },
+          ],
+        },
+        rows: [
+          {
+            dependent: 'IND',
+            provider: 'PAK',
+            item: 'crude oil',
+            shares: { all: 0.3, seaborne: 0.4 },
+            route: ['chokepoint1'],
+          },
+        ],
+      },
       'relations-ucdp': {
         relations: [{ id: 'r1', type: 'alliance', from: 'IND', to: 'PAK' }],
       },
@@ -235,6 +258,7 @@ test('rendered board tabs and evidence keep readable text through the real sheet
   const assets = renderAssetsTab(context);
   const trees = [
     ['Exposure', renderExposure(context)],
+    ['Chokepoint', renderChokepoint({ ...context, id: 'chokepoint1' })],
     ['Relations', renderRelationsTab({ ...context, getDetail: undefined })],
     ['Assets', assets],
     ['People', renderPeopleTab({ ...context, getDetail: undefined })],
@@ -269,6 +293,8 @@ test('rendered board tabs and evidence keep readable text through the real sheet
       orders[0],
     ).flatMap((item) => item.classes);
   for (const [name, required] of [
+    ['Exposure', ['world-energy-route']],
+    ['Chokepoint', ['world-energy-status']],
     ['People', ['world-person-role', 'world-person-account']],
     ['Assets', ['world-asset-select']],
   ]) {
@@ -279,6 +305,13 @@ test('rendered board tabs and evidence keep readable text through the real sheet
         `${name} fixture includes ${expected}`,
       );
   }
+  assert.ok(
+    renderedTypes(
+      trees.find(([name]) => name === 'Exposure')[1],
+      orders[0],
+    ).some((item) => item.tag === 'h4'),
+    'Exposure includes dependency headings',
+  );
   for (const [name, tree] of trees) {
     assert.ok(tree, `${name} rendered`);
     for (const list of orders) {
@@ -405,4 +438,70 @@ test('rendered Condition and Strength distinguish numeric scores from Unknown', 
       }
     }
   }
+});
+
+test('Situation and Search Layers titles retain their intended tracking in the application cascade', () => {
+  const titles = htmlNodes(html).filter((node) =>
+    node.classes.has('panel-surface-title'),
+  );
+  assert.ok(titles.length >= 2);
+  const list = rules(css);
+  for (const title of titles) {
+    const winner = winners(title, list, {
+      'letter-spacing': ['letter-spacing'],
+    })['letter-spacing'];
+    assert.ok(winner, 'title has explicit tracking');
+    assert.equal(
+      resolveVars(winner.decl.value, customProperties(list)),
+      '0.1em',
+    );
+  }
+});
+
+test('rendered stale flags and normal chokepoints keep their established status colors', () => {
+  const document = createFakeDocument();
+  const flag = renderLiveFlagPanel(document, [
+    {
+      label: 'Flag',
+      date: '2026',
+      source: 'https://example.org',
+      sourceName: 'Source',
+      status: 'stale',
+    },
+  ]);
+  const gate = renderChokepoint({
+    document,
+    id: 'chokepoint1',
+    snapshot: {
+      features: {
+        portwatch: { gates: [{ id: 'chokepoint1', status: 'normal' }] },
+      },
+    },
+  });
+  const list = orders[0];
+  function findColor(element, parent, wanted) {
+    const attrs = new Map(element.attributes);
+    for (const [key, value] of Object.entries(element.dataset))
+      attrs.set(
+        `data-${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`,
+        value,
+      );
+    const node = modelNode(element.tagName.toLowerCase(), attrs, parent);
+    if (wanted(node)) {
+      const won = winners(node, list, { color: ['color'] }).color;
+      return resolveVars(won.decl.value, customProperties(list));
+    }
+    for (const child of element.children) {
+      const result = findColor(child, node, wanted);
+      if (result) return result;
+    }
+  }
+  assert.equal(
+    findColor(flag, sheet, (node) => node.attrs.get('data-status') === 'stale'),
+    '#f2cf91',
+  );
+  assert.equal(
+    findColor(gate, sheet, (node) => node.classes.has('world-energy-status')),
+    '#6cddff',
+  );
 });
