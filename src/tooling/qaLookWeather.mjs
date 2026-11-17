@@ -1,5 +1,23 @@
 import { collisions, requiredContextFailures } from './qaLook.mjs';
 
+export function weatherTimelineCaptureDelta(before, after) {
+  const keys = Object.keys({ ...before, ...after });
+  const changed = keys.filter((key) => before[key] !== after[key]);
+  if (!changed.length) return null;
+  const historyAge = /^(\d{2}:\d{2} UTC) · (\d+) min ago$/;
+  const start = before.readout?.match(historyAge);
+  const end = after.readout?.match(historyAge);
+  const elapsedAgeRefresh =
+    changed.length === 1 &&
+    changed[0] === 'readout' &&
+    before.latest === 'false' &&
+    before.utc?.endsWith(start?.[1] ?? '(missing)') &&
+    Boolean(
+      start && end && start[1] === end[1] && Number(end[2]) > Number(start[2]),
+    );
+  return { changed, elapsedAgeRefresh };
+}
+
 export function measureWeather() {
   const find = (selector) => document.querySelector(selector);
   const panel = find('#weather-panel');

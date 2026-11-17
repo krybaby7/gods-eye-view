@@ -5,6 +5,7 @@ import { captureLookImage } from '../src/tooling/qaLookImage.mjs';
 import {
   measureWeather,
   weatherFailures,
+  weatherTimelineCaptureDelta,
 } from '../src/tooling/qaLookWeather.mjs';
 import {
   WEATHER_LOOK_IDS,
@@ -148,9 +149,23 @@ export async function captureWeather({
       issues.push('Weather rail has no pixels inside the screenshot');
     const after = await inspect();
     issues.push(...captureStateFailures(data.frameState, after.frameState));
-    for (const key of ['target', 'header', 'body', 'timeline'])
+    for (const key of ['target', 'header', 'body'])
       if (JSON.stringify(data[key]) !== JSON.stringify(after[key]))
         issues.push(`Weather ${key} changed during capture`);
+    // A periodic refresh may advance the history age during the screenshot.
+    // Keep both raw snapshots while checking that only that elapsed age advanced.
+    const timelineDelta = weatherTimelineCaptureDelta(
+      data.timeline,
+      after.timeline,
+    );
+    if (timelineDelta) {
+      data.timelineAfterCapture = after.timeline;
+      data.timelineCaptureDelta = timelineDelta;
+      if (!timelineDelta.elapsedAgeRefresh)
+        issues.push(
+          `Weather timeline changed during capture: ${timelineDelta.changed.join(', ')}`,
+        );
+    }
     const evidence = {
       width,
       height,
