@@ -39,11 +39,10 @@ body #data-panel.layers-menu[hidden] {
   display: none;
 }
 
-/* The menu occupies the right rail's space. Keep the rail's layout and open
-   panels intact so dismissing the menu restores their previous positions. */
-body:not(.cockpit-mode):has(#data-panel.layers-menu:not(.collapsed, [hidden]))
-  :is(#right-context-rail, #right-context-rail *) {
-  visibility: hidden;
+/* Keep covered rail panels out of view and out of the tab order without
+   shifting other panel positions or changing disclosure state. */
+:is([data-layers-obscured], [data-layers-obscured] *) {
+  visibility: hidden !important;
 }
 
 body #data-panel.layers-menu:focus {
