@@ -9,7 +9,8 @@ Piece 2, costume off and board on, was built unattended on 2026-11-12 and merged
 pull request 26, after an independent review. Piece 4, words for numbers and the Overview tab, was
 merged the same day as pull request 27 under decision 33. Piece 3, the frame, was merged on
 2026-11-16 as pull request 28, also under decision 33, and the tools menu (1.5) the same day as pull
-request 29. Section 10 gives the order of building and the state of each piece. Builds on
+request 29. From 2026-11-17 a Codex agent continues the build (decision 34). Section 10 gives the
+order of building and the state of each piece. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
 what the first review could not see and section 8.1 what the second one found.
@@ -596,6 +597,17 @@ Added later on 2026-11-13, when the owner answered a question put to them that m
     which is still asked first. Each merge is reported to the owner with what was checked and
     what was not.
 
+Added on 2026-11-17, when the owner moved the building to Codex:
+
+34. **Codex continues the build.** The owner wrote "I d like to have a codex agent continue the
+    work", with a Codex agent of their own set up on the PC in the `gev-world-board` folder. From
+    2026-11-17 Codex directs and builds: it plans, writes the code, runs the checks, does the git
+    work and keeps this roadmap. For that time this replaces "Claude builds the rest" in decision 29
+    and "Claude merges" in decision 33. Every other rule of decisions 29, 32 and 33 stands. The
+    independent read is now made by a Codex context that did not write the change. The handoff is in
+    the main folder, `qa-artifacts/handoff-2026-11-17/handoff-prompt-codex.md`, not committed. That
+    the leave of decision 33 passes to Codex is Claude's reading, and the owner was told.
+
 ## 6. Risks
 
 - **Stage 1 is bigger than it looks.** Most of its lines are in panels the owner did not write.
@@ -916,17 +928,17 @@ asks. Decision 33 lets a reviewed piece be merged without asking until the app i
 table is the order and the state. The session that finishes a piece updates its row, the status
 line at the top of this file and the owner's status page.
 
-| Order  | Piece                                                                                                               | State on 2026-11-16                                               |
-| ------ | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                                         |
-| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)                           |
-| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13                           |
-| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16                           |
-| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13                           |
-| 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16                           |
-| 6      | The layers menu (1.4)                                                                                               | Stage one built (pull request 30, a draft); stage two being built |
-| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Next: 1.3 (scoped; the plan is below), then 1.6                   |
-| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock                              |
+| Order  | Piece                                                                                                               | State on 2026-11-17                                         |
+| ------ | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                                   |
+| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)                     |
+| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13                     |
+| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16                     |
+| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13                     |
+| 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16                     |
+| 6      | The layers menu (1.4)                                                                                               | Both stages built (pull request 30, a draft); not yet gated |
+| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | Next: 1.3 (scoped; the plan is below), then 1.6             |
+| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock                        |
 
 **Piece 2, costume off and board on.** Merged on 2026-11-13 as pull request 26 (merge commit
 `c9c6beee`), on the owner's word. Before the merge a separate agent ran the five gates again and
@@ -1150,6 +1162,21 @@ evidence. The review left these:
 
 The logs of both full runs, of the builder's five browser runs, and the captures are in the main
 folder under `qa-artifacts/tools-menu/`, not committed.
+
+**Piece 6, the layers menu (1.4): where it stands on 2026-11-17.** Both stages are built and pushed
+(pull request 30, a draft, at `4e2be4c9`). The piece is not merged. The second stage joined the
+branch to `main` after the tools menu, took the War Monitor's row out of the list, gave the menu its
+three foot links, made the menus open one at a time, gave the cockpit its own Layers and Presets,
+and cleared what the tools menu's review had left to it. The tests the builders touched and the
+three small checks passed. Nothing after the first builder's third browser run is proved in a
+browser. That run, on `d07c31b1`, passed 37 World Board steps and failed one: in the cockpit the
+menu lay over the compass at 1440×900. A later commit raises the menu, by arithmetic and not by
+measure, and the run that was to measure it was cut off when the session stopped. No full run was
+made on the final commit. One of two independent readers finished. It found one fault to cure before
+the merge: in the cockpit the menu's three foot links close the menu and open nothing, because the
+region that holds the panels is hidden there. The second reader, on the tests and the evidence, did
+not finish. Still to do: cure that fault, read the whole second stage, make one full run alone on
+the final commit, then merge and record as for piece 5.
 
 **One look (1.3): the plan.** Scoped on 2026-11-16 by six readers and a challenger, from the code
 and the mock; nothing is built and nothing was looked at in a browser. The plan is in the main
