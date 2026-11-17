@@ -5,6 +5,7 @@
  * their owning modules; this file is the single home for cross-source canvas
  * presentation values.
  */
+import { DESIGN_COLORS } from '../designTokens.js';
 
 /** Shared visual tokens used by every world-overlay source. */
 export const WORLD_OVERLAY_STYLE = Object.freeze({
@@ -208,10 +209,10 @@ export const DETECTION_THEME_MAP = Object.freeze({
     filter: 'contrast(1.05) saturate(1.05)',
     scanline: 0.05,
     tiers: {
-      civil: '#22e0ff',
-      military: '#ffb347',
-      sea: '#3fe0c8',
-      space: '#bda4ff',
+      civil: DESIGN_COLORS['--live-civil'],
+      military: DESIGN_COLORS['--live-military'],
+      sea: DESIGN_COLORS['--live-sea'],
+      space: DESIGN_COLORS['--live-space'],
       vehicle: '#8fa6b4',
       veh_jam: '#e05252',
       veh_slow: '#f0b23e',

@@ -22,3 +22,11 @@ test('every detection theme carries a distinct bracket colour for every transit 
     );
   }
 });
+
+test('default overlay preserves the live object colours', () => {
+  const { civil, military, sea, space } = DETECTION_THEME_MAP._default.tiers;
+  assert.deepEqual(
+    { civil, military, sea, space },
+    { civil: '#22e0ff', military: '#ffb347', sea: '#3fe0c8', space: '#bda4ff' },
+  );
+});

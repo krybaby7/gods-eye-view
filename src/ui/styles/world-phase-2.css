@@ -8,20 +8,20 @@
 }
 
 .world-energy-section h3 {
-  color: #cbe5f4;
-  font-size: 0.93rem;
+  color: var(--text-1);
+  font: var(--type-heading);
 }
 
 .world-energy-section h4 {
-  font-size: 0.84rem;
+  font: var(--type-label);
 }
 
 .world-energy-note {
-  color: #acbcc9;
+  color: var(--text-2);
 }
 
 .world-energy-section a {
-  color: #a3dfff;
+  color: var(--link);
 }
 
 .world-energy-details {
@@ -55,8 +55,8 @@
 
 .world-energy-list li {
   padding: 0.55rem;
-  border: 1px solid rgb(153 196 225 / 20%);
-  border-radius: 0.3rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-chip);
 }
 
 .world-energy-list h4 {
@@ -66,10 +66,11 @@
 .world-energy-route {
   margin: 0.45rem 0.35rem 0 0;
   padding: 0.25rem 0.4rem;
-  color: #a3dfff;
-  background: #182936;
-  border: 1px solid #456475;
-  border-radius: 0.3rem;
+  color: var(--link);
+  background: var(--surface-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-chip);
+  font: var(--type-control);
   cursor: pointer;
 }
 
@@ -77,33 +78,34 @@
   width: fit-content;
   padding: 0.14rem 0.45rem;
   border: 1px solid currentcolor;
-  border-radius: 99px;
-  color: #a3bfd0;
+  border-radius: var(--radius-pill);
+  color: var(--text-2);
+  font: var(--type-caption);
   text-transform: capitalize;
 }
 
 .world-energy-status[data-status='normal'] {
-  color: #6cddff;
+  color: var(--accent);
 }
 
 .world-energy-status[data-status='reduced'] {
-  color: #ffc47b;
+  color: var(--status-reduced);
 }
 
 .world-energy-status[data-status='disrupted'] {
-  color: #ff9aa0;
+  color: var(--status-disrupted);
 }
 
 .world-energy-chart {
   display: block;
   width: 100%;
   height: auto;
-  background: rgb(90 126 155 / 12%);
-  border-radius: 0.3rem;
+  background: var(--surface-2);
+  border-radius: var(--radius-chip);
 }
 
 .world-energy-chart path {
   fill: none;
-  stroke: #6cddff;
+  stroke: var(--accent);
   stroke-width: 1.5;
 }

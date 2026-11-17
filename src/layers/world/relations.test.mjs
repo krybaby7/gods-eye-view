@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  DIPLOMACY_CLASSES,
   classifyDiplomacy,
   currentRelations,
   relationsBetween,
@@ -151,5 +152,19 @@ test('a diplomatic rupture needs separately cited recent hostility to paint riva
       },
     ]),
     'rival',
+  );
+});
+
+test('diplomacy categories retain their established globe colours', () => {
+  assert.deepEqual(
+    DIPLOMACY_CLASSES.map(([id, , rgb]) => [id, rgb]),
+    [
+      ['at-war', [219, 71, 79]],
+      ['sanctions', [232, 147, 63]],
+      ['ally', [61, 161, 234]],
+      ['rival', [178, 94, 197]],
+      ['partner', [62, 175, 151]],
+      ['neutral', [148, 159, 175]],
+    ],
   );
 });

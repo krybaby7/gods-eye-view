@@ -1353,6 +1353,7 @@
   "cctv-layer": {
     "exports": ["./layers/cctv"],
     "modules": [
+      "src/designTokens.js",
       "src/data/cctvCards.js",
       "src/data/cctvGizmo.js",
       "src/data/cctvLod.js",
@@ -1625,6 +1626,7 @@
       "./standalone/catalog"
     ],
     "modules": [
+      "src/designTokens.js",
       "src/hudLayouts.js",
       "src/hudLayoutPolicy.js",
       "src/ui/radioPanelPlacement.js",
@@ -2503,6 +2505,7 @@
   "application-layer-construction": {
     "exports": ["./application/layers"],
     "modules": [
+      "src/designTokens.js",
       "src/data/bhoteKoshiEvent.js",
       "src/ui/imagerySplit.js",
       "src/overlays/canvasFrame.js",
@@ -3507,6 +3510,7 @@
   "transit-standalone": {
     "exports": ["./layers/transit/standalone"],
     "modules": [
+      "src/designTokens.js",
       "src/app/sourceSlot.js",
       "src/celestialRing.js",
       "src/keyholeGeometry.js",

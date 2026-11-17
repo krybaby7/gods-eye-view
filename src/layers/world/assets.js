@@ -1,3 +1,4 @@
+import { OWNERSHIP_DOCUMENTED_RGB } from '../../designTokens.js';
 import { aggregateHotspots, hotspotSizePx } from '../news/hotspots.js';
 
 export const assetKinds = {
@@ -110,7 +111,7 @@ export function ownerColor(iso3) {
 export function ownershipColor(country, snapshot) {
   const hosts = ownedAbroad(snapshot, snapshot.selected);
   return hosts.some(({ locatedIn }) => locatedIn === country.iso3)
-    ? [81, 155, 212]
+    ? [...OWNERSHIP_DOCUMENTED_RGB]
     : null;
 }
 

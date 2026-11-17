@@ -4,23 +4,24 @@
    ═══════════════════════════════════════════════ */
 
 :root {
-  --bg-dark: #0a0a0f;
+  --bg-dark: var(--surface-0);
   --glass-bg: rgba(12, 12, 20, 0.72);
   --map-readout-bg: rgba(9, 20, 26, 0.86);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border: var(--line-soft);
   --glass-border-hover: rgba(255, 255, 255, 0.15);
   --accent: #00d4ff;
   --accent-dim: rgba(0, 212, 255, 0.15);
   --accent-glow: rgba(0, 212, 255, 0.4);
-  --text-primary: #e8eaed;
+  --text-primary: var(--text-1);
   --text-secondary: rgba(232, 234, 237, 0.5);
   --text-dim: rgba(232, 234, 237, 0.3);
   /* Opaque surface for browser-painted menus, which cannot use --glass-bg. */
-  --menu-bg: #12121c;
+  --menu-bg: var(--surface-1);
   --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
   --font-sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
-  --panel-radius: 16px;
-  --btn-radius: 10px;
+  --panel-radius: var(--radius-panel);
+  --btn-radius: var(--radius-control);
+  --panel-surface-shadow: var(--shadow-pop);
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
   --left-stack-x: 52px;
@@ -45,6 +46,7 @@
   --text-1: #e8eaed;
   --text-2: #aab0bb;
   --text-3: #868c99;
+  --link: #a3dfff;
   --on-accent: #04222b;
   --ramp-0: #c2410c;
   --ramp-25: #f08c3a;
@@ -68,7 +70,10 @@
   --alert-watch: #e6c453;
   --alert-strained: #f0935a;
   --alert-crisis: #ff5d6c;
+  --status-reduced: #ffc47b;
+  --status-disrupted: #ff9aa0;
   --rel-war: #db474f;
+  --rel-armed: #f4525d;
   --rel-sanctions: #e8933f;
   --rel-ally: #3da1ea;
   --rel-rival: #b25ec5;
@@ -78,9 +83,12 @@
   --live-military: #ffb347;
   --live-sea: #3fe0c8;
   --live-space: #bda4ff;
+  --ownership-documented: #519bd4;
   --radius-panel: 16px;
   --radius-control: 10px;
   --radius-chip: 6px;
+  --radius-pill: 999px;
+  --radius-mark: 2px;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -150,7 +158,7 @@
   [role='textbox'],
   [role='treeitem']
 ):focus-visible {
-  outline: 2px solid var(--text-primary) !important;
+  outline: 2px solid var(--text-1) !important;
   outline-offset: 2px;
 }
 

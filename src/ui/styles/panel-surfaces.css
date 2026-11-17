@@ -35,9 +35,8 @@
   --panel-surface-font: var(--font-sans);
   --panel-surface-detail: none;
   --panel-surface-frame: none;
-  --panel-surface-shadow: 0 8px 24px rgba(0, 0, 0, 0.38);
-  --panel-surface-title: var(--text-secondary);
-  --panel-surface-error: #ff9b8e;
+  --panel-surface-title: var(--text-2);
+  --panel-surface-error: var(--alert-crisis);
   --panel-surface-width: 300px;
   --panel-surface-collapsed-width: var(--left-collapsed-width);
 }
@@ -48,10 +47,10 @@
   min-height: 0;
   padding: 12px;
   border: 1px solid transparent;
-  border-radius: var(--panel-radius);
+  border-radius: var(--radius-panel);
   background: none;
-  color: var(--text-primary);
-  font: 12px/1.5 var(--panel-surface-font);
+  color: var(--text-1);
+  font: var(--type-small);
   overflow: visible;
 }
 
@@ -64,7 +63,7 @@
   position: absolute;
   inset: -1px;
   z-index: -1;
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--line-soft);
   border-radius: inherit;
   background-color: var(--glass-bg);
   background-image: var(--panel-surface-detail);
@@ -116,16 +115,14 @@
   gap: 8px;
   min-height: 30px;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .panel-surface-title {
   flex: 1;
   min-width: 0;
   color: var(--panel-surface-title);
-  font: 600 11px/1.4 var(--font-mono);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font: var(--type-label);
   overflow-wrap: anywhere;
 }
 
@@ -135,7 +132,7 @@
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-  scrollbar-color: var(--glass-border-hover) transparent;
+  scrollbar-color: var(--line-strong) transparent;
   /* Keep an inset focus ring inside the intentional scrolling boundary. */
   padding: 3px;
 }
@@ -145,10 +142,10 @@
   min-height: 30px;
   max-width: 100%;
   padding: 5px 8px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--btn-radius);
-  background: var(--bg-dark);
-  color: var(--text-primary);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-control);
+  background: var(--surface-0);
+  color: var(--text-1);
   font: inherit;
   accent-color: var(--accent);
 }
@@ -158,12 +155,12 @@ button.panel-surface-control {
 }
 
 .panel-surface-control:hover:not(:disabled):not([aria-disabled='true']) {
-  border-color: var(--glass-border-hover);
+  border-color: var(--line-strong);
   background: var(--accent-dim);
 }
 
 .panel-surface-control:focus-visible {
-  outline: 2px solid var(--text-primary);
+  outline: 2px solid var(--text-1);
   outline-offset: -3px;
 }
 

@@ -1,4 +1,5 @@
 import * as Cesium from 'cesium';
+import { DESIGN_COLORS } from '../../designTokens.js';
 import {
   classifyDiplomacy,
   currentRelations,
@@ -17,11 +18,11 @@ const priority = {
   territorial_dispute: 1,
 };
 const lineStyles = {
-  current_armed_conflict: ['#f4525d', 12, 3855, 4],
-  sanctions: ['#e8933f', 22, 255, 2],
-  territorial_dispute: ['#b25ec5', 16, 3855, 2],
-  alliance: ['#3da1ea', 22, 255, 3],
-  defence_pact: ['#3da1ea', 22, 255, 3],
+  current_armed_conflict: [DESIGN_COLORS['--rel-armed'], 12, 3855, 4],
+  sanctions: [DESIGN_COLORS['--rel-sanctions'], 22, 255, 2],
+  territorial_dispute: [DESIGN_COLORS['--rel-rival'], 16, 3855, 2],
+  alliance: [DESIGN_COLORS['--rel-ally'], 22, 255, 3],
+  defence_pact: [DESIGN_COLORS['--rel-ally'], 22, 255, 3],
 };
 const colors = new Map(DIPLOMACY_CLASSES.map(([key, , color]) => [key, color]));
 let lastFeatures;

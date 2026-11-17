@@ -154,9 +154,14 @@ function slotRow(document, row, expanded) {
   const figure = element(document, 'span', 'world-row-figure');
   if (row.words && row.score !== null)
     figure.append(element(document, 'span', 'world-row-band', row.words.band));
-  figure.append(
-    element(document, 'span', 'world-row-score', scoreText(row.score)),
+  const score = element(
+    document,
+    'span',
+    'world-row-score',
+    scoreText(row.score),
   );
+  if (row.score !== null) score.classList.add('world-row-number');
+  figure.append(score);
   heading.append(
     element(document, 'span', 'world-slot-id', row.slot),
     element(document, 'strong', '', row.area),
