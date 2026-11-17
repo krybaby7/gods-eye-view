@@ -147,13 +147,11 @@ configured keys straight from the Keychain. It starts keyless too.
 
 ### Then power it up — in the app, not in a file
 
-Keys are upgrades, not prerequisites. When you want one, open **Menu ▸ Data
-sources and keys ▸ Open provider keys** (the menu is the last button in the top
-bar): Provider Settings lists every supported key,
-what it switches on, and where to get it. Paste, hit **SAVE KEYS**, and the app
-restarts itself with the new capability on. Once everything is configured the
-chip reads **POWERED UP** — and if a compact layout hides it, `?setup=1`
-reopens the same panel.
+Keys are optional. Open **Menu ▸ Data sources and keys ▸ Open provider keys**
+from the top bar to see which keys the app supports, what each enables, and
+where to get it. Paste a key and select **SAVE KEYS**. The app restarts with
+the new capability enabled. Add `?setup=1` to the app URL to open Provider
+Settings directly.
 
 - **Where keys land:** Pinokio → the app's ignored `pinokio/ENVIRONMENT`; a
   terminal clone → the repo-root `.env`. Either file is made owner-only

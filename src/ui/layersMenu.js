@@ -16,8 +16,8 @@ import {
  *
  * In the cockpit the bottom bar is not drawn, so the cockpit's own Layers
  * and Presets buttons (#cockpit-layers, #cockpit-presets) open the same two
- * menus. The menu's foot links open sections of the top bar's Menu. Like
- * every menu, both close when another menu opens (MENU_OPEN_EVENT).
+ * menus. Outside the cockpit, the menu's foot links open sections of the top
+ * bar's Menu. Both menus close when another menu opens (MENU_OPEN_EVENT).
  *
  * @param {object} options
  * @param {Document} options.document
@@ -128,9 +128,10 @@ export function createLayersMenu({ document, signal, observers }) {
   // The section links show only where the top bar's Menu offers the section.
   const links = [...(menu.querySelectorAll?.('[data-menu-section]') ?? [])];
   function syncLinks() {
+    const cockpit = inCockpit();
     for (const link of links) {
       const item = find(`frame-menu-item-${link.dataset.menuSection}`);
-      link.hidden = !item || Boolean(item.hidden);
+      link.hidden = cockpit || !item || Boolean(item.hidden);
     }
   }
 
@@ -158,12 +159,16 @@ export function createLayersMenu({ document, signal, observers }) {
   pressed(cockpitLayers, wasOpen);
   syncLinks();
   watch(menu, ['class'], syncOpen);
-  // Entering or leaving the cockpit puts the Presets menu back home.
+  // The frame's Menu is hidden in the cockpit. Leaving also puts both
+  // menus back in their closed state at the bottom bar.
   let wasCockpit = inCockpit();
   watch(document.body, ['class'], () => {
-    if (inCockpit() === wasCockpit) return;
-    wasCockpit = inCockpit();
+    const cockpit = inCockpit();
+    if (cockpit === wasCockpit) return;
+    wasCockpit = cockpit;
+    syncLinks();
     closePresets();
+    if (!cockpit) closeMenu();
   });
 
   function syncCount() {
@@ -230,8 +235,9 @@ export function createLayersMenu({ document, signal, observers }) {
   // first, and the opened panel takes focus.
   for (const link of links)
     listen(link, 'click', () => {
+      if (inCockpit() || link.hidden) return;
       closeMenu();
-      requestMenuSection(document, link.dataset.menuSection);
+      requestMenuSection(document, link.dataset.menuSection, button);
     });
   // Opening the Search layers panel from its row (a row that is off; the row
   // has already handled the click) closes the menu, so the panel is not

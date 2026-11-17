@@ -82,6 +82,7 @@ export function createToolsMenu({
     MENU_SECTIONS.map((name) => [name, find(`frame-menu-${name}`)]),
   );
   let openName = null;
+  let panelReturnFocus = button;
 
   // ── Move the original controls into their slots ──
   for (const [section, slots] of Object.entries(SLOTS)) {
@@ -178,7 +179,7 @@ export function createToolsMenu({
   });
 
   // ── The section panels ──
-  function open(name) {
+  function open(name, { returnFocus = button } = {}) {
     const panel = panels[name];
     const index = MENU_SECTIONS.indexOf(name);
     if (!panel || index < 0 || items[index]?.hidden) return false;
@@ -187,6 +188,7 @@ export function createToolsMenu({
       if (node && other !== name) node.hidden = true;
     panel.hidden = false;
     openName = name;
+    panelReturnFocus = returnFocus;
     announceMenuOpen(document, 'menu');
     panel.focus();
     return true;
@@ -194,9 +196,11 @@ export function createToolsMenu({
   function close({ focus = false } = {}) {
     if (!openName) return;
     const panel = panels[openName];
+    const back = panelReturnFocus;
     openName = null;
+    panelReturnFocus = button;
     if (panel) panel.hidden = true;
-    if (focus) button.focus();
+    if (focus) back.focus();
   }
   for (const panel of Object.values(panels)) {
     if (!panel) continue;
@@ -245,7 +249,7 @@ export function createToolsMenu({
     if (name === null || name === 'none') {
       // `only`: close that section if it is the one open, and nothing else.
       if (!only || only === openName) close();
-    } else open(name);
+    } else open(name, { returnFocus: event?.detail?.returnFocus });
   });
 
   // ── Data sources and keys ──

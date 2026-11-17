@@ -173,19 +173,28 @@ export default async function phase9({
         await closeAll();
       } else covered.push('more: not shown with this sheet, not exercised');
 
-      // The legend's popover, when the legend is cut and offers it.
-      if (await visible('#frame-legend-whole')) {
-        await page.click('#frame-presets');
-        await page.click('#frame-legend-whole');
-        await onlyOpen(['legend'], 'The legend popover closes Presets');
-        await page.click('#frame-layers');
-        await onlyOpen(['layers'], 'Layers closes the legend popover');
-        covered.push('presets → legend → layers');
-        await closeAll();
-      } else
-        covered.push(
-          'legend popover: the legend fits at 1440×900, no button to open it',
-        );
+      // Ownership has a long legend; at 800 pixels the bottom-bar controls remain available.
+      await resize(800, 600);
+      await page.$eval(
+        '#world-lens-bar [data-world-lens="ownership"]',
+        (node) => node.click(),
+      );
+      await settle();
+      assert.ok(
+        await visible('#frame-legend-whole'),
+        'The whole-legend button is shown for Ownership at 800 pixels',
+      );
+      await page.click('#frame-presets');
+      await page.click('#frame-legend-whole');
+      await onlyOpen(['legend'], 'The legend closes Presets');
+      await page.click('#frame-layers');
+      await onlyOpen(['layers'], 'Layers closes the legend');
+      await page.click('#frame-legend-whole');
+      await onlyOpen(['legend'], 'The legend closes Layers');
+      await page.click('#frame-presets');
+      await onlyOpen(['presets'], 'Presets closes the legend');
+      covered.push('presets → legend → layers → legend → presets');
+      await closeAll();
       report.layersMenu.oneAtATime = covered;
       console.log(`[INFO] One menu at a time covered: ${covered.join('; ')}`);
       await shot('layers-menu-one-at-a-time');
@@ -304,7 +313,8 @@ export default async function phase9({
         assert.ok(inside, `Focus is in the ${section} panel (${now.active})`);
         await shot(`layers-menu-foot-${section}`);
         await page.keyboard.press('Escape');
-        await onlyOpen([], `Escape closes the ${section} panel`);
+        const closed = await onlyOpen([], `Escape closes the ${section} panel`);
+        assert.equal(closed.active, 'frame-layers', 'Focus returns to Layers');
       }
     },
     { fatal: false },
@@ -482,6 +492,15 @@ export default async function phase9({
           'true',
         );
         await clear('data-panel', 'layers');
+        assert.equal(
+          await page.$$eval('#data-panel [data-menu-section]', (links) =>
+            links.some(
+              (link) => !link.hidden && link.getClientRects().length > 0,
+            ),
+          ),
+          false,
+          'No footer links are visible in cockpit',
+        );
         await shot('cockpit-layers-menu');
         await page.keyboard.press('Escape');
         const afterEscape = await onlyOpen([], 'Escape closes the layers menu');
@@ -500,6 +519,12 @@ export default async function phase9({
           presetsEscape.cockpit,
           true,
           'Escape leaves the cockpit on',
+        );
+
+        assert.equal(
+          presetsEscape.active,
+          'cockpit-presets',
+          'Presets returns focus to its cockpit button',
         );
 
         // A click outside: on the cockpit's help line, which presses nothing.
@@ -526,6 +551,46 @@ export default async function phase9({
         await page.keyboard.press('f');
         const afterF = await onlyOpen([], 'F closes it in the cockpit');
         assert.equal(afterF.cockpit, true);
+        // At phone width, record only this piece's controls and menus.
+        await resize(390, 844);
+        for (const [button, name, id] of [
+          ['#cockpit-layers', 'layers', 'data-panel'],
+          ['#cockpit-presets', 'presets', 'frame-presets-menu'],
+        ]) {
+          assert.ok(
+            await visible(button),
+            `${name} route is visible at phone width`,
+          );
+          await page.click(button);
+          await onlyOpen([name], `${name} opens at phone width`);
+          const data = await measure(id);
+          result[`${name}Phone`] = data;
+          const route = data.buttons.find(
+            (part) => part.name.toLowerCase() === name,
+          );
+          assert.ok(
+            route &&
+              route.left >= -0.5 &&
+              route.top >= -0.5 &&
+              route.right <= data.width + 0.5 &&
+              route.bottom <= data.height + 0.5,
+            `${name} button is inside the phone window`,
+          );
+          assert.ok(
+            data.menu &&
+              data.menu.left >= -0.5 &&
+              data.menu.top >= -0.5 &&
+              data.menu.right <= data.width + 0.5 &&
+              data.menu.bottom <= data.height + 0.5,
+            `${name} menu is inside the phone window`,
+          );
+          await shot(`cockpit-${name}-390x844`);
+          await page.keyboard.press('Escape');
+          await onlyOpen([], `${name} closes at phone width`);
+        }
+        await resize(1440, 900);
+        await page.click('#cockpit-layers');
+        await onlyOpen(['layers'], 'Layers is open when leaving cockpit');
         if (result.layersRims?.length || result.presetsRims?.length)
           console.log(
             `[INFO] Cockpit menu boxes meet the rims' boxes (arcs, reported only): layers ${JSON.stringify(result.layersRims)}, presets ${JSON.stringify(result.presetsRims)}`,
@@ -546,13 +611,20 @@ export default async function phase9({
       }
       const left = await state();
       assert.equal(left.cockpit, false, 'The cockpit is left');
+      assert.deepEqual(
+        openOnes(left),
+        [],
+        'Leaving cockpit closes its open menu',
+      );
       assert.equal(
         await page.$eval(
           '#frame-presets-menu',
-          (node) => node.parentNode === document.body,
+          (node) =>
+            node.parentNode ===
+            document.querySelector('#frame-bottom .frame-presets'),
         ),
-        false,
-        'Presets is back in the bottom bar after the cockpit',
+        true,
+        'Presets is back in its exact bottom-bar parent after the cockpit',
       );
     },
     { fatal: false },

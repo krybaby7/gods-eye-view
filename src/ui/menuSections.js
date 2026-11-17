@@ -59,9 +59,9 @@ export function closeWhenAnotherOpens(document, menu, close, signal) {
   );
 }
 
-/** Opens a section of the top bar's menu without importing the menu. */
-export function requestMenuSection(document, section) {
+/** Opens a section of the top bar's menu with an optional focus return target. */
+export function requestMenuSection(document, section, returnFocus) {
   document?.dispatchEvent?.(
-    menuEvent(document, MENU_SECTION_EVENT, { section }),
+    menuEvent(document, MENU_SECTION_EVENT, { section, returnFocus }),
   );
 }

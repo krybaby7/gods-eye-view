@@ -389,7 +389,10 @@ test('the foot links show only for sections the Menu offers, and each closes the
   const request = p.announced.find(
     (event) => event.type === MENU_SECTION_EVENT,
   );
-  assert.deepEqual(request?.detail, { section: 'sources' });
+  assert.deepEqual(request?.detail, {
+    section: 'sources',
+    returnFocus: p.button,
+  });
 });
 
 test('one menu at a time: each announces itself, and another menu opening closes both', () => {
@@ -478,4 +481,38 @@ test('F toggles the menu through its disclosure, but not where the menu is not d
     assert.equal(p.isOpen(), false);
     p.document.body.classList.remove(mode);
   }
+});
+
+test('cockpit hides footer links and restores offered links on exit', () => {
+  const p = page({ links: ['sources', 'display'] });
+  p.button.click();
+  assert.deepEqual(
+    p.footLinks.map((link) => link.hidden),
+    [false, false, true],
+  );
+  p.document.body.classList.add('cockpit-mode');
+  assert.deepEqual(
+    p.footLinks.map((link) => link.hidden),
+    [true, true, true],
+  );
+  p.document.body.classList.remove('cockpit-mode');
+  assert.deepEqual(
+    p.footLinks.map((link) => link.hidden),
+    [false, false, true],
+  );
+});
+
+test('leaving cockpit closes Layers as well as Presets', () => {
+  const p = page();
+  p.document.body.classList.add('cockpit-mode');
+  p.cockpitLayers.click();
+  assert.equal(p.isOpen(), true);
+  p.document.body.classList.remove('cockpit-mode');
+  assert.equal(p.isOpen(), false);
+  p.document.body.classList.add('cockpit-mode');
+  p.cockpitPresets.click();
+  assert.equal(p.presets.hidden, false);
+  p.document.body.classList.remove('cockpit-mode');
+  assert.equal(p.presets.hidden, true);
+  assert.equal(p.presets.parent, p.bar);
 });

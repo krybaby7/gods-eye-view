@@ -97,7 +97,7 @@ body #data-panel.layers-menu:focus-visible {
 
 .layers-menu-quiet {
   flex: none;
-  height: 28px;
+  height: 28px; /* compact secondary action in the header */
   padding: 0 var(--space-2);
   border: 0;
   border-radius: var(--radius-chip);
@@ -122,6 +122,7 @@ body #data-panel.layers-menu:focus-visible {
   flex: none;
   align-items: center;
   justify-content: center;
+  /* Square close button, sized around the icon and its padding. */
   width: 34px;
   height: 34px;
   padding: 0;
@@ -214,6 +215,7 @@ body #data-panel.layers-menu:focus-visible {
 /* ── The three columns of groups ── */
 .layers-menu #data-toggles.data-toggle-list {
   display: grid;
+  /* Leave room for the switch, layer name and state in each column. */
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   flex: none;
   gap: var(--space-3) var(--space-5);
@@ -269,10 +271,10 @@ body #data-panel.layers-menu:focus-visible {
 
 .layers-menu .data-toggle-top {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
+  grid-template-columns: 34px minmax(0, 1fr) auto; /* first track fits the switch */
   align-items: center;
   gap: 0 var(--space-2);
-  min-height: 30px;
+  min-height: 30px; /* leaves space above and below the switch */
 }
 
 .layers-menu .data-toggle-left,

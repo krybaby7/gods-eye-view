@@ -74,11 +74,13 @@ like World, "Switch all off" and the presets leave it alone.
 In the cockpit the bars are not drawn, so the cockpit's own **Layers** and
 **Presets** buttons (`#cockpit-layers`, `#cockpit-presets` in `#view-switcher`,
 shown only in cockpit mode) open the same two menus, centred between the
-cockpit's side windows, under its top line and above its compass. The Presets
-menu moves to the body while it is open there and goes back to the bottom bar
-when it closes. F opens and closes the layers menu in the frame and in the
-cockpit. Recording, the clean view and embedded views draw neither menu and
-have no route to Layers or Presets; F does nothing there.
+cockpit's side windows, under its top line and above its compass. The Layers
+footer links are hidden while the top bar's Menu is unavailable in cockpit mode.
+Leaving the cockpit closes both menus and restores the links for available Menu
+sections. The Presets menu moves to the body while open in the cockpit and
+returns to the bottom bar when it closes. F opens and closes the layers menu in
+the frame and in the cockpit. Recording, the clean view and embedded views draw
+neither menu and have no route to Layers or Presets; F does nothing there.
 
 One menu at a time: the layers menu, the Presets menu, the top bar's menu list
 and its panels, the sheet's More menu and the legend's popover each dispatch
@@ -121,10 +123,11 @@ lines), as three floating panels inside `#frame-tools`:
 share links and tests still find them. A moved panel is marked
 `data-panel-fixed` and kept open; its dock or rail disclosure no longer
 applies. A control that is absent hides its group, and a section with nothing
-in it hides its entry. Panels open only when chosen and close by their close
-button or Escape (focus returns to the menu button), a press outside them, or
-another menu opening; a press on the globe or in a dialog leaves them open, so
-drawing and picking places work while one is open. Below 720 px the
+in it hides its entry. Panels close on a press outside or when another menu
+opens. A press on the globe or in a dialog leaves them open, so drawing and
+picking places work while one is open. Closing a panel with its close button or
+Escape returns focus to the bottom bar's Layers button if it opened from a Layers
+footer link, or the top bar's Menu button otherwise. Below 720 px the
 panels are full-width sheets above the bottom bar. The holder is a frame
 region, so the panels are not drawn in the cockpit, while recording, in the
 clean view or when embedded.

@@ -555,3 +555,19 @@ test('destroy puts every control back where it was and removes its listeners', (
   byId('frame-menu').click();
   assert.equal(byId('frame-menu-list').hidden, true, 'the button is inert');
 });
+
+test('a section opened from Layers returns focus to Layers, then resets its return target', () => {
+  const { document, menu, byId, key } = page();
+  const layers = byId('frame-layers');
+  document.dispatchEvent({
+    type: MENU_SECTION_EVENT,
+    detail: { section: 'display', returnFocus: layers },
+  });
+  key(byId('frame-menu-display'), 'Escape');
+  assert.equal(document.activeElement?.id, 'frame-layers');
+  byId('frame-menu').click();
+  byId('frame-menu-item-tools').click();
+  key(byId('frame-menu-tools'), 'Escape');
+  assert.equal(document.activeElement, byId('frame-menu'));
+  menu.destroy();
+});

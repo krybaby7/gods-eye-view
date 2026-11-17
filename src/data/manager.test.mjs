@@ -1906,7 +1906,7 @@ test('uncertain lifecycle state overrides ordinary feed status without disabling
   assert.equal(button.textContent, 'UNCERTAIN');
   assert.equal(button.dataset.feedState, 'uncertain');
   assert.equal(button.disabled, false, 'the lifecycle toggle remains available to reconcile authority');
-  assert.equal(attributes.get('aria-label'), 'Radio: uncertain');
+  assert.equal(attributes.get('aria-label'), 'Radio');
   assert.equal(classes.get('lifecycle-uncertain'), true);
   assert.equal(classes.get('feed-nominal'), false);
   assert.equal(
