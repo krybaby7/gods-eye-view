@@ -63,13 +63,17 @@ export function createLensBar({
   if (!row) return { click: async () => [], refresh() {}, destroy() {} };
 
   const document = container.ownerDocument;
+  const buttonClasses =
+    container.id === 'frame-presets-menu'
+      ? 'lens-button kit-btn quiet'
+      : 'lens-button kit-chip pick';
   const buttons = new Map();
   let destroyed = false;
 
   for (const lens of lenses) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'lens-button panel-surface-control';
+    button.className = buttonClasses;
     button.dataset.lensId = lens.id;
     button.setAttribute('aria-keyshortcuts', `Shift+${lens.hotkey}`);
     const icon = document.createElement('span');
@@ -103,7 +107,7 @@ export function createLensBar({
       set(
         button,
         'className',
-        `lens-button panel-surface-control is-${status}${busy ? ' is-busy' : ''}`,
+        `${buttonClasses} is-${status}${busy ? ' is-busy' : ''}`,
       );
       set(button, 'disabled', status === 'unavailable');
       set(

@@ -244,3 +244,107 @@ test('worker probe accepts rejected fetch only with exact denial and zero sentin
     }),
   );
 });
+
+test('after legend evidence rejects unreadable visible text and cut title or Unknown', async () => {
+  const { afterLegendFailures } = await import('./qaLook.mjs');
+  const sample = {
+    view: 'band',
+    bandVisible: true,
+    keyOmitted: false,
+    captionText: [{ name: 'title', fontSize: '12px', lineHeight: '16px' }],
+  };
+  assert.deepEqual(afterLegendFailures(sample), []);
+  assert.match(
+    afterLegendFailures({
+      ...sample,
+      captionText: [{ name: 'note', fontSize: '12px', lineHeight: '15px' }],
+    })[0],
+    /note/,
+  );
+  assert.match(
+    afterLegendFailures({ ...sample, keyOmitted: true })[0],
+    /title or Unknown/,
+  );
+  assert.deepEqual(
+    afterLegendFailures({ ...sample, bandVisible: false, keyOmitted: true }),
+    [],
+  );
+  assert.match(
+    afterLegendFailures({
+      ...sample,
+      view: 'popover',
+      captionText: [{ name: 'stop', fontSize: '11px', lineHeight: '16px' }],
+    })[0],
+    /stop/,
+  );
+});
+
+test('look requires the six core lenses while allowing new ones', async () => {
+  const { missingCoreLenses } = await import('./qaLook.mjs');
+  const core = [
+    'condition',
+    'strength',
+    'energy',
+    'data-age',
+    'diplomacy',
+    'ownership',
+  ];
+  assert.deepEqual(missingCoreLenses([...core, 'new-lens']), []);
+  assert.deepEqual(missingCoreLenses(core.filter((id) => id !== 'strength')), [
+    'strength',
+  ]);
+});
+
+test('measured layouts require visible Today and India sheet at each case', async () => {
+  const { requiredContextFailures } = await import('./qaLook.mjs');
+  const data = {
+    frames: [
+      { name: 'Today', left: 0, top: 0, right: 10, bottom: 10 },
+      { name: 'sheet', left: 20, top: 0, right: 30, bottom: 10 },
+    ],
+    sheetCode: 'IND',
+  };
+  assert.deepEqual(requiredContextFailures(data), []);
+  assert.ok(
+    requiredContextFailures({ ...data, frames: data.frames.slice(0, 1) })
+      .length,
+  );
+  assert.ok(requiredContextFailures({ ...data, sheetCode: 'GBR' }).length);
+  assert.ok(
+    requiredContextFailures({
+      ...data,
+      frames: [{ ...data.frames[0], right: 0 }, data.frames[1]],
+    }).length,
+  );
+});
+
+test('after popup rejects missing, clipped, hidden or scrollable content', async () => {
+  const { popupContentFailures } = await import('./qaLook.mjs');
+  const content = {
+    parts: [
+      { name: 'title', whole: true },
+      { name: 'stop 1', whole: true },
+      { name: 'Unknown', whole: true },
+      { name: 'note', whole: true },
+    ],
+    expectedStops: 1,
+    hasNote: true,
+    scrollable: [],
+  };
+  assert.deepEqual(popupContentFailures(content), []);
+  assert.ok(
+    popupContentFailures({
+      ...content,
+      parts: content.parts.filter((part) => part.name !== 'stop 1'),
+    }).length,
+  );
+  assert.ok(
+    popupContentFailures({
+      ...content,
+      parts: content.parts.map((part) =>
+        part.name === 'Unknown' ? { ...part, whole: false } : part,
+      ),
+    }).length,
+  );
+  assert.ok(popupContentFailures({ ...content, scrollable: ['popup'] }).length);
+});

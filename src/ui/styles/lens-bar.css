@@ -22,38 +22,11 @@
   display: none;
 }
 
-#lens-bar .lens-button.panel-surface-control {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  height: 28px;
-  min-height: 0;
-  padding: 0 var(--space-3);
-  border: 1px solid transparent;
-  border-radius: var(--radius-chip);
-  background: var(--surface-2);
-  color: var(--text-2);
-  font: var(--type-small);
+:is(#lens-bar, #frame-presets-menu) .lens-button {
   white-space: nowrap;
 }
 
-#lens-bar .lens-button.panel-surface-control:hover:not(:disabled) {
-  border-color: var(--line-strong);
-  background: var(--surface-3);
-  color: var(--text-1);
-}
-
-#lens-bar .lens-button.panel-surface-control:focus-visible,
-#frame-presets-menu .lens-button.panel-surface-control:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
-#lens-bar .lens-button.panel-surface-control:is(.is-on, .is-partial) {
-  border-color: var(--line-strong);
-  background: var(--surface-3);
-  color: var(--text-1);
+:is(#lens-bar, #frame-presets-menu) .lens-button:is(.is-on, .is-partial) {
   font-weight: 600;
 }
 
@@ -80,7 +53,7 @@
   content: '';
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: var(--accent);
 }
 
@@ -98,8 +71,9 @@
   display: none;
 }
 
-.frame-popup.frame-presets-menu {
+.frame-presets-menu {
   position: fixed;
+  z-index: 130;
   top: auto;
   right: calc(var(--frame-right) + var(--space-4));
   bottom: calc(var(--frame-bottom) + var(--frame-status) + var(--space-2));
@@ -115,7 +89,7 @@
   overflow-y: auto;
 }
 
-.frame-popup.frame-presets-menu[hidden] {
+.frame-presets-menu[hidden] {
   display: none;
 }
 
@@ -125,29 +99,16 @@
   gap: 0;
 }
 
-#frame-presets-menu .lens-button.panel-surface-control {
-  display: flex;
-  align-items: center;
+#frame-presets-menu .lens-button {
   justify-content: space-between;
   gap: var(--space-3);
   width: 100%;
-  min-height: 0;
-  padding: var(--space-2) var(--space-3);
-  border: 0;
-  border-radius: var(--radius-chip);
-  background: none;
-  color: var(--text-1);
-  font: var(--type-control);
-  text-align: left;
-  white-space: nowrap;
+  border-color: transparent;
+  text-align: start;
 }
 
-#frame-presets-menu .lens-button.panel-surface-control:hover:not(:disabled) {
-  background: var(--surface-3);
-}
-
-#frame-presets-menu .lens-button.panel-surface-control:is(.is-on, .is-partial) {
-  font-weight: 600;
+#frame-presets-menu .lens-button:is(.is-on, .is-partial) {
+  border-color: var(--line-strong);
 }
 
 #frame-presets-menu .lens-button.is-on .lens-label::before {
@@ -156,7 +117,7 @@
   width: 6px;
   height: 6px;
   margin-right: var(--space-2);
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: var(--accent);
   vertical-align: middle;
 }

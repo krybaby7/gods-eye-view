@@ -14,8 +14,10 @@ function fixture({
   onWrite,
   withContainer = true,
   busy,
+  containerId = 'lens-bar',
 } = {}) {
   const f = railFixture(onWrite);
+  f.container.id = containerId;
   const buttons = f.document.createElement('div');
   buttons.className = 'lens-buttons';
   f.container.appendChild(buttons);
@@ -318,4 +320,34 @@ test('a missing mount returns an inert API without reading state or subscribing'
   view.refresh();
   await view.click('air');
   view.destroy();
+});
+
+test('preset strip and menu keep their kit classes through status updates', () => {
+  for (const [containerId, classes] of [
+    ['lens-bar', ['kit-chip', 'pick']],
+    ['frame-presets-menu', ['kit-btn', 'quiet']],
+  ]) {
+    const f = fixture({ containerId });
+    const button = f.button('air');
+    for (const expected of classes)
+      assert.ok(
+        button.classList.contains(expected),
+        `${containerId} ${expected}`,
+      );
+    f.update(f.rows().map((row) => ({ ...row, enabled: row.id === 'a' })));
+    assert.equal(button.getAttribute('aria-pressed'), 'mixed');
+    for (const expected of classes)
+      assert.ok(
+        button.classList.contains(expected),
+        `${containerId} partial ${expected}`,
+      );
+    f.update(f.rows().map((row) => ({ ...row, enabled: true })));
+    assert.equal(button.getAttribute('aria-pressed'), 'true');
+    for (const expected of classes)
+      assert.ok(
+        button.classList.contains(expected),
+        `${containerId} on ${expected}`,
+      );
+    f.view.destroy();
+  }
 });

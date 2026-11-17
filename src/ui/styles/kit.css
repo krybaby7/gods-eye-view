@@ -1,0 +1,357 @@
+/* Opt-in skins. Callers own placement, stacking and available space. */
+.kit-pop,
+.kit-panel {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-panel);
+  background: var(--surface-1);
+  color: var(--text-1);
+  font: var(--type-small);
+}
+
+.kit-pop {
+  padding: var(--space-3);
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-pop);
+}
+
+.kit-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.kit-pop-head,
+.kit-panel-head,
+.kit-card-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.kit-panel-head {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.kit-panel-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font: var(--type-title);
+  overflow-wrap: anywhere;
+}
+
+.kit-pop-body,
+.kit-panel-body,
+.kit-card-body {
+  min-width: 0;
+  min-height: 0;
+}
+
+.kit-panel-body {
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+.kit-sec {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--line-soft);
+}
+
+.kit-sec-h {
+  margin: 0 0 var(--space-2);
+  color: var(--text-1);
+  font: var(--type-label);
+}
+
+.kit-btn,
+.kit-iconbtn,
+.kit-panel-close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-control);
+  color: var(--text-1);
+  font: var(--type-control);
+  cursor: pointer;
+}
+
+.kit-btn {
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  background: var(--surface-2);
+}
+
+.kit-btn.quiet {
+  background: transparent;
+}
+
+.kit-iconbtn,
+.kit-panel-close {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: transparent;
+  color: var(--text-2);
+}
+
+:is(.kit-iconbtn, .kit-panel-close) svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+:is(.kit-btn, .kit-iconbtn, .kit-panel-close, .kit-seg-item):hover:where(
+    :not(:disabled, [aria-disabled='true'])
+  ) {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+  color: var(--text-1);
+}
+
+.kit-btn:not(.quiet):hover:not(:is(:disabled, [aria-disabled='true'])) {
+  background: var(--surface-3);
+}
+
+:is(.kit-btn, .kit-iconbtn, .kit-panel-close, .kit-seg-item):is(
+  .on,
+  .sel,
+  [aria-pressed='true'],
+  [aria-pressed='mixed'],
+  [aria-selected='true'],
+  [aria-expanded='true']
+) {
+  border-color: var(--line-strong);
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+
+.kit-btn.primary,
+.kit-btn.primary:hover:not(:is(:disabled, [aria-disabled='true'])) {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.kit-seg {
+  display: inline-flex;
+  gap: var(--radius-mark);
+  padding: var(--space-1);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-control);
+  background: var(--surface-0);
+}
+
+.kit-seg-item {
+  min-height: 28px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-chip);
+  background: transparent;
+  color: var(--text-2);
+  font: var(--type-control);
+  cursor: pointer;
+}
+
+.kit-switch {
+  position: relative;
+  flex: none;
+  width: 34px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  cursor: pointer;
+}
+
+.kit-switch::after {
+  position: absolute;
+  inset: 2px auto auto 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-pill);
+  background: var(--text-3);
+  content: '';
+}
+
+.kit-switch:hover:where(:not(:disabled, [aria-disabled='true'], .na))::after {
+  background: var(--text-1);
+}
+
+.kit-switch:is(.on, .sel, [aria-checked='true'], [aria-pressed='true']) {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.kit-switch:is(.on, .sel, [aria-checked='true'], [aria-pressed='true'])::after {
+  right: 2px;
+  left: auto;
+  background: var(--on-accent);
+}
+
+.kit-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 22px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-chip);
+  background: transparent;
+  color: var(--text-1);
+  font: var(--type-caption);
+}
+
+.kit-chip.fact {
+  border-style: solid;
+}
+
+.kit-chip.interp {
+  border-style: dotted;
+}
+
+.kit-chip.forecast {
+  border-style: dashed;
+}
+
+.kit-chip.warn {
+  border-color: var(--alert-watch);
+  color: var(--alert-watch);
+}
+
+.kit-chip.area {
+  color: var(--text-2);
+}
+
+.kit-chip.pick {
+  min-height: 28px;
+  padding-inline: var(--space-3);
+  background: var(--surface-2);
+  font: var(--type-control);
+  cursor: pointer;
+}
+
+.kit-chip.pick:hover:not(:is(:disabled, [aria-disabled='true'])),
+.kit-chip.pick:is(
+    .on,
+    .sel,
+    [aria-pressed='true'],
+    [aria-pressed='mixed'],
+    [aria-selected='true']
+  ) {
+  border-color: var(--line-strong);
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+
+.kit-dl {
+  display: grid;
+  grid-template-columns: min(112px, 45%) minmax(0, 1fr);
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  color: var(--text-1);
+  font: var(--type-small);
+}
+
+.kit-dl dt,
+.kit-dl dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.kit-dl dt {
+  color: var(--text-2);
+}
+
+.kit-card {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  color: var(--text-1);
+  font: var(--type-small);
+}
+
+.kit-card.dashed {
+  border-style: dashed;
+}
+
+.kit-note,
+.kit-empty {
+  color: var(--text-2);
+  font: var(--type-small);
+}
+
+.kit-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--line-soft);
+}
+
+.kit-empty p {
+  margin: 0;
+}
+
+:is(
+  .kit-btn,
+  .kit-iconbtn,
+  .kit-panel-close,
+  .kit-seg-item,
+  .kit-switch,
+  .kit-chip.pick
+):is(:disabled, [aria-disabled='true']) {
+  opacity: 0.45;
+  cursor: default;
+}
+
+:is(
+  .kit-pop,
+  .kit-panel,
+  .kit-sec,
+  .kit-btn,
+  .kit-iconbtn,
+  .kit-panel-close,
+  .kit-seg,
+  .kit-seg-item,
+  .kit-switch,
+  .kit-chip,
+  .kit-dl,
+  .kit-card,
+  .kit-note,
+  .kit-empty
+).dim {
+  opacity: 0.45;
+}
+
+.kit-switch.na {
+  opacity: 0.4;
+  cursor: default;
+}
+
+:is(
+  .kit-panel,
+  .kit-pop-head,
+  .kit-panel-head,
+  .kit-card-head,
+  .kit-btn,
+  .kit-iconbtn,
+  .kit-panel-close,
+  .kit-seg,
+  .kit-chip,
+  .kit-dl,
+  .kit-empty
+)[hidden] {
+  display: none;
+}

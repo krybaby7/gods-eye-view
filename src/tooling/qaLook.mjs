@@ -100,3 +100,58 @@ export function validateWorkerProbe(probe) {
       throw new Error(`Unexpected worker response for ${url}`);
   }
 }
+
+export function afterLegendFailures(data) {
+  const failures = [];
+  if (data.view === 'band' && data.bandVisible && data.keyOmitted)
+    failures.push('Drawn legend cuts its title or Unknown key');
+  for (const item of data.captionText) {
+    const size = /^([\d.]+)px$/.exec(item.fontSize);
+    const line = /^([\d.]+)px$/.exec(item.lineHeight);
+    if (!size || Number(size[1]) < 12 || !line || Number(line[1]) < 16)
+      failures.push(
+        `${item.name} has unreadable type ${item.fontSize}/${item.lineHeight}`,
+      );
+  }
+  return failures;
+}
+
+export function missingCoreLenses(lenses) {
+  return [
+    'condition',
+    'strength',
+    'energy',
+    'data-age',
+    'diplomacy',
+    'ownership',
+  ].filter((id) => !lenses.includes(id));
+}
+
+export function requiredContextFailures(data) {
+  const failures = [];
+  for (const name of ['Today', 'sheet']) {
+    const box = data.frames.find((item) => item.name === name);
+    if (!box || !(box.right > box.left && box.bottom > box.top))
+      failures.push(`Missing visible ${name} box`);
+  }
+  if (data.sheetCode !== 'IND')
+    failures.push(`Expected India sheet, got ${data.sheetCode ?? 'none'}`);
+  return failures;
+}
+
+export function popupContentFailures(data) {
+  const failures = [];
+  const expected = [
+    'title',
+    ...Array.from({ length: data.expectedStops }, (_, i) => `stop ${i + 1}`),
+    'Unknown',
+    ...(data.hasNote ? ['note'] : []),
+  ];
+  for (const name of expected) {
+    const part = data.parts.find((item) => item.name === name);
+    if (!part?.whole) failures.push(`Popup ${name} missing or clipped`);
+  }
+  if (data.scrollable.length)
+    failures.push(`Popup content overflows: ${data.scrollable.join(', ')}`);
+  return failures;
+}

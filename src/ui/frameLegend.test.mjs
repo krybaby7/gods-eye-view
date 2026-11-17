@@ -11,16 +11,15 @@ import { createFrameLegend } from './frameLegend.js';
 import { MENU_OPEN_EVENT } from './menuSections.js';
 
 const CLASS_COLOURS = ['rgb(219, 71, 79)', 'rgb(232, 147, 63)'];
-// The bar's legend band, its line heights and the height of a line of 12 px
-// type's own box (taller than the dense line, as in the browser).
+// The bar's legend band and its shared 12/16 caption line and text box.
 const BAND = 48;
-const LINE = 15;
-const DENSE = 12;
-const TYPE = 15;
+const LINE = 16;
+const DENSE = 16;
+const TYPE = 16;
 // The legend band's width, and the room the info button takes from it when
-// it shows (its 28 px and the bar's 14 px gap).
+// it shows (its 34 px and the bar's 14 px gap).
 const WIDTH = 400;
-const BUTTON = 42;
+const BUTTON = 48;
 
 /**
  * The bar's legend as frame.html has it, with a layout model: the marks take
@@ -256,6 +255,7 @@ function setup({
   }
   return {
     document,
+    bar,
     legend,
     title,
     ramp,
@@ -680,4 +680,28 @@ test('the popover is one menu among the others: it announces itself and closes w
   });
   assert.equal(page.popup.hidden, true);
   assert.equal(page.button.getAttribute('aria-expanded'), 'false');
+});
+
+test('an open whole legend updates its anchor from the trigger and popup boxes', () => {
+  const page = setup({ noteWidth: 600 });
+  let triggerRight = 900;
+  page.popup.offsetParent = page.bar;
+  page.bar.getBoundingClientRect = () => ({
+    left: 100,
+    width: 1100,
+    height: 52,
+  });
+  page.button.getBoundingClientRect = () => ({
+    right: triggerRight,
+    width: 34,
+  });
+  page.popup.getBoundingClientRect = () => ({ width: 420, height: 200 });
+  page.popup.style.setProperty = (name, value) => {
+    page.popup.style[name] = value;
+  };
+  page.button.click();
+  assert.equal(page.popup.style['--legend-popup-anchor'], '380px');
+  triggerRight = 760;
+  page.sync();
+  assert.equal(page.popup.style['--legend-popup-anchor'], '240px');
 });

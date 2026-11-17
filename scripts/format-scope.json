@@ -1046,5 +1046,8 @@
   "src/testSupport/designTokenLiterals.test.mjs",
   "src/ui/designTokenLiterals.test.mjs",
   "src/ui/designTokenLiterals.allow.json",
-  "src/tooling/qaLookProxy.mjs"
+  "src/tooling/qaLookProxy.mjs",
+  "src/ui/styles/kit.css",
+  "src/ui/kit.test.mjs",
+  "src/ui/legendCaption.test.mjs"
 ]

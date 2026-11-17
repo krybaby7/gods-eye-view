@@ -175,3 +175,50 @@ test('counts local type shorthand while exempting foundation root tokens', () =>
     family: 1,
   });
 });
+
+test('recognizes only real HTML paint attributes, including multiline and unquoted values', () => {
+  const html = `<!-- <svg fill="#aaa" style="color: red"></svg> -->
+<div data-color="red" data-style="color: #abc" title='fill="white"'></div>
+<svg fill=#fff stroke=blue><path style="color:
+ #123; border-radius: 4px"></path></svg>`;
+  assert.deepEqual(counts(html, 'src/ui/a.html'), { color: 3, radius: 1 });
+});
+
+test('normalizes CSS property case and ignores quoted custom-property prose', () => {
+  assert.deepEqual(counts(`.x { COLOR: #fff; BACKGROUND: red; }`), {
+    color: 2,
+  });
+  assert.deepEqual(
+    counts(`.x { --label: 'Red'; --copy: "#abc"; --local: #000; }`),
+    { color: 1 },
+  );
+});
+
+test('balanced token and URL masking respects quoted parentheses and fragments', () => {
+  assert.deepEqual(
+    counts(
+      `.x { font-family: var(--family, "Example ) Sans"); background: url("/assets/color(2).svg#abc"); }`,
+    ),
+    {},
+  );
+});
+
+test('JavaScript prose mentioning style writes or Cesium calls is ignored', () => {
+  const source = `const help = "Use el.style.color = 'red'"; const example = "Cesium.Color.fromCssColorString('#abc')"; el.style.color = 'red';`;
+  assert.deepEqual(counts(source, 'src/ui/a.js'), { color: 1 });
+});
+
+test('font shorthand detects explicit family after tokenized size', () => {
+  assert.deepEqual(counts('.x { font: var(--size) Arial; }'), { family: 1 });
+});
+
+test('font shorthand with only a qualifier and token is accepted', () => {
+  assert.deepEqual(counts('.x { font: italic var(--type-small); }'), {});
+});
+
+test('local type shorthand detects a quoted family without treating prose as color', () => {
+  assert.deepEqual(
+    counts(`.x { --type-small: 500 12px/16px 'Arial'; --label: 'Red'; }`),
+    { font: 1, family: 1 },
+  );
+});

@@ -78,7 +78,10 @@ function runtimeParts(nodes) {
     const button = modelNode(
       'button',
       [
-        ['class', 'lens-button panel-surface-control is-partial'],
+        [
+          'class',
+          `lens-button ${parent === chips ? 'kit-chip pick' : 'kit-btn quiet'} is-partial`,
+        ],
         ['id', `${id}-button`],
       ],
       parent,

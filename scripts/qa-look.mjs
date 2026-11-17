@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -9,6 +8,10 @@ import {
   parseLookArgs,
   collisions,
   validateWorkerProbe,
+  afterLegendFailures,
+  missingCoreLenses,
+  requiredContextFailures,
+  popupContentFailures,
 } from '../src/tooling/qaLook.mjs';
 import { createDenyProxy } from '../src/tooling/qaLookProxy.mjs';
 import { createFixtureWorld, installFixtures } from './qa-world.fixtures.mjs';
@@ -199,7 +202,12 @@ try {
       '#world-lens-bar [data-world-lens]',
       (nodes) => nodes.map((node) => node.dataset.worldLens),
     );
-    assert.ok(lenses.length, `no live lens controls at ${width}x${height}`);
+    const missing = missingCoreLenses(lenses);
+    if (missing.length)
+      report.errors.push(
+        `Missing core lenses at ${width}x${height}: ${missing.join(', ')}`,
+      );
+    if (!lenses.length) continue;
     for (const lens of lenses) {
       try {
         const selector = `#world-lens-bar [data-world-lens="${lens}"]`;
@@ -241,11 +249,11 @@ try {
         const button = await page.$('#frame-legend-whole');
         if (button && (await button.isVisible())) {
           await button.click();
-          await page.waitForSelector('#frame-legend-popup:not([hidden])', {
-            ...wait,
-            visible: true,
-          });
           try {
+            await page.waitForSelector('#frame-legend-popup:not([hidden])', {
+              ...wait,
+              visible: true,
+            });
             await capture(width, height, lens, 'popover');
           } finally {
             await page.keyboard.press('Escape');
@@ -561,16 +569,99 @@ async function capture(width, height, lens, view) {
         return {
           width: innerWidth,
           height: innerHeight,
+          sheetCode: document
+            .querySelector('#world-sheet-code')
+            ?.textContent.trim(),
           frames,
           panels,
           target: box('target', target),
           text: target.textContent.trim(),
+          bandVisible: visible(band),
+          captionText: [target, ...target.querySelectorAll('*')]
+            .filter(
+              (el) =>
+                visible(el) &&
+                [...el.childNodes].some(
+                  (child) =>
+                    child.nodeType === Node.TEXT_NODE &&
+                    child.textContent.trim(),
+                ),
+            )
+            .map((el) => ({
+              name: el.id || el.className || el.tagName,
+              ...type(el),
+            })),
           caption: {
             legend: type(band),
             title: type(document.querySelector('#world-legend-title')),
             note: type(document.querySelector('#world-legend-note')),
             target: type(target),
           },
+          popupContent:
+            view === 'popover'
+              ? (() => {
+                  const popup = document.querySelector('#frame-legend-popup');
+                  const bounds = popup.getBoundingClientRect();
+                  const within = (el) => {
+                    if (!visible(el)) return false;
+                    const rects = [...el.getClientRects()];
+                    return (
+                      rects.length > 0 &&
+                      rects.every(
+                        (r) =>
+                          r.left >= bounds.left - 0.5 &&
+                          r.right <= bounds.right + 0.5 &&
+                          r.top >= bounds.top - 0.5 &&
+                          r.bottom <= bounds.bottom + 0.5,
+                      )
+                    );
+                  };
+                  const stops = [
+                    ...popup.querySelectorAll('.frame-legend-popup-stops > li'),
+                  ];
+                  const note = document
+                    .querySelector('#world-legend-note')
+                    .textContent.trim();
+                  const parts = [
+                    ['title', popup.querySelector('.frame-legend-popup-title')],
+                    ...stops.map((el, i) => [`stop ${i + 1}`, el]),
+                    [
+                      'Unknown',
+                      popup.querySelector('.frame-legend-popup-unknown'),
+                    ],
+                    ...(note
+                      ? [
+                          [
+                            'note',
+                            popup.querySelector('.frame-legend-popup-note'),
+                          ],
+                        ]
+                      : []),
+                  ].map(([name, el]) => ({ name, whole: within(el) }));
+                  const scrollable = [popup, ...popup.querySelectorAll('*')]
+                    .filter((el) => {
+                      const style = getComputedStyle(el);
+                      const x =
+                        el.clientWidth > 0 &&
+                        el.scrollWidth > el.clientWidth + 1 &&
+                        (el === popup ||
+                          /hidden|clip|auto|scroll/.test(style.overflowX));
+                      const y =
+                        el.clientHeight > 0 &&
+                        el.scrollHeight > el.clientHeight + 1 &&
+                        (el === popup ||
+                          /hidden|clip|auto|scroll/.test(style.overflowY));
+                      return x || y;
+                    })
+                    .map((el) => el.id || el.className || el.tagName);
+                  return {
+                    parts,
+                    expectedStops: marks.length,
+                    hasNote: Boolean(note),
+                    scrollable,
+                  };
+                })()
+              : null,
           omitted: marks.filter((mark) => !mark.visible),
           completeParts: [
             document.querySelector('#world-legend-title').textContent.trim(),
@@ -665,7 +756,11 @@ async function capture(width, height, lens, view) {
     target.top >= 0 &&
     target.right <= width &&
     target.bottom <= height;
-  if (!valid) data.error = `Target outside viewport: ${JSON.stringify(target)}`;
+  const addError = (message) => {
+    data.error = [data.error, message].filter(Boolean).join('; ');
+  };
+  requiredContextFailures(data).forEach(addError);
+  if (!valid) addError(`Target outside viewport: ${JSON.stringify(target)}`);
   if (
     data.selected !== lens ||
     data.expected.lens !== lens ||
@@ -674,19 +769,25 @@ async function capture(width, height, lens, view) {
       data.completeParts.slice(1, 1 + data.expected.legend.stops.length),
     ) !== JSON.stringify(data.expected.legend.stops)
   )
-    data.error = `Wrong lens or empty legend: ${data.selected}`;
+    addError(`Wrong lens or empty legend: ${data.selected}`);
   if (
     view === 'band' &&
     (data.omitted.length || data.noteOmitted || data.keyOmitted) &&
     !data.buttonVisible
   )
-    data.error = 'Omitted or cut legend content lacks the whole-legend control';
+    addError('Omitted or cut legend content lacks the whole-legend control');
+  if (options.label === 'after') {
+    const unreadable = afterLegendFailures({ ...data, view });
+    if (unreadable.length) unreadable.forEach(addError);
+  }
   if (view === 'popover') {
+    if (options.label === 'after')
+      popupContentFailures(data.popupContent).forEach(addError);
     const missing = data.completeParts.filter(
       (part) => !data.text.includes(part),
     );
     if (missing.length)
-      data.error = `Popover missing legend parts: ${JSON.stringify(missing)}`;
+      addError(`Popover missing legend parts: ${JSON.stringify(missing)}`);
   }
   await page.screenshot({ path: path.join(out, `${stem}-full.png`) });
   const left = Math.max(0, target.left),

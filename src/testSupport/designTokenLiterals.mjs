@@ -11,30 +11,41 @@ function withoutVars(value) {
   let out = '',
     i = 0;
   while (i < value.length) {
-    const match = /^var\s*\(/i.exec(value.slice(i));
+    const match = /^(?:var|url)\s*\(/i.exec(value.slice(i));
     if (!match) {
       out += value[i++];
       continue;
     }
     i += match[0].length;
-    let depth = 1;
+    let depth = 1,
+      quote = '';
     while (i < value.length && depth) {
-      if (value[i] === '(') depth++;
-      else if (value[i] === ')') depth--;
-      i++;
+      const c = value[i++];
+      if (quote) {
+        if (c === '\\' && i < value.length) i++;
+        else if (c === quote) quote = '';
+      } else if (c === '"' || c === "'") quote = c;
+      else if (c === '(') depth++;
+      else if (c === ')') depth--;
     }
     out += ' ';
   }
-  return out.replace(/url\([^)]*\)/gi, ' ');
+  return out;
 }
-function kinds(property, raw) {
-  const prop = property
-    .replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)
-    .toLowerCase();
+
+function kinds(property, raw, camelCase = false) {
+  const prop = (
+    camelCase
+      ? property.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)
+      : property
+  ).toLowerCase();
   const value = withoutVars(raw).replace(
     /\b(?:transparent|currentcolor|inherit|initial|unset|revert|none)\b/gi,
     ' ',
   );
+  const colorValue = prop.startsWith('--')
+    ? value.replace(/(["'])(?:\\.|(?!\1)[\s\S])*?\1/g, ' ')
+    : value;
   const result = [];
   const nonzeroSize = [
     ...value.matchAll(
@@ -48,7 +59,7 @@ function kinds(property, raw) {
     /shadow/.test(prop) ||
     /^(?:-webkit-)?filter$/.test(prop)
   )
-    for (const match of value.matchAll(new RegExp(colors.source, 'gi')))
+    for (const match of colorValue.matchAll(new RegExp(colors.source, 'gi')))
       result.push('color');
   if (
     (prop === 'font-size' ||
@@ -57,12 +68,36 @@ function kinds(property, raw) {
     nonzeroSize
   )
     result.push('font');
+  const fontQualifiers = new Set([
+    'normal',
+    'italic',
+    'oblique',
+    'small-caps',
+    'bold',
+    'bolder',
+    'lighter',
+    'condensed',
+    'expanded',
+    'ultra-condensed',
+    'extra-condensed',
+    'semi-condensed',
+    'semi-expanded',
+    'extra-expanded',
+    'ultra-expanded',
+  ]);
+  const bareFamily =
+    /^\s*[a-z][\w -]*\s*$/i.test(value) &&
+    value
+      .trim()
+      .split(/\s+/)
+      .some((word) => !fontQualifiers.has(word.toLowerCase()));
   if (
     (prop === 'font-family' && value.trim()) ||
     ((prop === 'font' || (custom && /^--type-/.test(prop))) &&
-      /(?:serif|sans-serif|monospace|system-ui|["']|,|(?:px|rem|em|pt|%)\s+(?:[a-z]))/i.test(
+      (/(?:serif|sans-serif|monospace|system-ui|["']|,|(?:px|rem|em|pt|%)\s+(?:[a-z]))/i.test(
         value,
-      ))
+      ) ||
+        bareFamily))
   )
     result.push('family');
   if ((/radius$/.test(prop) || (custom && /radius/.test(prop))) && nonzeroSize)
@@ -126,8 +161,8 @@ export function scanSource(file, source) {
     if (!hits.has(kind)) hits.set(kind, []);
     hits.get(kind).push(line);
   };
-  const declaration = (property, value, offset) =>
-    kinds(property, value).forEach((kind) => add(kind, offset));
+  const declaration = (property, value, offset, camelCase = false) =>
+    kinds(property, value, camelCase).forEach((kind) => add(kind, offset));
   const css = (text, offset = 0, foundation = false, strict = false) => {
     try {
       postcss.parse(text).walkDecls((d) => {
@@ -145,22 +180,38 @@ export function scanSource(file, source) {
     }
   };
   const markup = (text, offset = 0) => {
-    for (const tag of text.matchAll(/<[^>]+>/g)) {
-      for (const a of tag[0].matchAll(
-        /\b(style|fill|stroke|color|stop-color|flood-color)\s*=\s*(["'])(.*?)\2/gi,
+    // Mask comments without shifting source lines or offsets.
+    const visible = text.replace(/<!--[\s\S]*?-->/g, (comment) =>
+      comment.replace(/[^\n]/g, ' '),
+    );
+    for (const tag of visible.matchAll(/<(?:[^>"']|"[^"]*"|'[^']*')*>/g)) {
+      const start = /^<[a-z][\w:-]*/i.exec(tag[0]);
+      if (!start) continue;
+      const attributes = tag[0].slice(start[0].length, -1);
+      for (const attribute of attributes.matchAll(
+        /([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g,
       )) {
-        const pos = offset + tag.index + a.index;
-        if (a[1].toLowerCase() === 'style')
+        const name = attribute[1].toLowerCase();
+        const value = attribute[2] ?? attribute[3] ?? attribute[4];
+        if (value === undefined) continue;
+        const pos = offset + tag.index + start[0].length + attribute.index;
+        if (name === 'style')
           css(
-            `x{${a[3].replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'")}}`,
+            `x{${value.replace(/&quot;/gi, '"').replace(/&#39;|&apos;/gi, "'")}}`,
             pos - 2,
           );
-        else declaration(a[1], a[3], pos);
+        else if (/^(?:fill|stroke|color|stop-color|flood-color)$/.test(name))
+          declaration(name, value, pos);
       }
     }
-    for (const block of text.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi))
+    for (const block of visible.matchAll(
+      /<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi,
+    ))
       css(block[1], offset + block.index + block[0].indexOf(block[1]));
   };
+  const literalRanges = [];
+  const isCode = (offset) =>
+    !literalRanges.some(([start, end]) => offset >= start && offset < end);
   if (file.endsWith('.css'))
     css(source, 0, file === 'src/ui/styles/foundation.css', true);
   else if (file.endsWith('.html')) markup(source);
@@ -168,31 +219,34 @@ export function scanSource(file, source) {
     const code = maskComments(source);
     for (const literal of code.matchAll(
       /(["'`])((?:\\[\s\S]|(?!\1)[\s\S])*?)\1/g,
-    ))
+    )) {
+      literalRanges.push([literal.index, literal.index + literal[0].length]);
       markup(literal[2].replace(/\\(["'`])/g, '$1'), literal.index + 1);
+    }
     for (const m of code.matchAll(
       /\.style\.([\w-]+)\s*=\s*(["'`])((?:\\[\s\S]|(?!\2)[\s\S])*?)\2/g,
     ))
-      declaration(m[1], m[3], m.index);
+      if (isCode(m.index)) declaration(m[1], m[3], m.index, true);
     for (const m of code.matchAll(
       /\.style\.setProperty\(\s*(["'])([^"']+)\1\s*,\s*(["'`])((?:\\[\s\S]|(?!\3)[\s\S])*?)\3/g,
     ))
-      declaration(m[2], m[4], m.index);
+      if (isCode(m.index)) declaration(m[2], m[4], m.index);
     for (const m of code.matchAll(
       /\.style\.cssText\s*=\s*(["'`])((?:\\[\s\S]|(?!\1)[\s\S])*?)\1/g,
     ))
-      css(`x{${m[2]}}`, m.index - 2);
+      if (isCode(m.index)) css(`x{${m[2]}}`, m.index - 2);
     for (const m of code.matchAll(
       /\.setAttribute\(\s*(["'])style\1\s*,\s*(["'`])((?:\\[\s\S]|(?!\2)[\s\S])*?)\2/g,
     ))
-      css(`x{${m[3]}}`, m.index - 2);
+      if (isCode(m.index)) css(`x{${m[3]}}`, m.index - 2);
     for (const m of code.matchAll(
       /\.setAttribute\(\s*(["'])(fill|stroke|color|stop-color|flood-color)\1\s*,\s*(["'`])((?:\\[\s\S]|(?!\3)[\s\S])*?)\3/g,
     ))
-      declaration(m[2], m[4], m.index);
+      if (isCode(m.index)) declaration(m[2], m[4], m.index);
     for (const object of code.matchAll(
       /Object\.assign\(\s*[\w.$]+\.style\s*,\s*\{([\s\S]*?)\}\s*\)/g,
     )) {
+      if (!isCode(object.index)) continue;
       for (const prop of object[1].matchAll(
         /(?:["']([\w-]+)["']|\b([\w-]+))\s*:\s*(["'])((?:\\[\s\S]|(?!\3)[\s\S])*?)\3/g,
       ))
@@ -200,6 +254,7 @@ export function scanSource(file, source) {
           prop[1] || prop[2],
           prop[4],
           object.index + object[0].indexOf(object[1]) + prop.index,
+          true,
         );
     }
   }
@@ -212,7 +267,7 @@ export function scanSource(file, source) {
     for (const m of maskComments(source).matchAll(
       /(?:Cesium|cesium)\.Color\.fromCssColorString\(\s*(["'`])([^"'`]+)\1\s*\)/g,
     ))
-      if (colors.test(m[2])) add('cesium', m.index);
+      if (isCode(m.index) && colors.test(m[2])) add('cesium', m.index);
   return [...hits]
     .map(([kind, lines]) => ({ path: file, kind, lines }))
     .sort((a, b) => a.kind.localeCompare(b.kind));
