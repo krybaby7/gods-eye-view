@@ -605,8 +605,9 @@ Added on 2026-11-17, when the owner moved the building to Codex:
     work and keeps this roadmap. For that time this replaces "Claude builds the rest" in decision 29
     and "Claude merges" in decision 33. Every other rule of decisions 29, 32 and 33 stands. The
     independent read is now made by a Codex context that did not write the change. The handoff is in
-    the main folder, `qa-artifacts/handoff-2026-11-17/handoff-prompt-codex.md`, not committed. That
-    the leave of decision 33 passes to Codex is Claude's reading, and the owner was told.
+    the main folder, `qa-artifacts/handoff-2026-11-17/handoff-prompt-codex.md`, not committed. Asked
+    the same day whether Codex may merge finished pieces without asking, the owner answered "Yes,
+    same leave": the leave of decision 33 passes to Codex, with its limits.
 
 ## 6. Risks
 
