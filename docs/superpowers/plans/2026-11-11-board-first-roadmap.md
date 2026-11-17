@@ -11,7 +11,8 @@ merged the same day as pull request 27 under decision 33. Piece 3, the frame, wa
 2026-11-16 as pull request 28, also under decision 33, and the tools menu (1.5) the same day as pull
 request 29. The layers menu (1.4) was merged on 2026-11-17 as pull request 30 under the same leave.
 One look began with the shared tokens and World Board styles (A1), merged the same day as pull
-request 31.
+request 31. Pull request 32 merged the corrections from the review of both pieces, and
+A2 began after that merge.
 Codex directs the work, with GPT-6.1 Sol implementing and GPT-6.1 Terra testing (decisions 34 and
 35). Section 10 gives the order of building and the state of each piece. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
@@ -618,6 +619,10 @@ Added on 2026-11-17, when the owner moved the building to Codex:
     work, assign implementation to GPT-6.1 Sol and assign testing to GPT-6.1 Terra. The independent
     read and the merge checks in decisions 33 and 34 still apply.
 
+    On 2026-11-17 the owner confirmed the roles in their own words:
+    “Continue with A2.you are the orchestrator. Keep using GPT 6.1 sol subagents for implementation
+    and 6.1 terra subagents for testing.”
+
 Added later on 2026-11-17, after Codex's first run:
 
 36. **Codex fixes what Claude's read found, before A2.** Claude checked pull requests 30 and 31
@@ -634,6 +639,10 @@ Added later on 2026-11-17, after Codex's first run:
     `qa-artifacts/handoff-2026-11-17/claude-read-of-codex-run.md`, not committed. Two things
     still wait for the owner's word: decision 35 in their own words, and whether a read by a
     fresh Codex context counts as the independent read of decisions 33 and 34.
+
+    The owner subsequently confirmed the model roles as recorded under decision 35. Pull request 32
+    carried the prerequisite correction. The details are in the piece 6 and One look histories in
+    section 10.
 
 ## 6. Risks
 
@@ -955,17 +964,17 @@ asks. Decision 33 lets a reviewed piece be merged without asking until the app i
 table is the order and the state. The session that finishes a piece updates its row, the status
 line at the top of this file and the owner's status page.
 
-| Order  | Piece                                                                                                               | State on 2026-11-17                                                          |
-| ------ | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                                                    |
-| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)                                      |
-| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13                                      |
-| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16                                      |
-| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13                                      |
-| 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16                                      |
-| 6      | The layers menu (1.4)                                                                                               | Merged as pull request 30 on 2026-11-17                                      |
-| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | 1.3 A1 merged as pull request 31. A2 next, then remaining 1.3 pieces and 1.6 |
-| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock                                         |
+| Order  | Piece                                                                                                               | State on 2026-11-17                                                                                          |
+| ------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                                                                                    |
+| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)                                                                      |
+| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13                                                                      |
+| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16                                                                      |
+| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13                                                                      |
+| 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16                                                                      |
+| 6      | The layers menu (1.4)                                                                                               | Merged as pull request 30 on 2026-11-17                                                                      |
+| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | 1.3 A1 merged as pull request 31. Corrections merged as PR 32. A2 started, then remaining 1.3 pieces and 1.6 |
+| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock                                                                         |
 
 **Piece 2, costume off and board on.** Merged on 2026-11-13 as pull request 26 (merge commit
 `c9c6beee`), on the owner's word. Before the merge a separate agent ran the five gates again and
@@ -1232,6 +1241,24 @@ Six edited scripts outside the gate remain unrun: `qa-radio.mjs`, `qa-failstate-
 `qa-cockpit-utility.mjs`, `qa-directions.mjs`, `qa-transit.mjs` and `qa-overpass-offload.mjs`
 were unchanged and unrun.
 
+Premerge history, restored on 2026-11-17. The earlier World Board fixture run on `d07c31b1` passed
+37 of 38 steps. The cockpit Layers menu overlapped the compass at 1440×900. Commit `43b3c855`
+raised the menu based on its calculated placement. The follow-up run stopped before it produced a
+summary. An independent reader also found that the three cockpit footer links closed the Layers
+menu and tried to open panels in the hidden top bar. The panels stayed hidden and focus dropped to
+the page body. The final PR 30 fix hid those links in cockpit mode and the full run recorded above
+passed.
+
+Scope of the cockpit result. At 1440×900 the check covered seven named readouts and four buttons.
+The speed and altitude scales were informational checks. The open Layers menu covered part of both
+scales and their labels. Pull request 32 updated the check and its report to name the readouts and
+controls they cover. The new run again reported overlap with the scale bounding boxes. The cockpit
+restyle remains scheduled for 1.3 K.
+
+The same pull request gave an uncertain layer switch an accessible description from the visible
+“State uncertain” text. The description clears when the layer recovers. The layer name and any key
+guidance remain its accessible name.
+
 **One look (1.3): the plan.** Scoped on 2026-11-16 by six readers and a challenger, from the code
 and the mock. The scoping review used no browser. The plan is in the main
 folder, `qa-artifacts/handoff-2026-11-13b/briefs/piece-1.3-plan.md`, not committed. The readers
@@ -1293,6 +1320,35 @@ keyless fixtures. No test run or server remains active.
 
 A2 is next and has yet to start. It covers the shared panel components, the check for style
 literals, the panel capture script, and the lens bar and legend type.
+
+**Before A2, corrections from the 17 November review.** Pull request 32 merged at 16:05 Cairo time
+as `fd2193114eb54e663fdd3cb98c2aa3e87fe00a0f` under decision 36. The shared panel titles restored
+`0.1em` tracking for Situation and Search Layers. Stale live flags again use `#f2cf91` via
+`--status-stale` and normal energy statuses use `#6cddff` via `--status-normal`. The readable-type
+tests now render Exposure energy rows, their headings and route controls, plus the chokepoint
+sheet. The layer-switch description and cockpit check are recorded in the piece 6 history.
+
+The independent read cleared the changes. An initial gate stopped at the format step because of
+line endings. The full rerun was alone on the PC from 15:36 to 16:04 Cairo time on 2026-11-17,
+on `3424c34b2aabb67d3a2d61df9e7ed010b5d4237c`. All nine steps exited 0. Format, boundaries, layer
+tokens and the production build passed. Of 7,217 unit tests, 7,207 passed, none failed and 10 were
+skipped. World Board passed 38 steps, news 30, searches 11, and lenses 23 with one performance
+check skipped. The checkout stayed clean at the tested commit. The server stopped, its port closed
+and the lock was removed. The tested tree, `8228e2eeacc079d9a62458debacbb1bcb8dfb4e7`, matches
+the merged tree. The gate evidence is at `qa-artifacts/before-a2/before-a2-final-3424c34b-run2/`.
+The SHA-256 of its `summary.json` is
+`5571cb7b9d55253156abaaaf2bf43b0098a9b19c355269a8f03b2e8ed9a7be24`.
+
+The browser used keyless fixtures. A real phone, a screen reader and the panel title fit at the
+176 px collapsed width were untested. A real Search Layers run was not made. Mobile-data use was
+not measured. Inspection of the archived Search Layers picture after the merge showed a World
+Board load in progress. The older news, searches and lenses fixture scripts pass unrelated World
+API requests to the server, allowing a cold load in a fresh checkout. A2 will block these requests
+in fixture mode before its next browser run. The earlier gate proves the recorded checks; it does
+not prove that every provider request was isolated.
+
+A2 started after the correction merged, in `gev-one-look-kit` from `fd219311`, with the testing
+tools first.
 
 These are the director's readings, taken on the plan's recommendation and not yet put to the owner:
 
@@ -1427,6 +1483,10 @@ Copied from the mock's style sheet on the day of approval, with the control type
 1.4 and seven additions from 1.3 A1. A name says what a value is for, so a
 light set can be added later under the same names (decision 6). Where a comment says "the app's
 own", the value is unchanged from today's code.
+
+The prerequisite correction before A2 restored two app colours as foundation tokens:
+`--status-normal: #6cddff` for normal energy statuses and `--status-stale: #f2cf91` for stale live
+flags.
 
 ```css
 :root {
