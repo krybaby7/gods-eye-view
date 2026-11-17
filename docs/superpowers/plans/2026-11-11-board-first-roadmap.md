@@ -13,8 +13,9 @@ request 29. The layers menu (1.4) was merged on 2026-11-17 as pull request 30 un
 One look began with the shared tokens and World Board styles (A1), merged the same day as pull
 request 31. Pull request 32 merged the corrections from the review of both pieces, and
 A2, the shared kit and legend, merged on 17 November as pull request 33. The Layers menu
-restyle (B) merged that evening as pull request 34. Weather (C) is next.
-Codex directs the work. For B, GPT-6.2 Sol implemented and GPT-6.1 Terra tested (decisions 34
+restyle (B) merged that evening as pull request 34. Weather (C) merged on 18 November as pull
+request 35. Cameras (D) is next.
+Codex directs the work. For B and C, GPT-6.2 Sol implemented and GPT-6.1 Terra tested (decisions 34
 and 35). Section 10 gives the order of building and the state of each piece. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
@@ -626,6 +627,7 @@ Added on 2026-11-17, when the owner moved the building to Codex:
 
     For the overnight B run on 17 November, the owner assigned implementation to GPT-6.2 Sol
     and testing to GPT-6.1 Terra, with Codex continuing as director.
+    On 18 November the owner asked for the same roles for C, Weather.
 
 Added later on 2026-11-17, after Codex's first run:
 
@@ -968,17 +970,17 @@ asks. Decision 33 lets a reviewed piece be merged without asking until the app i
 table is the order and the state. The session that finishes a piece updates its row, the status
 line at the top of this file and the owner's status page.
 
-| Order  | Piece                                                                                                               | State on 2026-11-17                                                                                                              |
-| ------ | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                                                                                                        |
-| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)                                                                                          |
-| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13                                                                                          |
-| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16                                                                                          |
-| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13                                                                                          |
-| 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16                                                                                          |
-| 6      | The layers menu (1.4)                                                                                               | Merged as pull request 30 on 2026-11-17                                                                                          |
-| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | 1.3 A1, A2 and B merged as PRs 31, 33 and 34, with corrections in PR 32. C (Weather) next, then the remaining 1.3 pieces and 1.6 |
-| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock                                                                                             |
+| Order  | Piece                                                                                                               | State on 2026-11-17                                                                                                                     |
+| ------ | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                                                                                                               |
+| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)                                                                                                 |
+| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13                                                                                                 |
+| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16                                                                                                 |
+| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13                                                                                                 |
+| 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16                                                                                                 |
+| 6      | The layers menu (1.4)                                                                                               | Merged as pull request 30 on 2026-11-17                                                                                                 |
+| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | 1.3 A1, A2, B and C merged as PRs 31, 33, 34 and 35, with corrections in PR 32. D (Cameras) next, then the remaining 1.3 pieces and 1.6 |
+| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock                                                                                                    |
 
 **Piece 2, costume off and board on.** Merged on 2026-11-13 as pull request 26 (merge commit
 `c9c6beee`), on the owner's word. Before the merge a separate agent ran the five gates again and
@@ -1454,7 +1456,42 @@ including 218 copied and hash-verified browser files. The summary SHA-256 is
 `f6eca6409b25ccde7a5765e86a0cb09261efa9cac2ddac65f80607a3b27ad9d9`. The server stopped
 and released port 5315 and the shared lock. The gate used keyless fixtures and guarded Vite's
 provider fetches. Live providers, a physical phone and a screen reader were untested. The
-previously recorded cockpit side-scale overlap remains for K. Weather (C) is next.
+previously recorded cockpit side-scale overlap remains for K. Weather (C) followed.
+
+**One look (1.3), C, Weather.** Pull request 35 merged at 01:47 Cairo time on 18 November as
+`e3ab5d13a55782878a90522521bc0a2ff0079d79`. Weather uses the solid rail panel and shared cards.
+The forecast has a dashed edge with its issued and valid times. Observed weather keeps its own
+history clock. Expanded cards name their sources. The freezing point is text on the temperature
+scale. An unavailable source or tile claims a previous image only when one was retained. Recent
+Imagery keeps its compact controls until F. The Weather sheet's 34 literal-style allowances are
+gone, bringing the total to 1,937 across 142 entries.
+
+The before and after runs each captured 18 fixture views at 1280×720, 1440×900 and 1920×1080
+with Today and the India sheet open. The views cover a failed first observation, latest and
+historical observations alongside the wind forecast, and all Weather layers switched off. The
+smallest active text went from 8 to 12 px, with reading text at least 13 px. The lowest measured
+active-text contrast went from 1.88:1 to 7.75:1. At 1280×720 a 385 px body scrolls through 962 px
+of filled content. A wheel check reached the lower controls without moving the frame.
+
+The pictures exposed the wind reading marker covering Weather. Hit testing confirmed the fix
+behind the panel at 1280 and 1440, and above the uncovered globe at 1920. Earlier runs timed out
+during repeated imagery swaps across resizes. The final fixture settles each observation at its
+expected time before resizing. A relative age can tick during a screenshot. The test records both
+readings and requires the same absolute time, clock mode and selection.
+
+Terra independently reviewed the final commit and inspected the paired pictures. All 14 gate
+steps passed on `1acf00ca7466335d7b1354e78badc285b0587b6b`. The main suite passed 7,276 tests
+and skipped ten. Both later groups passed. World passed 38 checks, News 30, Searches 11 and Lenses
+23 with its performance check skipped. The legend and Layers captures passed all 23 and six
+views respectively. The tested and merged trees both equal
+`bff56f6a5fc1031dbbf914ac3fc233e730f8315d`.
+
+The final archive in `qa-artifacts/one-look-c/final-1acf00ca/` holds 374 hashed files, including
+218 browser evidence files verified against their originals. The summary SHA-256 is
+`332fdfad2b9cb4ddceee8f0b2d8e8a3bbf293e7e5e24e14290a0959e00a8dbed`. The matched baseline is
+in `before-e1f44cc7/` beside it. The gate stopped its server and released port 5316 and the
+shared lock. Live providers, a physical phone and a screen reader remain unverified. Cameras (D)
+is the next piece.
 
 These are the director's readings, taken on the plan's recommendation and not yet put to the owner:
 
