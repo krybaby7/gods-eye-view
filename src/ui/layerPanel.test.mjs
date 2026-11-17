@@ -77,7 +77,10 @@ test('rows follow the group table: three columns, table names, no World or War M
       traffic.querySelector('.data-name').textContent,
       'Street traffic',
     );
-    assert.equal(traffic.querySelector('.st').textContent, 'Off');
+    assert.equal(
+      traffic.querySelector('.data-toggle-state').textContent,
+      'Off',
+    );
     const mystery = f.find((node) => node.dataset?.layerId === 'mystery-layer');
     assert.equal(
       mystery.querySelector('.data-name').textContent,
@@ -105,7 +108,7 @@ test('a click anywhere on a row switches it, and Search layers only opens its pa
     assert.deepEqual(calls, [['traffic', true, { origin: 'user' }]]);
     const searches = f.find((node) => node.dataset?.layerId === 'searches');
     assert.equal(
-      searches.querySelector('.st').textContent,
+      searches.querySelector('.data-toggle-state').textContent,
       'Asks before it runs',
     );
     searches.querySelector('.data-name').click();
@@ -370,7 +373,7 @@ test('uncertain switch exposes its status as a description and clears it on reco
     panel.mount(f.container);
     const row = f.find((node) => node.dataset?.layerId === 'traffic');
     const button = row.querySelector('.data-toggle-btn');
-    const meta = row.querySelector('.st');
+    const meta = row.querySelector('.data-toggle-state');
     assert.equal(button.getAttribute('aria-describedby'), meta.id);
     assert.ok(meta.id, 'description references a real element');
     assert.match(meta.textContent, /uncertain/i);

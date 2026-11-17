@@ -551,3 +551,42 @@ test('look evidence rejects screenshot whose pixels do not match scale-one viewp
     await fs.rm(dir, { recursive: true, force: true });
   }
 });
+
+test('layers capture accepts empty and filled states without relaxing legend validation', () => {
+  for (const state of ['empty', 'filled']) {
+    const options = parseLookArgs([
+      '--url',
+      'http://localhost:5314',
+      '--label',
+      'before',
+      '--panel',
+      'layers',
+      '--state',
+      state,
+    ]);
+    assert.equal(options.panel, 'layers');
+    assert.equal(options.state, state);
+    assert.match(options.out.replaceAll('\\', '/'), /restyle-1\.3\/layers$/);
+  }
+  const defaults = parseLookArgs([
+    '--url',
+    'http://localhost:5314',
+    '--label',
+    'after',
+    '--panel',
+    'layers',
+  ]);
+  assert.equal(defaults.state, 'filled');
+  assert.throws(() =>
+    parseLookArgs([
+      '--url',
+      'http://localhost:5314',
+      '--label',
+      'before',
+      '--panel',
+      'layers',
+      '--state',
+      'unknown',
+    ]),
+  );
+});
