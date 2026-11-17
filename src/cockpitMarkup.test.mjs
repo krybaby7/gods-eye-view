@@ -1,4 +1,5 @@
 import { readShellSource, shellMethod } from './testSupport/readShellSource.mjs';
+import { ancestorsOf } from './testSupport/cssCascade.mjs';
 import { expandApplicationHtml } from '../build/application-html.js';
 import { readLayerSource } from './testSupport/readLayerSource.mjs';
 import { PanelLayoutController } from './ui/panelLayoutController.js';
@@ -58,7 +59,12 @@ test('Cockpit has one reset action beside its bottom exit path', () => {
   assert.ok(topCenterActions, 'Top-center map tools are missing');
   // Switch all off lives in the layers menu's head since piece 1.4.
   assert.doesNotMatch(topCenterActions[0], /id="clear-selected-layers"/);
-  assert.match(html, /<header class="layers-menu-head"[\s\S]*?id="clear-selected-layers"[\s\S]*?<\/header>/);
+  const clearLayersChain = ancestorsOf(html, 'clear-selected-layers');
+  const clearLayersButton = clearLayersChain.at(-1);
+  assert.equal(clearLayersButton.tag, 'button');
+  assert.equal(clearLayersButton.attrs.get('type'), 'button');
+  assert.ok(clearLayersChain.some((node) => node.tag === 'header' && node.classes.has('layers-menu-head')), 'Clear Layers belongs to the Layers header');
+  assert.ok(clearLayersChain.some((node) => node.id === 'data-panel'), 'Clear Layers belongs to the Layers menu');
   const globeNavigation = html.match(/<nav id="globe-navigation"[\s\S]*?<\/nav>/);
   assert.ok(globeNavigation, 'Globe navigation controls are missing');
   assert.match(globeNavigation[0], /id="north-up-view"[\s\S]*?id="tilt-map-view"[\s\S]*?id="reset-globe-view"[\s\S]*?id="zoom-map-out"[\s\S]*?id="zoom-map-in"/);
