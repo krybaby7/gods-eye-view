@@ -387,3 +387,57 @@ test('uncertain switch exposes its status as a description and clears it on reco
     globalThis.document = previousDocument;
   }
 });
+
+test('optional layer controls use shared styles without losing their state semantics', async () => {
+  const previousDocument = globalThis.document;
+  const { f, panel } = await mountRows(['traffic'], {
+    enabled: () => true,
+    extra: {
+      hasRowControls: () => true,
+      getRowControls: () => ({
+        info: 'Updated recently',
+        chips: [
+          { id: 'selected', label: 'Selected', active: true },
+          { id: 'pending', label: 'Pending', state: 'pending', busy: true },
+          { id: 'error', label: 'Error', state: 'error' },
+        ],
+        legend: [{ label: 'Rain', color: '#abcdef', count: 3 }],
+        list: {
+          items: [{ id: 'one', text: 'First', active: true, current: true }],
+        },
+      }),
+    },
+  });
+  globalThis.document = f.document;
+  try {
+    panel.mount(f.container);
+    const row = f.find((node) => node.dataset?.layerId === 'traffic');
+    const selected = f.find((node) => node.dataset?.chipId === 'selected');
+    const pending = f.find((node) => node.dataset?.chipId === 'pending');
+    const error = f.find((node) => node.dataset?.chipId === 'error');
+    for (const chip of [selected, pending, error]) {
+      assert.ok(chip.classList.contains('kit-chip'));
+      assert.ok(chip.classList.contains('pick'));
+    }
+    assert.equal(selected.getAttribute('aria-pressed'), 'true');
+    assert.equal(pending.getAttribute('aria-busy'), 'true');
+    assert.ok(pending.classList.contains('chip-pending'));
+    assert.ok(error.classList.contains('chip-error'));
+    const listItem = row.querySelector('.data-row-list-item');
+    assert.ok(listItem.classList.contains('kit-btn'));
+    assert.ok(listItem.classList.contains('quiet'));
+    assert.equal(listItem.getAttribute('aria-current'), 'step');
+    assert.equal(listItem.getAttribute('aria-pressed'), 'true');
+    assert.match(
+      row.querySelector('.data-toggle-legend-item').children[1].textContent,
+      /Rain 3/,
+    );
+    assert.equal(
+      row.querySelector('.data-toggle-controls-info').textContent,
+      'Updated recently',
+    );
+  } finally {
+    panel.destroy();
+    globalThis.document = previousDocument;
+  }
+});

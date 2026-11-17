@@ -929,8 +929,8 @@ test('the data-panel row carries only the two source chips', async () => {
   assert.deepEqual(
     chips.map(({ id, label, active, params }) => [id, label, active, params]),
     [
-      ['hls', 'MORE DETAIL · 30 m', true, { hls: false }],
-      ['viirs', 'DAILY OVERVIEW · 250 m', false, { viirs: true }],
+      ['hls', 'More detail · 30 m', true, { hls: false }],
+      ['viirs', 'Daily overview · 250 m', false, { viirs: true }],
     ],
   );
   f.layer.setParams(chips[1].params);
