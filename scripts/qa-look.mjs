@@ -34,6 +34,7 @@ const wait = { timeout: 75000, polling: 125 };
 let browser;
 let page;
 let proxy;
+let stage = 'setup';
 try {
   await fs.mkdir(out, { recursive: true });
   const world = createFixtureWorld(path.join(temporary, 'world'));
@@ -53,7 +54,9 @@ try {
       '--proxy-bypass-list=<-loopback>',
     ],
   });
+  stage = 'worker-isolation';
   await verifyWorkerIsolation();
+  stage = 'app-startup';
   page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
   await installFixtures(page, options.url.origin, world, report, {
@@ -120,8 +123,14 @@ try {
       document.querySelector('#world-turn')?.textContent === 'Turn 1',
     wait,
   );
+  stage = 'country-pick';
   const pick = await page.waitForFunction(() => {
     const { C } = window.lookQa;
+    if (
+      !window.__godsEyeView.dataManager.layers.get('world').module.getSnapshot()
+        .visible
+    )
+      return false;
     const { scene } = window.__godsEyeView.viewer;
     const point = C.SceneTransforms.worldToWindowCoordinates(
       scene,
@@ -154,6 +163,18 @@ try {
   }, wait);
   const point = await pick.jsonValue();
   await pick.dispose();
+  await page.mouse.move(point.x, point.y);
+  await page.waitForSelector('#world-hover:not([hidden])', {
+    ...wait,
+    visible: true,
+  });
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#world-hover-name')
+        ?.textContent.includes('India'),
+    wait,
+  );
   await page.mouse.click(point.x, point.y);
   await page.waitForFunction(
     () => document.querySelector('#world-sheet-code')?.textContent === 'IND',
@@ -167,6 +188,7 @@ try {
       document.body.dataset.sheet === 'open',
     wait,
   );
+  stage = 'matrix';
   for (const [width, height] of [
     [1280, 720],
     [1440, 900],
@@ -236,6 +258,46 @@ try {
   }
 } catch (error) {
   report.errors.push(error.stack || error.message);
+  report.failureStage = stage;
+  if (page) {
+    try {
+      report.failureState = await page.evaluate(() => {
+        const hover = document.querySelector('#world-hover');
+        const layer =
+          window.__godsEyeView?.dataManager?.layers?.get('world')?.module;
+        const snapshot = layer?.getSnapshot?.();
+        return {
+          turn: document.querySelector('#world-turn')?.textContent,
+          selectedLens: document.querySelector(
+            '#world-lens-bar [aria-pressed=\"true\"]',
+          )?.dataset.worldLens,
+          sheetCode: document.querySelector('#world-sheet-code')?.textContent,
+          sheet: document.body?.dataset.sheet,
+          today: document.body?.dataset.today,
+          hoverText: hover?.textContent,
+          hoverVisible: Boolean(
+            hover &&
+            !hover.hidden &&
+            getComputedStyle(hover).display !== 'none',
+          ),
+          layerVisible: snapshot?.visible,
+          selected: snapshot?.selected,
+        };
+      });
+    } catch (diagnosticError) {
+      report.failureStateError = diagnosticError.message;
+    }
+    try {
+      await page.screenshot({
+        path: path.join(
+          out,
+          `${options.label}-${options.state}-startup-failure.png`,
+        ),
+      });
+    } catch (diagnosticError) {
+      report.failureScreenshotError = diagnosticError.message;
+    }
+  }
 } finally {
   try {
     if (browser)
