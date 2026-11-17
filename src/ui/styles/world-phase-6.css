@@ -31,7 +31,7 @@
   color: var(--link);
 }
 .world-live-evidence [data-status='stale'] {
-  color: var(--status-reduced);
+  color: var(--status-stale);
 }
 .world-live-evidence
   :is([data-status='no-recent-data'], [data-status='cleared']) {

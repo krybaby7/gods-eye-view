@@ -23,6 +23,9 @@ export function railFixture(onWrite = () => {}) {
           onWrite('attribute');
           this.attributes.set(key, String(value));
         },
+        removeAttribute(key) {
+          this.attributes.delete(key);
+        },
         getAttribute(key) {
           return this.attributes.get(key) ?? null;
         },
@@ -76,7 +79,9 @@ export function railFixture(onWrite = () => {}) {
             (child) =>
               selector.startsWith('.')
                 ? child.className?.split(' ').includes(selector.slice(1))
-                : false,
+                : selector.startsWith('[data-layer-id=')
+                  ? child.dataset.layerId === selector.slice(16, -2)
+                  : false,
             false,
           );
         },

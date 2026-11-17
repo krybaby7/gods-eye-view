@@ -70,8 +70,10 @@
   --alert-watch: #e6c453;
   --alert-strained: #f0935a;
   --alert-crisis: #ff5d6c;
+  --status-normal: #6cddff;
   --status-reduced: #ffc47b;
   --status-disrupted: #ff9aa0;
+  --status-stale: #f2cf91;
   --rel-war: #db474f;
   --rel-armed: #f4525d;
   --rel-sanctions: #e8933f;

@@ -54,7 +54,7 @@ export function layerStateWords(layer = {}) {
   if (lifecycle === 'disabling')
     return { words: 'Switching off', na: false, reason: '' };
   if (layer.lifecycleUncertain)
-    return { words: 'Checking its state', na: false, reason: '' };
+    return { words: 'State uncertain', na: false, reason: '' };
 
   const unavailable = stats.sourceUnavailable === true;
   const keyRequired = stats.keyRequired === true || stats.missingKey === true;
