@@ -12,7 +12,8 @@ merged the same day as pull request 27 under decision 33. Piece 3, the frame, wa
 request 29. The layers menu (1.4) was merged on 2026-11-17 as pull request 30 under the same leave.
 One look began with the shared tokens and World Board styles (A1), merged the same day as pull
 request 31. Pull request 32 merged the corrections from the review of both pieces, and
-A2 began after that merge.
+A2, the shared kit and legend, merged on 17 November as pull request 33. The Layers menu
+restyle (B) is next.
 Codex directs the work, with GPT-6.1 Sol implementing and GPT-6.1 Terra testing (decisions 34 and
 35). Section 10 gives the order of building and the state of each piece. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
@@ -973,7 +974,7 @@ line at the top of this file and the owner's status page.
 | 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13                                                                      |
 | 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16                                                                      |
 | 6      | The layers menu (1.4)                                                                                               | Merged as pull request 30 on 2026-11-17                                                                      |
-| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | 1.3 A1 merged as pull request 31. Corrections merged as PR 32. A2 started, then remaining 1.3 pieces and 1.6 |
+| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | 1.3 A1 and A2 merged as PRs 31 and 33, with corrections in PR 32. B (Layers menu) next, then the remaining 1.3 pieces and 1.6 |
 | Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock                                                                         |
 
 **Piece 2, costume off and board on.** Merged on 2026-11-13 as pull request 26 (merge commit
@@ -1318,8 +1319,9 @@ no new clipping in those views. The area picker now wraps to three rows and exte
 upwards. It passed the bounds check. The Strength legend measured 481 px. The browser used
 keyless fixtures. No test run or server remains active.
 
-A2 is next and has yet to start. It covers the shared panel components, the check for style
-literals, the panel capture script, and the lens bar and legend type.
+At the A1 handoff, A2 was next and had yet to start. Its scope was the shared panel
+components, the check for style literals, the panel capture script, and the lens bar and legend
+type.
 
 **Before A2, corrections from the 17 November review.** Pull request 32 merged at 16:05 Cairo time
 as `fd2193114eb54e663fdd3cb98c2aa3e87fe00a0f` under decision 36. The shared panel titles restored
@@ -1349,6 +1351,68 @@ not prove that every provider request was isolated.
 
 A2 started after the correction merged, in `gev-one-look-kit` from `fd219311`, with the testing
 tools first.
+
+**One look (1.3), A2, the shared kit and legend.** Pull request 33 merged on 2026-11-17 at
+18:36 Cairo time as `8c561726e8eff4ccf2a832639c495bdaa84bf961`. The opt-in kit supplies the shared
+panel, popover and control styles. The preset strip and menu use those styles and keep the eight
+presets, state, counts and hotkeys. The legend's band and popover now use 12 px type with a 16 px
+line height. The dense band tightens gaps and swatches. The whole legend opens within the globe's
+side insets and retains the complete title, stops, Unknown key and source note.
+
+The style-literal check ratchets legacy counts by file and kind. It counts 2,005 occurrences in
+148 rows, down from 2,012 in 149. The new kit and preset stylesheet have no findings. The check
+covers shipped CSS and HTML and statically recognizable JavaScript style forms. Dynamically
+constructed JavaScript styles are outside its scope. The provider correction noted above is in
+this change. The news, searches and lenses fixture scripts now reject World API requests locally,
+including refresh. The Look capture has its own World fixtures and a restrictive proxy.
+
+The first three tooling-only captures stopped before the baseline matrix. On `183dcf51` a worker
+denial surfaced as a fetch error. On `88f64dcb` the app's content security policy blocked the
+cross-port probe before it reached the proxy. On `9c53aff0` the isolated worker probe passed, but
+the capture timed out opening the India sheet. The completed baseline ran at 16:30–16:32 Cairo
+time on `0f82c5dd64f04639d30fdf28f234690d3f8d5a41` before the product edits. It saved 23 cases
+across six lenses and three desktop sizes. Five popovers overlapped the country sheet: Diplomacy
+and Ownership at 1280×720 and 1440×900, and Diplomacy at 1920×1080. This explains the baseline's
+nonzero exit. The evidence is at `qa-artifacts/one-look-a2/before-0f82c5dd/restyle-1.3/legend/`.
+
+The first full gate on `54bbc89ff294df55b8ec9237f5988c9ff96ca24a` passed the nine checks outside
+Look. Look saved the entire matrix, then an unhandled socket reset stopped cleanup before the
+report was written. The proxy fix handles peer errors on rejected tunnels and closes its side
+after the denial flushes, including when the peer leaves its side open. The Look-only preflight
+on `485956d6cbfb0c08498c7f41c8f4d2637fdaf8d1` passed all 23 cases at 17:22–17:24 Cairo time. The
+second full gate on the same head passed all nine other checks but failed Look. Today folded
+after the 1440×900 Diplomacy band was captured, so ten subsequent cases failed the required
+open-Today check. The cause was unproven. A transient viewport change during a clipped screenshot
+was the leading explanation. The capture now takes one viewport PNG per case and derives its
+crop from that image. The checks still require Today and the India sheet to stay open, and
+the report records frame-state changes.
+
+An independent Sol review cleared the final change. The final gate ran alone on the PC on
+`f985a7ea1bc60cf10f89e625a7aaeb9fffd3addc`, from 18:05 to 18:34 Cairo time on 2026-11-17. All
+ten steps exited 0. Format, boundaries, layer tokens and build passed. Of 7,276 unit tests,
+7,266 passed and 10 skipped, with no failures. World Board passed 38 steps, news 30, searches
+11, and lenses 23 with one performance check skipped. Look passed all 23 cases, with 18 bands,
+five popovers and 46 images. All captured legend type was 12/16. There were no assertion errors,
+collisions or capture-state changes. The frame timeline shows Today opening at app startup and
+no subsequent transitions. The two worker probes returned 403 with no sentinel hits.
+The final checkout stayed clean and at the tested head. The server stopped, its port closed and
+the lock was removed. The tested and merged trees match at
+`82a669dcaf6bb3511256837924d08257546909b2`.
+
+Terra compared matching cases from the baseline and final image sets. All five baseline overlaps
+are gone. Each popover clears the sheet by 8 px. Final evidence is at
+`qa-artifacts/one-look-a2/final-f985a7ea/`. The archive contains 218 hash-verified browser files,
+and its 300-file manifest is `qa-artifacts/one-look-a2/final-manifest.json`. The final summary
+SHA-256 is `24b64623e52890137d36bccc31143e0061cbb5624182f63ed9401ad209336474`.
+The failed-run evidence remains in `final-54bbc89f/` and `final-485956d6/` alongside the passing
+`preflight-485956d6/` record. Eight merged remote branches are retained, including
+`feat/one-look-kit`.
+
+This was keyless fixture QA. A real phone, microphone, screen reader, live imagery, a real
+Search Layers run and paid or keyed refreshes were untested. The test server's mobile-data use
+was unmeasured. The cockpit Layers menu's side-scale overlap remains as recorded under piece 6.
+The merged local branch and its clean worktree were removed. No gate or test server is running.
+B, the Layers menu's restyle using the kit, is next and has yet to start.
 
 These are the director's readings, taken on the plan's recommendation and not yet put to the owner:
 
