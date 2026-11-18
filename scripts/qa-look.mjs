@@ -37,6 +37,11 @@ import {
   verifyKeysQuery,
 } from './qa-look-keys.mjs';
 
+import {
+  captureImagery,
+  createImageryLookFixture,
+} from './qa-look-imagery.mjs';
+
 const options = parseLookArgs(process.argv.slice(2));
 const out =
   process.env.GEV_LOOK_OUT && !process.argv.includes('--out')
@@ -103,6 +108,10 @@ try {
   await installFixtures(page, options.url.origin, world, report, {
     strict: true,
     keys: options.panel === 'keys' ? keylessFixtures : null,
+    imageryFixture:
+      options.panel === 'imagery' && options.state === 'filled'
+        ? await createImageryLookFixture()
+        : null,
     cctv: options.panel === 'cctv' ? cctvFixture(options.state) : null,
     weather:
       options.panel === 'weather'
@@ -330,8 +339,23 @@ try {
       await failure(width, height, 'weather', 'journey', error);
     }
   }
+  if (options.panel === 'imagery') {
+    try {
+      await captureImagery({
+        page,
+        options,
+        out,
+        report,
+        markFrameStage,
+        viewports,
+      });
+    } catch (error) {
+      const { width, height } = page.viewport();
+      await failure(width, height, 'imagery', 'journey', error);
+    }
+  }
   for (const [width, height] of viewports) {
-    if (['weather', 'cctv', 'keys'].includes(options.panel)) break;
+    if (['weather', 'cctv', 'keys', 'imagery'].includes(options.panel)) break;
     await markFrameStage(`${width}x${height} viewport`);
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     if (options.panel === 'layers') {

@@ -101,6 +101,7 @@ export async function installFixtures(
     weather = null,
     cctv = null,
     keys = null,
+    imageryFixture = null,
   } = {},
 ) {
   const imagery = await fs.readFile(
@@ -132,6 +133,7 @@ export async function installFixtures(
   client.on('Fetch.requestPaused', async ({ requestId, request }) => {
     let url;
     let weatherReply;
+    let imageryReply;
     if (strict)
       report.transport.requests = (report.transport.requests ?? 0) + 1;
     function reply(value, status = 200, contentType = 'application/json') {
@@ -247,6 +249,14 @@ export async function installFixtures(
           report.transport.suppressedApis.push(url.pathname);
           await reply({}, 404);
         }
+      } else if (
+        imageryFixture &&
+        request.method === 'GET' &&
+        (imageryReply = imageryFixture(url))
+      ) {
+        const counts = (report.transport.imageryReplies ??= {});
+        counts[imageryReply.kind] = (counts[imageryReply.kind] ?? 0) + 1;
+        await reply(imageryReply.value, 200, imageryReply.contentType);
       } else if (url.hostname === 'fonts.googleapis.com') {
         await reply('', 200, 'text/css');
       } else if (
