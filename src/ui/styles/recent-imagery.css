@@ -263,7 +263,7 @@
   white-space: nowrap;
 }
 .recent-imagery-readout .ri-opacity-value {
-  min-width: 4ch;
+  inline-size: 4ch;
   text-align: end;
   font: var(--type-control-figure);
 }
