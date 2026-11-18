@@ -456,10 +456,13 @@ test('other parts of the app open a section by import or by event', () => {
 });
 
 test('a press outside closes an open panel, but not a press on the globe or in a dialog', () => {
-  const { document, menu, byId, dock } = page();
+  const { document, menu, byId, dock } = page({ keySetup: false });
   const globe = element(document, 'div', { id: 'cesiumContainer' });
   const dialog = element(document, 'dialog');
-  document.body.append(globe, dialog);
+  const keys = element(document, 'aside', { id: 'key-setup', role: 'dialog' });
+  const closeKeys = element(document, 'button');
+  keys.append(closeKeys);
+  document.body.append(globe, dialog, keys);
   menu.open('display');
   const display = byId('frame-menu-display');
   document.dispatchEvent({ type: 'pointerdown', target: display });
@@ -468,6 +471,8 @@ test('a press outside closes an open panel, but not a press on the globe or in a
   assert.equal(display.hidden, false, 'the globe stays usable for picking');
   document.dispatchEvent({ type: 'pointerdown', target: dialog });
   assert.equal(display.hidden, false);
+  document.dispatchEvent({ type: 'pointerdown', target: closeKeys });
+  assert.equal(display.hidden, false, 'key setup keeps the opener available');
   document.dispatchEvent({ type: 'pointerdown', target: dock });
   assert.equal(display.hidden, true, 'a press elsewhere closes it');
   menu.destroy();

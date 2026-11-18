@@ -42,6 +42,10 @@ body.gev-frame #key-setup {
   pointer-events: auto;
 }
 
+body:has(#key-setup.visible) #frame-menu-sources {
+  visibility: hidden;
+}
+
 #key-setup-chip[hidden],
 #key-setup[hidden],
 #key-setup [hidden] {
