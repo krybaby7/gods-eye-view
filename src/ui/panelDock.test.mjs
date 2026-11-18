@@ -18,7 +18,12 @@ function fixture() {
         delete this[name];
         delete this[name.replace(/-([a-z])/g, (_, c) => c.toUpperCase())];
       },
-      getPropertyValue: () => '',
+      getPropertyValue(name) {
+        return this[name] ?? '';
+      },
+      setProperty(name, value) {
+        this[name] = value;
+      },
     };
     return Object.assign(new EventTarget(), {
       id: '',
@@ -572,8 +577,88 @@ test('a collapsed floating window keeps its chosen height through a drag and a r
     // Reload: a fresh panel restores the size it expands to.
     const reloaded = f.element();
     reloaded.id = 'cctv-panel';
+    f.owner._portablePanels.get('cctv-panel').panel = reloaded;
     f.owner._restorePanelPosition('cctv-panel', reloaded);
     assert.equal(reloaded.style.height, '500px');
+  } finally {
+    f.restore();
+  }
+});
+
+test('portable windows restore, drag, and resize inside the measured globe', () => {
+  const f = fixture();
+  try {
+    const shell = portableShell(f, {
+      stored: {
+        'cctv-panel': { left: 1150, top: 780, width: 360, height: 420 },
+      },
+      obstacles: {
+        cesiumContainer: { left: 300, top: 52, right: 860, bottom: 668 },
+      },
+    });
+    const { panel, handle } = shell['cctv-panel'];
+    assert.equal(
+      shell.observed(document.getElementById('cesiumContainer')),
+      true,
+    );
+    assert.equal(panel.style.left, '494px');
+    assert.equal(panel.style.top, '242px');
+
+    pointer(handle, 'pointerdown', { x: 540, y: 260 });
+    pointer(window, 'pointermove', { x: 8, y: 8 });
+    assert.equal(panel.style.left, '306px');
+    assert.equal(panel.style.top, '58px');
+    pointer(window, 'pointerup', { x: 8, y: 8 });
+
+    const edge = f.owner._resizeHandles.find(
+      ({ dataset }) => dataset.dir === 'se',
+    );
+    pointer(edge, 'pointerdown', { x: 664, y: 476 });
+    pointer(window, 'pointermove', { x: 1200, y: 800 });
+    assert.equal(panel.style.width, '548px');
+    assert.equal(panel.style.height, '604px');
+    pointer(window, 'pointerup', { x: 1200, y: 800 });
+
+    // Opening Today or a sheet can resize the globe without a window resize.
+    const globe = document.getElementById('cesiumContainer');
+    globe.getBoundingClientRect = () => ({
+      left: 315,
+      top: 52,
+      right: 565,
+      bottom: 200,
+      width: 250,
+      height: 148,
+    });
+    shell.contentResized();
+    assert.equal(panel.style.left, '321px');
+    assert.equal(panel.style.top, '58px');
+    assert.equal(panel.style.width, '238px');
+    assert.equal(panel.style.height, '136px');
+    assert.equal(
+      panel.style.getPropertyValue('--panel-float-inline-limit'),
+      '238px',
+    );
+    assert.equal(
+      panel.style.getPropertyValue('--panel-float-block-limit'),
+      '136px',
+    );
+    assert.equal(
+      JSON.parse(f.store.get('godsEyeView.v8.panelPos.cctv-panel')).width,
+      548,
+    );
+
+    // Closing the sheet leaves room for the regular floating minimum again.
+    globe.getBoundingClientRect = () => ({
+      left: 315,
+      top: 52,
+      right: 1440,
+      bottom: 848,
+      width: 1125,
+      height: 796,
+    });
+    shell.contentResized();
+    assert.equal(panel.style.width, '300px');
+    assert.equal(panel.style.height, '160px');
   } finally {
     f.restore();
   }

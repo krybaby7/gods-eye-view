@@ -1,6 +1,6 @@
 import { CCTV_AMBIENT_CARD_MAX } from '../../data/cctvLod.js';
 import { ACTIVE_FRAME_REFRESH_MS, IDLE_FRAME_REFRESH_MS } from './policy.js';
-import { headingHudToken, isHeadingEstimated } from './headingConfidence.js';
+import { isHeadingEstimated } from './headingConfidence.js';
 
 export function createPresentation({
   state: layerState,
@@ -9,9 +9,8 @@ export function createPresentation({
   source,
 }) {
   /**
-   * Builds a single-line summary string for the active camera, including city,
-   * heading, FOV, coverage area, overlap count, projection mode, alignment
-   * confidence, source type, and view context.
+   * Builds the scene summary for the active camera, using its pose, spatial
+   * coverage, projection mode and view context.
    * @returns {string} Summary text separated by mid-dots.
    */
 
@@ -19,8 +18,8 @@ export function createPresentation({
     const active = parts.selection.getActiveRecord();
     if (!active) {
       return layerState._records.length
-        ? `${layerState._records.length} CAMERAS STANDING BY · NO CAMERA SELECTED · CLICK A CAMERA TO ACTIVATE`
-        : 'No cameras available in catalog.';
+        ? 'No camera selected.'
+        : 'No cameras available in the catalog.';
     }
 
     const area = parts.model.sectorAreaKm2(
@@ -30,25 +29,23 @@ export function createPresentation({
     const overlapCount = parts.geometry.coverageNeighborCount(active);
     const viewKey = parts.model.currentViewContext();
     const viewBand = viewKey.split(':')[0] || 'global';
-    const health = layerState._healthById.get(active.camera.id) || null;
-    const calBadge = parts.calibration.deriveCalBadge(active.camera);
+    const { city, name, headingDeg, fovDeg, rangeM } = active.camera;
+    const estimated = isHeadingEstimated(active.camera) ? ' (estimated)' : '';
 
     return [
-      `${active.camera.city.toUpperCase()} CCTV`,
-      `${active.camera.name.toUpperCase()}`,
-      // A synthetic bearing (headingConfidence 'low', no human calibration)
-      // is tagged so a hashed guess never reads as a surveyed facing (#639).
-      headingHudToken(active.camera),
-      `FOV ${Math.round(active.camera.fovDeg)}°`,
-      `COVERAGE ${area.toFixed(2)}km²`,
-      overlapCount > 0 ? `OVERLAP ${overlapCount} cams` : 'ISOLATED VIEW',
-      `PROJ ${layerState._showProjection ? 'MONITOR' : 'OFF'}`,
-      layerState._coverageMode === 'viewshed' ? 'VIEWSHED' : null,
-      `CAL ${calBadge.replace('-', ' ').toUpperCase()}`,
-      health?.sourceKind
-        ? `SRC ${String(health.sourceKind).toUpperCase()}`
-        : `SRC ${String(active.camera.feedType || 'image').toUpperCase()}`,
-      `${viewBand.toUpperCase()} CONTEXT`,
+      [city, name].filter(Boolean).join(' · '),
+      Number.isFinite(headingDeg)
+        ? `Heading ${Math.round(headingDeg)}°${estimated}`
+        : null,
+      Number.isFinite(fovDeg) ? `FOV ${Math.round(fovDeg)}°` : null,
+      Number.isFinite(rangeM) ? `Range ${Math.round(rangeM)} m` : null,
+      Number.isFinite(area) ? `Coverage ${area.toFixed(2)} km²` : null,
+      overlapCount > 0
+        ? `Overlaps ${overlapCount} ${overlapCount === 1 ? 'camera' : 'cameras'}`
+        : 'Isolated view',
+      layerState._showProjection ? 'Projection monitor' : 'Projection off',
+      layerState._coverageMode === 'viewshed' ? 'Viewshed' : null,
+      `${viewBand[0].toUpperCase()}${viewBand.slice(1)} context`,
     ]
       .filter(Boolean)
       .join(' · ');

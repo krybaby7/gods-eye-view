@@ -109,17 +109,10 @@
     width: auto;
   }
 
-  /* Narrow viewports: cap the preview height to keep the panel compact. Cap
-     the IMAGE, not the wrap — the wrap is overflow:hidden, so capping it would
-     re-crop the very timestamp this is protecting. object-fit: contain then
-     letterboxes inside the shorter box. */
-  #cctv-frame {
+  /* Camera media is contained within the compact preview on narrow screens. */
+  .cctv-frame-wrap {
     aspect-ratio: auto;
     height: 120px;
-  }
-
-  .cctv-frame-wrap {
-    min-height: 0;
   }
 
   #scene-panel {

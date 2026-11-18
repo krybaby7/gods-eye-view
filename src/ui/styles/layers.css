@@ -190,7 +190,6 @@ button.search-layers-shortcut {
   min-height: 50px;
   box-sizing: border-box;
 }
-#right-context-rail #cctv-panel:not(.collapsed) .cctv-panel-inner,
 #right-context-rail
   #street-level-panel:not(.collapsed)
   .street-level-panel-inner {
@@ -229,8 +228,9 @@ button.search-layers-shortcut {
 #right-context-rail.layout-focus {
   height: var(--right-stack-max-height);
 }
+/* Keep a collapsed disclosure visible while it owns keyboard focus. */
 #right-context-rail.layout-exclusive
-  > [data-panel-id].collapsed:not(.panel-floating) {
+  > [data-panel-id].collapsed:not(.panel-floating):where(:not(:focus-within)) {
   display: none;
 }
 #right-context-rail.layout-focus
@@ -239,7 +239,7 @@ button.search-layers-shortcut {
   flex: 0 0 auto;
 }
 #right-context-rail.layout-focus.layout-exclusive
-  > [data-panel-id].collapsed:not(.panel-floating) {
+  > [data-panel-id].collapsed:not(.panel-floating):where(:not(:focus-within)) {
   display: none;
 }
 #right-context-rail.layout-focus > #pp-toggles:not(.collapsed),

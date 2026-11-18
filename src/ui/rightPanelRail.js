@@ -105,10 +105,14 @@ export function layoutRightPanelRail({
     hudVariant: hud.variant,
     hasExpandedPanel,
   });
+  const activeElement = documentRef?.activeElement;
+  const isSuppressed = (panel) =>
+    exclusive &&
+    panel.classList.contains('collapsed') &&
+    !panel.contains(activeElement);
   stack.classList.toggle('layout-exclusive', exclusive);
   for (const panel of panels) {
-    if (exclusive && panel.classList.contains('collapsed'))
-      panel.setAttribute('aria-hidden', 'true');
+    if (isSuppressed(panel)) panel.setAttribute('aria-hidden', 'true');
     else panel.removeAttribute('aria-hidden');
   }
 
@@ -164,13 +168,9 @@ export function layoutRightPanelRail({
   // presentation hides them. Manually collapsed launchers keep their policy.
   const measuredPanels = panels.filter(
     (panel) =>
-      !exclusive ||
-      !panel.classList.contains('collapsed') ||
-      panel.classList.contains('layout-auto-collapsed'),
+      !isSuppressed(panel) || panel.classList.contains('layout-auto-collapsed'),
   );
-  const visiblePanels = panels.filter(
-    (panel) => !exclusive || !panel.classList.contains('collapsed'),
-  );
+  const visiblePanels = panels.filter((panel) => !isSuppressed(panel));
   const displayScrollTop = readDisplayScrollTop();
   // Measuring lifts each opted-in scroller's max-height, which clamps its
   // scroll offset; remember the offsets to put back afterwards.
@@ -237,7 +237,7 @@ export function layoutRightPanelRail({
     (panel) => !panel.classList.contains('collapsed'),
   );
   const focusedExpandedPanel = expandedPanelsInDomOrder.find((panel) =>
-    panel.contains(documentRef.activeElement),
+    panel.contains(activeElement),
   );
   const preferredExpandedPanel =
     expandedPanelsInDomOrder.find((panel) => panel.id === preferredPanelId) ||
