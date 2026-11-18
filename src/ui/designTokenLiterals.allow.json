@@ -284,31 +284,6 @@
     "count": 2
   },
   {
-    "path": "src/ui/styles/context-awareness.css",
-    "kind": "color",
-    "count": 44
-  },
-  {
-    "path": "src/ui/styles/context-awareness.css",
-    "kind": "family",
-    "count": 6
-  },
-  {
-    "path": "src/ui/styles/context-awareness.css",
-    "kind": "font",
-    "count": 10
-  },
-  {
-    "path": "src/ui/styles/context-awareness.css",
-    "kind": "radius",
-    "count": 5
-  },
-  {
-    "path": "src/ui/styles/context-awareness.css",
-    "kind": "shadow",
-    "count": 7
-  },
-  {
     "path": "src/ui/styles/controls.css",
     "kind": "backdrop",
     "count": 12
@@ -431,27 +406,22 @@
   {
     "path": "src/ui/styles/layers.css",
     "kind": "color",
-    "count": 138
-  },
-  {
-    "path": "src/ui/styles/layers.css",
-    "kind": "family",
-    "count": 15
+    "count": 18
   },
   {
     "path": "src/ui/styles/layers.css",
     "kind": "font",
-    "count": 32
+    "count": 4
   },
   {
     "path": "src/ui/styles/layers.css",
     "kind": "radius",
-    "count": 14
+    "count": 3
   },
   {
     "path": "src/ui/styles/layers.css",
     "kind": "shadow",
-    "count": 15
+    "count": 2
   },
   {
     "path": "src/ui/styles/location.css",

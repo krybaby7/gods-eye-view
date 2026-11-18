@@ -56,8 +56,8 @@ export function createPanel({ state: layerState, services, parts, source }) {
   function hidePanel() {
     if (layerState.panel) {
       const markup = `<div class="military-awareness-standby">
-      <strong>${layerState.enabled ? 'CONTEXT READY' : 'GLOBAL CONTEXT OFF'}</strong>
-      <span>${layerState.enabled ? 'SELECT A FLIGHT, VESSEL, OR MAPPED INSTALLATION' : 'ENABLE TO LOAD OBSERVED / MAPPED PROXIMITY'}</span>
+      <strong>${layerState.enabled ? 'Context ready' : 'Context is off'}</strong>
+      <span>${layerState.enabled ? 'Select a flight, vessel or mapped site.' : 'Enable Contacts to see nearby tracked and mapped contacts.'}</span>
     </div>`;
       layerState.panel.hidden = false;
       if (layerState.panelMarkup !== markup) {
@@ -103,9 +103,9 @@ export function createPanel({ state: layerState, services, parts, source }) {
   function navigationControlsHtml() {
     const canPrevious = layerState.navigationIndex > 0;
     return `<div class="military-awareness-controls" role="group" aria-label="Global Context navigation">
-    <button type="button" data-awareness-action="previous" title="Previous — prior visited contact in the 250 km window"${canPrevious ? '' : ' disabled'}>PREVIOUS</button>
-    <button type="button" data-awareness-action="focus">FOCUS</button>
-    <button type="button" data-awareness-action="next" title="Next — nearest unvisited contact in the 250 km window"${parts.navigation.canNavigateNext() ? '' : ' disabled'}>NEXT</button>
+    <button type="button" class="kit-btn quiet" data-awareness-action="previous" title="Previous — prior visited contact in the 250 km window"${canPrevious ? '' : ' disabled'}>Previous</button>
+    <button type="button" class="kit-btn quiet" data-awareness-action="focus">Focus</button>
+    <button type="button" class="kit-btn quiet" data-awareness-action="next" title="Next — nearest unvisited contact in the 250 km window"${parts.navigation.canNavigateNext() ? '' : ' disabled'}>Next</button>
   </div>`;
   }
 
@@ -183,7 +183,7 @@ export function createPanel({ state: layerState, services, parts, source }) {
     if (!layerState.enabled || !layerState.results) return hidePanel();
     const panel = ensurePanel();
     const { subject, cohorts } = layerState.results;
-    const markup = `<div class="military-awareness-subject">${escapeHtml(subject.label)} · ${formatAwarenessDistance(AWARENESS_RADIUS_M)} FLIGHT / VESSEL WINDOW</div>
+    const markup = `<div class="military-awareness-subject">${escapeHtml(subject.label)} · ${formatAwarenessDistance(AWARENESS_RADIUS_M)} flight and vessel window</div>
     ${namedAreasHtml(subject.memberNames)}
     ${navigationControlsHtml()}
     ${cohorts.map(rowHtml).join('')}

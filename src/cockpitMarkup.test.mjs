@@ -829,8 +829,8 @@ test('Global Context standby describes both chooser modes', () => {
     /<div id="context-mode-standby"[\s\S]*?<\/div>/,
   );
   assert.ok(match, 'Global Context standby is missing');
-  assert.match(match[0], /CONTACTS — nearest planes · vessels · sites/);
-  assert.match(match[0], /SPACE MISSIONS — launches &amp; orbital assets/);
+  assert.match(match[0], /Contacts show nearby planes, vessels and sites\./);
+  assert.match(match[0], /Space missions show launches and orbital assets\./);
 });
 
 test('cockpit briefing cycle control keeps its state as the accessible name', () => {
