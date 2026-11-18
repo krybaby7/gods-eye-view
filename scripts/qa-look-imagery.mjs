@@ -300,8 +300,16 @@ export async function captureImagery({
       wait,
     );
     const comparison = await settle();
-    if (JSON.stringify(populated.blocks) !== JSON.stringify(comparison.blocks))
-      throw new Error('Imagery controls moved in comparison mode');
+    const moved = populated.blocks.flatMap((before, index) => {
+      const after = comparison.blocks[index];
+      return JSON.stringify(before) === JSON.stringify(after)
+        ? []
+        : [{ before, after }];
+    });
+    if (moved.length)
+      throw new Error(
+        `Imagery controls moved in comparison mode: ${JSON.stringify(moved)}`,
+      );
     await capture('comparison', width, height, comparison);
     await page.focus('#ri-opacity');
     await page.keyboard.press('End');
