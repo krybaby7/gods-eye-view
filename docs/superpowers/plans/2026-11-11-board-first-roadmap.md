@@ -14,9 +14,9 @@ One look began with the shared tokens and World Board styles (A1), merged the sa
 request 31. Pull request 32 merged the corrections from the review of both pieces, and
 A2, the shared kit and legend, merged on 17 November as pull request 33. The Layers menu
 restyle (B) merged that evening as pull request 34. Weather (C) merged on 18 November as pull
-request 35. Cameras (D) is next.
-Codex directs the work. For B and C, GPT-6.2 Sol implemented and GPT-6.1 Terra tested (decisions 34
-and 35). Section 10 gives the order of building and the state of each piece. Builds on
+request 35. Cameras (D) merged the same day as pull request 36. Street level (E) is next.
+Codex directs the work. For B, C and D, GPT-6.2 Sol implemented and GPT-6.1 Terra tested (decisions
+34 and 35). Section 10 gives the order of building and the state of each piece. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
 what the first review could not see and section 8.1 what the second one found.
@@ -627,7 +627,7 @@ Added on 2026-11-17, when the owner moved the building to Codex:
 
     For the overnight B run on 17 November, the owner assigned implementation to GPT-6.2 Sol
     and testing to GPT-6.1 Terra, with Codex continuing as director.
-    On 18 November the owner asked for the same roles for C, Weather.
+    On 18 November the owner asked for the same roles for C, Weather, and D, Cameras.
 
 Added later on 2026-11-17, after Codex's first run:
 
@@ -970,17 +970,17 @@ asks. Decision 33 lets a reviewed piece be merged without asking until the app i
 table is the order and the state. The session that finishes a piece updates its row, the status
 line at the top of this file and the owner's status page.
 
-| Order  | Piece                                                                                                               | State on 2026-11-17                                                                                                                     |
-| ------ | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                                                                                                               |
-| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)                                                                                                 |
-| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13                                                                                                 |
-| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16                                                                                                 |
-| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13                                                                                                 |
-| 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16                                                                                                 |
-| 6      | The layers menu (1.4)                                                                                               | Merged as pull request 30 on 2026-11-17                                                                                                 |
-| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | 1.3 A1, A2, B and C merged as PRs 31, 33, 34 and 35, with corrections in PR 32. D (Cameras) next, then the remaining 1.3 pieces and 1.6 |
-| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock                                                                                                    |
+| Order  | Piece                                                                                                               | State on 2026-11-17                                                                                                                                |
+| ------ | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                                                                                                                          |
+| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)                                                                                                            |
+| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13                                                                                                            |
+| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16                                                                                                            |
+| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13                                                                                                            |
+| 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16                                                                                                            |
+| 6      | The layers menu (1.4)                                                                                               | Merged as pull request 30 on 2026-11-17                                                                                                            |
+| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | 1.3 A1, A2 and B to D merged as PRs 31, 33, 34, 35 and 36, with corrections in PR 32. E (Street level) next, then the remaining 1.3 pieces and 1.6 |
+| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock                                                                                                               |
 
 **Piece 2, costume off and board on.** Merged on 2026-11-13 as pull request 26 (merge commit
 `c9c6beee`), on the owner's word. Before the merge a separate agent ran the five gates again and
@@ -1490,8 +1490,41 @@ The final archive in `qa-artifacts/one-look-c/final-1acf00ca/` holds 374 hashed 
 218 browser evidence files verified against their originals. The summary SHA-256 is
 `332fdfad2b9cb4ddceee8f0b2d8e8a3bbf293e7e5e24e14290a0959e00a8dbed`. The matched baseline is
 in `before-e1f44cc7/` beside it. The gate stopped its server and released port 5316 and the
-shared lock. Live providers, a physical phone and a screen reader remain unverified. Cameras (D)
-is the next piece.
+shared lock. Live providers, a physical phone and a screen reader were unverified at that point.
+
+**One look (1.3), D, Cameras.** Pull request 36 merged at 05:01 Cairo time on 18 November as
+`1e2e589e`. The Cameras rail uses the shared solid panel, sentence-case controls and a scrolling
+body. The source and its reported health appear separately from the preview. A snapshot gives the
+time it loaded in the browser in UTC. A failed refresh can retain the previous frame. Switching
+cameras clears the previous camera’s preview. The video panel waits for the first painted frame and
+reports decoder failures. The Cameras sheet retired its 74 literal-style allowances.
+
+Floating Cameras and Street level panels use the measured globe bounds for dragging, resizing and
+restoring a saved position. Their usual minimum is 300 by 160 pixels. A smaller globe region can
+shrink the panel further and the normal minimum returns when space permits. The narrow layout
+retains its full-width drawers. A collapsed rail disclosure stays accessible while it holds keyboard
+focus. On the three tested desktop sizes, Today and the country sheet remained open throughout the
+comparison.
+
+The matched browser runs captured 15 views each, covering Cameras off, a decoded local snapshot and
+the built-in camera fallback when the configured catalogue is empty. That fallback showed an
+unavailable frame. The tests exercised navigation controls, keyboard disclosure, real wheel
+scrolling and the coverage switch. The smallest measured active text grew from 8 to 13 px. The
+lowest measured active-text contrast rose from 1.94:1 to 8.54:1. Measured intersections with the
+frame or other panels fell from 12 to 0. At 1280×720 the populated docked body holds 831 px of
+content in 393 px. The resize journey also exercised all eight handles, reload, collapse and
+docking.
+
+GPT-6.2 Sol implemented D. GPT-6.1 Terra tested it and independently reviewed the final changes. All
+17 steps passed on `94b22938abf49469223e6de6d79f5b5ce16c7734`. The main suite passed 7,288 tests,
+skipped 10 and failed none. The unit process used four logical CPUs for the final run. Two existing
+tests, for key storage and news-digest cleanup, failed intermittently at normal host concurrency.
+Both passed in isolation. The merged and tested trees both equal
+`f8beeaf424aa8b857426348842d87a06f759719c`. The final archive contains 424 hashed files in
+`qa-artifacts/one-look-d/final-94b22938-r5/`. Its gate summary SHA-256 is
+`069a93e96642e5ffc11dac67e9b666051d04da170a2e0b1400066a58d2c2aa25`. The matched baseline is in
+`before-da7f6ff4/` beside it. The test server stopped and released port 5317 and its lock. Live
+providers, a physical phone and a screen reader remain unverified. Street level (E) follows.
 
 These are the director's readings, taken on the plan's recommendation and not yet put to the owner:
 
