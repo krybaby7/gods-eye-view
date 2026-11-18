@@ -551,3 +551,181 @@
   height: var(--space-1);
   flex: 0 0 var(--space-3);
 }
+
+/* Shared layer-row controls used by the Layers menu and panel kits. */
+.data-toggle-row.gev-voice-focus {
+  background: rgba(92, 255, 198, 0.1);
+  box-shadow:
+    inset 0 0 0 1px rgba(92, 255, 198, 0.72),
+    0 0 18px rgba(92, 255, 198, 0.18);
+}
+
+.data-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.data-toggle-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  padding-left: 26px;
+  margin-top: 2px;
+}
+
+/* Optional per-layer sub-controls: mode chips plus a color legend. Aligned
+   under the layer name like .data-toggle-meta, and wrapping so a legend can
+   grow without widening the rail. */
+.data-toggle-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding-left: 26px;
+  margin-top: 5px;
+}
+
+.data-toggle-controls[hidden] {
+  display: none;
+}
+
+.data-toggle-chip:not(:where(.kit-chip)) {
+  padding: 2px 7px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    opacity var(--transition-fast);
+  outline: none;
+}
+
+.data-toggle-chip:not(:where(.kit-chip)):hover,
+.data-toggle-chip:not(:where(.kit-chip)):focus-visible {
+  border-color: var(--glass-border-hover);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+}
+
+.data-toggle-chip:not(:where(.kit-chip)).active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+/* Async sub-controls: a chip must never read ACTIVE before the data it turns
+   on actually exists, so loading and failure are their own visible states. */
+.data-toggle-chip:not(:where(.kit-chip)):disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.data-toggle-chip:not(:where(.kit-chip)).chip-loading {
+  color: var(--text-secondary);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.data-toggle-chip:not(:where(.kit-chip)).chip-error {
+  color: #ff8585;
+  border-color: rgba(255, 92, 92, 0.6);
+  background: rgba(255, 60, 60, 0.08);
+}
+
+/* Optional per-layer ordered list: the turn-by-turn directions under the
+   Directions row. Kept short and scrollable so a 40-step drive cannot push the
+   rest of the rail off screen. */
+.data-row-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0 0 0 26px;
+  max-height: 150px;
+  overflow-y: auto;
+  counter-reset: gev-step;
+}
+
+.data-row-list[hidden] {
+  display: none;
+}
+
+.data-row-list-item {
+  counter-increment: gev-step;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  width: 100%;
+  padding: 2px 4px;
+  text-align: left;
+}
+
+.data-row-list-item:not(:where(.kit-btn)) {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.4px;
+  color: var(--text-dim);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+  outline: none;
+}
+
+.data-row-list-item::before {
+  content: counter(gev-step);
+  min-width: 13px;
+  text-align: right;
+  color: var(--text-dim);
+  opacity: 0.65;
+  flex: none;
+}
+
+.data-row-list-item:not(:where(.kit-btn)):hover,
+.data-row-list-item:not(:where(.kit-btn)):focus-visible {
+  border-color: var(--glass-border-hover);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+}
+
+.data-row-list-item:not(:where(.kit-btn)).active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+/* The step the camera is on during FLY: the same accent, plus a rail on the
+   leading edge so it reads as "here", not "chosen". */
+.data-row-list-item.current {
+  border-left-color: var(--accent);
+  border-left-width: 2px;
+}
+
+.data-row-list-lead {
+  min-width: 34px;
+  flex: none;
+  opacity: 0.85;
+}
+
+.data-row-list-text {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A list line that states a limit rather than offering an action. */
+.data-row-list-item:not(:where(.kit-btn)).note {
+  cursor: default;
+  opacity: 0.75;
+  font-style: italic;
+}

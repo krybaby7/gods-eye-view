@@ -35,6 +35,12 @@ test('globe semantic colours agree with the corresponding CSS tokens', async () 
     '--live-space',
     '--ownership-documented',
   ];
+  const { RADIO_CATEGORY_COLORS } = await import('./layers/radio/policy.js');
+  for (const [category, color] of Object.entries(RADIO_CATEGORY_COLORS)) {
+    const token = `--cat-${category}`;
+    assert.equal(DESIGN_COLORS[token], color, token);
+    keys.push(token);
+  }
   for (const key of keys) {
     assert.ok(properties.has(key), `missing CSS token ${key}`);
     assert.equal(

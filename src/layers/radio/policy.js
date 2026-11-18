@@ -1,3 +1,5 @@
+import { DESIGN_COLORS } from '../../designTokens.js';
+
 export const RADIO_PREFIX = 'radio:';
 
 export const DIRECTORY_ENDPOINT = '/api/radio/stations';
@@ -116,15 +118,15 @@ export const CATEGORY_MATCHERS = Object.freeze({
 });
 
 export const RADIO_CATEGORY_COLORS = Object.freeze({
-  all: '#b9fbff',
-  news: '#44adff',
-  talk: '#f2b84b',
-  weather: '#ff5c78',
-  'public-safety': '#ff8b4a',
-  'aviation-marine': '#a87cff',
-  'traffic-transit': '#ffd166',
-  music: '#54d17a',
-  other: '#9aa7b3',
+  all: DESIGN_COLORS['--cat-all'],
+  news: DESIGN_COLORS['--cat-news'],
+  talk: DESIGN_COLORS['--cat-talk'],
+  weather: DESIGN_COLORS['--cat-weather'],
+  'public-safety': DESIGN_COLORS['--cat-public-safety'],
+  'aviation-marine': DESIGN_COLORS['--cat-aviation-marine'],
+  'traffic-transit': DESIGN_COLORS['--cat-traffic-transit'],
+  music: DESIGN_COLORS['--cat-music'],
+  other: DESIGN_COLORS['--cat-other'],
 });
 
 export const RADIO_CLUSTER_LABELS = Object.freeze({

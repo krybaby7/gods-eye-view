@@ -18,6 +18,15 @@ export const DESIGN_COLORS = Object.freeze({
   '--live-sea': '#3fe0c8',
   '--live-space': '#bda4ff',
   '--ownership-documented': '#519bd4',
+  '--cat-all': '#b9fbff',
+  '--cat-news': '#44adff',
+  '--cat-talk': '#f2b84b',
+  '--cat-weather': '#ff5c78',
+  '--cat-public-safety': '#ff8b4a',
+  '--cat-aviation-marine': '#a87cff',
+  '--cat-traffic-transit': '#ffd166',
+  '--cat-music': '#54d17a',
+  '--cat-other': '#9aa7b3',
 });
 
 function rgb(hex) {

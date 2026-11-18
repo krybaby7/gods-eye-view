@@ -1,3 +1,4 @@
+import { ancestorsOf, customProperties, resolveVars, rules, winners } from './testSupport/cssCascade.mjs';
 import { readRealtimeSource } from './testSupport/readRealtimeSource.mjs';
 import { GEV_REALTIME_TOOLS } from '../server/providers/openai/tools.js';
 import { readShellSource } from './testSupport/readShellSource.mjs';
@@ -241,7 +242,12 @@ test('Radio volume and mission speed share the Sharpen slider visual language', 
   assert.match(css, /\.gev-quantitative-slider::-webkit-slider-thumb\s*\{[\s\S]*?width: 10px;[\s\S]*?height: 10px;[\s\S]*?border-radius: 50%;[\s\S]*?background: var\(--accent\);/);
   assert.match(css, /\.gev-quantitative-slider:focus-visible\s*\{[\s\S]*?outline: 1px solid/);
   assert.match(css, /\.gev-quantitative-slider:disabled\s*\{[\s\S]*?opacity: 0\.42;[\s\S]*?cursor: not-allowed;/);
-  assert.match(css, /\.gev-slider-value\s*\{[\s\S]*?color: var\(--accent\);[\s\S]*?font-size: 9px;/);
+  const allRules = rules(css);
+  const vars = customProperties(allRules);
+  for (const id of ['context-radio-mini-volume-value', 'radio-volume-value', 'sdr-volume-value']) {
+    const figure = winners(ancestorsOf(html, id).at(-1), allRules, { font: ['font-size'], 'font-size': ['font-size'] });
+    assert.match(resolveVars(figure['font-size'].decl.value, vars), /12px\/18px .*monospace$/, id);
+  }
   assert.doesNotMatch(css, /#space-mission-panel \[data-mission-replay-speed\]::-webkit-slider-thumb/);
 });
 
@@ -266,12 +272,12 @@ test('Radio is nested inside Context with separate disclosure and power controls
   assert.match(html, /id="cockpit-radio-(?:prev|play|next)-btn"/);
   assert.match(html, /id="cockpit-radio-volume"/);
   assert.match(html, /id="radio-tuner"[^>]*hidden/);
-  assert.match(html, /id="radio-tuner-band-label">DIRECTORY BAND/);
+  assert.match(html, /id="radio-tuner-band-label">Directory band/);
   assert.match(html, /id="radio-tuner-slider"[^>]*type="range"/);
   assert.match(html, /id="radio-tuner-needle"[^>]*aria-hidden="true"/);
-  assert.match(html, /SNAPS TO AVAILABLE STATIONS/);
+  assert.match(html, /Snaps to available stations/);
   assert.match(html, /class="radio-tuner-scale" aria-hidden="true"><\/div>/);
-  assert.match(html, /DIRECTORY: RADIO BROWSER/);
+  assert.match(html, /Directory by Radio Browser/);
   assert.match(html, /Audio connects directly to the broadcaster/);
   assert.doesNotMatch(html, /radio-(?:favicon|visualizer|spectrum)/i);
   assert.match(css, /#radio-tuner-slider::-(?:webkit-slider-thumb|moz-range-thumb)/);

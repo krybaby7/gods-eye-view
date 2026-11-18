@@ -20,7 +20,7 @@
   {
     "path": "src/designTokens.js",
     "kind": "palette",
-    "count": 18,
+    "count": 27,
     "reason": "Shared canvas palette; CSS parity is checked by designTokensParity.test.mjs."
   },
   {
@@ -404,14 +404,34 @@
     "count": 4
   },
   {
+    "path": "src/ui/styles/kit.css",
+    "kind": "color",
+    "count": 11
+  },
+  {
+    "path": "src/ui/styles/kit.css",
+    "kind": "font",
+    "count": 4
+  },
+  {
+    "path": "src/ui/styles/kit.css",
+    "kind": "radius",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/kit.css",
+    "kind": "shadow",
+    "count": 1
+  },
+  {
     "path": "src/ui/styles/layers.css",
     "kind": "backdrop",
-    "count": 6
+    "count": 4
   },
   {
     "path": "src/ui/styles/layers.css",
     "kind": "color",
-    "count": 164
+    "count": 138
   },
   {
     "path": "src/ui/styles/layers.css",
@@ -421,17 +441,17 @@
   {
     "path": "src/ui/styles/layers.css",
     "kind": "font",
-    "count": 38
+    "count": 32
   },
   {
     "path": "src/ui/styles/layers.css",
     "kind": "radius",
-    "count": 18
+    "count": 14
   },
   {
     "path": "src/ui/styles/layers.css",
     "kind": "shadow",
-    "count": 17
+    "count": 15
   },
   {
     "path": "src/ui/styles/location.css",
@@ -480,23 +500,8 @@
   },
   {
     "path": "src/ui/styles/radio.css",
-    "kind": "color",
-    "count": 82
-  },
-  {
-    "path": "src/ui/styles/radio.css",
     "kind": "font",
-    "count": 24
-  },
-  {
-    "path": "src/ui/styles/radio.css",
-    "kind": "radius",
-    "count": 12
-  },
-  {
-    "path": "src/ui/styles/radio.css",
-    "kind": "shadow",
-    "count": 7
+    "count": 2
   },
   {
     "path": "src/ui/styles/responsive.css",

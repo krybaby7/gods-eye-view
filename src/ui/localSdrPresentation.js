@@ -50,6 +50,8 @@ function statusText(state) {
 export function localSdrCardView(state) {
   const transitional =
     state.status === 'connecting' || state.status === 'tuning';
+  const status = state.status || 'idle';
+  const statusLabel = status[0].toUpperCase() + status.slice(1);
   const fmActive = state.mode === 'fm';
   const adsbActive = state.mode === 'adsb';
   const fmInteractive =
@@ -57,15 +59,15 @@ export function localSdrCardView(state) {
   return {
     connectionLabel: state.connected
       ? adsbActive
-        ? `${state.aircraftHeard || 0} HEARD`
-        : 'STREAMING'
-      : String(state.status || 'idle').toUpperCase(),
+        ? `${state.aircraftHeard || 0} heard`
+        : 'Streaming'
+      : statusLabel,
     connectionActive: Boolean(state.connected),
     connectLabel: transitional
-      ? String(state.status).toUpperCase()
+      ? statusLabel
       : state.connected
-        ? 'DISCONNECT'
-        : 'CONNECT',
+        ? 'Disconnect'
+        : 'Connect',
     connectDisabled: transitional || !state.webUsbSupported,
     connectPressed: Boolean(state.connected),
     fmActive,
@@ -73,10 +75,10 @@ export function localSdrCardView(state) {
     modeDisabled: transitional,
     locateLabel:
       state.locationStatus === 'requesting'
-        ? 'LOCATING…'
+        ? 'Locating…'
         : state.locationStatus === 'ready'
-          ? 'LOCATED'
-          : 'LOCATE',
+          ? 'Located'
+          : 'Locate',
     locateDisabled: state.locationStatus === 'requesting',
     locateActive: state.locationStatus === 'ready',
     changeDeviceDisabled: transitional || !state.webUsbSupported,
