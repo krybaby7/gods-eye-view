@@ -409,7 +409,8 @@ body.cockpit-mode #data-panel.layers-menu {
     --cockpit-instrument-bottom: calc(var(--cockpit-switcher-bottom) + 42px);
     --cockpit-instrument-height: 120px;
     --cockpit-menu-top: calc(
-      var(--cockpit-compact-utility-top) + 42px + var(--space-2)
+      var(--cockpit-compact-utility-top) +
+        var(--cockpit-compact-utility-height) + var(--space-2)
     );
   }
 }

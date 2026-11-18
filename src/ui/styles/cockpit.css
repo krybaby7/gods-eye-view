@@ -1566,6 +1566,7 @@ body.cockpit-mode #intel-hud .hud-status {
 @media (max-width: 760px) {
   body.cockpit-mode {
     --cockpit-compact-utility-top: 126px;
+    --cockpit-compact-utility-height: 52px;
     --cockpit-credit-bottom: max(var(--space-2), env(safe-area-inset-bottom));
     --cockpit-credit-height: max(28px, var(--frame-credits-height, 0px));
     --cockpit-switcher-bottom: calc(
@@ -1625,9 +1626,12 @@ body.cockpit-mode #intel-hud .hud-status {
   body.cockpit-mode .cockpit-utility-controls {
     flex-direction: row;
   }
-  body.cockpit-mode .cockpit-utility-launcher {
+  body.cockpit-mode
+    .cockpit-utility-control:not(.is-expanded)
+    .cockpit-utility-launcher {
     width: min(150px, calc((100vw - 31px) / 2));
-    min-height: 42px;
+    height: var(--cockpit-compact-utility-height);
+    min-height: var(--cockpit-compact-utility-height);
   }
   body.cockpit-mode .cockpit-utility-control.is-expanded {
     position: fixed;
