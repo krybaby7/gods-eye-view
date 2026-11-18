@@ -373,7 +373,8 @@ export async function initKeySetup({
     globalThis.requestAnimationFrame?.(() => {
       if (!open) return;
       root.classList.add('visible');
-      root.querySelector('input')?.focus?.({ preventScroll: true });
+      const initialFocus = root.querySelector('input') ?? closeButton;
+      initialFocus?.focus({ preventScroll: true });
     });
   };
 
