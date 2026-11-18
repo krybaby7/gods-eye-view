@@ -202,7 +202,14 @@ export async function captureRadio({
         wait,
         stations.length,
       );
-      await page.click('#context-radio-mini-next-btn');
+      const selected = await page.evaluate(
+        (id) =>
+          window.__godsEyeView.dataManager.layers
+            .get('radio')
+            .module.selectRadioStation(id),
+        stations[0].id,
+      );
+      if (!selected) throw new Error('Could not select a fixture station');
       await page.waitForFunction(
         () =>
           window.__godsEyeView.dataManager.layers
