@@ -95,7 +95,13 @@ export async function installFixtures(
   origin,
   world,
   report,
-  { strict = false, firePerimeter = null, weather = null, cctv = null } = {},
+  {
+    strict = false,
+    firePerimeter = null,
+    weather = null,
+    cctv = null,
+    keys = null,
+  } = {},
 ) {
   const imagery = await fs.readFile(
     new URL(
@@ -183,6 +189,8 @@ export async function installFixtures(
           );
           if (detail) await reply(detail);
           else await reply({ error: 'Unknown World Board detail lens.' }, 404);
+        } else if (keys && request.method === 'GET' && keys.has(url.pathname)) {
+          await reply(keys.get(url.pathname));
         } else if (
           cctv &&
           request.method === 'GET' &&

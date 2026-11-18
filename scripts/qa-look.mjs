@@ -31,6 +31,11 @@ import {
 } from './qa-look-weather.fixtures.mjs';
 import { captureWeather } from './qa-look-weather.mjs';
 import { captureCctv, cctvFixture } from './qa-look-cctv.mjs';
+import {
+  captureKeys,
+  keylessFixtures,
+  verifyKeysQuery,
+} from './qa-look-keys.mjs';
 
 const options = parseLookArgs(process.argv.slice(2));
 const out =
@@ -97,6 +102,7 @@ try {
   }
   await installFixtures(page, options.url.origin, world, report, {
     strict: true,
+    keys: options.panel === 'keys' ? keylessFixtures : null,
     cctv: options.panel === 'cctv' ? cctvFixture(options.state) : null,
     weather:
       options.panel === 'weather'
@@ -183,6 +189,7 @@ try {
       document.querySelector('#world-turn')?.textContent === 'Turn 1'
     );
   }, wait);
+  if (options.panel === 'keys') await verifyKeysQuery(page, wait);
   stage = 'country-pick';
   await markFrameStage(stage);
   const pick = await page.waitForFunction(() => {
@@ -276,6 +283,22 @@ try {
     [1440, 900],
     [1920, 1080],
   ];
+  if (options.panel === 'keys') {
+    try {
+      await captureKeys({
+        page,
+        options,
+        out,
+        report,
+        markFrameStage,
+        viewports,
+        wait,
+      });
+    } catch (error) {
+      const { width, height } = page.viewport();
+      await failure(width, height, 'keys', 'journey', error);
+    }
+  }
   if (options.panel === 'cctv') {
     try {
       await captureCctv({
@@ -308,7 +331,7 @@ try {
     }
   }
   for (const [width, height] of viewports) {
-    if (options.panel === 'weather' || options.panel === 'cctv') break;
+    if (['weather', 'cctv', 'keys'].includes(options.panel)) break;
     await markFrameStage(`${width}x${height} viewport`);
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     if (options.panel === 'layers') {

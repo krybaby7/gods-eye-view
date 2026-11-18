@@ -637,3 +637,18 @@ test('cctv capture accepts both fixture states', () => {
     assert.equal(options.state, state);
   }
 });
+
+test('keys looks default to the keyless setup query', () => {
+  const options = parseLookArgs([
+    '--url',
+    'http://localhost:5173',
+    '--label',
+    'after',
+    '--panel',
+    'keys',
+    '--query',
+    'setup=1',
+  ]);
+  assert.equal(options.state, 'empty');
+  assert.equal(options.url.searchParams.get('setup'), '1');
+});
