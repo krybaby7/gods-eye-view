@@ -37,10 +37,17 @@ export function parseLookArgs(args) {
   if (!['before', 'after'].includes(label))
     throw new Error('Expected --label before|after');
   const panel = values.get('--panel');
-  if (
-    !['legend', 'layers', 'weather', 'cctv', 'keys', 'imagery'].includes(panel)
-  )
-    throw new Error('Expected --panel legend|layers|weather|cctv|keys|imagery');
+  const panels = [
+    'legend',
+    'layers',
+    'weather',
+    'cctv',
+    'keys',
+    'imagery',
+    'radio',
+  ];
+  if (!panels.includes(panel))
+    throw new Error(`Expected --panel ${panels.join('|')}`);
   const state =
     values.get('--state') ?? (panel === 'keys' ? 'empty' : 'filled');
   if (!['empty', 'filled'].includes(state))

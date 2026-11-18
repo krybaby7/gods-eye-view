@@ -36,13 +36,20 @@ import {
   keylessFixtures,
   verifyKeysQuery,
 } from './qa-look-keys.mjs';
-
 import {
   captureImagery,
   createImageryLookFixture,
 } from './qa-look-imagery.mjs';
+import { captureRadio, radioFixture } from './qa-look-radio.mjs';
 
 const options = parseLookArgs(process.argv.slice(2));
+const panelCapture = {
+  keys: captureKeys,
+  cctv: captureCctv,
+  weather: captureWeather,
+  imagery: captureImagery,
+  radio: captureRadio,
+}[options.panel];
 const out =
   process.env.GEV_LOOK_OUT && !process.argv.includes('--out')
     ? path.resolve(process.env.GEV_LOOK_OUT)
@@ -113,6 +120,7 @@ try {
         ? await createImageryLookFixture()
         : null,
     cctv: options.panel === 'cctv' ? cctvFixture(options.state) : null,
+    radio: options.panel === 'radio' ? radioFixture(options.state) : null,
     weather:
       options.panel === 'weather'
         ? createWeatherLookFixture(options.state)
@@ -292,40 +300,9 @@ try {
     [1440, 900],
     [1920, 1080],
   ];
-  if (options.panel === 'keys') {
+  if (panelCapture) {
     try {
-      await captureKeys({
-        page,
-        options,
-        out,
-        report,
-        markFrameStage,
-        viewports,
-        wait,
-      });
-    } catch (error) {
-      const { width, height } = page.viewport();
-      await failure(width, height, 'keys', 'journey', error);
-    }
-  }
-  if (options.panel === 'cctv') {
-    try {
-      await captureCctv({
-        page,
-        options,
-        out,
-        report,
-        markFrameStage,
-        viewports,
-      });
-    } catch (error) {
-      const { width, height } = page.viewport();
-      await failure(width, height, 'cctv', 'journey', error);
-    }
-  }
-  if (options.panel === 'weather') {
-    try {
-      await captureWeather({
+      await panelCapture({
         page,
         options,
         out,
@@ -333,29 +310,14 @@ try {
         proxy,
         markFrameStage,
         viewports,
+        wait,
       });
     } catch (error) {
       const { width, height } = page.viewport();
-      await failure(width, height, 'weather', 'journey', error);
+      await failure(width, height, options.panel, 'journey', error);
     }
   }
-  if (options.panel === 'imagery') {
-    try {
-      await captureImagery({
-        page,
-        options,
-        out,
-        report,
-        markFrameStage,
-        viewports,
-      });
-    } catch (error) {
-      const { width, height } = page.viewport();
-      await failure(width, height, 'imagery', 'journey', error);
-    }
-  }
-  for (const [width, height] of viewports) {
-    if (['weather', 'cctv', 'keys', 'imagery'].includes(options.panel)) break;
+  for (const [width, height] of panelCapture ? [] : viewports) {
     await markFrameStage(`${width}x${height} viewport`);
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     if (options.panel === 'layers') {

@@ -621,20 +621,22 @@ test('rail restoration rejects missing or changed visibility and disclosure stat
     );
 });
 
-test('cctv capture accepts both fixture states', () => {
-  for (const state of ['empty', 'filled']) {
-    const options = parseLookArgs([
-      '--url',
-      'http://localhost:5317',
-      '--label',
-      'before',
-      '--panel',
-      'cctv',
-      '--state',
-      state,
-    ]);
-    assert.equal(options.panel, 'cctv');
-    assert.equal(options.state, state);
+test('Cameras and Radio captures accept both fixture states', () => {
+  for (const panel of ['cctv', 'radio']) {
+    for (const state of ['empty', 'filled']) {
+      const options = parseLookArgs([
+        '--url',
+        'http://localhost:5317',
+        '--label',
+        'before',
+        '--panel',
+        panel,
+        '--state',
+        state,
+      ]);
+      assert.equal(options.panel, panel);
+      assert.equal(options.state, state);
+    }
   }
 });
 

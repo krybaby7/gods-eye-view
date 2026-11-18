@@ -102,6 +102,7 @@ export async function installFixtures(
     cctv = null,
     keys = null,
     imageryFixture = null,
+    radio = null,
   } = {},
 ) {
   const imagery = await fs.readFile(
@@ -193,6 +194,14 @@ export async function installFixtures(
           else await reply({ error: 'Unknown World Board detail lens.' }, 404);
         } else if (keys && request.method === 'GET' && keys.has(url.pathname)) {
           await reply(keys.get(url.pathname));
+        } else if (
+          radio &&
+          request.method === 'GET' &&
+          (weatherReply = await radio(url))
+        ) {
+          report.transport.radioReplies =
+            (report.transport.radioReplies ?? 0) + 1;
+          await reply(weatherReply);
         } else if (
           cctv &&
           request.method === 'GET' &&
