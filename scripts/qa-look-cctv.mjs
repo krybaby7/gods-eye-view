@@ -212,6 +212,7 @@ function measure() {
       frameBox: box('frame', frame),
       centerTarget: center?.id || center?.tagName,
       statusVisible: Boolean(visible(status) && !status.hidden),
+      statusText: status?.textContent?.trim(),
       complete: document.querySelector('#cctv-frame').complete,
       naturalWidth: document.querySelector('#cctv-frame').naturalWidth,
       src: document.querySelector('#cctv-frame').getAttribute('src'),
@@ -230,13 +231,50 @@ export async function captureCctv({
   const wait = { timeout: 30000, polling: 125 };
   const panel = '#cctv-panel';
   await page.waitForSelector(panel, { ...wait, visible: true });
-  if (await page.$(`${panel}.collapsed`))
-    await page.click('[data-collapse-target="cctv-panel"]');
-  await page.focus('[data-collapse-target="cctv-panel"]');
-  await page.keyboard.press('Enter');
-  await page.waitForSelector(`${panel}.collapsed`, wait);
-  await page.keyboard.press('Enter');
-  await page.waitForSelector(`${panel}:not(.collapsed)`, wait);
+  const disclosure = '[data-collapse-target="cctv-panel"]';
+  async function disclosureState() {
+    return page.$eval(disclosure, (n) => {
+      const r = n.getBoundingClientRect();
+      return {
+        active:
+          document.activeElement?.id ||
+          document.activeElement?.outerHTML?.slice(0, 120),
+        focused: n === document.activeElement,
+        expanded: n.getAttribute('aria-expanded'),
+        rect: { left: r.left, top: r.top, right: r.right, bottom: r.bottom },
+        hit: document
+          .elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2)
+          ?.outerHTML?.slice(0, 120),
+      };
+    });
+  }
+  try {
+    if (await page.$(`${panel}.collapsed`)) {
+      await page.click(disclosure);
+      await page.waitForSelector(`${panel}:not(.collapsed)`, wait);
+    }
+    await page.focus(disclosure);
+    if (!(await disclosureState()).focused)
+      throw new Error('Could not focus disclosure before collapse');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector(`${panel}.collapsed`, wait);
+    const collapsedFocus = await disclosureState();
+    if (!collapsedFocus.focused) {
+      report.errors.push(
+        `Disclosure lost focus after collapse: ${JSON.stringify(collapsedFocus)}`,
+      );
+      await page.focus(disclosure);
+    }
+    if (!(await disclosureState()).focused)
+      throw new Error('Could not focus disclosure before reopen');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector(`${panel}:not(.collapsed)`, wait);
+  } catch (error) {
+    throw new Error(
+      `Disclosure interaction failed: ${JSON.stringify(await disclosureState())}`,
+      { cause: error },
+    );
+  }
   const focus = await page.$eval(
     '[data-collapse-target="cctv-panel"]',
     (n) => ({
@@ -302,14 +340,17 @@ export async function captureCctv({
           requestAnimationFrame(() => requestAnimationFrame(r)),
         ),
     );
-    let data = await page.evaluate(measure);
-    for (let i = 0; i < 2; i++) {
-      await page.evaluate(() => new Promise((r) => requestAnimationFrame(r)));
-      const next = await page.evaluate(measure);
-      if (JSON.stringify(data.target) !== JSON.stringify(next.target))
-        throw new Error('Cameras did not settle before capture');
-      data = next;
+    let data;
+    let previous;
+    let equal = 0;
+    for (let i = 0; i < 60 && equal < 3; i++) {
+      data = await page.evaluate(measure);
+      const geometry = JSON.stringify(data.target);
+      equal = geometry === previous ? equal + 1 : 1;
+      previous = geometry;
+      if (equal < 3) await new Promise((resolve) => setTimeout(resolve, 125));
     }
+    if (equal < 3) throw new Error('Cameras did not settle before capture');
     const issues = requiredContextFailures(data);
     const legacy = [];
     if (data.frameState.today !== 'open' || data.frameState.sheet !== 'open')
@@ -327,8 +368,22 @@ export async function captureCctv({
     )
       legacy.push('Floating panel outside globe');
     if (data.collapsed) issues.push('Cameras unexpectedly collapsed');
-    if (enabledEmpty && !/no camera|unavailable|no source/i.test(data.text))
-      issues.push('Enabled empty catalog lacks an honest empty state');
+    if (
+      enabledEmpty &&
+      options.label === 'after' &&
+      (!data.image.statusVisible ||
+        !/^(No cameras available|Camera catalog unavailable)$/i.test(
+          data.image.statusText ?? '',
+        ))
+    )
+      issues.push(
+        'Enabled empty catalog preview lacks an honest visible status',
+      );
+    if (
+      enabledEmpty &&
+      !(report.transport.cctvReplies?.['/api/cctv/sources'] > 0)
+    )
+      issues.push('Empty catalog fixture did not answer');
     const smallText = data.typography
       .filter((t) => t.size < 12)
       .map((t) => t.text);
@@ -493,6 +548,15 @@ export async function captureCctv({
       () => window.__godsEyeView.dataManager.isEnabled('cctv'),
       wait,
     );
+    if (options.label === 'after')
+      await page.waitForFunction(
+        () =>
+          /^(No cameras available|Camera catalog unavailable)$/i.test(
+            document.querySelector('#cctv-frame-status')?.textContent?.trim() ??
+              '',
+          ),
+        wait,
+      );
     for (const [width, height] of viewports) {
       await page.setViewport({ width, height, deviceScaleFactor: 1 });
       await capture(width, height, 'enabled-empty', true);
