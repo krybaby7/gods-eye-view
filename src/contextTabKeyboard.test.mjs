@@ -18,6 +18,23 @@ const html = expandApplicationHtml(readFileSync(new URL('../index.html', import.
 const ui = readShellSource();
 const css = readStylesheet(new URL('../style.css', import.meta.url));
 
+test('Context header and title resolve before the embedded Radio chrome', () => {
+  const nodes = htmlNodes(html);
+  const inContext = (node) => {
+    for (let parent = node.parent; parent; parent = parent.parent)
+      if (parent.id === 'global-context-panel') return true;
+    return false;
+  };
+  const contextNodes = nodes.filter(inContext);
+  const header = contextNodes.find((node) => node.classes.has('panel-header'));
+  const title = contextNodes.find((node) => node.classes.has('panel-title'));
+  const radioDock = contextNodes.find((node) => node.id === 'context-radio-dock');
+  assert.equal(header?.tag, 'header');
+  assert.equal(title?.id, 'global-context-panel-title');
+  assert.equal(title.parent, header);
+  assert.equal(radioDock.parent, header);
+});
+
 test('Contacts and Space Missions both participate in the ordinary Tab sequence', () => {
   for (const id of ['global-context-flights-btn', 'global-context-missions-btn']) {
     const button = html.match(new RegExp(`<button id="${id}"[\\s\\S]*?</button>`));
