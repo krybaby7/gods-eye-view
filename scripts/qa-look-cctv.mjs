@@ -201,7 +201,25 @@ function measure() {
     ]
       .filter(visible)
       .map((n) => box(n.id, n)),
+    cameraState: (() => {
+      const state = window.__godsEyeView.dataManager.layers
+        .get('cctv')
+        .module.getUIState();
+      return {
+        enabled: state.enabled,
+        activeCameraId: state.activeCameraId,
+        activeCamera: state.activeCamera && {
+          id: state.activeCamera.id,
+          sourceKind: state.activeCamera.sourceKind,
+          provider: state.activeCamera.provider,
+        },
+        loading: state.loading,
+      };
+    })(),
     source: document.querySelector('#cctv-source-badge')?.textContent,
+    sourceState:
+      document.querySelector('#cctv-source-badge')?.dataset.frameState,
+    frameError: image.dataset.error,
     frameTime: document.querySelector('#cctv-frame-time')?.textContent,
     frameDateTime: document
       .querySelector('#cctv-frame-time time')
@@ -332,7 +350,7 @@ export async function captureCctv({
       );
     }
   }
-  async function capture(width, height, view, enabledEmpty = false) {
+  async function capture(width, height, view, seedFallback = false) {
     await markFrameStage(`${width}x${height} cctv ${view}`);
     await page.evaluate(
       () =>
@@ -368,22 +386,31 @@ export async function captureCctv({
     )
       legacy.push('Floating panel outside globe');
     if (data.collapsed) issues.push('Cameras unexpectedly collapsed');
-    if (
-      enabledEmpty &&
-      options.label === 'after' &&
-      (!data.image.statusVisible ||
-        !/^(No cameras available|Camera catalog unavailable)$/i.test(
-          data.image.statusText ?? '',
-        ))
-    )
-      issues.push(
-        'Enabled empty catalog preview lacks an honest visible status',
-      );
-    if (
-      enabledEmpty &&
-      !(report.transport.cctvReplies?.['/api/cctv/sources'] > 0)
-    )
-      issues.push('Empty catalog fixture did not answer');
+    if (seedFallback) {
+      if (
+        !data.cameraState.enabled ||
+        !data.cameraState.activeCameraId ||
+        data.cameraState.activeCamera?.sourceKind !== 'seed'
+      )
+        issues.push('Empty source response did not select a seed camera');
+      if (!(report.transport.cctvReplies?.['/api/cctv/sources'] > 0))
+        issues.push('Empty source fixture did not answer');
+      const failedPath = `/api/cctv/frame/${encodeURIComponent(data.cameraState.activeCameraId)}`;
+      if (!(report.transport.suppressedApis ?? []).includes(failedPath))
+        issues.push(
+          'Seed frame did not receive the local unavailable response',
+        );
+      if (data.image.naturalWidth || data.frameDateTime)
+        issues.push('Unavailable seed frame reported image or loaded time');
+      if (
+        options.label === 'after' &&
+        (!data.image.statusVisible ||
+          data.image.statusText !== 'Frame unavailable')
+      )
+        issues.push('Seed frame lacks visible unavailable status');
+      if (options.label === 'before' && data.sourceState !== 'error')
+        issues.push('Legacy unavailable badge is missing');
+    }
     const smallText = data.typography
       .filter((t) => t.size < 12)
       .map((t) => t.text);
@@ -473,7 +500,7 @@ export async function captureCctv({
     if (JSON.stringify(data.target) !== JSON.stringify(after.target))
       issues.push('Panel moved during capture');
     const evidence = {
-      enabledEmpty,
+      seedFallback,
       width,
       height,
       panel: 'cctv',
@@ -548,18 +575,19 @@ export async function captureCctv({
       () => window.__godsEyeView.dataManager.isEnabled('cctv'),
       wait,
     );
-    if (options.label === 'after')
-      await page.waitForFunction(
-        () =>
-          /^(No cameras available|Camera catalog unavailable)$/i.test(
-            document.querySelector('#cctv-frame-status')?.textContent?.trim() ??
-              '',
-          ),
-        wait,
+    await page.waitForFunction(() => {
+      const state = window.__godsEyeView.dataManager.layers
+        .get('cctv')
+        .module.getUIState();
+      return (
+        state.activeCameraId &&
+        state.activeCamera?.sourceKind === 'seed' &&
+        document.querySelector('#cctv-frame')?.dataset.error === 'true'
       );
+    }, wait);
     for (const [width, height] of viewports) {
       await page.setViewport({ width, height, deviceScaleFactor: 1 });
-      await capture(width, height, 'enabled-empty', true);
+      await capture(width, height, 'seed-unavailable', true);
     }
   }
 }
