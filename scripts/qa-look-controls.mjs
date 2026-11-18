@@ -131,13 +131,11 @@ async function showStatusFixture(page) {
       { active: true, loaded: 2, total: 5 },
       true,
     );
-    feedback._updateTrafficSyncChip();
-    // The real app's idle traffic poll still runs in this fixture browser.
-    // Keep the sample visible while taking the two sync-chip screenshots.
-    const trafficTimer = setInterval(
-      () => feedback._updateTrafficSyncChip(),
-      50,
-    );
+    // This disposable page shares the live app's traffic chip. Pause its
+    // ticker writes while presenting the sample through the real renderer.
+    const renderTraffic = ShellFeedback.prototype._updateTrafficSyncChip;
+    renderTraffic.call(feedback);
+    ShellFeedback.prototype._updateTrafficSyncChip = () => {};
     let toastTimeout;
     window.lookQa.statusFixture = {
       toast() {
@@ -160,7 +158,10 @@ async function showStatusFixture(page) {
         toastTimeout = null;
       },
       stop() {
-        clearInterval(trafficTimer);
+        ShellFeedback.prototype._updateTrafficSyncChip = renderTraffic;
+        document
+          .getElementById('traffic-sync-chip')
+          .classList.remove('visible');
         feedback.destroy();
         camera._cctvSyncChip.classList.remove('visible');
       },
