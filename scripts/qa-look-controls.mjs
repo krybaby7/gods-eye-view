@@ -96,8 +96,27 @@ async function showStatusFixture(page) {
       () => feedback._updateTrafficSyncChip(),
       50,
     );
+    let toastTimeout;
     window.lookQa.statusFixture = {
-      toast: () => feedback._showToast('Shared controls fixture notification'),
+      toast() {
+        // Capture the timeout from this synchronous renderer call only.
+        // Slow screenshots cannot consume the toast's display interval.
+        const setTimeout = window.setTimeout;
+        try {
+          window.setTimeout = (callback) => {
+            toastTimeout = callback;
+            return null;
+          };
+          feedback._showToast('Shared controls fixture notification');
+        } finally {
+          window.setTimeout = setTimeout;
+        }
+      },
+      expireToast() {
+        if (!toastTimeout) throw new Error('Toast did not schedule dismissal');
+        toastTimeout();
+        toastTimeout = null;
+      },
       stop() {
         clearInterval(trafficTimer);
         feedback.destroy();
@@ -282,12 +301,18 @@ export async function captureControls({
         ? []
         : ['camera and traffic sync chips overlap or fixture count is missing'],
     );
+    await markFrameStage(`${width}x${height} toast fixture`);
     await page.evaluate(() => window.lookQa.statusFixture.toast());
+    await page.waitForFunction(
+      () => getComputedStyle(document.querySelector('#toast')).opacity === '1',
+      wait,
+    );
     await capture('toast', '#toast.visible', (data) =>
       data.opacity === 1 && data.text === 'Shared controls fixture notification'
         ? []
         : ['toast text is missing or still transparent'],
     );
+    await page.evaluate(() => window.lookQa.statusFixture.expireToast());
     await page.waitForSelector('#toast:not(.visible)', wait);
     await page.evaluate(() => window.lookQa.statusFixture.stop());
 
