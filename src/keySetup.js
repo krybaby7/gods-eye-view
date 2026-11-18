@@ -5,7 +5,7 @@ import {
 } from './voice/cloudVoiceAuth.js';
 
 /**
- * The POWER UP surface — paste a key, get a power.
+ * The Data sources and keys dialog.
  *
  * A small chip sits bottom-right whenever the app is running under the dev
  * server with keys still missing. It opens a dialog rendered ENTIRELY from
@@ -24,8 +24,8 @@ import {
 export function keySetupChipLabel(status) {
   const missing = Math.max(0, (status?.total || 0) - (status?.setCount || 0));
   return missing > 0
-    ? `POWER UP · ${missing} ${missing === 1 ? 'KEY' : 'KEYS'} WAITING`
-    : 'POWERED UP';
+    ? `${missing} ${missing === 1 ? 'key' : 'keys'} missing`
+    : 'Data sources and keys';
 }
 
 /**
@@ -116,8 +116,10 @@ function updateCloudVoiceAuthControl(auth, busy = false) {
   const state = auth.querySelector('.key-setup-cloud-auth-state');
   const toggle = auth.querySelector('[data-cloud-voice-auth-toggle]');
   state.textContent =
-    mode === 'oauth' ? 'VOICE AUTH · CHATGPT OAUTH' : 'VOICE AUTH · API KEY';
-  toggle.textContent = mode === 'oauth' ? 'USE API KEY' : 'USE CHATGPT OAUTH';
+    mode === 'oauth'
+      ? 'Voice authentication · ChatGPT OAuth'
+      : 'Voice authentication · API key';
+  toggle.textContent = mode === 'oauth' ? 'Use API key' : 'Use ChatGPT OAuth';
   toggle.title =
     mode === 'oauth'
       ? 'Use OPENAI_API_KEY for the next cloud voice session'
@@ -129,7 +131,7 @@ function updateCloudVoiceAuthControl(auth, busy = false) {
 /** Build one key row. All content is our own registry text, set via textContent. */
 function buildRow(documentRef, key) {
   const row = documentRef.createElement('section');
-  row.className = 'key-setup-row';
+  row.className = 'key-setup-row kit-card';
   row.dataset.keyId = key.id;
   row.dataset.set = String(Boolean(key.set));
   if (key.managed) row.dataset.managed = key.managed;
@@ -152,7 +154,7 @@ function buildRow(documentRef, key) {
   head.append(led, title, tier);
   if (key.clientExposed) {
     const exposed = documentRef.createElement('span');
-    exposed.className = 'key-setup-exposed';
+    exposed.className = 'key-setup-exposed kit-chip';
     exposed.textContent = 'browser-side';
     exposed.title =
       'This key runs in the browser by design — restrict it at the provider (see SECURITY.md)';
@@ -162,7 +164,7 @@ function buildRow(documentRef, key) {
     // Externally supplied credentials (shell env, Keychain, a launcher) are
     // facts this panel reports, never values it rewrites or deletes.
     const badge = documentRef.createElement('span');
-    badge.className = 'key-setup-external';
+    badge.className = 'key-setup-external kit-chip';
     badge.textContent = 'configured externally';
     badge.title =
       'Supplied by your environment, Keychain, or launcher — change it where it was set';
@@ -173,7 +175,7 @@ function buildRow(documentRef, key) {
   get.href = key.getUrl;
   get.target = '_blank';
   get.rel = 'noopener noreferrer';
-  get.textContent = key.set ? 'MANAGE ↗' : 'GET KEY ↗';
+  get.textContent = key.set ? 'Manage ↗' : 'Get key ↗';
   head.append(get);
 
   const unlocks = documentRef.createElement('p');
@@ -201,9 +203,9 @@ function buildRow(documentRef, key) {
     if (key.managed === 'file') {
       const remove = documentRef.createElement('button');
       remove.type = 'button';
-      remove.className = 'key-setup-remove';
+      remove.className = 'key-setup-remove kit-btn quiet';
       remove.dataset.keySetupRemove = JSON.stringify(key.envVars);
-      remove.textContent = 'REMOVE';
+      remove.textContent = 'Remove';
       remove.title = `Remove ${key.title} from this app's saved keys`;
       fields.append(remove);
     }
@@ -216,7 +218,7 @@ function buildRow(documentRef, key) {
     state.className = 'key-setup-cloud-auth-state';
     const toggle = documentRef.createElement('button');
     toggle.type = 'button';
-    toggle.className = 'key-setup-cloud-auth-toggle';
+    toggle.className = 'key-setup-cloud-auth-toggle kit-btn quiet';
     toggle.dataset.cloudVoiceAuthToggle = 'true';
     auth.append(state, toggle);
     updateCloudVoiceAuthControl(auth);
@@ -288,10 +290,14 @@ export async function initKeySetup({
   const render = (nextStatus) => {
     if (disposed) return;
     status = nextStatus;
-    chipLabel.textContent = keySetupChipLabel(status);
-    chip.title = `Project keys: ${keySetupChipLabel(status)}`;
+    const label = keySetupChipLabel(status);
+    chipLabel.textContent = label;
+    chip.title =
+      status.setCount < status.total
+        ? `Data sources and keys (${label})`
+        : label;
     chip.setAttribute('aria-label', chip.title);
-    // Fully powered is the owner's clean screen: the chip retires. The dialog
+    // Once all keys are configured, the chip retires. The dialog
     // stays reachable this session (and via ?setup=1) to swap or verify keys.
     chip.hidden = status.setCount >= status.total;
     if (!rowsHost) return;
@@ -321,7 +327,7 @@ export async function initKeySetup({
         `Claude Code${defaultAgent === 'claude' ? ' · default' : ''} · ${label}`;
       section.hidden = false;
     } catch {
-      // Other Provider Settings remain available if the local CLI check fails.
+      // Other key settings remain available if the local CLI check fails.
     }
   };
 
@@ -341,7 +347,7 @@ export async function initKeySetup({
         label;
       section.hidden = false;
     } catch {
-      // Keep the other Provider Settings available.
+      // Keep the other key settings available.
     }
   };
 
@@ -548,7 +554,7 @@ export async function initKeySetup({
           if (lifetime.signal.aborted) return;
           if (!available) {
             say(
-              'ChatGPT sign-in timed out. Click USE CHATGPT OAUTH to try again.',
+              'ChatGPT sign-in timed out. Click Use ChatGPT OAuth to try again.',
             );
             return;
           }

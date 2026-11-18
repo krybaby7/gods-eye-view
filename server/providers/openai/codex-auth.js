@@ -101,7 +101,7 @@ export function readCodexOAuthAccessToken({
   }
   if (!Number.isFinite(expiresAtMs) || expiresAtMs <= nowMs + 60_000) {
     throw codexOAuthError(
-      'ChatGPT sign-in has expired. Re-authenticate in Provider Settings or run codex login and try again.',
+      'ChatGPT sign-in has expired. Re-authenticate in Data sources and keys or run codex login and try again.',
       'CODEX_OAUTH_REAUTH_REQUIRED',
     );
   }
@@ -312,7 +312,7 @@ export function createCodexOAuthLogin({
             finish(attempt, {
               code: 'CODEX_OAUTH_LOGIN_FAILED',
               error:
-                'ChatGPT sign-in did not complete. Try again in Provider Settings, or run codex login separately.',
+                'ChatGPT sign-in did not complete. Try again in Data sources and keys, or run codex login separately.',
             });
           } else if (!credentials().available) {
             finish(attempt, {
@@ -326,7 +326,7 @@ export function createCodexOAuthLogin({
           finish(attempt, {
             code: 'CODEX_OAUTH_LOGIN_FAILED',
             error:
-              'ChatGPT sign-in did not complete. Try again in Provider Settings.',
+              'ChatGPT sign-in did not complete. Try again in Data sources and keys.',
           }),
       );
       return { available: false, started: true, pending: true };

@@ -33,7 +33,7 @@ AIS vessels and configured local receiver feeds. The catalog combines these
 with supplied source availability and the current connected receiver snapshot,
 without enabling layers or acquiring feed data. Embedders can supply the same
 optional `sourceConfiguration` to application catalog construction; omitted
-metadata preserves existing behavior. Provider Settings restart/rebuild rules
+metadata preserves existing behavior. Data sources and keys restart/rebuild rules
 also apply when these configuration booleans change.
 Inherited native key flags do not gate caller-supplied FIRMS or vessel sources;
 those sources can report their own availability.
@@ -1057,11 +1057,11 @@ writes. This extraction does not change panel positions or layout defaults.
 ## Surface keyboard lifecycle
 
 `ui/surfaces` owns the capture-phase keyboard listener, Tab cycling and return
-focus shared by the first-run launcher and Provider Settings. Each caller
+focus shared by the first-run launcher and Data sources and keys. Each caller
 activates it while open and deactivates it on dismissal; destruction releases
 keyboard ownership without moving focus. Reopening captures the current opener.
 The launcher retains its hit-test/exclusive-surface arbitration and dismissal
-preferences. Provider Settings retains its existing visibility and save policy.
+preferences. Data sources and keys retains its existing visibility and save policy.
 Initial focus, transitions and DOM content remain with each screen. This
 component does not add modal semantics or make the map inert.
 
@@ -1148,7 +1148,7 @@ After `npm run build`, `npm run preview` serves the built app with the same data
 provider routes as development, including aircraft, satellites, terrain, traffic,
 FIRMS, GBFS, Overpass and CCTV/media. Unmatched `/api` requests return a JSON 404
 in both modes instead of the application HTML. Browser routes retain SPA fallback.
-Credential editing (`/api/setup/*` and Provider Settings) is development-only;
+Credential editing (`/api/setup/*` and Data sources and keys) is development-only;
 preview returns JSON 404 for those endpoints. Server credentials come from the
 local environment; browser keys are captured at build time. Rebuild after changing
 a browser key. Preview is for local build verification, not a production server.
@@ -1258,9 +1258,9 @@ See [component ownership and adoption](CODE-BOUNDARIES.md).
 Local Places nearby/text search and the CCTV Street View fallback prefer
 `GOOGLE_MAPS_SERVER_API_KEY`, falling back to `GOOGLE_MAPS_API_KEY` when the
 server key is blank or absent. Only the browser key is injected into client
-code. POWER UP presents one Google Maps entry for the browser key. The optional
+code. Data sources and keys presents one Google Maps entry for the browser key. The optional
 server key is configured manually in the same ignored root `.env`, or Pinokio's
-ignored `pinokio/ENVIRONMENT`; it is omitted from Provider Settings and its
+ignored `pinokio/ENVIRONMENT`; it is omitted from Data sources and keys and its
 missing-key count. Existing server keys and the single-key fallback remain
 supported. `.env.example` and `pinokio/_ENVIRONMENT` document both entries.
 The Street View headings tool uses the same server-first selection after
@@ -1459,7 +1459,7 @@ fetching, trailing-24-hour filtering and partial-success caching are unchanged.
   coordinates and centers retain precedence; invalid bounds are dropped.
 - Visual-style buttons describe their simulated effects on hover. Unavailable
   map-source tooltips and toasts share provider guidance: missing credentials
-  point to Provider Settings, while a configured Google 3D route that fails
+  point to Data sources and keys, while a configured Google 3D route that fails
   points to restrictions, quota, or connectivity. These hints do not expose keys.
 
 > **2026-08-23 — first-run mission launcher** (`src/firstRunExperience.js`,
@@ -1480,7 +1480,7 @@ fetching, trailing-24-hour filtering and partial-success caching are unchanged.
 > Keyless, the honest surface is the **layer row**, which reads
 > `UNAVAILABLE · NASA FIRMS · LIVE · KEY REQUIRED`. Its control also names the
 > key: hovering it, and its accessible name, read
-> `Needs FIRMS_MAP_KEY — add it in Provider Settings`. A layer declares which
+> `Needs FIRMS_MAP_KEY — add it in Data sources and keys`. A layer declares which
 > key it needs as a key-registry id and reports `stats.keyRequired` while that
 > key is absent; the panel builds the text from the pair, and produces none for
 > a layer that needs no key, already holds one, or names a key the registry does
@@ -4160,7 +4160,7 @@ and unreachable upstream (502/504) separately from road geometry.
 
 `GEV MIC` button (bottom UI) starts an OpenAI Realtime session over WebRTC:
 
-- **Token flow**: browser fetches a short-lived client secret from `/api/realtime/token`; the Vite middleware uses `OPENAI_API_KEY` by default, or the signed-in local ChatGPT/Codex OAuth access token when OAuth was explicitly selected in Provider Settings, and posts the full session config (instructions, tool schemas, VAD, truncation) to `api.openai.com/v1/realtime/client_secrets`. Both long-lived credentials stay server-side; OAuth minting is loopback-only. SDP exchange goes directly to `api.openai.com/v1/realtime/calls` with the ephemeral token.
+- **Token flow**: browser fetches a short-lived client secret from `/api/realtime/token`; the Vite middleware uses `OPENAI_API_KEY` by default, or the signed-in local ChatGPT/Codex OAuth access token when OAuth was explicitly selected in Data sources and keys, and posts the full session config (instructions, tool schemas, VAD, truncation) to `api.openai.com/v1/realtime/client_secrets`. Both long-lived credentials stay server-side; OAuth minting is loopback-only. SDP exchange goes directly to `api.openai.com/v1/realtime/calls` with the ephemeral token.
 - **Session defaults** (env-tunable): model `gpt-realtime-2` (or `gpt-realtime-2.1-mini` when the MINI tier is selected — see the model-tier entry below), voice `marin`, reasoning effort `low`, semantic VAD with low eagerness, no response interruption, context window truncated to ~3,000 post-instruction tokens with 0.5 retention ratio — the conversational window stays short because map state is fetched live per turn.
 - **Thirty tools** (argument schemas in `src/voice/actionSchemas.js`, served with their descriptions by `server/providers/openai/tools.js`, executed client-side in `src/voice/gevActions.js`): `fly_to_location`, `select_nearest_aircraft`, `adjust_camera_zoom`, `zoom_to_globe`, `set_layer_visibility`, `show_data_layers_menu`, `set_panel_open`, `set_visual_style`, `get_entity_context`, `get_current_view_state`, `set_hud`, `set_cyber_sonar`, `set_detection`, `set_map_stack`, `set_post_processing`, `control_scene`, `control_cctv`, `set_context_mode`, `control_cockpit`, `control_radio`, `track_entity`, `stop_tracking`, `frame_overhead`, `annotate_map`, `clear_annotations`, `move_camera`, `fly_route`, `analyst_query`, `next_iss_pass`, and `next_satellite_pass`.
 

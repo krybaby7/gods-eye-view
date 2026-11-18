@@ -168,7 +168,7 @@ Context:
   converted to **live NASA FIRMS data** on 2026-07-16: the `/api/firms` proxy merges
   three VIIRS NRT sources (trailing 24 h, 30 min cache, serve-stale-on-failure) and the
   bundled snapshot was deleted. Requires a free server-side `FIRMS_MAP_KEY`; without it
-  the layer row reads "Needs FIRMS_MAP_KEY — add it in Provider Settings".
+  the layer row reads "Needs FIRMS_MAP_KEY — add it in Data sources and keys".
 
 ---
 

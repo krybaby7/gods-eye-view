@@ -102,11 +102,14 @@ test('a native click enables available layers with user origin and explains skip
         name: 'Military',
         enabled: false,
         available: false,
-        reason: 'Add PROVIDER_KEY in Provider Settings',
+        reason: 'Add PROVIDER_KEY in Data sources and keys',
       },
     ],
   });
-  assert.match(f.button('air').title, /Add PROVIDER_KEY in Provider Settings/);
+  assert.match(
+    f.button('air').title,
+    /Add PROVIDER_KEY in Data sources and keys/,
+  );
   f.button('air').click();
   assert.deepEqual(f.calls, [
     { id: 'a', enabled: true, options: { origin: 'user' } },

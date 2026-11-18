@@ -8,10 +8,10 @@ import {
 } from './keySetup.js';
 
 test('the chip counts what is missing, and retires the count at zero', () => {
-  assert.equal(keySetupChipLabel({ setCount: 0, total: 8 }), 'POWER UP · 8 KEYS WAITING');
-  assert.equal(keySetupChipLabel({ setCount: 7, total: 8 }), 'POWER UP · 1 KEY WAITING');
-  assert.equal(keySetupChipLabel({ setCount: 8, total: 8 }), 'POWERED UP');
-  assert.equal(keySetupChipLabel(null), 'POWERED UP', 'no status is not a broken label');
+  assert.equal(keySetupChipLabel({ setCount: 0, total: 8 }), '8 keys missing');
+  assert.equal(keySetupChipLabel({ setCount: 7, total: 8 }), '1 key missing');
+  assert.equal(keySetupChipLabel({ setCount: 8, total: 8 }), 'Data sources and keys');
+  assert.equal(keySetupChipLabel(null), 'Data sources and keys', 'no status is not a broken label');
 });
 
 test('collectKeyUpdates keeps only non-empty trimmed values', () => {

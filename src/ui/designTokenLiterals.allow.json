@@ -460,31 +460,6 @@
     "count": 1
   },
   {
-    "path": "src/ui/styles/provider-settings.css",
-    "kind": "backdrop",
-    "count": 4
-  },
-  {
-    "path": "src/ui/styles/provider-settings.css",
-    "kind": "color",
-    "count": 58
-  },
-  {
-    "path": "src/ui/styles/provider-settings.css",
-    "kind": "font",
-    "count": 19
-  },
-  {
-    "path": "src/ui/styles/provider-settings.css",
-    "kind": "radius",
-    "count": 13
-  },
-  {
-    "path": "src/ui/styles/provider-settings.css",
-    "kind": "shadow",
-    "count": 3
-  },
-  {
     "path": "src/ui/styles/radio.css",
     "kind": "color",
     "count": 126
