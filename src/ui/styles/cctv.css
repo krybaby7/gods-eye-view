@@ -60,6 +60,7 @@
 /* Reserve the preview's aspect-ratio height before laying out the controls. */
 #cctv-panel-body > * {
   flex: none;
+  min-width: 0;
 }
 
 .cctv-controls,
@@ -86,6 +87,7 @@
 
 #cctv-camera-select {
   flex: 1;
+  width: 0;
   padding: 0 var(--space-2);
 }
 
@@ -189,6 +191,7 @@
   color: var(--text-2);
   background: var(--surface-0);
   text-align: center;
+  overflow-wrap: anywhere;
 }
 
 #cctv-frame-status[data-frame-state='loading'] {

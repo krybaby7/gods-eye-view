@@ -2,6 +2,7 @@ import { LayerBindings } from './ui/layerBindings.js';
 import { readShellSource, shellMethod } from './testSupport/readShellSource.mjs';
 import { readLayerSource } from './testSupport/readLayerSource.mjs';
 import { StyleManager } from './ui/applicationShell.js';
+import { readShellElements } from './ui/shellElements.js';
 import { enter as cockpitEnter, navigateContext } from './ui/cockpitTrackingController.js';
 import { CockpitViewController } from './ui/cockpitController.js';
 import assert from 'node:assert/strict';
@@ -414,4 +415,30 @@ test('vessel and fire layers announce valid clicks and never fly cameras', () =>
     'overlayHost.hitTest?.(',
     'selectAndFocusFire(carded)',
   ], 'fire sibling ownership');
+});
+
+test('camera controls receive the status and timestamp elements from the shell', (t) => {
+  const status = { dataset: {} };
+  const frameTime = {};
+  const panel = {};
+  const elements = readShellElements({
+    getElementById: (id) =>
+      ({
+        'cctv-panel': panel,
+        'cctv-frame-status': status,
+        'cctv-frame-time': frameTime,
+      })[id] ?? null,
+  });
+  const shell = {
+    ...elements,
+    services: { cctvLayer: {} },
+    _syncCctvPanelViewport() {},
+  };
+  StyleManager.prototype._initCctvPanel.call(shell);
+  t.after(() => shell._cctvControls.destroy());
+  assert.equal(status.textContent, 'Cameras are off');
+  assert.equal(shell._cctvControls._cctvFrameTime, frameTime);
+  shell._dataManager = { isEnabled: () => true };
+  shell._cctvControls._renderCctvState({ enabled: true });
+  assert.equal(status.textContent, 'No cameras available');
 });
