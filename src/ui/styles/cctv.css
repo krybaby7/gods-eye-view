@@ -48,13 +48,18 @@
 }
 
 #cctv-panel-body {
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) transparent;
+}
+
+/* Reserve the preview's aspect-ratio height before laying out the controls. */
+#cctv-panel-body > * {
+  flex: none;
 }
 
 .cctv-controls,
