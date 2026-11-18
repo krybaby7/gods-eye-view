@@ -654,3 +654,16 @@ test('keys looks default to the keyless setup query', () => {
   assert.equal(options.state, 'empty');
   assert.equal(options.url.searchParams.get('setup'), '1');
 });
+
+test('controls looks register the shared surfaces capture', () => {
+  const options = parseLookArgs([
+    '--url',
+    'http://localhost:5173',
+    '--label',
+    'after',
+    '--panel',
+    'controls',
+  ]);
+  assert.equal(options.panel, 'controls');
+  assert.equal(options.state, 'filled');
+});

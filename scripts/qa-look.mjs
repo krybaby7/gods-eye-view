@@ -42,6 +42,7 @@ import {
 } from './qa-look-imagery.mjs';
 import { captureRadio, radioFixture } from './qa-look-radio.mjs';
 import { captureContext, contextFixture } from './qa-look-context.mjs';
+import { captureControls } from './qa-look-controls.mjs';
 
 const options = parseLookArgs(process.argv.slice(2));
 const panelCapture = {
@@ -51,6 +52,7 @@ const panelCapture = {
   imagery: captureImagery,
   radio: captureRadio,
   context: captureContext,
+  controls: captureControls,
 }[options.panel];
 const out =
   process.env.GEV_LOOK_OUT && !process.argv.includes('--out')

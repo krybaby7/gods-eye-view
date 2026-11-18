@@ -46,6 +46,7 @@ export function parseLookArgs(args) {
     'imagery',
     'radio',
     'context',
+    'controls',
   ];
   if (!panels.includes(panel))
     throw new Error(`Expected --panel ${panels.join('|')}`);
