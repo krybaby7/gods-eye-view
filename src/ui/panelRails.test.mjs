@@ -292,7 +292,10 @@ for (const mobile of [false, true]) {
     f.expand(f.first, 300);
     f.run();
     assert.equal(f.stack.classList.contains('layout-exclusive'), !mobile);
-    assert.equal(f.second.getAttribute('aria-hidden'), mobile ? undefined : 'true');
+    assert.equal(
+      f.second.getAttribute('aria-hidden'),
+      mobile ? undefined : 'true',
+    );
     assert.equal(f.first.getAttribute('aria-hidden'), undefined);
     assert.equal(f.stack.dataset.layoutMode === 'mobile', mobile);
     assert.equal(
