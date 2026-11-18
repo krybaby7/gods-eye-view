@@ -207,6 +207,7 @@ const RECOGNIZED = new Set([
   // Cockpit hides the dock. qa-look checks its credit against the actual
   // flight instruments and controls in portrait and landscape.
   'body.cockpit-mode:not(.ui-clean-view):not(.recording-mode) #cesium-credits',
+  'body.cockpit-mode:is(.recording-mode, .ui-clean-view) #cesium-credits',
   'body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(.ui-embed) #command-dock',
   // rail
   '#right-context-rail',
@@ -628,6 +629,19 @@ test('the tray only spans the credit corner at the widths the model covers', () 
     && rule.decls.some((decl) => decl.prop === 'width' && decl.value.includes('--dock-popover-mobile-width')));
   assert.equal(widened.length, 1);
   assert.equal(parseMediaCondition(widened[0].media[0]), 900);
+});
+
+test('compact Cockpit recording and clean view use the reserved credit strip', () => {
+  const compact = 'body.cockpit-mode:is(.recording-mode, .ui-clean-view) #cesium-credits';
+  for (const mode of ['recording-mode', 'ui-clean-view']) {
+    const standard = `body.${mode} #cesium-credits`;
+    for (const width of [390, 667, 760]) {
+      const credit = resolve(['#cesium-credits', standard, compact], 'bottom', width, mode);
+      assert.equal(credit.part, compact);
+      assert.equal(credit.decl.value, 'var(--cockpit-credit-bottom)');
+    }
+    assert.equal(resolve(['#cesium-credits', standard, compact], 'bottom', 761, mode).part, standard);
+  }
 });
 
 test('the credit line is never suppressed to make room', () => {

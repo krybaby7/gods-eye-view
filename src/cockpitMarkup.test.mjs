@@ -778,7 +778,7 @@ test('mobile Cockpit prioritizes flight instruments and collision-safe controls'
   assert.match(mobileCockpit[1], /body\.cockpit-mode \.cockpit-utility-popover[\s\S]*?position:\s*static;/);
   assert.match(
     mobileCockpit[1],
-    /body\.cockpit-mode #view-switcher \{[\s\S]*?bottom:\s*max\(76px, env\(safe-area-inset-bottom\)\);[\s\S]*?max-width:\s*calc\(100vw - 20px\);/,
+    /body\.cockpit-mode #view-switcher \{[\s\S]*?bottom:\s*var\(--cockpit-switcher-bottom\);[\s\S]*?max-width:\s*calc\(100vw - 20px\);/,
   );
   assert.match(mobileCockpit[1], /body\.cockpit-mode #view-switcher button \{[\s\S]*?padding-inline:\s*var\(--space-2\);/);
 });

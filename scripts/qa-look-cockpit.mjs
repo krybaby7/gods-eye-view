@@ -74,6 +74,12 @@ function measure(targetSelector, menuSelector) {
       text: byId(id)?.getAttribute('aria-label') || byId(id)?.textContent,
       fontSize: Number.parseFloat(getComputedStyle(byId(id)).fontSize),
     })),
+    recording: document.body.classList.contains('recording-mode'),
+    measuredCreditHeight: Number.parseFloat(
+      getComputedStyle(document.body).getPropertyValue(
+        '--frame-credits-height',
+      ),
+    ),
     focus: {
       id: document.activeElement?.id,
       label:
@@ -208,6 +214,18 @@ export async function captureCockpit({
       );
       if (!credit) errors.push('map attribution is missing');
       else if (
+        view === 'recording' &&
+        (!data.recording ||
+          data.measuredCreditHeight < Math.floor(credit.bottom - credit.top) ||
+          bottomControls.some(({ selector }) =>
+            ['#cockpit-layers', '#cockpit-presets'].includes(selector),
+          ) ||
+          bottomControls.length !== 2)
+      )
+        errors.push(
+          'recording policy or wrapped attribution measurement changed',
+        );
+      else if (
         collisions([...bottomControls, ...(deck ? [deck] : [])], [credit]).some(
           ({ a, b }) => a === credit || b === credit,
         )
@@ -266,7 +284,12 @@ export async function captureCockpit({
     );
   }
 
-  for (const [width, height] of [...viewports, [390, 844], [667, 390]]) {
+  for (const [width, height] of [
+    ...viewports,
+    [390, 844],
+    [667, 390],
+    [390, 480],
+  ]) {
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     await capture(width, height, 'instruments', '.cockpit-compass');
     for (const [button, name, selector, open] of [
@@ -324,6 +347,39 @@ export async function captureCockpit({
           document.activeElement?.id === 'cockpit-display-toggle-btn',
         wait,
       );
+    }
+
+    if (options.label === 'after' && width === 667 && height === 390) {
+      await page.evaluate(() => {
+        window.__godsEyeView.styleManager.setRecordingMode(true, {
+          hudMode: 'full',
+        });
+        const probe = document.createElement('div');
+        probe.id = 'cockpit-attribution-proof';
+        probe.append(
+          'Fixture attribution',
+          document.createElement('br'),
+          'Wrapped credit line',
+        );
+        document.getElementById('cesium-credits').append(probe);
+      });
+      try {
+        await page.waitForFunction(
+          () =>
+            Number.parseFloat(
+              getComputedStyle(document.body).getPropertyValue(
+                '--frame-credits-height',
+              ),
+            ) > 28,
+          wait,
+        );
+        await capture(width, height, 'recording', '.cockpit-compass');
+      } finally {
+        await page.evaluate(() => {
+          document.getElementById('cockpit-attribution-proof')?.remove();
+          window.__godsEyeView.styleManager.setRecordingMode(false);
+        });
+      }
     }
   }
   await page.keyboard.press('Escape');
