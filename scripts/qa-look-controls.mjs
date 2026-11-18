@@ -11,6 +11,8 @@ const shape = '#draw-mode-row [data-shape="pin"]';
 const credits = '#cesium-credits';
 const creditLink = `${credits} .cesium-credit-expand-link`;
 const creditLightbox = '.cesium-credit-lightbox';
+const screenCredit = '[data-look-screen-credit]';
+const detailCredit = '[data-look-detail-credit]';
 const trafficChip = '#traffic-sync-chip';
 const cameraChip = '#cctv-sync-chip';
 
@@ -18,12 +20,46 @@ async function measure(page, selector) {
   return page.$eval(selector, (target) => {
     const rect = (element) => element?.getBoundingClientRect().toJSON();
     const style = getComputedStyle(target);
+    const creditRoot = target.closest('#cesium-credits');
+    const creditRootBox = rect(creditRoot);
+    const targetBox = rect(target);
+    const hasBox = (box) => box?.width > 0 && box.height > 0;
+    let creditBackground = null;
+    if (creditRoot) {
+      for (let node = target; node; node = node.parentElement) {
+        const paint = getComputedStyle(node).backgroundColor;
+        if (
+          hasBox(rect(node)) &&
+          paint !== 'rgba(0, 0, 0, 0)' &&
+          paint !== 'transparent'
+        ) {
+          creditBackground = paint;
+          break;
+        }
+        if (node === creditRoot) break;
+      }
+    }
+    const ink = creditRoot?.querySelector('.cesium-credit-expand-link');
+    const boxes = [targetBox, rect(ink)].filter(hasBox);
+    const visibleCreditBox = creditRoot && {
+      left: Math.min(...boxes.map((box) => box.left)),
+      top: Math.min(...boxes.map((box) => box.top)),
+      right: Math.max(...boxes.map((box) => box.right)),
+      bottom: Math.max(...boxes.map((box) => box.bottom)),
+    };
     return {
-      box: rect(target),
+      box: hasBox(creditRootBox)
+        ? creditRootBox
+        : visibleCreditBox || targetBox,
+      creditRootBox,
+      creditRootDisplay: creditRoot && getComputedStyle(creditRoot).display,
+      creditLinkColor: ink && getComputedStyle(ink).color,
       globe: rect(document.getElementById('cesiumContainer')),
       credits: rect(document.getElementById('cesium-credits')),
       backdrop: style.backdropFilter,
-      background: style.backgroundColor,
+      background: creditRoot
+        ? creditBackground || 'transparent'
+        : style.backgroundColor,
       fontSize: style.fontSize,
       color: style.color,
       text: target.textContent.trim(),
@@ -317,23 +353,75 @@ export async function captureControls({
     await page.evaluate(() => window.lookQa.statusFixture.stop());
 
     await markFrameStage(`${width}x${height} attribution`);
+    await page.evaluate(() => {
+      const { C } = window.lookQa;
+      const { viewer } = window.__godsEyeView;
+      const fixtures = [
+        new C.Credit(
+          '<span data-look-screen-credit>Local imagery fixture</span>',
+          true,
+        ),
+        new C.Credit(
+          '<span data-look-detail-credit>Local data fixture</span>',
+          false,
+        ),
+      ];
+      fixtures.forEach((credit) =>
+        viewer.creditDisplay.addStaticCredit(credit),
+      );
+      window.lookQa.removeCreditFixtures = () => {
+        fixtures.forEach((credit) =>
+          viewer.creditDisplay.removeStaticCredit(credit),
+        );
+        viewer.scene.requestRender();
+      };
+      viewer.scene.requestRender();
+    });
     await page.waitForSelector(creditLink, visible);
-    await capture('credits', credits, (data) =>
-      options.label === 'after' && contrast(data.color, data.background) < 4.5
-        ? ['credit caption lacks a solid contrasting backing']
-        : [],
-    );
+    await capture('credits', screenCredit, (data) => {
+      const errors = [];
+      if (data.text !== 'Local imagery fixture')
+        errors.push('on-screen credit did not render');
+      if (
+        options.label === 'after' &&
+        [data.color, data.creditLinkColor].some(
+          (ink) => !ink || contrast(ink, data.background) < 4.5,
+        )
+      )
+        errors.push('credit caption and link need a solid contrasting backing');
+      return errors;
+    });
     await page.focus(creditLink);
     await page.keyboard.press('Enter');
-    await page.waitForSelector('.cesium-credit-lightbox-close', visible);
+    await page.waitForFunction(
+      () =>
+        document.activeElement?.classList.contains(
+          'cesium-credit-lightbox-close',
+        ) &&
+        document
+          .querySelector('.cesium-credit-expand-link')
+          ?.getAttribute('aria-expanded') === 'true',
+      wait,
+    );
+    await page.waitForSelector(detailCredit, visible);
     await capture('attribution', creditLightbox, (data) =>
-      data.text ? [] : ['attribution details are empty'],
+      data.text.includes('Local data fixture')
+        ? []
+        : ['attribution details are empty'],
     );
     await page.keyboard.press('Escape');
     await page.waitForFunction(
-      (selector) => document.activeElement === document.querySelector(selector),
+      (selector) => {
+        const link = document.querySelector(selector);
+        return (
+          document.activeElement === link &&
+          link.getAttribute('aria-expanded') === 'false'
+        );
+      },
       wait,
       creditLink,
     );
+    await page.evaluate(() => window.lookQa.removeCreditFixtures());
+    await page.waitForSelector(screenCredit, { ...wait, hidden: true });
   }
 }
