@@ -3406,11 +3406,7 @@
   },
   "radio-source": {
     "exports": ["./layers/radio/source"],
-    "modules": [
-      "src/designTokens.js",
-      "src/layers/radio/policy.js",
-      "src/layers/radio/source.js"
-    ],
+    "modules": ["src/layers/radio/policy.js", "src/layers/radio/source.js"],
     "external": []
   },
   "satellites-source": {

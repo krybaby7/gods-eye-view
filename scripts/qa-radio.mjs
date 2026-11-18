@@ -527,9 +527,9 @@ async function main() {
         && disablingPresentation.manager.lifecycleState === 'disabling'
         && disablingPresentation.presentationActive === false
         && disablingPresentation.markerSourceVisible === false
-        && disablingPresentation.full === 'DISABLING'
+        && disablingPresentation.full === 'Disabling…'
         && /compact Radio controls/i.test(disablingPresentation.disclosure)
-        && disablingPresentation.compactPower === 'DISABLING'
+        && disablingPresentation.compactPower === 'Disabling…'
         && disablingPresentation.layerState === 'Disabling…'
         && /disabling/i.test(disablingPresentation.message)
         && disablingPresentation.stopDisabled
@@ -603,11 +603,11 @@ async function main() {
         && enablingPresentation.manager.lifecycleState === 'enabling'
         && enablingPresentation.presentationActive === false
         && enablingPresentation.markerSourceVisible === false
-        && enablingPresentation.full === 'ENABLING'
+        && enablingPresentation.full === 'Enabling…'
         && enablingPresentation.disclosure === 'Go to expanded Radio section'
         && enablingPresentation.disclosureControls === 'radio-panel'
         && enablingPresentation.disclosureExpanded === 'true'
-        && enablingPresentation.compactPower === 'ENABLING'
+        && enablingPresentation.compactPower === 'Enabling…'
         && enablingPresentation.layerState === 'Enabling…'
         && /enabling/i.test(enablingPresentation.message)
         && enablingPresentation.tunerHidden

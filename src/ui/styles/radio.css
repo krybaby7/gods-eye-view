@@ -20,10 +20,11 @@
 #radio-panel .panel-header {
   margin-bottom: 0;
 }
-#radio-panel .panel-title {
+#global-context-panel #radio-panel .panel-title {
   color: var(--text-1);
   font: var(--type-label);
   letter-spacing: normal;
+  text-transform: none;
 }
 #radio-panel .panel-collapse-btn {
   font: var(--type-control);

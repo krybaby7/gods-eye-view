@@ -29,6 +29,18 @@ export const DESIGN_COLORS = Object.freeze({
   '--cat-other': '#9aa7b3',
 });
 
+export const RADIO_CATEGORY_COLORS = Object.freeze({
+  all: DESIGN_COLORS['--cat-all'],
+  news: DESIGN_COLORS['--cat-news'],
+  talk: DESIGN_COLORS['--cat-talk'],
+  weather: DESIGN_COLORS['--cat-weather'],
+  'public-safety': DESIGN_COLORS['--cat-public-safety'],
+  'aviation-marine': DESIGN_COLORS['--cat-aviation-marine'],
+  'traffic-transit': DESIGN_COLORS['--cat-traffic-transit'],
+  music: DESIGN_COLORS['--cat-music'],
+  other: DESIGN_COLORS['--cat-other'],
+});
+
 function rgb(hex) {
   const value = Number.parseInt(hex.slice(1), 16);
   return [value >> 16, (value >> 8) & 255, value & 255];

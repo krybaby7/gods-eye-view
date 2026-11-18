@@ -1,5 +1,3 @@
-import { DESIGN_COLORS } from '../../designTokens.js';
-
 export const RADIO_PREFIX = 'radio:';
 
 export const DIRECTORY_ENDPOINT = '/api/radio/stations';
@@ -115,18 +113,6 @@ export const CATEGORY_MATCHERS = Object.freeze({
     'coast guard',
   ],
   'traffic-transit': ['traffic', 'transit', 'transport', 'rail', 'metro'],
-});
-
-export const RADIO_CATEGORY_COLORS = Object.freeze({
-  all: DESIGN_COLORS['--cat-all'],
-  news: DESIGN_COLORS['--cat-news'],
-  talk: DESIGN_COLORS['--cat-talk'],
-  weather: DESIGN_COLORS['--cat-weather'],
-  'public-safety': DESIGN_COLORS['--cat-public-safety'],
-  'aviation-marine': DESIGN_COLORS['--cat-aviation-marine'],
-  'traffic-transit': DESIGN_COLORS['--cat-traffic-transit'],
-  music: DESIGN_COLORS['--cat-music'],
-  other: DESIGN_COLORS['--cat-other'],
 });
 
 export const RADIO_CLUSTER_LABELS = Object.freeze({

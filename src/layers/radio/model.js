@@ -1,8 +1,5 @@
-import {
-  RADIO_CATEGORY_COLORS,
-  RADIO_CLUSTER_LABELS,
-  RADIO_MARKER_CATEGORY_ORDER,
-} from './policy.js';
+import { RADIO_CATEGORY_COLORS } from '../../designTokens.js';
+import { RADIO_CLUSTER_LABELS, RADIO_MARKER_CATEGORY_ORDER } from './policy.js';
 
 export function createModel({ state: layerState, services, parts, source }) {
   /** Return the shared CSS color for a canonical or detected-genre category. */

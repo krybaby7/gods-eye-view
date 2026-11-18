@@ -10,7 +10,8 @@ import {
 // CSS and globe drawing both consume these semantic colours; compare values,
 // not the spelling or organisation of either consumer's implementation.
 test('globe semantic colours agree with the corresponding CSS tokens', async () => {
-  const { DESIGN_COLORS } = await import('./designTokens.js');
+  const { DESIGN_COLORS, RADIO_CATEGORY_COLORS } =
+    await import('./designTokens.js');
   const css = readFileSync(
     new URL('./ui/styles/foundation.css', import.meta.url),
     'utf8',
@@ -35,7 +36,6 @@ test('globe semantic colours agree with the corresponding CSS tokens', async () 
     '--live-space',
     '--ownership-documented',
   ];
-  const { RADIO_CATEGORY_COLORS } = await import('./layers/radio/policy.js');
   for (const [category, color] of Object.entries(RADIO_CATEGORY_COLORS)) {
     const token = `--cat-${category}`;
     assert.equal(DESIGN_COLORS[token], color, token);
