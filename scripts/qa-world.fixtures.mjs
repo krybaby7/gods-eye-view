@@ -103,6 +103,7 @@ export async function installFixtures(
     keys = null,
     imageryFixture = null,
     radio = null,
+    context = null,
   } = {},
 ) {
   const imagery = await fs.readFile(
@@ -227,6 +228,25 @@ export async function installFixtures(
           report.transport.firePerimeterReplies =
             (report.transport.firePerimeterReplies ?? 0) + 1;
           await reply({ rows: [firePerimeter] });
+        } else if (
+          context &&
+          url.pathname === '/api/launches' &&
+          request.method === 'GET'
+        ) {
+          report.transport.contextReplies =
+            (report.transport.contextReplies ?? 0) + 1;
+          await reply(context);
+        } else if (
+          context &&
+          /^\/api\/celestrak\/[a-z0-9-]+$/.test(url.pathname) &&
+          request.method === 'GET'
+        ) {
+          const tle = [
+            'ISS (ZARYA)',
+            '1 25544U 98067A   24001.50000000  .00016717  00000-0  10270-3 0  9004',
+            '2 25544  51.6416 247.4627 0006703 130.5360 325.0288 15.49814310 12345',
+          ].join('\n');
+          await reply(tle + '\n', 200, 'text/plain');
         } else if (
           url.pathname === '/api/flights' &&
           request.method === 'GET' &&

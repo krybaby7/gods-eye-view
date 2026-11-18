@@ -41,6 +41,7 @@ import {
   createImageryLookFixture,
 } from './qa-look-imagery.mjs';
 import { captureRadio, radioFixture } from './qa-look-radio.mjs';
+import { captureContext, contextFixture } from './qa-look-context.mjs';
 
 const options = parseLookArgs(process.argv.slice(2));
 const panelCapture = {
@@ -49,6 +50,7 @@ const panelCapture = {
   weather: captureWeather,
   imagery: captureImagery,
   radio: captureRadio,
+  context: captureContext,
 }[options.panel];
 const out =
   process.env.GEV_LOOK_OUT && !process.argv.includes('--out')
@@ -121,6 +123,7 @@ try {
         : null,
     cctv: options.panel === 'cctv' ? cctvFixture(options.state) : null,
     radio: options.panel === 'radio' ? radioFixture(options.state) : null,
+    context: options.panel === 'context' ? contextFixture(options.state) : null,
     weather:
       options.panel === 'weather'
         ? createWeatherLookFixture(options.state)
