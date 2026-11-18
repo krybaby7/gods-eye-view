@@ -49,6 +49,10 @@ function measureKeys() {
     title: document.getElementById(panel.getAttribute('aria-labelledby'))
       ?.textContent,
     hasRows: !!panel.querySelector('[data-key-id]'),
+    hasCloseIcon: !!close.querySelector('svg[aria-hidden="true"]'),
+    sourcesVisible:
+      getComputedStyle(document.getElementById('frame-menu-sources'))
+        .visibility === 'visible',
     scrollable: scroll.scrollHeight > scroll.clientHeight,
     opacity: Number(getComputedStyle(panel).opacity),
   };
@@ -94,6 +98,8 @@ export async function captureKeys({
       save,
       title,
       hasRows,
+      hasCloseIcon,
+      sourcesVisible,
       scrollable,
       opacity,
     } = data;
@@ -117,6 +123,10 @@ export async function captureKeys({
     if (!hasRows || !scrollable) errors.push('fixture rows cannot scroll');
     if (options.label === 'after' && title !== 'Data sources and keys')
       errors.push('dialog name is incorrect');
+    if (options.label === 'after' && sourcesVisible)
+      errors.push('source menu is visible behind the dialog');
+    if (options.label === 'after' && !hasCloseIcon)
+      errors.push('close icon requires a remote font');
 
     const full = path.join(out, `${stem}.png`);
     const crop = path.join(out, `${stem}-crop.png`);
@@ -127,5 +137,14 @@ export async function captureKeys({
     );
     report.cases.push({ panel: 'keys', width, height, full, crop, errors });
     report.errors.push(...errors.map((message) => `${stem}: ${message}`));
+  }
+  if (options.label === 'after') {
+    await page.click('#key-setup [data-key-setup-close]');
+    await page.waitForSelector('#key-setup[hidden]', wait);
+    const returned = await page.evaluate(
+      () => document.activeElement?.id === 'frame-keys-open',
+    );
+    if (!returned)
+      report.errors.push('focus did not return to Open provider keys');
   }
 }
