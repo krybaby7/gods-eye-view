@@ -33,7 +33,7 @@ Sources and terms: the War monitor section of
    Humanitarian, Analysis). Each item is marked as not digested yet,
    unassigned, or attached to a story.
 3. Install Claude Code on the server, run `claude auth login`, and check War
-   Monitor readiness in Provider Settings. For Perplexity, select it in
+   Monitor readiness in Data sources and keys. For Perplexity, select it in
    [Configuration](#configuration) and add its key.
 4. Press **Refresh**, or say "refresh news". After the digest:
    - pins appear for located event stories;
@@ -271,7 +271,7 @@ The digest runs only on an explicit Refresh: the panel button, the
 `refresh_news` voice action, or `POST /api/news/digest`. Nothing schedules it.
 
 **Claude plan (default).** Install Claude Code 2.1.248 or later on the server
-and run `claude auth login`. Provider Settings shows the selected provider and
+and run `claude auth login`. Data sources and keys shows the selected provider and
 whether Claude is ready. The default model alias is `sonnet`; the digest and
 brief prompts were tuned on Sonnet 5.5. Refresh and its automatic brief share
 one Claude slot with Search Layers. If a search holds the slot, Refresh returns
@@ -291,7 +291,7 @@ keychain access. The run has a 20-minute limit and an 8 MiB stdout cap.
 and [environment variables](https://code.claude.com/docs/en/env-vars).
 
 **Perplexity (optional).** Set `NEWS_DIGEST_AGENT=perplexity` and add a
-`PERPLEXITY_API_KEY` in Provider Settings. Each call uses the Perplexity Agent
+`PERPLEXITY_API_KEY` in Data sources and keys. Each call uses the Perplexity Agent
 API:
 
 - `POST https://api.perplexity.ai/v1/agent` (the documented endpoint; the

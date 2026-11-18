@@ -37,14 +37,32 @@ export function parseLookArgs(args) {
   if (!['before', 'after'].includes(label))
     throw new Error('Expected --label before|after');
   const panel = values.get('--panel');
-  if (!['legend', 'layers', 'weather', 'cctv'].includes(panel))
-    throw new Error('Expected --panel legend|layers|weather|cctv');
-  const state = values.get('--state') ?? 'filled';
+  const panels = [
+    'legend',
+    'layers',
+    'weather',
+    'cctv',
+    'keys',
+    'imagery',
+    'radio',
+    'context',
+    'controls',
+    'welcome',
+    'cockpit',
+  ];
+  if (!panels.includes(panel))
+    throw new Error(`Expected --panel ${panels.join('|')}`);
+  const state =
+    values.get('--state') ?? (panel === 'keys' ? 'empty' : 'filled');
   if (!['empty', 'filled'].includes(state))
     throw new Error('Expected --state empty|filled');
   if (panel === 'legend' && state !== 'filled')
     throw new Error('Legend only supports filled state');
-  url.searchParams.set('welcome', '0');
+  if (panel === 'keys' && state !== 'empty')
+    throw new Error('Keys only supports the keyless state');
+  if (panel === 'keys') url.searchParams.set('setup', '1');
+  const welcome = panel === 'welcome' ? '1' : '0';
+  url.searchParams.set('welcome', welcome);
   url.searchParams.set('world-fixtures', '1');
   for (const query of queries) {
     const at = query.indexOf('=');
@@ -52,8 +70,9 @@ export function parseLookArgs(args) {
     const key = query.slice(0, at);
     const value = query.slice(at + 1);
     if (
-      (key === 'welcome' && value !== '0') ||
-      (key === 'world-fixtures' && value !== '1')
+      (key === 'welcome' && value !== welcome) ||
+      (key === 'world-fixtures' && value !== '1') ||
+      (panel === 'keys' && key === 'setup' && value !== '1')
     )
       throw new Error(`Fixture default cannot be overridden: ${key}`);
     url.searchParams.set(key, value);

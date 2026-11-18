@@ -1,3 +1,4 @@
+import { customProperties, htmlNodes, resolveVars, rules, winners } from './testSupport/cssCascade.mjs';
 import { readShellSource } from './testSupport/readShellSource.mjs';
 import { expandApplicationHtml } from '../build/application-html.js';
 import { readStylesheet } from './testSupport/readStylesheet.mjs';
@@ -17,11 +18,29 @@ const html = expandApplicationHtml(readFileSync(new URL('../index.html', import.
 const ui = readShellSource();
 const css = readStylesheet(new URL('../style.css', import.meta.url));
 
+test('Context header and title resolve before the embedded Radio chrome', () => {
+  const nodes = htmlNodes(html);
+  const inContext = (node) => {
+    for (let parent = node.parent; parent; parent = parent.parent)
+      if (parent.id === 'global-context-panel') return true;
+    return false;
+  };
+  const contextNodes = nodes.filter(inContext);
+  const header = contextNodes.find((node) => node.classes.has('panel-header'));
+  const title = contextNodes.find((node) => node.classes.has('panel-title'));
+  const radioDock = contextNodes.find((node) => node.id === 'context-radio-dock');
+  assert.equal(header?.tag, 'header');
+  assert.equal(title?.id, 'global-context-panel-title');
+  assert.equal(title.parent, header);
+  assert.equal(radioDock.parent, header);
+});
+
 test('Contacts and Space Missions both participate in the ordinary Tab sequence', () => {
   for (const id of ['global-context-flights-btn', 'global-context-missions-btn']) {
     const button = html.match(new RegExp(`<button id="${id}"[\\s\\S]*?</button>`));
     assert.ok(button, `${id} is missing`);
     assert.match(button[0], /role="tab"/);
+    assert.match(button[0], /\bkit-seg-item\b/);
     assert.match(button[0], /tabindex="0"/);
   }
 
@@ -119,17 +138,21 @@ test('Context tablist retains Left, Right, Home, and End keyboard navigation', (
 });
 
 test('Context tabs draw a visible keyboard-focus outline including active tabs', () => {
-  const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
-  const focusRule = rules.find(([, selector, body]) => (
-    selector.trim().endsWith('.context-mode-button:focus-visible')
-      && /outline:\s*2px solid var\(--text-primary\)/.test(body)
-  ));
-  assert.ok(focusRule, 'Context focus-visible rule must draw a two-pixel outline');
-  assert.match(focusRule[2], /outline-offset:\s*-3px/);
-
-  const activeRule = rules.find(([, selector]) => selector.trim().endsWith('.context-mode-button.active'));
-  assert.ok(activeRule, 'Context active-state rule is missing');
-  assert.doesNotMatch(activeRule[2], /outline:\s*none/);
+  const list = rules(css);
+  const vars = customProperties(list);
+  for (const id of ['global-context-flights-btn', 'global-context-missions-btn']) {
+    const tab = htmlNodes(html).find((node) => node.id === id);
+    assert.ok(tab, `${id} exists`);
+    for (const active of [false, true]) {
+      if (active) {
+        tab.classes.add('active');
+        tab.attrs.set('aria-selected', 'true');
+      }
+      const style = winners(tab, list, { outline: ['outline'], 'outline-offset': ['outline-offset'] });
+      assert.equal(resolveVars(style.outline.decl.value, vars), `2px solid ${vars.get('--text-1')}`);
+      assert.equal(style['outline-offset'].decl.value, '-3px');
+    }
+  }
 });
 
 test('Context async action buttons remain focused while busy', () => {

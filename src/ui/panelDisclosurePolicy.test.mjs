@@ -1,3 +1,4 @@
+import { htmlNodes } from '../testSupport/cssCascade.mjs';
 // Disclosure policy of the default rail, kept from the retired Cyber disclosure
 // tests: opening a panel leaves its peers alone (the one-panel rule is off; see
 // railSinglePanel.js), Radio reveals its Context owner, and fixed controls
@@ -91,7 +92,7 @@ test('fixed rail controls cannot be collapsed or gain persisted disclosure state
 const read = (relative) =>
   readFileSync(new URL(relative, import.meta.url), 'utf8');
 
-test('Cameras and Context keep their headers outside their scroll bodies', () => {
+test('Cameras and Context keep their headers separate from collapsible content', () => {
   const cameras = read('./templates/layer-panels.html');
   assert.match(cameras, /<h2 id="cctv-panel-title"[^>]*>Cameras<\/h2>/);
   assert.match(cameras, /id="cctv-panel-body"[^>]*data-rail-scroller/);
@@ -101,12 +102,20 @@ test('Cameras and Context keep their headers outside their scroll bodies', () =>
   );
   assert.match(read('./styles/kit.css'), /\.kit-panel-body\s*\{[^}]*overflow: auto;/);
 
-  const context = read('./templates/context.html');
-  assert.match(context, /class="cyber-panel-body" data-rail-scroller/);
-  assert.ok(
-    context.indexOf('class="panel-header"') <
-      context.indexOf('class="cyber-panel-body"'),
-  );
+  const contextNodes = htmlNodes(read('./templates/context.html'));
+  const context = contextNodes.find(({ id }) => id === 'global-context-panel');
+  const title = contextNodes.find(({ id }) => id === 'global-context-panel-title');
+  const header = title?.parent;
+  const body = contextNodes.find(({ id }) => id === 'global-context-panel-body');
+  assert.equal(header?.tag, 'header');
+  assert.ok(header.classes.has('panel-header'));
+  assert.ok(body?.classes.has('cyber-panel-body'));
+  assert.ok(body.attrs.has('data-rail-scroller'));
+  assert.equal(header.parent, body.parent, 'header and body are siblings');
+  const scroller = body.parent;
+  assert.equal(scroller.parent, context);
+  assert.ok(scroller.classes.has('global-context-panel-inner'));
+  assert.ok(scroller.attrs.has('data-rail-scroller'));
   assert.match(
     read('./styles/controls.css'),
     /\.cyber-panel-body\s*\{\s*display: contents;/,

@@ -20,8 +20,8 @@
   {
     "path": "src/designTokens.js",
     "kind": "palette",
-    "count": 17,
-    "reason": "Shared canvas palette; CSS parity is checked by designTokensParity.test.mjs."
+    "count": 32,
+    "reason": "Shared palette for globe paint and the standalone MCP shell. CSS parity is checked by designTokensParity.test.mjs."
   },
   {
     "path": "src/layers/awareness/rendering.js",
@@ -39,12 +39,6 @@
     "path": "src/layers/cctv/policy.js",
     "kind": "cesium",
     "count": 10,
-    "reason": "Cesium canvas paint cannot consume CSS custom properties."
-  },
-  {
-    "path": "src/layers/directions/index.js",
-    "kind": "cesium",
-    "count": 2,
     "reason": "Cesium canvas paint cannot consume CSS custom properties."
   },
   {
@@ -114,32 +108,6 @@
     "reason": "Cesium canvas paint cannot consume CSS custom properties."
   },
   {
-    "path": "src/ui/imageryBoxTool.js",
-    "kind": "cesium",
-    "count": 1,
-    "reason": "Cesium canvas paint cannot consume CSS custom properties."
-  },
-  {
-    "path": "src/ui/sceneSharing.js",
-    "kind": "color",
-    "count": 9
-  },
-  {
-    "path": "src/ui/sceneSharing.js",
-    "kind": "family",
-    "count": 1
-  },
-  {
-    "path": "src/ui/sceneSharing.js",
-    "kind": "font",
-    "count": 1
-  },
-  {
-    "path": "src/ui/sceneSharing.js",
-    "kind": "radius",
-    "count": 2
-  },
-  {
     "path": "src/ui/styles/bhote-koshi.css",
     "kind": "backdrop",
     "count": 1
@@ -147,7 +115,7 @@
   {
     "path": "src/ui/styles/bhote-koshi.css",
     "kind": "color",
-    "count": 46
+    "count": 38
   },
   {
     "path": "src/ui/styles/bhote-koshi.css",
@@ -157,135 +125,15 @@
   {
     "path": "src/ui/styles/bhote-koshi.css",
     "kind": "font",
-    "count": 15
+    "count": 14
   },
   {
     "path": "src/ui/styles/bhote-koshi.css",
     "kind": "radius",
-    "count": 7
-  },
-  {
-    "path": "src/ui/styles/bhote-koshi.css",
-    "kind": "shadow",
-    "count": 4
-  },
-  {
-    "path": "src/ui/styles/cockpit.css",
-    "kind": "backdrop",
-    "count": 4
-  },
-  {
-    "path": "src/ui/styles/cockpit.css",
-    "kind": "color",
-    "count": 150
-  },
-  {
-    "path": "src/ui/styles/cockpit.css",
-    "kind": "font",
-    "count": 82
-  },
-  {
-    "path": "src/ui/styles/cockpit.css",
-    "kind": "radius",
-    "count": 26
-  },
-  {
-    "path": "src/ui/styles/cockpit.css",
-    "kind": "shadow",
-    "count": 24
-  },
-  {
-    "path": "src/ui/styles/command-dock-compact.css",
-    "kind": "color",
-    "count": 11
-  },
-  {
-    "path": "src/ui/styles/command-dock-compact.css",
-    "kind": "font",
-    "count": 10
-  },
-  {
-    "path": "src/ui/styles/command-dock-compact.css",
-    "kind": "radius",
-    "count": 4
-  },
-  {
-    "path": "src/ui/styles/command-dock-compact.css",
-    "kind": "shadow",
-    "count": 2
-  },
-  {
-    "path": "src/ui/styles/command-dock-sliding.css",
-    "kind": "backdrop",
     "count": 6
   },
   {
-    "path": "src/ui/styles/command-dock-sliding.css",
-    "kind": "color",
-    "count": 48
-  },
-  {
-    "path": "src/ui/styles/command-dock-sliding.css",
-    "kind": "font",
-    "count": 4
-  },
-  {
-    "path": "src/ui/styles/command-dock-sliding.css",
-    "kind": "radius",
-    "count": 4
-  },
-  {
-    "path": "src/ui/styles/command-dock-sliding.css",
-    "kind": "shadow",
-    "count": 10
-  },
-  {
-    "path": "src/ui/styles/command-dock-trays.css",
-    "kind": "backdrop",
-    "count": 2
-  },
-  {
-    "path": "src/ui/styles/command-dock-trays.css",
-    "kind": "color",
-    "count": 24
-  },
-  {
-    "path": "src/ui/styles/command-dock-trays.css",
-    "kind": "font",
-    "count": 12
-  },
-  {
-    "path": "src/ui/styles/command-dock-trays.css",
-    "kind": "radius",
-    "count": 7
-  },
-  {
-    "path": "src/ui/styles/command-dock-trays.css",
-    "kind": "shadow",
-    "count": 4
-  },
-  {
-    "path": "src/ui/styles/command-dock.css",
-    "kind": "backdrop",
-    "count": 2
-  },
-  {
-    "path": "src/ui/styles/command-dock.css",
-    "kind": "color",
-    "count": 18
-  },
-  {
-    "path": "src/ui/styles/command-dock.css",
-    "kind": "font",
-    "count": 7
-  },
-  {
-    "path": "src/ui/styles/command-dock.css",
-    "kind": "radius",
-    "count": 5
-  },
-  {
-    "path": "src/ui/styles/command-dock.css",
+    "path": "src/ui/styles/bhote-koshi.css",
     "kind": "shadow",
     "count": 2
   },
@@ -297,7 +145,7 @@
   {
     "path": "src/ui/styles/controls.css",
     "kind": "color",
-    "count": 65
+    "count": 62
   },
   {
     "path": "src/ui/styles/controls.css",
@@ -307,12 +155,12 @@
   {
     "path": "src/ui/styles/controls.css",
     "kind": "font",
-    "count": 31
+    "count": 29
   },
   {
     "path": "src/ui/styles/controls.css",
     "kind": "radius",
-    "count": 24
+    "count": 22
   },
   {
     "path": "src/ui/styles/controls.css",
@@ -320,39 +168,9 @@
     "count": 22
   },
   {
-    "path": "src/ui/styles/first-run.css",
-    "kind": "backdrop",
-    "count": 2
-  },
-  {
-    "path": "src/ui/styles/first-run.css",
-    "kind": "color",
-    "count": 27
-  },
-  {
-    "path": "src/ui/styles/first-run.css",
-    "kind": "font",
-    "count": 16
-  },
-  {
-    "path": "src/ui/styles/first-run.css",
-    "kind": "radius",
-    "count": 3
-  },
-  {
-    "path": "src/ui/styles/first-run.css",
-    "kind": "shadow",
-    "count": 1
-  },
-  {
-    "path": "src/ui/styles/foundation.css",
-    "kind": "backdrop",
-    "count": 2
-  },
-  {
     "path": "src/ui/styles/foundation.css",
     "kind": "color",
-    "count": 25
+    "count": 7
   },
   {
     "path": "src/ui/styles/foundation.css",
@@ -362,17 +180,17 @@
   {
     "path": "src/ui/styles/foundation.css",
     "kind": "font",
-    "count": 8
-  },
-  {
-    "path": "src/ui/styles/foundation.css",
-    "kind": "radius",
     "count": 3
   },
   {
     "path": "src/ui/styles/foundation.css",
+    "kind": "radius",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/foundation.css",
     "kind": "shadow",
-    "count": 5
+    "count": 2
   },
   {
     "path": "src/ui/styles/frame.css",
@@ -385,34 +203,49 @@
     "count": 4
   },
   {
+    "path": "src/ui/styles/kit.css",
+    "kind": "color",
+    "count": 11
+  },
+  {
+    "path": "src/ui/styles/kit.css",
+    "kind": "font",
+    "count": 4
+  },
+  {
+    "path": "src/ui/styles/kit.css",
+    "kind": "radius",
+    "count": 2
+  },
+  {
+    "path": "src/ui/styles/kit.css",
+    "kind": "shadow",
+    "count": 1
+  },
+  {
     "path": "src/ui/styles/layers.css",
     "kind": "backdrop",
-    "count": 6
+    "count": 2
   },
   {
     "path": "src/ui/styles/layers.css",
     "kind": "color",
-    "count": 164
-  },
-  {
-    "path": "src/ui/styles/layers.css",
-    "kind": "family",
-    "count": 15
-  },
-  {
-    "path": "src/ui/styles/layers.css",
-    "kind": "font",
-    "count": 38
-  },
-  {
-    "path": "src/ui/styles/layers.css",
-    "kind": "radius",
     "count": 18
   },
   {
     "path": "src/ui/styles/layers.css",
+    "kind": "font",
+    "count": 4
+  },
+  {
+    "path": "src/ui/styles/layers.css",
+    "kind": "radius",
+    "count": 3
+  },
+  {
+    "path": "src/ui/styles/layers.css",
     "kind": "shadow",
-    "count": 17
+    "count": 2
   },
   {
     "path": "src/ui/styles/location.css",
@@ -460,79 +293,9 @@
     "count": 1
   },
   {
-    "path": "src/ui/styles/provider-settings.css",
-    "kind": "backdrop",
-    "count": 4
-  },
-  {
-    "path": "src/ui/styles/provider-settings.css",
-    "kind": "color",
-    "count": 58
-  },
-  {
-    "path": "src/ui/styles/provider-settings.css",
-    "kind": "font",
-    "count": 19
-  },
-  {
-    "path": "src/ui/styles/provider-settings.css",
-    "kind": "radius",
-    "count": 13
-  },
-  {
-    "path": "src/ui/styles/provider-settings.css",
-    "kind": "shadow",
-    "count": 3
-  },
-  {
-    "path": "src/ui/styles/radio.css",
-    "kind": "color",
-    "count": 126
-  },
-  {
-    "path": "src/ui/styles/radio.css",
-    "kind": "family",
-    "count": 6
-  },
-  {
     "path": "src/ui/styles/radio.css",
     "kind": "font",
-    "count": 34
-  },
-  {
-    "path": "src/ui/styles/radio.css",
-    "kind": "radius",
-    "count": 17
-  },
-  {
-    "path": "src/ui/styles/radio.css",
-    "kind": "shadow",
-    "count": 14
-  },
-  {
-    "path": "src/ui/styles/recent-imagery.css",
-    "kind": "backdrop",
     "count": 2
-  },
-  {
-    "path": "src/ui/styles/recent-imagery.css",
-    "kind": "color",
-    "count": 25
-  },
-  {
-    "path": "src/ui/styles/recent-imagery.css",
-    "kind": "font",
-    "count": 14
-  },
-  {
-    "path": "src/ui/styles/recent-imagery.css",
-    "kind": "radius",
-    "count": 8
-  },
-  {
-    "path": "src/ui/styles/recent-imagery.css",
-    "kind": "shadow",
-    "count": 6
   },
   {
     "path": "src/ui/styles/responsive.css",
@@ -541,28 +304,18 @@
   },
   {
     "path": "src/ui/styles/scenes.css",
-    "kind": "backdrop",
-    "count": 2
-  },
-  {
-    "path": "src/ui/styles/scenes.css",
     "kind": "color",
-    "count": 37
+    "count": 6
   },
   {
     "path": "src/ui/styles/scenes.css",
     "kind": "font",
-    "count": 10
-  },
-  {
-    "path": "src/ui/styles/scenes.css",
-    "kind": "radius",
-    "count": 8
+    "count": 1
   },
   {
     "path": "src/ui/styles/scenes.css",
     "kind": "shadow",
-    "count": 5
+    "count": 2
   },
   {
     "path": "src/ui/styles/searches-panel.css",
@@ -597,12 +350,12 @@
   {
     "path": "src/ui/styles/status.css",
     "kind": "backdrop",
-    "count": 8
+    "count": 4
   },
   {
     "path": "src/ui/styles/status.css",
     "kind": "color",
-    "count": 45
+    "count": 37
   },
   {
     "path": "src/ui/styles/status.css",
@@ -612,17 +365,17 @@
   {
     "path": "src/ui/styles/status.css",
     "kind": "font",
-    "count": 14
+    "count": 12
   },
   {
     "path": "src/ui/styles/status.css",
     "kind": "radius",
-    "count": 7
+    "count": 5
   },
   {
     "path": "src/ui/styles/status.css",
     "kind": "shadow",
-    "count": 9
+    "count": 7
   },
   {
     "path": "src/ui/styles/street-level.css",
@@ -648,46 +401,6 @@
     "path": "src/ui/styles/street-level.css",
     "kind": "shadow",
     "count": 2
-  },
-  {
-    "path": "src/ui/styles/voice-card.css",
-    "kind": "backdrop",
-    "count": 2
-  },
-  {
-    "path": "src/ui/styles/voice-card.css",
-    "kind": "color",
-    "count": 29
-  },
-  {
-    "path": "src/ui/styles/voice-card.css",
-    "kind": "font",
-    "count": 10
-  },
-  {
-    "path": "src/ui/styles/voice-card.css",
-    "kind": "radius",
-    "count": 7
-  },
-  {
-    "path": "src/ui/styles/voice-card.css",
-    "kind": "shadow",
-    "count": 3
-  },
-  {
-    "path": "src/ui/styles/voice-cost.css",
-    "kind": "color",
-    "count": 9
-  },
-  {
-    "path": "src/ui/styles/voice-cost.css",
-    "kind": "font",
-    "count": 2
-  },
-  {
-    "path": "src/ui/styles/voice-cost.css",
-    "kind": "radius",
-    "count": 1
   },
   {
     "path": "src/ui/styles/world-phase-4.css",

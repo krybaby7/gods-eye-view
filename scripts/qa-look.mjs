@@ -31,8 +31,32 @@ import {
 } from './qa-look-weather.fixtures.mjs';
 import { captureWeather } from './qa-look-weather.mjs';
 import { captureCctv, cctvFixture } from './qa-look-cctv.mjs';
+import {
+  captureKeys,
+  keylessFixtures,
+  verifyKeysQuery,
+} from './qa-look-keys.mjs';
+import {
+  captureImagery,
+  createImageryLookFixture,
+} from './qa-look-imagery.mjs';
+import { captureRadio, radioFixture } from './qa-look-radio.mjs';
+import { captureContext, contextFixture } from './qa-look-context.mjs';
+import { captureControls } from './qa-look-controls.mjs';
+import { captureWelcome } from './qa-look-welcome.mjs';
+import { captureCockpit } from './qa-look-cockpit.mjs';
 
 const options = parseLookArgs(process.argv.slice(2));
+const panelCapture = {
+  keys: captureKeys,
+  cctv: captureCctv,
+  weather: captureWeather,
+  imagery: captureImagery,
+  radio: captureRadio,
+  context: captureContext,
+  controls: captureControls,
+  cockpit: captureCockpit,
+}[options.panel];
 const out =
   process.env.GEV_LOOK_OUT && !process.argv.includes('--out')
     ? path.resolve(process.env.GEV_LOOK_OUT)
@@ -97,7 +121,14 @@ try {
   }
   await installFixtures(page, options.url.origin, world, report, {
     strict: true,
+    keys: options.panel === 'keys' ? keylessFixtures : null,
+    imageryFixture:
+      options.panel === 'imagery' && options.state === 'filled'
+        ? await createImageryLookFixture()
+        : null,
     cctv: options.panel === 'cctv' ? cctvFixture(options.state) : null,
+    radio: options.panel === 'radio' ? radioFixture(options.state) : null,
+    context: options.panel === 'context' ? contextFixture(options.state) : null,
     weather:
       options.panel === 'weather'
         ? createWeatherLookFixture(options.state)
@@ -183,6 +214,11 @@ try {
       document.querySelector('#world-turn')?.textContent === 'Turn 1'
     );
   }, wait);
+  if (options.panel === 'keys') await verifyKeysQuery(page, wait);
+  if (options.panel === 'welcome') {
+    stage = 'welcome';
+    await captureWelcome({ page, options, out, report, markFrameStage, wait });
+  }
   stage = 'country-pick';
   await markFrameStage(stage);
   const pick = await page.waitForFunction(() => {
@@ -276,24 +312,9 @@ try {
     [1440, 900],
     [1920, 1080],
   ];
-  if (options.panel === 'cctv') {
+  if (panelCapture) {
     try {
-      await captureCctv({
-        page,
-        options,
-        out,
-        report,
-        markFrameStage,
-        viewports,
-      });
-    } catch (error) {
-      const { width, height } = page.viewport();
-      await failure(width, height, 'cctv', 'journey', error);
-    }
-  }
-  if (options.panel === 'weather') {
-    try {
-      await captureWeather({
+      await panelCapture({
         page,
         options,
         out,
@@ -301,14 +322,16 @@ try {
         proxy,
         markFrameStage,
         viewports,
+        wait,
       });
     } catch (error) {
       const { width, height } = page.viewport();
-      await failure(width, height, 'weather', 'journey', error);
+      await failure(width, height, options.panel, 'journey', error);
     }
   }
-  for (const [width, height] of viewports) {
-    if (options.panel === 'weather' || options.panel === 'cctv') break;
+  const sharedViewports =
+    panelCapture || options.panel === 'welcome' ? [] : viewports;
+  for (const [width, height] of sharedViewports) {
     await markFrameStage(`${width}x${height} viewport`);
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     if (options.panel === 'layers') {

@@ -17,10 +17,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.42rem;
-  color: rgba(206, 232, 239, 0.72);
-  font-size: 0.58rem;
+  color: var(--text-2);
+  font: var(--type-label);
   font-weight: 500;
-  letter-spacing: 0.13rem;
 }
 
 #command-dock .dock-label-icon {
@@ -28,7 +27,7 @@
   flex: 0 0 1rem;
   width: 1rem;
   height: 1rem;
-  background: rgba(232, 234, 237, 0.3);
+  background: var(--surface-2);
   mask-position: center;
   mask-repeat: no-repeat;
   mask-size: contain;
@@ -53,7 +52,7 @@
 #command-dock :is(#location-bar, #control-panel):hover .dock-label-icon,
 #command-dock :is(#location-bar, #control-panel).dock-pinned .dock-label-icon {
   background: var(--accent);
-  filter: drop-shadow(0 0 0.35rem rgba(0, 212, 255, 0.28));
+  filter: none;
 }
 
 #command-dock :is(#location-bar, #control-panel):hover .location-toolbar-label,
@@ -82,7 +81,7 @@
 #command-dock #location-bar .dock-tray-toggle:focus-visible {
   outline: 2px solid var(--text-primary);
   outline-offset: 3px;
-  border-radius: 3px;
+  border-radius: var(--radius-panel);
 }
 
 #command-dock #control-panel .dock-tray-toggle {
@@ -99,7 +98,7 @@
 #command-dock #control-panel .dock-tray-toggle:focus-visible {
   outline: 1px solid color-mix(in srgb, var(--accent) 80%, transparent);
   outline-offset: 3px;
-  border-radius: 3px;
+  border-radius: var(--radius-panel);
 }
 
 #command-dock #control-panel .panel-title {
@@ -130,11 +129,11 @@
 }
 
 #command-dock .location-toolbar-label::after {
-  background: linear-gradient(to right, rgba(232, 234, 237, 0.3), transparent);
+  background: linear-gradient(to right, var(--surface-2), transparent);
 }
 
 #command-dock #control-panel .panel-title::after {
-  background: linear-gradient(to left, rgba(232, 234, 237, 0.3), transparent);
+  background: linear-gradient(to left, var(--surface-2), transparent);
 }
 
 #command-dock .panel-title::after,
@@ -160,9 +159,8 @@
   height: 1.65rem;
   margin: -1.48rem -0.22rem 0.25rem 0;
   padding: 0;
-  border-radius: 50%;
-  background: rgba(8, 24, 34, 0.96);
-  box-shadow: 0 0.35rem 0.9rem rgba(0, 0, 0, 0.5);
+  border-radius: var(--radius-pill);
+  background: var(--surface-1);
   transform: translateY(-0.12rem);
 }
 
@@ -214,17 +212,17 @@
 #command-dock .location-pill,
 #command-dock .poi-pill,
 #command-dock .btn-label {
-  font-size: 0.56rem;
+  font: var(--type-control);
 }
 
 #command-dock #location-search,
 #command-dock #location-search.expanded {
-  font-size: 0.68rem;
+  font: var(--type-control);
 }
 
 #command-dock > #gev-voice-control {
   grid-template-columns: 3rem minmax(0, 1fr);
-  grid-template-rows: 0.8rem 2.25rem 0.85rem;
+  grid-template-rows: var(--space-5) minmax(0, 1fr) var(--space-5);
   gap: 0.12rem 0.28rem;
   width: var(--dock-voice-width);
   flex-basis: var(--dock-voice-width);
@@ -248,9 +246,8 @@
 #command-dock .gev-voice-kicker {
   position: static;
   padding-right: 0;
-  font-size: 0.46rem;
+  font: var(--type-label);
   font-weight: 500;
-  letter-spacing: 0.08rem;
 }
 
 #command-dock #gev-voice-button {
@@ -262,7 +259,6 @@
   background: transparent;
   border: 0;
   border-radius: 0;
-  box-shadow: none;
 }
 
 #command-dock .gev-mic-orbit {
@@ -271,19 +267,15 @@
   height: 2.45rem;
   aspect-ratio: 1;
   box-sizing: border-box;
-  background: rgba(0, 212, 255, 0.06);
-  border: 1px solid rgba(0, 212, 255, 0.48);
-  border-radius: 50%;
-  box-shadow:
-    0 0 0 0.18rem rgba(0, 212, 255, 0.06),
-    0 0 0.9rem rgba(0, 212, 255, 0.12);
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
 }
 
 #command-dock .gev-mic-label {
   display: block;
   margin-top: 0.18rem;
-  font-size: 0.42rem;
-  letter-spacing: 0.035rem;
+  font: var(--type-small);
 }
 
 #command-dock .gev-voice-visualizer {
@@ -291,7 +283,7 @@
   grid-row: 2;
   align-self: stretch;
   box-sizing: border-box;
-  height: 2.25rem;
+  min-height: 0;
   padding: 0.3rem 0.05rem 0.12rem;
   overflow: hidden;
   visibility: visible;
@@ -317,7 +309,7 @@
   width: auto;
   padding-top: 0;
   color: var(--accent);
-  font-size: 0.43rem;
+  font: var(--type-small);
   text-align: left;
 }
 
@@ -328,9 +320,8 @@
   padding-top: 0.12rem;
   max-width: 100%;
   overflow: hidden;
-  font-size: 0.39rem;
+  font: var(--type-small);
   font-weight: 500;
-  letter-spacing: 0.035rem;
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -340,15 +331,15 @@
 #command-dock #gev-voice-control[data-status='listening'] #gev-voice-detail,
 #command-dock #gev-voice-control[data-status='executing'] #gev-voice-detail {
   grid-row: 3;
-  font-size: 0.43rem;
+  font: var(--type-small);
 }
 
 #command-dock #gev-voice-control[data-status='error'] {
   display: grid;
   align-items: initial;
   width: var(--dock-voice-width);
-  border-color: rgba(255, 92, 110, 0.58);
-  border-radius: 0.4rem;
+  border-color: var(--status-disrupted);
+  border-radius: var(--radius-control);
 }
 
 #command-dock #gev-voice-control[data-status='error'] .gev-voice-readout {
@@ -358,7 +349,7 @@
 #command-dock #gev-voice-control[data-status='error'] #gev-voice-detail {
   max-width: none;
   overflow: hidden;
-  color: #ffb4bd;
+  color: var(--status-disrupted);
   line-height: 1.2;
   text-align: center;
   text-overflow: ellipsis;
@@ -374,15 +365,11 @@
   padding: 0.85rem 0.9rem;
   visibility: hidden;
   opacity: 0;
-  color: rgba(255, 220, 224, 0.92);
-  background: rgba(34, 10, 16, 0.96);
-  border: 1px solid rgba(255, 92, 110, 0.5);
-  border-radius: 0.42rem;
-  box-shadow:
-    0 0.9rem 2.2rem rgba(0, 0, 0, 0.62),
-    0 0 1.4rem rgba(255, 92, 110, 0.08);
-  backdrop-filter: blur(28px) saturate(1.25);
-  -webkit-backdrop-filter: blur(28px) saturate(1.25);
+  color: var(--status-disrupted);
+  background: var(--surface-1);
+  border: 1px solid var(--status-disrupted);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-pop);
   pointer-events: none;
   transform: translate(-50%, 0.55rem) scale(0.985);
   transform-origin: bottom center;
@@ -406,40 +393,33 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  color: #ff8f9d;
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
+  color: var(--status-disrupted);
+  font: var(--type-small);
   font-weight: 600;
-  letter-spacing: 0.1rem;
 }
 
 #command-dock .gev-voice-error-dismiss {
   padding: 0.25rem 0.42rem;
-  color: rgba(255, 220, 224, 0.72);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 143, 157, 0.32);
-  border-radius: 0.2rem;
-  font-family: var(--font-mono);
-  font-size: 0.43rem;
-  letter-spacing: 0.06rem;
+  color: var(--status-disrupted);
+  background: var(--surface-3);
+  border: 1px solid var(--status-disrupted);
+  border-radius: var(--radius-control);
+  font: var(--type-control);
   cursor: pointer;
 }
 
 #command-dock #gev-voice-error-detail {
   margin-top: 0.65rem;
-  color: rgba(255, 232, 235, 0.92);
-  font-family: var(--font-sans);
-  font-size: 0.78rem;
+  color: var(--text-1);
+  font: var(--type-small);
   line-height: 1.45;
 }
 
 #command-dock .gev-voice-error-hint {
   margin-top: 0.5rem;
-  color: rgba(255, 196, 203, 0.58);
-  font-family: var(--font-mono);
-  font-size: 0.52rem;
+  color: var(--status-disrupted);
+  font: var(--type-small);
   line-height: 1.45;
-  letter-spacing: 0.035rem;
 }
 
 /* Keep the complete inline attribution row above the command dock. */

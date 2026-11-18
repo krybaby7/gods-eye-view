@@ -496,10 +496,10 @@ test('a failed Context mission reports the layers the facade named', async () =>
 });
 
 test('the fires/quakes tile name is switchable from one constant', () => {
-  assert.equal(environmentalLabel('ENVIRONMENTAL').title, 'ENVIRONMENTAL');
-  assert.equal(environmentalLabel('EARTH_WATCH').title, 'EARTH WATCH');
-  assert.equal(environmentalLabel('ACTIVE_EVENTS').title, 'ACTIVE EVENTS');
-  assert.equal(environmentalLabel('nonsense').title, 'ENVIRONMENTAL');
+  assert.equal(environmentalLabel('ENVIRONMENTAL').title, 'Environmental');
+  assert.equal(environmentalLabel('EARTH_WATCH').title, 'Earth watch');
+  assert.equal(environmentalLabel('ACTIVE_EVENTS').title, 'Active events');
+  assert.equal(environmentalLabel('nonsense').title, 'Environmental');
   assert.equal(environmentalLabel().title, environmentalLabel(ENVIRONMENTAL_LABEL_CHOICE).title);
 });
 
@@ -555,27 +555,31 @@ test('markup, startup ordering and accessibility remain pinned', () => {
   const startup = fs.readFileSync(new URL('./app/startupChrome.js', import.meta.url), 'utf8');
   const css = readStylesheet(new URL('../style.css', import.meta.url));
 
-  assert.match(html, /id="first-run-launcher" role="dialog"[^>]*aria-labelledby="first-run-title"[^>]*hidden/);
+  assert.match(html, /id="first-run-launcher"[^>]*role="dialog"[^>]*aria-labelledby="first-run-title"[^>]*hidden/);
   assert.equal((html.match(/data-first-run-choice=/g) || []).length, 4);
   assert.match(html, /data-first-run-status[^>]*role="status"[^>]*aria-live="polite"/);
-  assert.match(html, /<input type="checkbox" data-first-run-suppress \/>/);
+  assert.match(html, /<input\s+type="checkbox"\s+data-first-run-suppress\s*\/>/);
   assert.match(html, /<strong data-first-run-environmental-title>/);
   // Subcopy must name BOTH feeds the tile turns on — a tile that promised only
   // half of what it does is the defect this replaced. Only the VISIBLE <small>
   // text counts; the comment beside it naturally says the words too.
-  const envTile = html.slice(html.indexOf('data-first-run-choice="environmental"'));
-  const visible = envTile.slice(envTile.indexOf('<small>'), envTile.indexOf('</small>'));
+  const envTile = html.split('data-first-run-choice="environmental"')[1].split('</button>')[0];
+  const visible = envTile.match(/<small\s*>([^<]+)<\/small\s*>/)?.[1] || '';
   assert.match(visible, /earthquakes/i);
   assert.match(visible, /fires?/i, 'the tile must promise the fires it enables');
 
   // The card's one persuasive line is OWNER-AUTHORED and pinned verbatim,
   // unspaced em dash included. This is copy, not prose to be improved in a
   // passing edit — changing it needs the owner, not a nicer-sounding rewrite.
-  assert.ok(
-    html.includes('<p id="first-run-description">It feels like a forbidden cockpit'
-      + '—then you realize the sources are public and the data is real.</p>'),
+  const description = html.match(/<p id="first-run-description">([^<]*)<\/p>/)?.[1]
+    .trim().replace(/\s+/g, ' ');
+  assert.equal(
+    description,
+    'It feels like a forbidden cockpit—then you realize the sources are public and the data is real.',
     'the owner-authored first-run line must ship exactly as written',
   );
+
+  assert.match(html, /the microphone in the bottom bar/i);
 
   // Menu order is the owner's, read straight off the markup.
   const order = [...html.matchAll(/data-first-run-choice="([a-z-]+)"/g)].map((match) => match[1]);

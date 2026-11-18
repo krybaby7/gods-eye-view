@@ -922,9 +922,51 @@
   outline: none;
 }
 
-/* Menu ▸ Tools ▸ Draw: shape segment, label field, colour, and the one-line hint */
+/* Menu ▸ Tools ▸ Draw */
+#draw-toggle {
+  gap: var(--space-2);
+  font: var(--type-control);
+  text-transform: none;
+}
+
+#draw-toggle .pp-label,
+#draw-mode-row .pp-slider-mini-label {
+  color: var(--text-1);
+  font: var(--type-label);
+  letter-spacing: normal;
+  text-transform: none;
+}
 #draw-mode-row {
   min-width: 184px;
+}
+
+.draw-shape-seg {
+  flex: 1;
+}
+
+.draw-shape-seg .kit-seg-item {
+  flex: 1;
+  height: auto;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font: var(--type-control);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.draw-shape-seg .kit-seg-item:hover {
+  background: var(--surface-2);
+  color: var(--text-1);
+}
+
+.draw-shape-seg .kit-seg-item:focus-visible {
+  box-shadow: none;
+}
+
+.draw-shape-seg .kit-seg-item[aria-checked='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
 }
 #draw-label-row {
   flex-wrap: wrap;
@@ -934,13 +976,11 @@
   flex: 1 1 110px;
   min-width: 0;
   height: 24px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-control);
   color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.6px;
+  font: var(--type-control);
   padding: 2px 6px;
   outline: none;
 }
@@ -948,21 +988,20 @@
   border-color: var(--accent);
 }
 .draw-color-select {
-  flex: 0 0 74px;
+  flex: 0 0 90px;
+  font: var(--type-control);
+  color: var(--text-1);
 }
 .draw-clear-btn {
   flex: 0 0 auto;
   padding: 0 8px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 6px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-control);
 }
 .draw-hint {
   flex-basis: 100%;
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.6px;
-  color: var(--text-dim);
-  line-height: 1.4;
+  font: var(--type-small);
+  color: var(--text-2);
 }
 body.gev-drawing #cesiumContainer canvas {
   cursor: crosshair;

@@ -177,7 +177,7 @@ Configure issue is resolved. On macOS, the Keychain via
 
 </details>
 
-The server binds to **localhost** on both paths, and Provider Settings answers
+The server binds to **localhost** on both paths, and Data sources and keys answers
 requests only from your machine. Browser-side keys (Google Maps, Cesium ion)
 must be restricted at their providers — [SECURITY.md](SECURITY.md) shows how,
 and it carries the LAN-sharing rules alongside [Keys & Costs](#-api-keys).
@@ -234,7 +234,7 @@ _Why cockpit mode exists: you're riding a real aircraft over real terrain — an
 
 ## 🎙️ Talk to It
 
-> Voice can use an **OpenAI API key** or, on the same machine, an opt-in signed-in **ChatGPT/Codex OAuth** session. The API-key path remains the default. Selecting ChatGPT OAuth in Provider Settings reuses an existing local sign-in or starts the Codex browser sign-in flow and selects OAuth when it completes. The OpenAI key still drives the **AI HUD summary**: a terse, five-word intelligence-style readout of the current view that regenerates as you move.
+> Voice can use an **OpenAI API key** or, on the same machine, an opt-in signed-in **ChatGPT/Codex OAuth** session. The API-key path remains the default. Selecting ChatGPT OAuth in Data sources and keys reuses an existing local sign-in or starts the Codex browser sign-in flow and selects OAuth when it completes. The OpenAI key still drives the **AI HUD summary**: a terse, five-word intelligence-style readout of the current view that regenerates as you move.
 
 The OAuth option is experimental. OpenAI documents ChatGPT plan usage for the [Responses API](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference); a supported third-party Realtime contract for reusing Codex tokens has not been confirmed. A successful token mint does not establish billing or support terms.
 
@@ -248,7 +248,7 @@ Click **GEV MIC**, grant the microphone, and just talk. This is more than a voic
 - **🎯 Entity Q&A.** Click any plane, ship, or datacenter and ask _"what's this?"_ It answers using the object's live telemetry.
 - **👁️ Visual grounding.** At street level, it reads a viewport screenshot to identify legible signage and building names, and is instructed never to hallucinate labels.
 - **🎬 Cinematic framing.** _"Show me the planes overhead"_ pulls the camera back, angles it, and frames the live traffic like a director.
-- **🔒 Honest and secure.** The agent only confirms actions that succeeded. Your `OPENAI_API_KEY` never touches the browser; the client only gets a short-lived session token. If you choose **USE CHATGPT OAUTH** in Provider Settings, the local server uses that sign-in only to mint the same kind of short-lived Realtime credential, and refuses the OAuth path for non-loopback clients.
+- **🔒 Honest and secure.** The agent only confirms actions that succeeded. Your `OPENAI_API_KEY` never touches the browser; the client only gets a short-lived session token. If you choose **Use ChatGPT OAuth** in Data sources and keys, the local server uses that sign-in only to mint the same kind of short-lived Realtime credential, and refuses the OAuth path for non-loopback clients.
 
 Thirty tools, four jobs — the commands below come straight from the product's voice test suite and tool playbook:
 
@@ -448,7 +448,7 @@ Eight keys. Five have a free tier, and the three 🔴 ones are metered:
 | --- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 🟡  | **Cesium ion**  | 🗺️ Google Photorealistic 3D, world terrain, and additional ion-hosted imagery stacks. The free Community plan is for eligible individual, personal/non-commercial use and has quotas          | [cesium.com/ion](https://cesium.com/ion) — use a public `assets:read` token and check current [pricing/eligibility](https://cesium.com/platform/cesium-ion/pricing/) |
 | 🔴  | **Google Maps** | Direct Google Photorealistic 3D, Google place search and Street View ([Map Tiles API](https://developers.google.com/maps/documentation/tile); Street View also needs the Maps JavaScript API) | [Google Cloud Console](https://console.cloud.google.com/) — URL-restrict it                                                                                          |
-| 🔴  | **OpenAI**      | 🎙️ Voice + AI HUD summary through an API key. Provider Settings also offers **USE CHATGPT OAUTH** for cloud voice without removing the API-key option                                         | [platform.openai.com](https://platform.openai.com) — API-key usage is metered, see costs below                                                                       |
+| 🔴  | **OpenAI**      | 🎙️ Voice + AI HUD summary through an API key. Data sources and keys also offers **Use ChatGPT OAuth** for cloud voice without removing the API-key option                                         | [platform.openai.com](https://platform.openai.com) — API-key usage is metered, see costs below                                                                       |
 | 🟡  | **AISStream**   | 🚢 Live global ships                                                                                                                                                                          | [aisstream.io](https://aisstream.io) — free signup                                                                                                                   |
 | 🟡  | **NASA FIRMS**  | 🔥 Live active fires                                                                                                                                                                          | [firms.modaps.eosdis.nasa.gov](https://firms.modaps.eosdis.nasa.gov/api/map_key/) — free                                                                             |
 | 🟡  | **TomTom**      | 🚦 Live flow speeds and congestion colors for the simulated traffic layer                                                                                                                     | [my.tomtom.com](https://my.tomtom.com/keys) — free tier available                                                                                                    |
@@ -528,7 +528,7 @@ Honest numbers, roughly, as of mid-2026 — always check the provider pricing pa
 | **🟢 Most layers**       | **$0, no signup.** OpenSky anon, USGS, CelesTrak, adsb.lol, city CCTV, Radio Browser, GBFS, Launch Library 2, transit feeds, OSRM routing, NOAA and ECMWF weather, OpenStreetMap ALPR mapping, bundled datasets.                                                                     |
 | **🟡 The free-key tier** | **$0 with a signup.** AISStream, FIRMS, TomTom, OpenSky, plus Cesium ion for eligible personal/non-commercial use. Provider quotas and eligibility still apply.                                                                                                                      |
 | **🗺️ Google 3D tiles**   | **Free through an eligible Cesium ion Community account within its quota; metered through a direct Google key.** Use the direct route for Google place search or commercial deployment, verify current provider terms, and set budget alerts where billing is enabled.               |
-| **🔴 OpenAI voice**      | API-key sessions keep the live spend readout, STD/MINI model toggle, $2 warning, and **$5 hard cap**. ChatGPT OAuth is an explicit choice in Provider Settings. Its usage is tracked without an API-dollar estimate or spend cap. The voice context window stays deliberately short. |
+| **🔴 OpenAI voice**      | API-key sessions keep the live spend readout, STD/MINI model toggle, $2 warning, and **$5 hard cap**. ChatGPT OAuth is an explicit choice in Data sources and keys. Its usage is tracked without an API-dollar estimate or spend cap. The voice context window stays deliberately short. |
 
 Google's direct 3D route is surprisingly generous: the first 1,000 Photorealistic
 3D Tiles sessions each month are currently free, and one root request supports
@@ -546,7 +546,7 @@ Everything above is the deliberately cheap baseline — enough to get a real tas
 
 By default nobody else can reach your server — it binds to localhost. To share on your LAN, opt in explicitly (`npm run dev -- --host 0.0.0.0 --port 4173`, or `HOST=0.0.0.0 ./scripts/dev-fresh.sh` on macOS/Linux). IP addresses work as they are; if you use a LAN hostname, add it with `GEV_ALLOWED_HOSTS=globe.lan`, since binding to `0.0.0.0` does not trust arbitrary Host headers. But know that ⚠️ **a LAN-visible server brokers your configured API keys to anyone who can reach it.** Per-IP throttles on the cost-bearing endpoints are on by default (`GEV_RATELIMIT_OPENAI_PER_MIN`, `GEV_RATELIMIT_GOOGLE_PER_MIN` — see `.env.example` to tune them), but before anything else, **configure provider quotas, usage limits, and billing alerts**: app-level throttles are not billing caps, and a budget alert alone does not stop spending. Full threat model in [SECURITY.md](SECURITY.md).
 
-Provider Settings is disabled when the server is shared, so remote users cannot
+Data sources and keys is disabled when the server is shared, so remote users cannot
 access the key-entry panel.
 
 **Pinokio LAN and Cloudflare sharing remain disabled for this launcher.** Use

@@ -1682,7 +1682,7 @@ test('expanded Context results omit the redundant status heading', () => {
   assert.doesNotMatch(militaryAwarenessSource, /military-awareness-heading/);
   assert.doesNotMatch(militaryAwarenessSource, /GLOBAL CONTEXT <span>CONTEXT ONLY<\/span>/);
   assert.match(militaryAwarenessSource, /military-awareness-subject/);
-  assert.match(militaryAwarenessSource, /FLIGHT \/ VESSEL WINDOW/);
+  assert.match(militaryAwarenessSource, /flight and vessel window/);
   assert.match(militaryAwarenessSource, /military-awareness-controls/);
 });
 

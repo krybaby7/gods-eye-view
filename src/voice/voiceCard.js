@@ -166,7 +166,7 @@ export class VoiceCardControls {
       el.chips.replaceChildren(
         ...view.result.chips.map((text) => {
           const chip = doc.createElement('span');
-          chip.className = 'gev-voice-card-chip';
+          chip.className = 'gev-voice-card-chip kit-chip';
           chip.dataset.tone = text;
           chip.textContent = text;
           return chip;

@@ -166,6 +166,29 @@ function withObservers(t) {
   return { mutations, resizes };
 }
 
+test('credit resize publishes both dimensions and clears them on teardown', (t) => {
+  const { resizes } = withObservers(t);
+  const f = harness({ ids: ['cesium-credits'] });
+  const styles = new Map();
+  f.document.body.style.setProperty = (key, value) => styles.set(key, value);
+  f.document.body.style.removeProperty = (key) => styles.delete(key);
+  const credit = f.node('cesium-credits');
+  const frame = f.create();
+  t.after(() => frame.destroy());
+  const observer = resizes.find(({ target }) => target === credit);
+  assert.ok(observer);
+  observer.callback();
+  assert.equal(styles.get('--frame-credits-width'), '120px');
+  assert.equal(styles.get('--frame-credits-height'), '26px');
+  credit.getBoundingClientRect = () => ({ width: 118.2, height: 44.6 });
+  observer.callback();
+  assert.equal(styles.get('--frame-credits-width'), '119px');
+  assert.equal(styles.get('--frame-credits-height'), '45px');
+  frame.destroy();
+  assert.equal(styles.has('--frame-credits-width'), false);
+  assert.equal(styles.has('--frame-credits-height'), false);
+});
+
 test('the frame is a template of five regions, listed for the build', () => {
   for (const id of [
     'frame-top',

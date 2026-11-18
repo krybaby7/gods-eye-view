@@ -22,7 +22,7 @@ export const SITUATION_FOLDER_LABELS = Object.freeze({
 });
 
 export const REFRESH_DISABLED_REASONS = Object.freeze({
-  no_key: 'Needs PERPLEXITY_API_KEY — add it in Provider Settings',
+  no_key: 'Needs PERPLEXITY_API_KEY — add it in Data sources and keys',
   over_budget: "Today's digest budget is used up",
   in_flight: 'A digest is running',
   nothing_new: 'Nothing new since the last digest',

@@ -19,7 +19,7 @@ import {
 test('provider requirements name the registry env vars and next step', () => {
   assert.equal(
     keySetupRequirement('cesium-ion'),
-    'Needs CESIUM_ION_TOKEN — add it in Provider Settings',
+    'Needs CESIUM_ION_TOKEN — add it in Data sources and keys',
   );
   assert.equal(keySetupRequirement('unknown'), '');
 });
@@ -353,7 +353,7 @@ test('server Google key remains supported without appearing in setup or its miss
   assert.deepEqual(status, keySetupStatus({}));
   assert.equal(status.keys.some((key) => key.id === 'google-maps-server'), false);
   assert.equal(keySetupRequirement('google-maps-server'), '');
-  assert.equal(status.keys.find((key) => key.id === 'google-maps').title, 'GOOGLE MAPS');
+  assert.equal(status.keys.find((key) => key.id === 'google-maps').title, 'Google Maps');
   const allVisibleConfigured = Object.fromEntries(status.keys.flatMap((key) =>
     key.envVars.map((name) => [name, 'configured-fixture']),
   ));
@@ -368,7 +368,7 @@ test('key guidance can offer another source that works with a key already set', 
   const streetView = { label: 'STREET VIEW', requiresKeyId: 'google-maps' };
   assert.equal(
     keySetupWithAlternatives(keySetupRequirement('mapillary'), [streetView]),
-    'Needs MAPILLARY_CLIENT_TOKEN — add it in Provider Settings, or light STREET VIEW to use your Google Maps key',
+    'Needs MAPILLARY_CLIENT_TOKEN — add it in Data sources and keys, or light STREET VIEW to use your Google Maps key',
   );
   assert.equal(
     keySetupWithAlternatives('', [streetView]),
@@ -377,7 +377,7 @@ test('key guidance can offer another source that works with a key already set', 
   assert.equal(keySetupWithAlternatives('Needs X', []), 'Needs X');
 });
 
-test('the war monitor digest key is a metered Provider Settings row', () => {
+test('the war monitor digest key is a metered Data sources and keys row', () => {
   const entry = KEY_SETUP_KEYS.find((key) => key.id === 'perplexity');
   assert.deepEqual(entry.envVars, ['PERPLEXITY_API_KEY']);
   assert.equal(entry.tier, 'metered');
@@ -386,11 +386,11 @@ test('the war monitor digest key is a metered Provider Settings row', () => {
   assert.ok(knownKeySetupEnvVars().has('PERPLEXITY_API_KEY'));
   assert.equal(
     keySetupRequirement('perplexity'),
-    'Needs PERPLEXITY_API_KEY — add it in Provider Settings',
+    'Needs PERPLEXITY_API_KEY — add it in Data sources and keys',
   );
 });
 
-test('Provider Settings accepts the optional Search Layers ReliefWeb appname', () => {
+test('Data sources and keys accepts the optional Search Layers ReliefWeb appname', () => {
   const appname = 'owner-approved-reliefweb';
   assert.deepEqual(
     validateKeySetupUpdates({ SEARCH_RELIEFWEB_APPNAME: appname }),

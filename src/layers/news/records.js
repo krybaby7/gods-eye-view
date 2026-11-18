@@ -684,7 +684,7 @@ function briefSentence(briefRun) {
 export function formatBriefOutcome(outcome) {
   if (!outcome) return '';
   if (outcome.keyRequired)
-    return 'The brief needs a Perplexity API key: add PERPLEXITY_API_KEY in Provider Settings.';
+    return 'The brief needs a Perplexity API key: add PERPLEXITY_API_KEY in Data sources and keys.';
   if (outcome.error === 'in_flight')
     return 'A digest or brief is already running.';
   if (outcome.error === 'cancelled') return 'Claude run canceled.';
@@ -712,7 +712,7 @@ export function formatDigestOutcome(outcome, budget = null) {
       ? ` $${budget.remainingUsd.toFixed(2)} of today's $${budget.dailyUsd.toFixed(2)} budget left.`
       : '';
   if (outcome.keyRequired)
-    return 'The digest needs a Perplexity API key: add PERPLEXITY_API_KEY in Provider Settings.';
+    return 'The digest needs a Perplexity API key: add PERPLEXITY_API_KEY in Data sources and keys.';
   if (outcome.error === 'in_flight') return 'A digest is already running.';
   if (outcome.error === 'cancelled') return 'Claude run canceled.';
   if (outcome.error === 'agent_busy' || outcome.error === 'agent_unavailable')

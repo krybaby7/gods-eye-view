@@ -6,6 +6,8 @@
  * see docs/TOOLS.md.
  */
 
+import { DESIGN_COLORS } from '../designTokens.js';
+
 export const GLOBE_PANEL_URI = 'ui://gods-eye-view/globe';
 /** Where the app's server serves its panel build (see build/panel.js). */
 export const PANEL_BASE = '/panel/';
@@ -85,13 +87,17 @@ function panelHtml(runtime, panelKey) {
 <meta charset="utf-8">
 <title>God's Eye View</title>
 <style>
-  html, body { margin: 0; height: 100%; min-height: ${PANEL_HEIGHT_PX}px; background: #05070a;
-    color: #b8c4cc; font: 13px/1.4 system-ui, sans-serif; overflow: hidden; }
+  html, body { margin: 0; height: 100%; min-height: ${PANEL_HEIGHT_PX}px; background: ${DESIGN_COLORS['--surface-space']};
+    color: ${DESIGN_COLORS['--text-2']}; font: 400 13px/19px system-ui, sans-serif; overflow: hidden; }
   #status { position: absolute; inset: 0; z-index: 10000; display: flex; align-items: center;
     justify-content: center; padding: 0 24px; text-align: center; }
   #actions { position: absolute; right: 10px; top: 10px; z-index: 10001; display: flex; gap: 6px; }
-  #actions button { padding: 6px 10px; border: 1px solid #3a4a55; border-radius: 6px;
-    background: rgba(5, 7, 10, 0.75); color: #dfe8ee; font: inherit; cursor: pointer; }
+  #actions button { padding: 6px 10px; min-height: 34px;
+    border: 1px solid ${DESIGN_COLORS['--line-strong']}; border-radius: 10px;
+    background: ${DESIGN_COLORS['--surface-2']}; color: ${DESIGN_COLORS['--text-1']};
+    font: 500 13px/19px system-ui, sans-serif; cursor: pointer; }
+  #actions button:hover { background: ${DESIGN_COLORS['--surface-3']}; }
+  #actions button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
   #actions button[hidden] { display: none; }
 </style>
 </head>

@@ -12,8 +12,8 @@ export function createVoiceControl({ reset = false } = {}) {
     root.dataset.speaker = 'idle';
     root.innerHTML = `
       <div class="gev-voice-heading">
-        <div class="gev-voice-kicker">AI AGENT</div>
-        <div id="gev-voice-status">OFF</div>
+        <div class="gev-voice-kicker">Voice agent</div>
+        <div id="gev-voice-status">Off</div>
         <div class="gev-voice-cost">
           <button id="gev-voice-tier" class="gev-voice-tier-btn" type="button" aria-pressed="false" title="Voice model tier — applies next session">STD</button>
           <span id="gev-voice-cost-value" class="gev-voice-cost-value" data-level="ok" title="Estimated session cost">~$0.00</span>
@@ -21,26 +21,26 @@ export function createVoiceControl({ reset = false } = {}) {
       </div>
       <button id="gev-voice-button" type="button" aria-label="Voice control — activate to toggle voice; hold Space to speak" aria-describedby="gev-voice-help">
         <span class="gev-mic-orbit"><img src="/mic.svg" alt="" /></span>
-        <span class="gev-mic-label">ON/OFF</span>
+        <span class="gev-mic-label">On/off</span>
       </button>
       <div class="gev-voice-visualizer" aria-hidden="true">
         ${Array.from({ length: 15 }, (_, index) => `<span style="--bar:${index}"></span>`).join('')}
       </div>
       <div class="gev-voice-readout">
-        <div id="gev-voice-detail">VOICE STANDBY</div>
+        <div id="gev-voice-detail">Voice standby</div>
       </div>
-      <div id="gev-voice-help" class="gev-voice-help-tray" role="tooltip">
-        <span class="gev-voice-help-kicker">VOICE CONTROL</span>
+      <div id="gev-voice-help" class="gev-voice-help-tray kit-pop" role="tooltip">
+        <span class="gev-voice-help-kicker">Voice control</span>
         <span class="gev-voice-help-detail">Hold Space to speak · tap Space to activate focused controls</span>
       </div>
-      <section id="gev-voice-card" class="gev-voice-card" hidden aria-label="Voice assistant">
-        <div class="gev-voice-card-header">
-          <span class="gev-voice-card-kicker">VOICE</span>
+      <section id="gev-voice-card" class="gev-voice-card kit-pop" hidden aria-label="Voice assistant">
+        <div class="gev-voice-card-header kit-pop-head">
+          <span class="gev-voice-card-kicker">Voice</span>
           <span id="gev-voice-card-phase" class="gev-voice-card-phase"></span>
-          <button id="gev-voice-card-dismiss" class="gev-voice-card-dismiss" type="button" aria-label="Dismiss voice card">×</button>
+          <button id="gev-voice-card-dismiss" class="gev-voice-card-dismiss kit-iconbtn" type="button" aria-label="Dismiss voice card">×</button>
         </div>
-        <p id="gev-voice-card-user" class="gev-voice-card-caption" data-role="user" hidden><span class="gev-voice-card-who">YOU</span><span id="gev-voice-card-user-text" class="gev-voice-card-text"></span></p>
-        <p id="gev-voice-card-pointer" class="gev-voice-card-pointer" hidden><span id="gev-voice-card-pointer-kind" class="gev-voice-card-who">THIS</span><span class="gev-voice-card-sr">: </span><span id="gev-voice-card-pointer-text" class="gev-voice-card-pointer-label"></span></p>
+        <p id="gev-voice-card-user" class="gev-voice-card-caption" data-role="user" hidden><span class="gev-voice-card-who">You</span><span id="gev-voice-card-user-text" class="gev-voice-card-text"></span></p>
+        <p id="gev-voice-card-pointer" class="gev-voice-card-pointer" hidden><span id="gev-voice-card-pointer-kind" class="gev-voice-card-who">This</span><span class="gev-voice-card-sr">: </span><span id="gev-voice-card-pointer-text" class="gev-voice-card-pointer-label"></span></p>
         <p id="gev-voice-card-assistant" class="gev-voice-card-caption" data-role="assistant" hidden><span class="gev-voice-card-who">GEV</span><span id="gev-voice-card-assistant-text" class="gev-voice-card-text"></span></p>
         <ol id="gev-voice-card-plan" class="gev-voice-card-plan" aria-label="Plan" hidden></ol>
         <div id="gev-voice-card-result" class="gev-voice-card-result" hidden>
@@ -49,16 +49,16 @@ export function createVoiceControl({ reset = false } = {}) {
           <ul id="gev-voice-card-lines" class="gev-voice-card-lines"></ul>
           <ol id="gev-voice-card-referents" class="gev-voice-card-referents" aria-label="Referenced items" hidden></ol>
           <details id="gev-voice-card-notes" class="gev-voice-card-notes" hidden>
-            <summary>NOTES &amp; SOURCES</summary>
+            <summary>Notes and sources</summary>
             <ul id="gev-voice-card-note-list" class="gev-voice-card-lines"></ul>
           </details>
         </div>
         <div id="gev-voice-card-live" class="gev-voice-card-sr" aria-live="polite" aria-atomic="true"></div>
       </section>
-      <div class="gev-voice-error-tray" role="alert" aria-live="assertive">
+      <div class="gev-voice-error-tray kit-pop" role="alert" aria-live="assertive">
         <div class="gev-voice-error-header">
-          <span>VOICE SYSTEM ERROR</span>
-          <button class="gev-voice-error-dismiss" type="button">DISMISS</button>
+          <span>Voice error</span>
+          <button class="gev-voice-error-dismiss kit-btn quiet" type="button">Dismiss</button>
         </div>
         <div id="gev-voice-error-detail"></div>
         <div class="gev-voice-error-hint">Check microphone permission and network access, then try again.</div>

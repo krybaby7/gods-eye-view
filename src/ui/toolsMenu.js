@@ -233,7 +233,12 @@ export function createToolsMenu({
     const onGlobe = ['cesiumContainer', 'world-overlay-root'].some((id) =>
       find(id)?.contains?.(target),
     );
-    if (onGlobe || target?.closest?.('dialog')) return;
+    if (
+      onGlobe ||
+      target?.closest?.('dialog') ||
+      find('key-setup')?.contains(target)
+    )
+      return;
     close();
   });
   // One menu at a time: another menu opening closes the list and the panel.

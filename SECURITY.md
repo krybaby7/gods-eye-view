@@ -18,7 +18,7 @@ The golden rule: **secret-bearing API keys stay on the server side.** The dev/pr
 | Key | Where it lives | How the browser uses it |
 |-----|----------------|--------------------------|
 | `OPENAI_API_KEY` | Server only | Browser fetches a short-lived **ephemeral** Realtime session token from `/api/realtime/token`; the real key never ships |
-| ChatGPT sign-in through Codex (optional, experimental) | Codex's own `auth.json` (`CODEX_HOME`, default `~/.codex`); GEV reads it server-side and never writes or refreshes it | Only after **USE CHATGPT OAUTH** is selected in Provider Settings: the server mints the same ephemeral Realtime token with the ChatGPT access token, for loopback clients only |
+| ChatGPT sign-in through Codex (optional, experimental) | Codex's own `auth.json` (`CODEX_HOME`, default `~/.codex`); GEV reads it server-side and never writes or refreshes it | Only after **Use ChatGPT OAuth** is selected in Data sources and keys: the server mints the same ephemeral Realtime token with the ChatGPT access token, for loopback clients only |
 | `AISSTREAM_API_KEY` | Server only | Server holds the AISStream websocket; browser polls the same-origin `/api/vessels` cache |
 | OpenSky OAuth (`OPENSKY_CLIENT_ID/SECRET`) | Server only | Server mints + refreshes the token behind `/api/flights` |
 | `GOOGLE_MAPS_SERVER_API_KEY` (optional, #33) | Server only | Server calls Places (`/api/google/nearby-places`, `/api/google/text-search`) and the Street View fallback with this key; falls back to `GOOGLE_MAPS_API_KEY` when unset |
@@ -39,8 +39,7 @@ Never commit real keys. `.env` is gitignored; only `.env.example` (placeholder n
 
 The official Pinokio launcher stores optional values in its ignored local
 `pinokio/ENVIRONMENT` file and Vite explicitly denies that filename. Add,
-replace, or remove those values through the in-app **POWER UP → Provider
-Settings** panel; the server restricts the file before writing and restarts the
+replace, or remove those values through the in-app **Menu → Data sources and keys → Open provider keys** dialog; the server restricts the file before writing and restarts the
 local app after a save. Do not submit credentials through Pinokio 8.0.40's
 native Configure form: that release targets the wrong file for this nested
 launcher layout and logs the submitted values. The ignored file is local
@@ -53,7 +52,7 @@ Terminal development uses one ignored repository-root `.env` for both
 `GOOGLE_MAPS_API_KEY` (browser) and `GOOGLE_MAPS_SERVER_API_KEY` (server).
 The tracked `.env.example` documents both without credentials. Vite injects
 only the browser key; sharing an environment file does not expose the server
-key. Provider Settings presents only the browser key as Google Maps; configure
+key. Data sources and keys presents only the browser key as Google Maps; configure
 the optional server key manually in the environment file. Pinokio uses
 its ignored `pinokio/ENVIRONMENT` instead, with app values and blanks taking
 precedence over inherited global values. An absent server key retains the
@@ -103,7 +102,7 @@ The dev server is a **key broker**: every server-side key above is spendable by 
 God's Eye View's tools are also served to MCP clients: over stdio (`npm run mcp`) and at `/mcp` on the development and preview servers.
 
 - **`/mcp` answers only direct local requests**: a loopback connection naming a loopback host on the port it reached, a browser `Origin` (when sent) from that same host, no proxy forwarding headers, and launcher sharing off. It accepts only JSON, so a web page cannot post to it cross-site. This is transport safety, not authentication: any program on your machine can use the tools, and some of them spend the same provider quotas as the app.
-- **What the panel's requests can reach.** In clients that display MCP Apps, the panel loads the app through the `panel_request` tool, which requests paths on the app's server. It is marked for the panel only and requires a key that each MCP server puts in its panel page, which keeps it from clients that list tools to the model without loading the panel. That key is not access control: any MCP client can read the panel page, key included, and then reach the app's files and data routes through `panel_request`, much as its other tools reach the data. Provider Settings, credential and model endpoints, `/mcp` and the development server's internal routes are refused to every caller.
+- **What the panel's requests can reach.** In clients that display MCP Apps, the panel loads the app through the `panel_request` tool, which requests paths on the app's server. It is marked for the panel only and requires a key that each MCP server puts in its panel page, which keeps it from clients that list tools to the model without loading the panel. That key is not access control: any MCP client can read the panel page, key included, and then reach the app's files and data routes through `panel_request`, much as its other tools reach the data. Data sources and keys, credential and model endpoints, `/mcp` and the development server's internal routes are refused to every caller.
 - **The panel carries the two browser keys.** The panel build (`npm run build:panel`) includes the same Google Maps key and Cesium ion token as the app, and they run inside the client's panel page, on the client's site. A key restricted by HTTP referrer must also allow that page, or the panel cannot load tiles. To keep the app's own keys narrower, build the panel with separately restricted keys in the environment of `npm run build:panel`.
 - **Embed mode is not framable by default.** `?embed=1` documents keep `X-Frame-Options: DENY` and `frame-ancestors 'none'` unless `GEV_EMBED_FRAME_ANCESTORS` names the pages that may frame them; a framing page can change what the app shows. Other documents can never be framed.
 

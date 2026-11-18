@@ -310,7 +310,7 @@ function keySetupEndpoint({
           for (const name of Object.keys(verdict.updates)) {
             if (isExternallyManaged(name, inStore)) {
               return respond(res, 409, {
-                error: `${name} is configured outside Provider Settings and can only be changed where it was set`,
+                error: `${name} is configured outside Data sources and keys and can only be changed where it was set`,
               });
             }
           }

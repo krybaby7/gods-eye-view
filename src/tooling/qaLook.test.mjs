@@ -621,19 +621,64 @@ test('rail restoration rejects missing or changed visibility and disclosure stat
     );
 });
 
-test('cctv capture accepts both fixture states', () => {
-  for (const state of ['empty', 'filled']) {
-    const options = parseLookArgs([
-      '--url',
-      'http://localhost:5317',
-      '--label',
-      'before',
-      '--panel',
-      'cctv',
-      '--state',
-      state,
-    ]);
-    assert.equal(options.panel, 'cctv');
-    assert.equal(options.state, state);
+test('Cameras, Radio and Cockpit captures accept both fixture states', () => {
+  for (const panel of ['cctv', 'radio', 'cockpit']) {
+    for (const state of ['empty', 'filled']) {
+      const options = parseLookArgs([
+        '--url',
+        'http://localhost:5317',
+        '--label',
+        'before',
+        '--panel',
+        panel,
+        '--state',
+        state,
+      ]);
+      assert.equal(options.panel, panel);
+      assert.equal(options.state, state);
+    }
   }
+});
+
+test('keys looks default to the keyless setup query', () => {
+  const options = parseLookArgs([
+    '--url',
+    'http://localhost:5173',
+    '--label',
+    'after',
+    '--panel',
+    'keys',
+    '--query',
+    'setup=1',
+  ]);
+  assert.equal(options.state, 'empty');
+  assert.equal(options.url.searchParams.get('setup'), '1');
+});
+
+test('controls looks register the shared surfaces capture', () => {
+  const options = parseLookArgs([
+    '--url',
+    'http://localhost:5173',
+    '--label',
+    'after',
+    '--panel',
+    'controls',
+  ]);
+  assert.equal(options.panel, 'controls');
+  assert.equal(options.state, 'filled');
+});
+
+test('welcome looks replay the launcher without changing other fixture defaults', () => {
+  const options = parseLookArgs([
+    '--url',
+    'http://localhost:5173',
+    '--label',
+    'after',
+    '--panel',
+    'welcome',
+    '--query',
+    'welcome=1',
+  ]);
+  assert.equal(options.url.searchParams.get('welcome'), '1');
+  assert.equal(options.url.searchParams.get('world-fixtures'), '1');
 });
