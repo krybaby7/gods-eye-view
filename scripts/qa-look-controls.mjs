@@ -40,6 +40,8 @@ async function measure(page, selector) {
       }
     }
     const ink = creditRoot?.querySelector('.cesium-credit-expand-link');
+    const creditRow = target.closest('.cesium-widget-credits');
+    const creditRowBox = rect(creditRow);
     const boxes = [targetBox, rect(ink)].filter(hasBox);
     const visibleCreditBox = creditRoot && {
       left: Math.min(...boxes.map((box) => box.left)),
@@ -52,6 +54,10 @@ async function measure(page, selector) {
         ? creditRootBox
         : visibleCreditBox || targetBox,
       creditRootBox,
+      creditRowBox,
+      creditRowOverflow:
+        creditRow && creditRow.scrollWidth > creditRow.clientWidth + 1,
+      creditLinkBox: rect(ink),
       creditRootDisplay: creditRoot && getComputedStyle(creditRoot).display,
       creditLinkColor: ink && getComputedStyle(ink).color,
       globe: rect(document.getElementById('cesiumContainer')),
@@ -389,6 +395,18 @@ export async function captureControls({
         )
       )
         errors.push('credit caption and link need a solid contrasting backing');
+      if (
+        options.label === 'after' &&
+        (!data.creditRootBox?.height ||
+          !data.creditRowBox?.height ||
+          !data.creditLinkBox?.height ||
+          !contain(data.creditRootBox, data.creditRowBox) ||
+          !contain(data.creditRowBox, data.creditLinkBox) ||
+          data.creditRowOverflow)
+      )
+        errors.push('rendered credit row or link overflows its backing');
+      if (options.label === 'after' && parseFloat(data.fontSize) < 12)
+        errors.push('credit caption is smaller than 12 px');
       return errors;
     });
     await page.focus(creditLink);
