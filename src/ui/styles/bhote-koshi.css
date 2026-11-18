@@ -543,46 +543,12 @@
 }
 
 #bhote-koshi-split-line {
-  position: fixed;
-  top: 0;
-  bottom: 0;
   left: var(--bhote-koshi-split, 50%);
   z-index: 8;
-  width: 1px;
-  pointer-events: none;
-  background: rgba(218, 241, 247, 0.76);
-  box-shadow: 0 0 12px rgba(94, 216, 239, 0.72);
 }
 
 #bhote-koshi-split-line span {
   display: none;
-}
-
-#bhote-koshi-split-line .bhote-koshi-split-handle {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: 1px solid rgba(180, 215, 222, 0.72);
-  border-radius: 50%;
-  outline: 0;
-  color: rgba(239, 247, 249, 0.96);
-  background: rgba(4, 17, 27, 0.96);
-  box-shadow:
-    0 0 0 5px rgba(62, 112, 125, 0.3),
-    0 0 13px rgba(94, 216, 239, 0.3);
-  font: 700 14px/1 var(--font-mono);
-  transform: translate(-50%, -50%);
-  pointer-events: auto;
-  touch-action: none;
-  cursor: ew-resize;
-}
-
-#bhote-koshi-split-line .bhote-koshi-split-handle:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 4px;
 }
 
 @media (max-width: 720px) {

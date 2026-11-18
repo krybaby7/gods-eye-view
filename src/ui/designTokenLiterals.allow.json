@@ -20,7 +20,7 @@
   {
     "path": "src/designTokens.js",
     "kind": "palette",
-    "count": 17,
+    "count": 18,
     "reason": "Shared canvas palette; CSS parity is checked by designTokensParity.test.mjs."
   },
   {
@@ -114,12 +114,6 @@
     "reason": "Cesium canvas paint cannot consume CSS custom properties."
   },
   {
-    "path": "src/ui/imageryBoxTool.js",
-    "kind": "cesium",
-    "count": 1,
-    "reason": "Cesium canvas paint cannot consume CSS custom properties."
-  },
-  {
     "path": "src/ui/sceneSharing.js",
     "kind": "color",
     "count": 9
@@ -147,7 +141,7 @@
   {
     "path": "src/ui/styles/bhote-koshi.css",
     "kind": "color",
-    "count": 46
+    "count": 38
   },
   {
     "path": "src/ui/styles/bhote-koshi.css",
@@ -157,17 +151,17 @@
   {
     "path": "src/ui/styles/bhote-koshi.css",
     "kind": "font",
-    "count": 15
+    "count": 14
   },
   {
     "path": "src/ui/styles/bhote-koshi.css",
     "kind": "radius",
-    "count": 7
+    "count": 6
   },
   {
     "path": "src/ui/styles/bhote-koshi.css",
     "kind": "shadow",
-    "count": 4
+    "count": 2
   },
   {
     "path": "src/ui/styles/cockpit.css",
@@ -483,31 +477,6 @@
     "path": "src/ui/styles/radio.css",
     "kind": "shadow",
     "count": 14
-  },
-  {
-    "path": "src/ui/styles/recent-imagery.css",
-    "kind": "backdrop",
-    "count": 2
-  },
-  {
-    "path": "src/ui/styles/recent-imagery.css",
-    "kind": "color",
-    "count": 25
-  },
-  {
-    "path": "src/ui/styles/recent-imagery.css",
-    "kind": "font",
-    "count": 14
-  },
-  {
-    "path": "src/ui/styles/recent-imagery.css",
-    "kind": "radius",
-    "count": 8
-  },
-  {
-    "path": "src/ui/styles/recent-imagery.css",
-    "kind": "shadow",
-    "count": 6
   },
   {
     "path": "src/ui/styles/responsive.css",

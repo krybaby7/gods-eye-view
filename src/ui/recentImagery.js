@@ -3,8 +3,8 @@
  * body is a fixed stack in which no block changes height and no control
  * moves, whatever the state: box actions, a notice line, the strip of day
  * cards and its hint line, the selection bar (mode, the two slot rows),
- * opacity, SWAP and export, then a collapsed DETAILS card for every note and
- * hedge. Box actions, export and DETAILS are rail-card blocks and cards; the
+ * opacity, Swap and export, then a collapsed Details card for every note and
+ * hedge. Box actions, export and Details are rail-card blocks and cards; the
  * strip and selection bar are this adapter's own keyed DOM. Source toggles
  * live on the data-panel row.
  */
@@ -22,8 +22,8 @@ const PANEL_ID = 'recent-imagery-panel';
 const OVERVIEW_MIN_BOX_KM = 25;
 const ESRI_NOTE = 'Imagery on Esri · Google 3D returns when cleared';
 const MODE_LABELS = [
-  ['image', 'IMAGE'],
-  ['basemap', 'VS BASEMAP'],
+  ['image', 'Image'],
+  ['basemap', 'Vs basemap'],
   ['ab', 'A / B'],
 ];
 const START_HERE_TITLES = {
@@ -76,10 +76,10 @@ function cloudText(candidate) {
 }
 
 function countText(snapshot) {
-  if (!snapshot.box) return 'NO BOX';
-  if (snapshot.searching) return 'SEARCHING';
+  if (!snapshot.box) return 'No box';
+  if (snapshot.searching) return 'Searching';
   const count = snapshot.candidates.length;
-  return `${count} DAY${count === 1 ? '' : 'S'}`;
+  return `${count} day${count === 1 ? '' : 's'}`;
 }
 
 /** The one-line hint under the strip: the next thing to do, per state. */
@@ -89,7 +89,7 @@ function hintText(snapshot) {
   if (snapshot.searching) return 'Searching the last 30 days';
   if (!snapshot.candidates.length) return 'No days to show for this box';
   const { mode, pins, shown } = snapshot;
-  if (shown.swipe !== 'none') return 'Drag the divider · SWAP trades sides';
+  if (shown.swipe !== 'none') return 'Drag the divider · Swap trades sides';
   if (mode === 'ab') {
     if (!pins.a.key && !pins.b.key)
       return '← → preview · A or B pins the focused day';
@@ -180,10 +180,11 @@ export function createRecentImageryPanel({
   const actions = createRailCardBlocks({
     container: actionsHost,
     cardId: 'recent-imagery',
+    kit: true,
     onParams: () => {},
   });
 
-  // The notice line: the text, and ZOOM IN in a fixed slot at its right end
+  // The notice line: the text, and Zoom in in a fixed slot at its right end
   // (reserved, never removed, whenever there is nothing to fit).
   const notice = el('div', 'ri-block ri-line ri-notice', root);
   notice.id = 'ri-notice';
@@ -191,7 +192,7 @@ export function createRecentImageryPanel({
   noticeText.id = 'ri-notice-text';
   noticeText.setAttribute('role', 'status');
   noticeText.setAttribute('aria-live', 'polite');
-  const zoomIn = el('button', 'data-toggle-chip ri-zoom-in', notice, 'ZOOM IN');
+  const zoomIn = el('button', 'kit-btn quiet ri-zoom-in', notice, 'Zoom in');
   zoomIn.id = 'ri-zoom-in';
   zoomIn.type = 'button';
   zoomIn.title = 'Fly in until the view fits the 1,000 km limit';
@@ -206,7 +207,7 @@ export function createRecentImageryPanel({
     'Imagery days, newest first · arrows move, S or A and B pin',
   );
   strip.setAttribute('aria-keyshortcuts', 'A B S');
-  const stripEmpty = el('div', 'ri-strip-empty', strip);
+  const stripEmpty = el('div', 'ri-strip-empty kit-empty', strip);
 
   const hint = el('div', 'ri-block ri-line ri-hint', root);
   hint.id = 'ri-hint';
@@ -214,13 +215,13 @@ export function createRecentImageryPanel({
   const selection = el('section', 'ri-block ri-selection', root);
   selection.id = 'ri-selection';
   selection.setAttribute('aria-label', 'On the map');
-  const modeGroup = el('div', 'ri-mode', selection);
+  const modeGroup = el('div', 'ri-mode kit-seg', selection);
   modeGroup.id = 'ri-mode';
   modeGroup.setAttribute('role', 'radiogroup');
   modeGroup.setAttribute('aria-label', 'Mode');
   const modeButtons = new Map(
     MODE_LABELS.map(([mode, label]) => {
-      const node = el('button', 'data-toggle-chip ri-mode-btn', modeGroup);
+      const node = el('button', 'kit-seg-item ri-mode-btn', modeGroup);
       node.type = 'button';
       node.textContent = label;
       node.dataset.mode = mode;
@@ -234,7 +235,7 @@ export function createRecentImageryPanel({
     row.id = `ri-slot-${slotId}`;
     const tag = el('span', 'ri-slot-tag', row);
     const value = el('span', 'ri-slot-value', row);
-    const unpin = el('button', 'data-toggle-chip ri-unpin', row, '×');
+    const unpin = el('button', 'kit-iconbtn ri-unpin', row, '×');
     unpin.type = 'button';
     unpin.id = `ri-unpin-${slotId}`;
     unpin.dataset.unpin = slotId;
@@ -244,7 +245,7 @@ export function createRecentImageryPanel({
   const controls = el('div', 'ri-block ri-controls', root);
   controls.id = 'ri-controls';
   const opacityLabel = el('label', 'ri-opacity-label', controls);
-  el('span', '', opacityLabel, 'OPACITY');
+  el('span', '', opacityLabel, 'Opacity');
   const opacityValue = el('span', 'ri-opacity-value', opacityLabel, '100%');
   const opacity = el('input', 'ri-opacity', controls);
   opacity.id = 'ri-opacity';
@@ -258,7 +259,7 @@ export function createRecentImageryPanel({
   opacity.setAttribute('aria-label', 'Imagery opacity');
   opacityLabel.htmlFor = 'ri-opacity';
   // Its slot is always there; it is only usable while a swipe is live.
-  const swap = el('button', 'data-toggle-chip ri-swap', controls, 'SWAP');
+  const swap = el('button', 'kit-btn quiet ri-swap', controls, 'Swap');
   swap.id = 'ri-swap';
   swap.type = 'button';
   swap.title = 'Trade the two sides of the divider';
@@ -266,6 +267,7 @@ export function createRecentImageryPanel({
   const exports = createRailCardBlocks({
     container: exportHost,
     cardId: 'recent-imagery',
+    kit: true,
     onParams: () => {},
   });
 
@@ -277,6 +279,7 @@ export function createRecentImageryPanel({
     container: detailsHost,
     document,
     cardClassName: 'ri-details-card',
+    kit: true,
     onOpen: () => {
       detailsOpen = !detailsOpen;
       render();
@@ -318,7 +321,7 @@ export function createRecentImageryPanel({
         actions: [
           {
             id: 'select-box',
-            label: 'SELECT BOX',
+            label: 'Select box',
             title: 'Drag a box on the map (Esc cancels)',
             onClick: () => {
               exportError = null;
@@ -328,7 +331,7 @@ export function createRecentImageryPanel({
           },
           {
             id: 'use-view',
-            label: 'USE VIEW',
+            label: 'Use view',
             title: 'Use the current view as the box',
             onClick: () => {
               exportError = null;
@@ -337,7 +340,7 @@ export function createRecentImageryPanel({
           },
           {
             id: 'clear',
-            label: 'CLEAR',
+            label: 'Clear',
             title: 'Forget the box and its images',
             disabled: !snapshot.box && !snapshot.boxError,
             onClick: () => {
@@ -371,7 +374,7 @@ export function createRecentImageryPanel({
     attribute(noticeText, 'title', text);
     toggle(notice, 'warn', Boolean(warning));
     toggle(notice, 'info', !warning && Boolean(text));
-    // ZOOM IN only for the oversized box or view the notice is showing.
+    // Zoom in only for the oversized box or view the notice is showing.
     const fit = Boolean(snapshot.zoomToFit);
     toggle(notice, 'has-action', fit);
     toggle(zoomIn, 'is-reserved', !fit);
@@ -388,14 +391,14 @@ export function createRecentImageryPanel({
     entry.thumb = el('div', 'ri-thumb', card);
     entry.placeholder = el('span', 'ri-thumb-text', entry.thumb);
     entry.flag = el('span', 'ri-card-flag', entry.thumb);
-    entry.start = el('span', 'ri-card-start', entry.thumb, 'START HERE');
+    entry.start = el('span', 'ri-card-start', entry.thumb, 'Start here');
     entry.date = el('div', 'ri-card-date', card);
     entry.sensor = el('div', 'ri-card-sensor', card);
     entry.cloud = el('div', 'ri-card-cloud', card);
     const chips = el('div', 'ri-card-chips', card);
     entry.chips = {};
     for (const slotId of ['a', 'b']) {
-      const chip = el('button', 'data-toggle-chip ri-chip', chips);
+      const chip = el('button', 'kit-chip pick ri-chip', chips);
       chip.type = 'button';
       chip.tabIndex = -1;
       chip.dataset.slot = slotId;
@@ -436,9 +439,9 @@ export function createRecentImageryPanel({
     if (entry.thumb.dataset.status !== status)
       entry.thumb.dataset.status = status;
     const flag = candidate.preview
-      ? 'PREVIEW'
+      ? 'Preview'
       : candidate.pending
-        ? 'LOADING'
+        ? 'Loading'
         : '';
     set(entry.flag, 'textContent', flag);
     set(entry.flag, 'hidden', !flag);
@@ -459,7 +462,7 @@ export function createRecentImageryPanel({
       const chip = entry.chips[slotId];
       const live = slotId === 'a' || ab;
       const on = candidate.pinned === slotId && live;
-      const label = slotId === 'a' ? (ab ? 'A' : 'SHOW') : 'B';
+      const label = slotId === 'a' ? (ab ? 'A' : 'Show') : 'B';
       set(chip, 'textContent', label);
       set(chip, 'disabled', empty || !live);
       toggle(chip, 'active', on);
@@ -584,7 +587,7 @@ export function createRecentImageryPanel({
     for (const [id, node] of modeButtons) {
       const on = id === mode;
       attribute(node, 'aria-checked', String(on));
-      toggle(node, 'active', on);
+      toggle(node, 'on', on);
       set(node, 'tabIndex', on ? 0 : -1);
     }
     const ab = mode === 'ab';
@@ -596,7 +599,7 @@ export function createRecentImageryPanel({
       set(
         tag,
         'textContent',
-        ab ? slotId.toUpperCase() : slotId === 'a' ? 'IMAGE' : 'VS',
+        ab ? slotId.toUpperCase() : slotId === 'a' ? 'Image' : 'Vs',
       );
       let text = 'Not set';
       if (basemapRow) text = 'Basemap';
@@ -632,7 +635,7 @@ export function createRecentImageryPanel({
   }
 
   // ---- opacity and export -----------------------------------------------
-  /** The image a slot's EXPORT downloads: its pin, else its preview. */
+  /** The image a slot's Export downloads: its pin, else its preview. */
   function exportTarget(slotId) {
     if (slotId === 'b' && snapshot.mode !== 'ab') return null;
     const image = slotImage(slotId);
@@ -658,7 +661,7 @@ export function createRecentImageryPanel({
         type: 'actions',
         actions: ['a', 'b'].map((slotId) => ({
           id: `export-${slotId}`,
-          label: ab ? `EXPORT ${slotId.toUpperCase()}` : 'EXPORT',
+          label: ab ? `Export ${slotId.toUpperCase()}` : 'Export',
           title: `Download ${ab ? slotId.toUpperCase() : 'the image'} as a PNG`,
           disabled: !exportTarget(slotId) || exporting.has(slotId),
           onClick: () => void exportImage(slotId),
@@ -707,7 +710,7 @@ export function createRecentImageryPanel({
       });
     }
     const reason = START_HERE_REASONS[snapshot.recommended?.reason];
-    if (reason) lines.push({ id: 'start', text: `START HERE · ${reason}` });
+    if (reason) lines.push({ id: 'start', text: `Start here · ${reason}` });
     for (const [index, note] of snapshot.notes.entries())
       lines.push({ id: `note-${index}`, text: note, muted: true });
     if (
@@ -747,8 +750,8 @@ export function createRecentImageryPanel({
               {
                 id: 'toggle-empty',
                 label: showing
-                  ? 'HIDE EMPTY DAYS'
-                  : `SHOW EMPTY DAYS · ${hidden}`,
+                  ? 'Hide empty days'
+                  : `Show empty days · ${hidden}`,
                 title: 'Days the probe found empty in this box',
                 disabled: !showing && !hidden,
                 onClick: () => layer.setShowUnavailable(!showing),
@@ -771,10 +774,10 @@ export function createRecentImageryPanel({
     const a = snapshot.candidates.find((c) => c.key === snapshot.shown.a);
     const b = snapshot.candidates.find((c) => c.key === snapshot.shown.b);
     const describe = (c) => (c ? `${sensorLine(c.product)} · ${c.day}` : '');
-    // The two sides as [label, title, spoken name]; SWAP trades them.
+    // The two sides as [label, title, spoken name]; Swap trades them.
     const sides = [
-      basemap ? ['IMAGE', describe(a), 'image'] : ['A', describe(a), 'A'],
-      basemap ? ['BASEMAP', 'The basemap', 'basemap'] : ['B', describe(b), 'B'],
+      basemap ? ['Image', describe(a), 'image'] : ['A', describe(a), 'A'],
+      basemap ? ['Basemap', 'The basemap', 'basemap'] : ['B', describe(b), 'B'],
     ];
     const [before, after] = swapped ? [sides[1], sides[0]] : sides;
     const signature = live

@@ -1,5 +1,6 @@
 // Colours shared by foundation.css and the globe. This module is also used in Node.
 export const DESIGN_COLORS = Object.freeze({
+  '--accent': '#00d4ff',
   '--rel-war': '#db474f',
   '--rel-armed': '#f4525d',
   '--rel-sanctions': '#e8933f',

@@ -10,17 +10,16 @@
         <div id="weather-panel-body" class="kit-panel-body" data-rail-scroller></div>
       </div>
     </section>
-    <div id="recent-imagery-panel" class="panel-collapsible" data-panel-id="recent-imagery-panel" hidden>
-      <div class="recent-imagery-panel-inner" data-rail-scroller>
-        <div class="panel-header">
-          <span class="panel-title">RECENT IMAGERY</span>
+    <section id="recent-imagery-panel" class="panel-collapsible" data-panel-id="recent-imagery-panel" aria-labelledby="recent-imagery-panel-title" hidden>
+      <div class="recent-imagery-panel-inner kit-panel" data-rail-scroller>
+        <header class="kit-panel-head">
+          <h2 id="recent-imagery-panel-title" class="panel-title kit-panel-title">Recent imagery</h2>
           <span id="recent-imagery-panel-count" aria-label="Imagery days in the box"></span>
-          <span class="panel-divider"></span>
-          <button class="panel-collapse-btn" data-collapse-target="recent-imagery-panel" type="button" title="Collapse panel">▼</button>
-        </div>
-        <div id="recent-imagery-panel-body" data-rail-scroller></div>
+          <button class="panel-collapse-btn kit-iconbtn" data-collapse-target="recent-imagery-panel" type="button" aria-controls="recent-imagery-panel-body" aria-expanded="true" aria-label="Collapse Recent imagery" title="Collapse Recent imagery">▼</button>
+        </header>
+        <div id="recent-imagery-panel-body" class="kit-panel-body" data-rail-scroller></div>
       </div>
-    </div>
+    </section>
     <section id="situation-panel" class="panel-collapsible" data-panel-id="situation-panel" hidden>
       <div data-panel-surface>
         <header data-panel-header>
