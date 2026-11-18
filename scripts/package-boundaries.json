@@ -877,6 +877,7 @@
       "src/ui/styles/cockpit.css",
       "src/ui/styles/overlays.css",
       "src/ui/styles/layers.css",
+      "src/ui/styles/context-awareness.css",
       "src/ui/styles/radio.css",
       "src/ui/styles/cctv.css",
       "src/ui/styles/scenes.css",
