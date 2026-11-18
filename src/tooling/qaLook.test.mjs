@@ -621,8 +621,8 @@ test('rail restoration rejects missing or changed visibility and disclosure stat
     );
 });
 
-test('Cameras and Radio captures accept both fixture states', () => {
-  for (const panel of ['cctv', 'radio']) {
+test('Cameras, Radio and Cockpit captures accept both fixture states', () => {
+  for (const panel of ['cctv', 'radio', 'cockpit']) {
     for (const state of ['empty', 'filled']) {
       const options = parseLookArgs([
         '--url',

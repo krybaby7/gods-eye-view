@@ -48,6 +48,7 @@ export function parseLookArgs(args) {
     'context',
     'controls',
     'welcome',
+    'cockpit',
   ];
   if (!panels.includes(panel))
     throw new Error(`Expected --panel ${panels.join('|')}`);
