@@ -492,6 +492,17 @@ test('custom properties inside modelled offsets are provably non-negative', () =
   assert.match(writer, /const stackHeight =\s*pinnedCount > 1[\s\S]{0,160}?`calc\(\$\{locationHeightPx\}px \+ \$\{presetsHeightPx\}px \+ 1\.2rem\)`/);
 });
 
+test('the Cesium credit row stays inside its positioned backing', () => {
+  const row = RULES.find(({ parts }) =>
+    parts.includes('#cesium-credits > .cesium-widget-credits'),
+  );
+  assert.ok(row, 'Cesium gives the app credit container a positioned child');
+  const declarations = new Map(row.decls.map(({ prop, value }) => [prop, value]));
+  assert.equal(declarations.get('position'), 'static');
+  assert.equal(declarations.get('font'), 'inherit');
+  assert.equal(declarations.get('color'), 'inherit');
+});
+
 test('the inputs behind the measured constants are unchanged', () => {
   // 28px credit / 62px dock are measured, not derived. Guard the CSS that
   // determines them so a change forces a re-measure instead of a silent drift.

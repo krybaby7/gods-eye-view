@@ -414,6 +414,15 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   font: var(--type-caption);
   color: var(--text-2);
 }
+/* Cesium's widget defaults to an absolute row inside its own globe container.
+   Here the app already positions the credit host, so the row sizes its backing. */
+#cesium-credits > .cesium-widget-credits {
+  position: static;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-shadow: inherit;
+}
 #cesium-credits .cesium-credit-logoContainer,
 #cesium-credits .cesium-credit-textContainer,
 #cesium-credits .cesium-credit-expand-link {
