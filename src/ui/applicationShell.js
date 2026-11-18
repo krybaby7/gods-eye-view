@@ -41,8 +41,8 @@ import { runCctvLayerEnableTransition } from '../cctvFocusPolicy.js';
  * - Bloom and sharpen post-processing toggle/intensity control.
  * - Draggable/collapsible panel system with localStorage persistence,
  *   z-order stacking, and viewport-clamped positioning.
- * - CCTV panel: camera selection, coverage toggle, projection, calibration
- *   sliders, auto-hop, and summary typewriter effect.
+ * - Cameras panel: selection, coverage toggle, projection, calibration,
+ *   auto-hop, and scene summary.
  * - Location bar with city/POI preset pills, QWERTY key navigation,
  *   geocoding search, and inter-city world-jump transitions.
  * - Orbit controller integration for POI fly-around.
@@ -965,6 +965,8 @@ export class StyleManager extends ShellFacade {
         _cctvEnableBtn: this._cctvEnableBtn,
         _cctvFocusBtn: this._cctvFocusBtn,
         _cctvFrame: this._cctvFrame,
+        _cctvFrameStatus: this._cctvFrameStatus,
+        _cctvFrameTime: this._cctvFrameTime,
         _cctvFrameWrap: this._cctvFrameWrap,
         _cctvVideo: this._cctvVideo,
         _cctvMeta: this._cctvMeta,

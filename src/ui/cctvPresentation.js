@@ -2,13 +2,13 @@ import { createCctvVideoSurface } from './cctvVideo.js';
 export function _calBadgeLabel(badge) {
   switch (badge) {
     case 'calibrated':
-      return 'CALIBRATED';
+      return 'Calibrated';
     case 'curated':
-      return 'CURATED';
+      return 'Curated';
     case 'raw-prior':
-      return 'RAW PRIOR';
+      return 'Raw prior';
     default:
-      return '--';
+      return '';
   }
 }
 
@@ -99,17 +99,17 @@ export function _renderCctvState(state) {
     this._cctvCoverageBtn.classList.toggle('active', mode !== 'off');
     this._cctvCoverageBtn.textContent =
       mode === 'viewshed'
-        ? 'VIEWSHED ON'
+        ? 'Viewshed on'
         : mode === 'on'
-          ? 'COVERAGE ON'
-          : 'COVERAGE OFF';
+          ? 'Coverage on'
+          : 'Coverage off';
     this._cctvCoverageBtn.disabled = !enabled;
   }
 
   if (this._cctvAutoHopBtn) {
     const autoHop = !!state?.autoHop;
     this._cctvAutoHopBtn.classList.toggle('active', autoHop);
-    this._cctvAutoHopBtn.textContent = autoHop ? 'AUTO HOP ON' : 'AUTO HOP OFF';
+    this._cctvAutoHopBtn.textContent = autoHop ? 'Auto hop on' : 'Auto hop off';
     this._cctvAutoHopBtn.disabled = !enabled;
   }
 
@@ -117,59 +117,40 @@ export function _renderCctvState(state) {
     const showProjection = state?.showProjection !== false;
     this._cctvProjectionBtn.classList.toggle('active', showProjection);
     this._cctvProjectionBtn.textContent = showProjection
-      ? 'PROJECTION ON'
-      : 'PROJECTION OFF';
+      ? 'Projection on'
+      : 'Projection off';
     this._cctvProjectionBtn.disabled = !enabled;
   }
 
   if (this._cctvQualityChip) {
-    // CAL badge (cctv-v2 design §3b, amended by LOCKED §9.2 — panel-only,
-    // no in-world tint): three states driven by cctv.js's deriveCalBadge,
-    // no client-side scoring math. Casing is unified via _calBadgeLabel so
-    // the chip and the meta line never drift onto different conventions.
-    // Save-gated persistence (viewshed design §3e): unsaved live edits show
-    // EDITED on top of whatever the persisted badge state is — SAVE CAL
-    // promotes to CALIBRATED, RESET CAL clears.
     const badge = activeCamera?.calBadge || null;
     const dirty = !!activeCamera?.calDirty;
     this._cctvQualityChip.textContent = dirty
-      ? 'CAL · EDITED (UNSAVED)'
-      : `CAL · ${this._calBadgeLabel(badge)}`;
+      ? 'Edited (unsaved)'
+      : this._calBadgeLabel(badge);
+    this._cctvQualityChip.hidden =
+      !enabled || !this._cctvQualityChip.textContent;
     this._cctvQualityChip.dataset.calBadge = dirty ? 'edited' : badge || '';
   }
 
   this._syncCctvCalReadout(enabled, activeCamera);
 
   if (this._cctvMeta) {
-    if (activeCamera) {
-      const provider =
-        activeCamera.sourceLabel ||
-        activeCamera.provider ||
-        'Configured Source';
-      const statusMsg = activeCamera.sourceMessage
-        ? ` · ${activeCamera.sourceMessage}`
-        : '';
-      // A partner-supplied feed inside a pack names its owner here.
-      const credit = activeCamera.credit ? ` · ${activeCamera.credit}` : '';
-      const calBadge = activeCamera.calBadge
-        ? this._calBadgeLabel(activeCamera.calBadge)
-        : '';
-      const projLabel = state?.showProjection !== false ? 'MONITOR' : 'OFF';
-      this._cctvMeta.textContent = `${activeCamera.city} · HDG ${Math.round(activeCamera.headingDeg)}° · FOV ${Math.round(activeCamera.fovDeg)}° · RANGE ${Math.round(activeCamera.rangeM)}m · ${projLabel}${calBadge ? ` · ${calBadge}` : ''} · ${provider}${credit}${statusMsg}`;
-    } else if (cameras.length > 0) {
-      this._cctvMeta.textContent = enabled
-        ? `${cameras.length} cameras loaded · click a camera to activate`
-        : `${cameras.length} cameras loaded · enable CCTV to activate`;
-    } else {
-      this._cctvMeta.textContent =
-        'Switch cameras on to load camera intersections';
-    }
+    const parts =
+      enabled && activeCamera
+        ? [
+            activeCamera.sourceLabel || activeCamera.provider,
+            activeCamera.credit,
+            activeCamera.sourceMessage,
+          ].filter(Boolean)
+        : [];
+    this._cctvMeta.textContent = [...new Set(parts)].join(' · ');
+    this._cctvMeta.hidden = parts.length === 0;
   }
 
   const liveIntent = enabled && !!activeCamera?.isVideo;
   if (this._cctvVideo) {
     this._cctvVideo.hidden = !liveIntent;
-    if (this._cctvFrame) this._cctvFrame.hidden = liveIntent;
     const visible =
       liveIntent &&
       !document.hidden &&
@@ -177,11 +158,19 @@ export function _renderCctvState(state) {
     if (!visible || this._cctvVideoCameraId !== activeId) {
       this._cctvVideoSurface?.stop();
       this._cctvVideoSurface = null;
+      this._cctvVideoState = 'waiting';
     }
     this._cctvVideoCameraId = activeId;
     if (visible && !this._cctvVideoSurface) {
-      this._cctvVideoSurface = createCctvVideoSurface(this._cctvVideo, () =>
-        this.cctv.getActiveVideoElement?.(),
+      this._cctvVideoSurface = createCctvVideoSurface(
+        this._cctvVideo,
+        () => this.cctv.getActiveVideoElement?.(),
+        {
+          onStateChange: (videoState) => {
+            this._cctvVideoState = videoState;
+            this._syncCctvSourceBadge(this._cctvState?.activeCamera, true);
+          },
+        },
       );
     }
   }
@@ -210,31 +199,12 @@ export function _renderCctvState(state) {
   }
 
   this._syncCctvSourceBadge(activeCamera, enabled);
-  this._typeCctvSummary(
-    state?.summary || 'Switch cameras on to start camera-linked summaries.',
-  );
-}
-
-export function _typeCctvSummary(text) {
-  if (this.destroyed || !this._cctvSummary) return;
-  const nextText = String(text || '').trim() || 'No summary available.';
-  if (nextText === this._lastCctvSummaryText) return;
-  this._lastCctvSummaryText = nextText;
-
-  clearInterval(this._cctvSummaryTypingTimer);
-  this._cctvSummary.textContent = '';
-  let idx = 0;
-  this._cctvSummaryTypingTimer = setInterval(() => {
-    if (this.destroyed) return;
-    idx += 3;
-    if (idx >= nextText.length) {
-      this._cctvSummary.textContent = nextText;
-      clearInterval(this._cctvSummaryTypingTimer);
-      this._cctvSummaryTypingTimer = null;
-      return;
-    }
-    this._cctvSummary.textContent = nextText.slice(0, idx);
-  }, 20);
+  if (this._cctvSummary) {
+    this._cctvSummary.textContent =
+      enabled && activeCamera
+        ? state?.summary || 'No summary available.'
+        : 'No camera selected.';
+  }
 }
 
 export function _updateCctvSyncChip(loading, enabled) {

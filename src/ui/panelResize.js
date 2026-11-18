@@ -22,25 +22,36 @@ export function resizeBox(
     viewportWidth = Infinity,
     viewportHeight = Infinity,
     margin = EDGE_MARGIN_PX,
+    bounds = {
+      left: margin,
+      top: margin,
+      right: viewportWidth - margin,
+      bottom: viewportHeight - margin,
+    },
   } = {},
 ) {
-  let { left, top, width, height } = box;
-  const right = box.left + box.width;
-  const bottom = box.top + box.height;
+  const maxWidth = bounds.right - bounds.left;
+  const maxHeight = bounds.bottom - bounds.top;
+  minWidth = Math.min(minWidth, maxWidth);
+  minHeight = Math.min(minHeight, maxHeight);
+
+  // A rail window can start outside new bounds, or below its floating minimum.
+  let width = clamp(box.width, minWidth, maxWidth);
+  let height = clamp(box.height, minHeight, maxHeight);
+  let left = clamp(box.left, bounds.left, bounds.right - width);
+  let top = clamp(box.top, bounds.top, bounds.bottom - height);
+  const right = left + width;
+  const bottom = top + height;
   if (dir.includes('e'))
-    width = clamp(box.width + dx, minWidth, viewportWidth - margin - box.left);
+    width = clamp(box.width + dx, minWidth, bounds.right - left);
   if (dir.includes('s'))
-    height = clamp(
-      box.height + dy,
-      minHeight,
-      viewportHeight - margin - box.top,
-    );
+    height = clamp(box.height + dy, minHeight, bounds.bottom - top);
   if (dir.includes('w')) {
-    width = clamp(box.width - dx, minWidth, right - margin);
+    width = clamp(box.width - dx, minWidth, right - bounds.left);
     left = right - width;
   }
   if (dir.includes('n')) {
-    height = clamp(box.height - dy, minHeight, bottom - margin);
+    height = clamp(box.height - dy, minHeight, bottom - bounds.top);
     top = bottom - height;
   }
   return { left, top, width, height };

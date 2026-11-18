@@ -5,6 +5,7 @@ export function createCctvVideoSurface(
   {
     requestFrame = requestAnimationFrame,
     cancelFrame = cancelAnimationFrame,
+    onStateChange,
   } = {},
 ) {
   const ctx = canvas.getContext('2d');
@@ -13,6 +14,12 @@ export function createCctvVideoSurface(
   let previous = null;
   let previousTime = -1;
   let paintedAt = -Infinity;
+  let state = 'waiting';
+  const report = (nextState) => {
+    if (nextState === state) return;
+    state = nextState;
+    onStateChange?.(state);
+  };
   const paint = (now) => {
     if (stopped) return;
     const video = getVideo();
@@ -20,9 +27,13 @@ export function createCctvVideoSurface(
       ctx?.clearRect(0, 0, canvas.width, canvas.height);
       previous = video;
       previousTime = -1;
+      report('waiting');
     }
-    if (
-      ctx &&
+    if (!ctx || video?.error) {
+      if (state === 'ready') ctx?.clearRect(0, 0, canvas.width, canvas.height);
+      previousTime = -1;
+      report('unavailable');
+    } else if (
       video?.readyState >= 2 &&
       video.videoWidth > 0 &&
       video.videoHeight > 0 &&
@@ -42,11 +53,12 @@ export function createCctvVideoSurface(
         ctx.drawImage(video, 0, 0, width, height);
         previousTime = video.currentTime;
         paintedAt = now;
+        report('ready');
       } catch {
         /* A resolution/decode transition retries on the next frame. */
       }
     }
-    handle = requestFrame(paint);
+    if (!stopped) handle = requestFrame(paint);
   };
   handle = requestFrame(paint);
   return {

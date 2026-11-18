@@ -80,7 +80,6 @@
   overflow: hidden;
 }
 
-#left-panel-stack > #cctv-panel:not(.collapsed) .cctv-panel-inner,
 #left-panel-stack > #scene-panel:not(.collapsed) .scene-panel-inner {
   overflow-y: auto;
   scrollbar-gutter: stable;
@@ -382,13 +381,6 @@
   > .global-context-panel-inner
   > .context-mode-standby,
 #radio-panel.collapsed .radio-panel-inner > :not(.panel-header),
-#cctv-panel.collapsed .cctv-controls,
-#cctv-panel.collapsed .cctv-calibration-block,
-#cctv-panel.collapsed .cctv-frame-wrap,
-#cctv-panel.collapsed #cctv-source-badge,
-#cctv-panel.collapsed #cctv-meta,
-#cctv-panel.collapsed .cctv-summary-label,
-#cctv-panel.collapsed #cctv-summary,
 #scene-panel.collapsed .scene-controls,
 #scene-panel.collapsed .scene-shot-list,
 #scene-panel.collapsed .scene-progress,
@@ -411,7 +403,6 @@
 }
 
 #data-panel.collapsed .panel-title,
-#cctv-panel.collapsed .panel-title,
 #radio-panel.collapsed .panel-title,
 #scene-panel.collapsed .panel-title {
   font-size: 8px;
@@ -420,7 +411,6 @@
 
 #control-panel.collapsed .panel-inner,
 #data-panel.collapsed .data-panel-inner,
-#cctv-panel.collapsed .cctv-panel-inner,
 #radio-panel.collapsed .radio-panel-inner,
 #scene-panel.collapsed .scene-panel-inner,
 #param-slider-panel.collapsed,
@@ -430,7 +420,6 @@
 
 #control-panel.collapsed .panel-header,
 #data-panel.collapsed .panel-header,
-#cctv-panel.collapsed .panel-header,
 #radio-panel.collapsed .panel-header,
 #global-context-panel.collapsed .panel-header,
 #scene-panel.collapsed .panel-header,

@@ -170,7 +170,7 @@ test('a camera switch cancels calibration before old blur can change the new cam
   inputs[0].dispatchEvent(new Event('blur'));
   assert.deepEqual(patches, []);
   assert.equal(chip.input, null);
-  assert.equal(chip.textContent, 'HDG 200.0°');
+  assert.equal(chip.textContent, 'Heading 200.0°');
 });
 
 test('Escape claims calibration cancellation and disposal prevents late commits', (t) => {
@@ -217,4 +217,108 @@ test('disposing during camera enable prevents the delayed focus and future click
   button.dispatchEvent(new Event('click'));
   assert.equal(enables, 1);
   assert.equal(focuses, 0);
+});
+test('preview announces loading and errors separately from the source badge', (t) => {
+  const { controls, requests } = fixture(t);
+  controls._cctvFrameStatus = element();
+  controls._cctvSourceBadge = element();
+  const time = {};
+  controls._cctvFrameTime = { querySelector: () => time, hidden: true };
+  const camera = {
+    id: 'a',
+    sourceKind: 'snapshot',
+    sourceStatus: 'ok',
+    frameUrl: 'first.jpg',
+  };
+  controls._renderCctvState({ enabled: true, activeCamera: camera });
+  assert.equal(controls._cctvFrameStatus.textContent, 'Loading frame…');
+  assert.equal(controls._cctvSourceBadge.textContent, 'Snapshot · OK');
+  assert.equal(controls._cctvFrameTime.hidden, true);
+  requests[0].onerror();
+  assert.equal(controls._cctvFrameStatus.textContent, 'Frame unavailable');
+  assert.equal(controls._cctvFrameStatus.hidden, false);
+  controls._renderCctvState({
+    enabled: true,
+    activeCamera: { ...camera, frameUrl: 'next.jpg' },
+  });
+  requests[1].onload();
+  assert.equal(controls._cctvFrameStatus.hidden, true);
+  assert.equal(controls._cctvFrameTime.hidden, false);
+  assert.ok(Number.isFinite(Date.parse(time.dateTime)));
+  assert.match(time.textContent, / UTC$/);
+  controls._renderCctvState({ enabled: false });
+  assert.equal(controls._cctvFrameTime.hidden, true);
+});
+
+test('video preview waits for a painted frame and rejects callbacks from the prior camera', (t) => {
+  const { controls } = fixture(t);
+  let nextFrame;
+  let draws = 0;
+  let clears = 0;
+  let video = null;
+  const globals = {
+    document: { hidden: false },
+    requestAnimationFrame: (callback) => {
+      nextFrame = callback;
+      return 1;
+    },
+    cancelAnimationFrame: () => {},
+  };
+  for (const [key, value] of Object.entries(globals)) {
+    const previous = globalThis[key];
+    globalThis[key] = value;
+    t.after(() => {
+      if (previous === undefined) delete globalThis[key];
+      else globalThis[key] = previous;
+    });
+  }
+  controls._cctvFrameStatus = element();
+  controls._cctvVideo = {
+    width: 0,
+    height: 0,
+    getContext: () => ({
+      drawImage: () => draws++,
+      clearRect: () => clears++,
+    }),
+  };
+  controls.cctv.getActiveVideoElement = () => video;
+  controls.actions.setPanelCollapsed = () => {};
+  const selectVideo = (id) =>
+    controls._renderCctvState({
+      enabled: true,
+      activeCameraId: id,
+      activeCamera: { id, isVideo: true },
+    });
+
+  selectVideo('a');
+  assert.equal(controls._cctvFrameStatus.textContent, 'Waiting for video…');
+  nextFrame(0);
+  assert.equal(draws, 0);
+  video = { readyState: 2, videoWidth: 320, videoHeight: 180, currentTime: 0 };
+  nextFrame(100);
+  assert.equal(draws, 1);
+  assert.equal(controls._cctvFrameStatus.hidden, true);
+  const fromPriorCamera = nextFrame;
+  const clearsBeforeSwitch = clears;
+
+  video = null;
+  selectVideo('b');
+  assert.equal(controls._cctvFrameStatus.textContent, 'Waiting for video…');
+  assert.equal(clears, clearsBeforeSwitch + 1);
+  fromPriorCamera(200);
+  assert.equal(draws, 1);
+  assert.equal(controls._cctvFrameStatus.textContent, 'Waiting for video…');
+  video = { error: { code: 4 } };
+  nextFrame(220);
+  assert.equal(controls._cctvFrameStatus.textContent, 'Video unavailable');
+});
+
+test('the enabled preview shows the loaded count before camera selection', (t) => {
+  const { controls } = fixture(t);
+  controls._cctvFrameStatus = element();
+  controls._renderCctvState({
+    enabled: true,
+    cameras: [{ id: 'a' }, { id: 'b' }],
+  });
+  assert.match(controls._cctvFrameStatus.textContent, /^2 cameras loaded/);
 });

@@ -13,7 +13,6 @@ import {
 import {
   _calBadgeLabel,
   _renderCctvState,
-  _typeCctvSummary,
   _updateCctvSyncChip,
 } from './cctvPresentation.js';
 import { _initCctvPanel } from './cctvBindings.js';
@@ -28,8 +27,6 @@ export class CctvControls {
     this.listeners = new AbortController();
     this._cctvUnsubscribe = null;
     this._cctvState = null;
-    this._cctvSummaryTypingTimer = null;
-    this._lastCctvSummaryText = '';
     this._lastSeenCctvActiveId = null;
     this._cctvChipHideTimer = null;
     this._cctvChipWasBusy = false;
@@ -100,9 +97,6 @@ export class CctvControls {
   _renderCctvState(...args) {
     return _renderCctvState.call(this, ...args);
   }
-  _typeCctvSummary(...args) {
-    return _typeCctvSummary.call(this, ...args);
-  }
   _updateCctvSyncChip(...args) {
     return _updateCctvSyncChip.call(this, ...args);
   }
@@ -120,9 +114,7 @@ export class CctvControls {
     this._cctvUnsubscribe = null;
     this._calibrationEdit?.(false);
     this._clearCctvFrame();
-    clearInterval(this._cctvSummaryTypingTimer);
     clearTimeout(this._cctvChipHideTimer);
-    this._cctvSummaryTypingTimer = null;
     this._cctvChipHideTimer = null;
     this._cctvSyncChip?.classList.remove('visible');
   }

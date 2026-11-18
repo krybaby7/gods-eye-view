@@ -1,6 +1,5 @@
 import { readStylesheet } from './testSupport/readStylesheet.mjs';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   shouldExpandGlobalContextPanel,
@@ -33,22 +32,13 @@ test('other HUD layouts keep collapsed right-rail launchers visible', () => {
 });
 
 test('desktop Display participates in Tactical exclusivity without changing mobile Display behavior', () => {
-  const ui = readFileSync(new URL('./ui/rightPanelRail.js', import.meta.url), 'utf8');
   const css = readStylesheet(new URL('../style.css', import.meta.url));
-  assert.match(ui, /const isMobile = windowRef\.matchMedia\('\(max-width: 720px\)'\)\.matches/);
-  assert.match(
-    ui,
-    /!panel\.classList\.contains\('collapsed'\)\s*&&\s*\(!isMobile \|\| panel\.id !== 'pp-toggles'\)/,
-  );
-  assert.doesNotMatch(
-    ui,
-    /panel\.id !== 'pp-toggles' && !panel\.classList\.contains\('collapsed'\)/,
-  );
-  assert.match(ui, /if \(exclusive && panel\.classList\.contains\('collapsed'\)\)\s*panel\.setAttribute\('aria-hidden', 'true'\)/);
+  // Desktop/mobile exclusivity and focused disclosure ARIA are exercised
+  // against the rail layout in panelRails.test.mjs.
   // A panel floating out of the rail (portable mode) is exempt from exclusivity.
   assert.match(
     css,
-    /#right-context-rail\.layout-exclusive\s*> \[data-panel-id\]\.collapsed:not\(\.panel-floating\) \{/,
+    /#right-context-rail\.layout-exclusive\s*> \[data-panel-id\]\.collapsed:not\(\.panel-floating\):where\(:not\(:focus-within\)\)\s*\{\s*display:\s*none;/,
   );
 });
 

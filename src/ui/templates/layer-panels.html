@@ -1,61 +1,63 @@
   <div id="left-panel-stack">
-  <!-- CCTV Coverage Panel -->
-  <div id="cctv-panel" class="panel-collapsible collapsed" data-panel-id="cctv-panel">
-    <div class="cctv-panel-inner" data-rail-scroller>
-      <div class="panel-header">
-        <span class="panel-title">Cameras</span>
-        <span class="panel-divider"></span>
-        <button class="panel-collapse-btn" data-collapse-target="cctv-panel" title="Collapse panel">+</button>
+  <section id="cctv-panel" class="panel-collapsible collapsed" data-panel-id="cctv-panel" aria-labelledby="cctv-panel-title">
+    <div class="cctv-panel-inner kit-panel">
+      <div class="panel-header kit-panel-head">
+        <h2 id="cctv-panel-title" class="panel-title kit-panel-title">Cameras</h2>
+        <button class="panel-collapse-btn kit-iconbtn" type="button" data-collapse-target="cctv-panel" aria-controls="cctv-panel-body" aria-expanded="false" aria-label="Expand Cameras" title="Expand Cameras">◀</button>
       </div>
-      <div class="cyber-panel-body" data-rail-scroller>
-      <div id="cctv-frame-wrap" class="cctv-frame-wrap">
-        <img id="cctv-frame" alt="CCTV feed frame" />
-        <canvas id="cctv-video" class="cctv-frame" hidden></canvas>
-      </div>
-      <div id="cctv-source-badge" role="status" aria-live="polite">SOURCE · UNKNOWN</div>
-      <div id="cctv-meta">Switch cameras on to load camera intersections</div>
-      <div class="cctv-controls">
-        <button id="cctv-enable-btn" class="scene-btn">Cameras off</button>
-        <button id="cctv-nearest-btn" class="scene-btn">NEAREST</button>
-      </div>
-      <div class="cctv-controls">
-        <button id="cctv-prev-btn" class="scene-btn">PREV</button>
-        <select id="cctv-camera-select" aria-label="Camera"></select>
-        <button id="cctv-next-btn" class="scene-btn">NEXT</button>
-      </div>
-      <div class="cctv-controls">
-        <button id="cctv-focus-btn" class="scene-btn">FOCUS</button>
-        <button id="cctv-coverage-btn" class="scene-btn">COVERAGE OFF</button>
-        <button id="cctv-auto-hop-btn" class="scene-btn">AUTO HOP OFF</button>
-      </div>
-      <div class="cctv-controls">
-        <button id="cctv-projection-btn" class="scene-btn">PROJECTION ON</button>
-        <span id="cctv-quality-chip">CAL · --</span>
-      </div>
-      <div class="cctv-calibration-block">
-        <div class="cctv-calibration-header">
-          <div class="cctv-summary-label">CALIBRATION</div>
-          <button id="cctv-adjust-btn" class="scene-btn" title="Drag the camera in the world: rings rotate, arrows move, handles set range/FOV">ADJUST</button>
+      <div id="cctv-panel-body" class="kit-panel-body" data-rail-scroller>
+        <div class="cctv-controls">
+          <button id="cctv-enable-btn" class="kit-btn" type="button">Cameras off</button>
+          <button id="cctv-nearest-btn" class="kit-btn" type="button">Nearest</button>
         </div>
-        <div id="cctv-cal-readout" class="cctv-cal-readout" aria-label="Camera pose — click a value to type">
-          <button class="cctv-cal-value" data-cal-field="heading" title="Heading (compass °) — click to type">HDG --</button>
-          <button class="cctv-cal-value" data-cal-field="pitch" title="Pitch (° up/down) — click to type">PITCH --</button>
-          <button class="cctv-cal-value" data-cal-field="fov" title="Horizontal FOV (°) — click to type">FOV --</button>
-          <button class="cctv-cal-value" data-cal-field="range" title="Range / monitor-plane distance (m) — click to type">RANGE --</button>
-          <button class="cctv-cal-value" data-cal-field="height" title="Mount height above ground (m) — click to type">HGT --</button>
-          <button class="cctv-cal-value" data-cal-field="north" title="North offset from catalog position (m) — click to type">ΔN --</button>
-          <button class="cctv-cal-value" data-cal-field="east" title="East offset from catalog position (m) — click to type">ΔE --</button>
+        <div class="cctv-controls cctv-navigation">
+          <button id="cctv-prev-btn" class="kit-btn" type="button" aria-label="Previous camera">Prev</button>
+          <select id="cctv-camera-select" aria-label="Camera"></select>
+          <button id="cctv-next-btn" class="kit-btn" type="button" aria-label="Next camera">Next</button>
         </div>
-        <div class="cctv-controls cctv-calibration-actions">
-          <button id="cctv-calib-save-btn" class="scene-btn">SAVE CAL</button>
-          <button id="cctv-calib-reset-btn" class="scene-btn">RESET CAL</button>
+        <div id="cctv-frame-wrap" class="cctv-frame-wrap">
+          <img id="cctv-frame" alt="Camera snapshot" hidden />
+          <canvas id="cctv-video" class="cctv-frame" aria-label="Camera video preview" hidden></canvas>
+          <div id="cctv-frame-status" role="status">Cameras are off</div>
         </div>
-      </div>
-      <div class="cctv-summary-label">SCENE SUMMARY</div>
-      <div id="cctv-summary">Switch cameras on to start camera-linked summaries.</div>
+        <div class="cctv-frame-details">
+          <div id="cctv-source-badge" hidden></div>
+          <div id="cctv-frame-time" hidden>Frame loaded <time></time></div>
+        </div>
+        <div id="cctv-meta" hidden></div>
+        <div class="cctv-controls">
+          <button id="cctv-focus-btn" class="kit-btn" type="button">Focus</button>
+          <button id="cctv-coverage-btn" class="kit-btn" type="button">Coverage off</button>
+          <button id="cctv-auto-hop-btn" class="kit-btn" type="button">Auto hop off</button>
+          <button id="cctv-projection-btn" class="kit-btn" type="button">Projection on</button>
+        </div>
+        <section class="cctv-calibration-block" aria-labelledby="cctv-calibration-title">
+          <div class="cctv-calibration-header">
+            <h3 id="cctv-calibration-title" class="kit-sec-h">Calibration</h3>
+            <button id="cctv-adjust-btn" class="kit-btn" type="button" title="Drag the camera in the world: rings rotate, arrows move, handles set range and field of view">Adjust</button>
+          </div>
+          <div id="cctv-quality-chip" hidden></div>
+          <div id="cctv-cal-readout" class="cctv-cal-readout" role="group" aria-label="Camera pose">
+            <button class="kit-btn cctv-cal-value" type="button" data-cal-field="heading" title="Heading (compass degrees)">Heading —</button>
+            <button class="kit-btn cctv-cal-value" type="button" data-cal-field="pitch" title="Pitch (degrees up or down)">Pitch —</button>
+            <button class="kit-btn cctv-cal-value" type="button" data-cal-field="fov" title="Horizontal field of view (degrees)">FOV —</button>
+            <button class="kit-btn cctv-cal-value" type="button" data-cal-field="range" title="Distance to the projection plane (meters)">Range —</button>
+            <button class="kit-btn cctv-cal-value" type="button" data-cal-field="height" title="Mount height above ground (meters)">Height —</button>
+            <button class="kit-btn cctv-cal-value" type="button" data-cal-field="north" title="North offset from catalog position (meters)">North offset —</button>
+            <button class="kit-btn cctv-cal-value" type="button" data-cal-field="east" title="East offset from catalog position (meters)">East offset —</button>
+          </div>
+          <div class="cctv-controls cctv-calibration-actions">
+            <button id="cctv-calib-save-btn" class="kit-btn" type="button">Save calibration</button>
+            <button id="cctv-calib-reset-btn" class="kit-btn" type="button">Reset calibration</button>
+          </div>
+        </section>
+        <section aria-labelledby="cctv-summary-title">
+          <h3 id="cctv-summary-title" class="kit-sec-h">Scene summary</h3>
+          <div id="cctv-summary">No camera selected.</div>
+        </section>
       </div>
     </div>
-  </div>
+  </section>
 
   <!-- Street Level Panel (moved into #right-context-rail at runtime) -->
   <div id="street-level-panel" class="panel-collapsible collapsed" data-panel-id="street-level-panel">
