@@ -1,5 +1,6 @@
 import { readShellSource } from './testSupport/readShellSource.mjs';
 import { expandApplicationHtml } from '../build/application-html.js';
+import { htmlNodes } from './testSupport/cssCascade.mjs';
 import { readStylesheet } from './testSupport/readStylesheet.mjs';
 // MAP STACK chip row — the dropdown's replacement control surface.
 //
@@ -494,18 +495,27 @@ test('the Visual Presets tray owns Map Source and the retired left panel is abse
     /map-stack-select/,
     'the SOURCE dropdown is replaced by the chip row',
   );
-  assert.match(
-    html,
-    /<section class="map-source-section"[\s\S]*?<div id="map-stack-chips" class="map-stack-chip-row" role="group" aria-label="Map source"><\/div>/,
+  const nodes = htmlNodes(html);
+  const chips = nodes.find(({ id }) => id === 'map-stack-chips');
+  const section = chips?.parent;
+  assert.equal(section?.tag, 'section');
+  assert.equal(section.parent?.id, 'control-panel-popover');
+  assert.equal(section.parent?.parent?.parent?.id, 'control-panel');
+  assert.equal(section.attrs.get('aria-labelledby'), 'map-source-label');
+  assert.equal(chips.attrs.get('role'), 'group');
+  assert.ok(
+    chips.attrs.get('aria-label'),
+    'the chip group has an accessible name',
   );
-  assert.doesNotMatch(
-    html,
-    /id="stack-panel"/,
+
+  const label = nodes.find(({ id }) => id === 'map-source-label');
+  const status = nodes.find(({ id }) => id === 'map-stack-status');
+  assert.equal(label?.parent?.parent, section);
+  assert.equal(status?.parent?.parent, section);
+  assert.equal(status.attrs.get('aria-live'), 'polite');
+  assert.ok(
+    !nodes.some(({ id }) => id === 'stack-panel'),
     'the duplicate left MAP STACK panel is retired',
-  );
-  assert.match(
-    html,
-    /id="map-source-label">MAP SOURCE<[\s\S]*?id="map-stack-status"/,
   );
   assert.match(
     html,
