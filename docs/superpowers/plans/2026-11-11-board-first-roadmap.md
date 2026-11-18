@@ -17,7 +17,8 @@ restyle (B) merged that evening as pull request 34. Weather (C) merged on 18 Nov
 request 35. Cameras (D) merged the same day as pull request 36. On 18 November the owner paused
 1.3 at that point and parked E–L and 1.6. Main at `1e2e589e` was deployed privately on the
 owner's PC at `http://localhost:4173`. Decision 37 records the release and the topics for a
-fresh brainstorming chat.
+fresh brainstorming chat. The owner later resumed F–L in parallel under decision 38, and
+those seven pieces merged on 18 November as pull request 37.
 Codex directs the work. For B, C and D, GPT-6.2 Sol implemented and GPT-6.1 Terra tested (decisions
 34 and 35). Section 10 gives the build history and the current status. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
@@ -216,7 +217,7 @@ The 13 rules in the World Board spec stay. These are added.
 
 ## 4. The work, in order
 
-This section preserves the earlier roadmap. Decision 37 supersedes its order for unfinished work.
+This section preserves the earlier roadmap. Decisions 37 and 38 record changes to its order.
 
 Five stages and one track that runs beside them. Each stage follows the method already used for
 the World Board: a spec, a build prompt, one pull request per numbered item, a review, fix rounds.
@@ -676,6 +677,13 @@ Added on 2026-11-18:
     The owner left the order of those four topics open and deferred implementation until after
     that discussion.
 
+38. **Resume One look F–L in parallel.** Later on 18 November the owner asked for Recent imagery
+    (F), Radio (G), Context (H), Data sources and keys (I), Welcome (J), Cockpit (K) and shared
+    controls (L) to be completed in parallel by GPT-6.2 Sol agents. Up to three agents worked
+    concurrently in separate worktrees. Context started from Radio's stylesheet split. The work
+    was brought together for a shared regression run across those surfaces. Street level (E) and
+    the visual regression milestone (1.6) remain parked under decision 37.
+
 ## 6. Risks
 
 - **Stage 1 is bigger than it looks.** Most of its lines are in panels the owner did not write.
@@ -992,8 +1000,8 @@ Raised on 2026-11-12 and not yet answered.
 ## 10. Building it
 
 Decisions 29 and 33 governed the builds below. The table records what merged and where work paused.
-Decision 37 supersedes the previous build order for unfinished work. The private deployment
-is complete, and future feature priorities are for a fresh brainstorming chat.
+Decision 37 paused unfinished work and decision 38 resumed F–L. Future feature priorities are
+for a fresh brainstorming chat.
 
 | Order      | Piece                                                                | State on 2026-11-18                                                                             |
 | ---------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
@@ -1005,7 +1013,8 @@ is complete, and future feature priorities are for a fresh brainstorming chat.
 | 5          | The tools menu (1.5)                                                 | Merged as pull request 29 on 2026-11-16                                                         |
 | 6          | The layers menu (1.4)                                                | Merged as pull request 30 on 2026-11-17                                                         |
 | 7          | One look (1.3), A1, A2 and B to D                                    | Merged as pull requests 31, 33, 34, 35 and 36, with corrections in pull request 32              |
-| Parked     | One look (1.3), E–L, and tests (1.6)                                 | Paused after Cameras (D) on 2026-11-18 (decision 37)                                            |
+| 8          | One look (1.3), F–L                                                  | Merged as pull request 37 on 2026-11-18 (decision 38)                                           |
+| Parked     | Street level (E) and visual regression tests (1.6)                   | Paused on 2026-11-18 (decisions 37 and 38)                                                      |
 | Deployed   | Private deployment of main at `1e2e589e`                             | Running at `http://localhost:4173` on the owner’s PC (decision 37)                              |
 | Order open | Unfinished feature work                                              | Revisit priorities in a fresh brainstorming chat (decision 37)                                  |
 | Beside     | Track R                                                              | The original milestones are in section 4. The earlier roadmap recorded this track as unstarted. |
@@ -1554,6 +1563,20 @@ Both passed in isolation. The merged and tested trees both equal
 `before-da7f6ff4/` beside it. The test server stopped and released port 5317 and its lock. Live
 providers, a physical phone and a screen reader remain unverified. Decision 37 supersedes the
 original direction to follow Cameras with Street level (E).
+
+**One look (1.3), F–L.** Three GPT-6.2 Sol agents implemented and cross-reviewed Recent imagery,
+Radio, Context, Data sources and keys, Welcome, Cockpit and the shared controls. The group
+merged as pull request 37 at `a004b94df8279e4d6ea67ceff5418008e4cb8c04`. The merged
+tree equals the verified release branch at `601d1370ff04333b2f0e21003a63ba9603983a67`.
+
+The main suite passed 7,298 tests and skipped 10, with 14 more tests passing in the two
+supplemental suites. The browser regressions covered World Board, news, searches, lenses,
+Weather, Cameras, Layers and panel resizing. The final Cockpit and shared-controls runs
+covered 21 and 30 views respectively. Cockpit checks included short landscape, phone portrait,
+and attribution in recording mode. Browser runs used local fixtures. Live provider and radio
+playback checks and physical-device testing were outside this run. At roughly 390×390 the
+Cockpit menus can still run out of vertical room. The local reports are in
+`qa-artifacts/one-look-f-l/`.
 
 These are the director's readings, taken on the plan's recommendation and not yet put to the owner:
 
