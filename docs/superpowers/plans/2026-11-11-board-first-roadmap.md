@@ -14,9 +14,11 @@ One look began with the shared tokens and World Board styles (A1), merged the sa
 request 31. Pull request 32 merged the corrections from the review of both pieces, and
 A2, the shared kit and legend, merged on 17 November as pull request 33. The Layers menu
 restyle (B) merged that evening as pull request 34. Weather (C) merged on 18 November as pull
-request 35. Cameras (D) merged the same day as pull request 36. Street level (E) is next.
+request 35. Cameras (D) merged the same day as pull request 36. On 18 November the owner paused
+1.3 at that point and parked E–L and 1.6. Decision 37 records the pause, the separate decision
+about deploying current main and the topics for a fresh brainstorming chat.
 Codex directs the work. For B, C and D, GPT-6.2 Sol implemented and GPT-6.1 Terra tested (decisions
-34 and 35). Section 10 gives the order of building and the state of each piece. Builds on
+34 and 35). Section 10 gives the build history and the current status. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
 hold) and on a review of the code, the docs and the running app on main at 7fb39f6. Section 8 says
 what the first review could not see and section 8.1 what the second one found.
@@ -212,6 +214,8 @@ The 13 rules in the World Board spec stay. These are added.
    can drive the app (decision 18).
 
 ## 4. The work, in order
+
+This section preserves the earlier roadmap. Decision 37 supersedes its order for unfinished work.
 
 Five stages and one track that runs beside them. Each stage follows the method already used for
 the World Board: a spec, a build prompt, one pull request per numbered item, a review, fix rounds.
@@ -650,6 +654,18 @@ Added later on 2026-11-17, after Codex's first run:
     carried the prerequisite correction. The details are in the piece 6 and One look histories in
     section 10.
 
+Added on 2026-11-18:
+
+37. **Pause after Cameras and revisit priorities in a fresh chat.** The owner paused One look
+    (1.3) after D, Cameras, merged as pull request 36. Keep the merged work and its verification
+    history. Park E–L, beginning with E (Street level), and the test work in 1.6. This supersedes
+    the earlier direction to do Street level next.
+
+    Consider deployment of current main separately. In a fresh brainstorming chat, revisit
+    priorities across country comparisons and scoring, Today news and events, board and live-layer
+    integration, and Claude features for the board. The owner left the order of those four topics
+    open and deferred implementation until after that discussion.
+
 ## 6. Risks
 
 - **Stage 1 is bigger than it looks.** Most of its lines are in panels the owner did not write.
@@ -965,22 +981,24 @@ Raised on 2026-11-12 and not yet answered.
 
 ## 10. Building it
 
-Decision 29 sets how: one piece, one fresh Claude session, one pull request, merged when the owner
-asks. Decision 33 lets a reviewed piece be merged without asking until the app is all built. This
-table is the order and the state. The session that finishes a piece updates its row, the status
-line at the top of this file and the owner's status page.
+Decisions 29 and 33 governed the builds below. The table records what merged and where work paused.
+Decision 37 supersedes the previous build order for unfinished work. Deployment of current main
+has its own decision, and future feature priorities are for a fresh brainstorming chat.
 
-| Order  | Piece                                                                                                               | State on 2026-11-17                                                                                                                                |
-| ------ | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Done   | The Jev filer and the connection allowance (decisions 26 and 27, R8)                                                | Merged as pull request 25                                                                                                                          |
-| 1      | Stage 0: the mock of six screens and the page of design tokens                                                      | Done. Approved 2026-11-12 (decision 30)                                                                                                            |
-| 2      | Costume off, board on: the first pull request of section 7                                                          | Merged as pull request 26 on 2026-11-13                                                                                                            |
-| 3      | The frame (1.2), built to the approved mock                                                                         | Merged as pull request 28 on 2026-11-16                                                                                                            |
-| 4      | Words for numbers and the Overview tab (2.1 and 2.2)                                                                | Merged as pull request 27 on 2026-11-13                                                                                                            |
-| 5      | The tools menu (1.5)                                                                                                | Merged as pull request 29 on 2026-11-16                                                                                                            |
-| 6      | The layers menu (1.4)                                                                                               | Merged as pull request 30 on 2026-11-17                                                                                                            |
-| Then   | The other numbered items of stages 1 to 5, in the order of section 4 and its decisions                              | 1.3 A1, A2 and B to D merged as PRs 31, 33, 34, 35 and 36, with corrections in PR 32. E (Street level) next, then the remaining 1.3 pieces and 1.6 |
-| Beside | Track R: R9 before stage 3, R10 before 2.6, R1 by stage 3, R3 by the end of stage 2, and the rest as its table says | Not started. None waits for the mock                                                                                                               |
+| Order             | Piece                                                                | State on 2026-11-18                                                                             |
+| ----------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Done              | The Jev filer and the connection allowance (decisions 26 and 27, R8) | Merged as pull request 25                                                                       |
+| 1                 | Stage 0: the mock of six screens and the page of design tokens       | Done. Approved 2026-11-12 (decision 30)                                                         |
+| 2                 | Costume off, board on: the first pull request of section 7           | Merged as pull request 26 on 2026-11-13                                                         |
+| 3                 | The frame (1.2), built to the approved mock                          | Merged as pull request 28 on 2026-11-16                                                         |
+| 4                 | Words for numbers and the Overview tab (2.1 and 2.2)                 | Merged as pull request 27 on 2026-11-13                                                         |
+| 5                 | The tools menu (1.5)                                                 | Merged as pull request 29 on 2026-11-16                                                         |
+| 6                 | The layers menu (1.4)                                                | Merged as pull request 30 on 2026-11-17                                                         |
+| 7                 | One look (1.3), A1, A2 and B to D                                    | Merged as pull requests 31, 33, 34, 35 and 36, with corrections in pull request 32              |
+| Parked            | One look (1.3), E–L, and tests (1.6)                                 | Paused after Cameras (D) on 2026-11-18 (decision 37)                                            |
+| Separate decision | Deploy current main                                                  | Consider separately from feature priorities (decision 37)                                       |
+| Order open        | Unfinished feature work                                              | Revisit priorities in a fresh brainstorming chat (decision 37)                                  |
+| Beside            | Track R                                                              | The original milestones are in section 4. The earlier roadmap recorded this track as unstarted. |
 
 **Piece 2, costume off and board on.** Merged on 2026-11-13 as pull request 26 (merge commit
 `c9c6beee`), on the owner's word. Before the merge a separate agent ran the five gates again and
@@ -1524,7 +1542,8 @@ Both passed in isolation. The merged and tested trees both equal
 `qa-artifacts/one-look-d/final-94b22938-r5/`. Its gate summary SHA-256 is
 `069a93e96642e5ffc11dac67e9b666051d04da170a2e0b1400066a58d2c2aa25`. The matched baseline is in
 `before-da7f6ff4/` beside it. The test server stopped and released port 5317 and its lock. Live
-providers, a physical phone and a screen reader remain unverified. Street level (E) follows.
+providers, a physical phone and a screen reader remain unverified. Decision 37 supersedes the
+original direction to follow Cameras with Street level (E).
 
 These are the director's readings, taken on the plan's recommendation and not yet put to the owner:
 
