@@ -88,6 +88,31 @@ function measure() {
     .map((n) => box(n.id, n));
   const body = panel.querySelector('#cctv-panel-body, .cyber-panel-body');
   const canvas = document.querySelector('#cesiumContainer');
+  const image = document.querySelector('#cctv-frame');
+  const status = document.querySelector('#cctv-frame-status');
+  const frame = document.querySelector('#cctv-frame-wrap');
+  const imageBox = image.getBoundingClientRect();
+  const center = document.elementFromPoint(
+    (imageBox.left + imageBox.right) / 2,
+    (imageBox.top + imageBox.bottom) / 2,
+  );
+  const colorCanvas = document.createElement('canvas');
+  colorCanvas.width = colorCanvas.height = 1;
+  const colorContext = colorCanvas.getContext('2d', {
+    willReadFrequently: true,
+  });
+  const colorCache = new Map();
+  const rgb = (value) => {
+    if (!colorCache.has(value)) {
+      colorContext.clearRect(0, 0, 1, 1);
+      colorContext.fillStyle = value;
+      colorContext.fillRect(0, 0, 1, 1);
+      const c = [...colorContext.getImageData(0, 0, 1, 1).data];
+      c[3] /= 255;
+      colorCache.set(value, c);
+    }
+    return colorCache.get(value);
+  };
   return {
     target: box('Cameras', panel),
     globe: box('globe', canvas),
@@ -119,8 +144,6 @@ function measure() {
       )
       .map((n) => {
         const style = getComputedStyle(n);
-        const rgb = (value) =>
-          value.match(/[\d.]+/g)?.map(Number) ?? [0, 0, 0, 0];
         const over = (front, back) =>
           front
             .slice(0, 3)
@@ -164,9 +187,31 @@ function measure() {
       color: getComputedStyle(n).color,
       background: getComputedStyle(n).backgroundColor,
     })),
+    adjacent: [
+      ...panel.querySelectorAll(
+        '.cctv-controls, .cctv-frame-details, #cctv-meta',
+      ),
+    ]
+      .filter(visible)
+      .map((n) => box(n.id || n.className, n)),
+    navigation: [
+      ...panel.querySelectorAll(
+        '#cctv-prev-btn, #cctv-camera-select, #cctv-next-btn',
+      ),
+    ]
+      .filter(visible)
+      .map((n) => box(n.id, n)),
     source: document.querySelector('#cctv-source-badge')?.textContent,
     frameTime: document.querySelector('#cctv-frame-time')?.textContent,
+    frameDateTime: document
+      .querySelector('#cctv-frame-time time')
+      ?.getAttribute('datetime'),
     image: {
+      visible: Boolean(visible(image) && !image.hidden),
+      box: box('preview', image),
+      frameBox: box('frame', frame),
+      centerTarget: center?.id || center?.tagName,
+      statusVisible: Boolean(visible(status) && !status.hidden),
       complete: document.querySelector('#cctv-frame').complete,
       naturalWidth: document.querySelector('#cctv-frame').naturalWidth,
       src: document.querySelector('#cctv-frame').getAttribute('src'),
@@ -222,14 +267,34 @@ export async function captureCctv({
       wait,
     );
     const coverage = '#cctv-coverage-btn';
-    const before = await page.$eval(coverage, (n) => n.textContent);
-    await page.click(coverage);
-    const after = await page.$eval(coverage, (n) => n.textContent);
-    if (before === after)
-      report.errors.push('Coverage control did not change state');
-    await page.click(coverage);
+    const modes = ['off', 'on', 'viewshed'];
+    const initial = await page.evaluate(
+      () =>
+        window.__godsEyeView.dataManager.layers.get('cctv').module.getUIState()
+          .coverageMode,
+    );
+    for (let i = 1; i <= 3; i++) {
+      const expected = modes[(modes.indexOf(initial) + i) % modes.length];
+      await page.click(coverage);
+      await page.waitForFunction(
+        (expected) => {
+          const mode = window.__godsEyeView.dataManager.layers
+            .get('cctv')
+            .module.getUIState().coverageMode;
+          const text = document
+            .querySelector('#cctv-coverage-btn')
+            .textContent.toLowerCase();
+          return (
+            mode === expected &&
+            text.includes(expected === 'viewshed' ? 'viewshed' : expected)
+          );
+        },
+        wait,
+        expected,
+      );
+    }
   }
-  async function capture(width, height, view) {
+  async function capture(width, height, view, enabledEmpty = false) {
     await markFrameStage(`${width}x${height} cctv ${view}`);
     await page.evaluate(
       () =>
@@ -237,7 +302,14 @@ export async function captureCctv({
           requestAnimationFrame(() => requestAnimationFrame(r)),
         ),
     );
-    const data = await page.evaluate(measure);
+    let data = await page.evaluate(measure);
+    for (let i = 0; i < 2; i++) {
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(r)));
+      const next = await page.evaluate(measure);
+      if (JSON.stringify(data.target) !== JSON.stringify(next.target))
+        throw new Error('Cameras did not settle before capture');
+      data = next;
+    }
     const issues = requiredContextFailures(data);
     const legacy = [];
     if (data.frameState.today !== 'open' || data.frameState.sheet !== 'open')
@@ -255,6 +327,8 @@ export async function captureCctv({
     )
       legacy.push('Floating panel outside globe');
     if (data.collapsed) issues.push('Cameras unexpectedly collapsed');
+    if (enabledEmpty && !/no camera|unavailable|no source/i.test(data.text))
+      issues.push('Enabled empty catalog lacks an honest empty state');
     const smallText = data.typography
       .filter((t) => t.size < 12)
       .map((t) => t.text);
@@ -276,7 +350,8 @@ export async function captureCctv({
     if (
       options.state === 'filled' &&
       options.label === 'after' &&
-      !/Frame loaded.*UTC/i.test(data.frameTime ?? '')
+      (!/Frame loaded.*\d.*UTC/i.test(data.frameTime ?? '') ||
+        !Number.isFinite(Date.parse(data.frameDateTime)))
     )
       issues.push('Missing labelled frame loaded UTC time');
     if (
@@ -290,7 +365,16 @@ export async function captureCctv({
     if (overlaps.length)
       legacy.push('Cameras collides with frame or another panel');
     if (view === 'docked' && data.floating) issues.push('Panel did not dock');
-    if (options.label === 'after' && legacy.length) issues.push(...legacy);
+
+    if (
+      options.state === 'filled' &&
+      (!data.image.visible ||
+        data.image.box.right <= data.image.box.left ||
+        data.image.box.bottom <= data.image.box.top ||
+        data.image.centerTarget !== 'cctv-frame' ||
+        data.image.statusVisible)
+    )
+      legacy.push('Decoded preview is hidden, blocked, or has no geometry');
     if (
       options.state === 'filled' &&
       (!data.image.complete || data.image.naturalWidth !== 320)
@@ -301,6 +385,25 @@ export async function captureCctv({
       !data.text.includes('Local synthetic fixture')
     )
       issues.push('Fixture source missing');
+    const f = data.image.frameBox;
+    const intersects = (a, b) =>
+      a.left < b.right - 1 &&
+      a.right > b.left + 1 &&
+      a.top < b.bottom - 1 &&
+      a.bottom > b.top + 1;
+    const intrusions = data.adjacent.filter((a) => intersects(a, f));
+    if (intrusions.length)
+      legacy.push(
+        `Controls/details overlap preview: ${intrusions.map((a) => a.elementId).join(', ')}`,
+      );
+    const outside = data.navigation.filter(
+      (n) => n.left < t.left - 1 || n.right > t.right + 1,
+    );
+    if (outside.length)
+      legacy.push(
+        `Navigation outside panel: ${outside.map((n) => n.elementId).join(', ')}`,
+      );
+    if (options.label === 'after' && legacy.length) issues.push(...legacy);
     const stem = `${options.label}-${options.state}-${width}x${height}-cctv-${view}`;
     data.cropPixels = await captureLookImage(
       page,
@@ -315,6 +418,7 @@ export async function captureCctv({
     if (JSON.stringify(data.target) !== JSON.stringify(after.target))
       issues.push('Panel moved during capture');
     const evidence = {
+      enabledEmpty,
       width,
       height,
       panel: 'cctv',
@@ -378,5 +482,20 @@ export async function captureCctv({
     await page.mouse.up();
     await capture(width, height, 'dragged');
     await scrollBody();
+  }
+  if (options.state === 'empty') {
+    if (await page.$(`${panel}.panel-floating`))
+      await page.$eval(`${panel} .panel-header`, (n) =>
+        n.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })),
+      );
+    await page.click('#cctv-enable-btn');
+    await page.waitForFunction(
+      () => window.__godsEyeView.dataManager.isEnabled('cctv'),
+      wait,
+    );
+    for (const [width, height] of viewports) {
+      await page.setViewport({ width, height, deviceScaleFactor: 1 });
+      await capture(width, height, 'enabled-empty', true);
+    }
   }
 }
