@@ -134,9 +134,26 @@ export async function captureContext({
     throw new Error('Context geometry did not settle');
   }
 
+  async function clearCountryHover() {
+    // Leave the globe through its normal pointerleave route. Keep #world-hover
+    // in the panel collision scan so a hover that persists still fails.
+    const point = await page.$eval('#frame-top .frame-brand', (brand) => {
+      const box = brand.getBoundingClientRect();
+      const x = box.left + box.width / 2;
+      const y = box.top + box.height / 2;
+      return brand.contains(document.elementFromPoint(x, y)) ? { x, y } : null;
+    });
+    if (!point)
+      throw new Error('Context fixture has no neutral top-bar pointer target');
+    await page.mouse.move(point.x, point.y);
+    await page.waitForSelector('#world-hover[hidden]', wait);
+  }
+
   async function capture(view, viewport, extra = {}) {
     const { width, height } = viewport;
     await markFrameStage(`${width}x${height} context ${view}`);
+    const neutral = ['collapsed', 'chooser', 'restored'].includes(view);
+    if (neutral) await clearCountryHover();
     const stem = path.join(
       out,
       `${options.label}-${options.state}-${width}x${height}-context-${view}`,
@@ -176,8 +193,6 @@ export async function captureContext({
     const overlaps = collisions(data.frames, data.panels).filter(({ a, b }) =>
       [a, b].some(({ elementId }) => elementId === 'global-context-panel'),
     );
-    const neutral =
-      view === 'collapsed' || view === 'chooser' || view === 'restored';
     const visibleSheet = data.frames.some(({ name }) => name === 'sheet');
     const issues = neutral ? requiredContextFailures(data) : [];
     if (
