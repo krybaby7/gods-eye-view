@@ -406,3 +406,13 @@ body.cockpit-mode #data-panel.layers-menu {
     --cockpit-menu-top: 180px;
   }
 }
+
+@media (max-width: 760px) and (max-height: 480px) {
+  body.cockpit-mode {
+    --cockpit-instrument-bottom: calc(var(--cockpit-credit-bottom) + 66px);
+    --cockpit-instrument-height: 120px;
+    --cockpit-menu-top: calc(
+      var(--cockpit-compact-utility-top) + 42px + var(--space-2)
+    );
+  }
+}

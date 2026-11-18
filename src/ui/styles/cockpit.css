@@ -1564,6 +1564,26 @@ body.cockpit-mode #intel-hud .hud-status {
 }
 
 @media (max-width: 760px) {
+  body.cockpit-mode {
+    --cockpit-compact-utility-top: 126px;
+    --cockpit-credit-bottom: max(var(--space-2), env(safe-area-inset-bottom));
+  }
+  body.cockpit-mode:not(.ui-clean-view):not(.recording-mode) #cesium-credits {
+    bottom: var(--cockpit-credit-bottom);
+    right: auto;
+    left: var(--space-3);
+    max-width: calc(100vw - 2 * var(--space-3));
+    white-space: normal;
+  }
+
+  body.gev-frame.cockpit-mode #global-loading-status {
+    top: auto;
+    bottom: calc(var(--cockpit-credit-bottom) + 24px);
+    left: var(--space-3);
+    max-width: calc(100vw - 2 * var(--space-3));
+    transform: none;
+  }
+
   #view-switcher {
     right: 16px;
     bottom: 16px;
@@ -1589,7 +1609,7 @@ body.cockpit-mode #intel-hud .hud-status {
     display: none !important;
   }
   body.cockpit-mode .cockpit-utility-controls {
-    top: 126px;
+    top: var(--cockpit-compact-utility-top);
     right: 12px;
     bottom: auto;
     max-width: calc(100vw - 24px);
@@ -1603,10 +1623,12 @@ body.cockpit-mode #intel-hud .hud-status {
   }
   body.cockpit-mode .cockpit-utility-control.is-expanded {
     position: fixed;
-    top: 126px;
+    top: var(--cockpit-compact-utility-top);
     right: 12px;
     width: min(272px, calc(100vw - 24px));
-    max-height: calc(100dvh - var(--cockpit-menu-bottom) - 126px);
+    max-height: calc(
+      100dvh - var(--cockpit-menu-bottom) - var(--cockpit-compact-utility-top)
+    );
   }
   body.cockpit-mode
     .cockpit-utility-controls:has(.cockpit-utility-control.is-expanded)
@@ -1719,5 +1741,38 @@ body.cockpit-mode #intel-hud .hud-status {
 
   body.cockpit-mode #view-switcher button {
     padding-inline: var(--space-1);
+  }
+}
+
+/* Keep the controls, popovers and instruments in separate bands in landscape. */
+@media (max-width: 760px) and (max-height: 480px) {
+  body.cockpit-mode {
+    --cockpit-compact-utility-top: 56px;
+  }
+
+  body.cockpit-mode #view-switcher {
+    bottom: calc(var(--cockpit-credit-bottom) + 24px);
+  }
+
+  body.gev-frame.cockpit-mode #global-loading-status {
+    top: 62px;
+    bottom: auto;
+    max-width: 44vw;
+  }
+
+  .cockpit-compass {
+    grid-template-rows: 40px 30px minmax(0, 1fr);
+  }
+
+  .cockpit-altitude-rim {
+    height: 30px;
+  }
+
+  .cockpit-position-readout {
+    top: var(--space-3);
+    right: 50%;
+    transform: translateX(50%);
+    flex-direction: column;
+    gap: 0;
   }
 }

@@ -45,6 +45,8 @@ function measure(targetSelector, menuSelector) {
     '#cockpit-presets',
     '#cockpit-reset-globe',
     '#map-view-switch',
+    '#cesium-credits',
+    '#global-loading-status',
   ];
   const byId = (id) => document.getElementById(id);
   return {
@@ -72,7 +74,12 @@ function measure(targetSelector, menuSelector) {
       text: byId(id)?.getAttribute('aria-label') || byId(id)?.textContent,
       fontSize: Number.parseFloat(getComputedStyle(byId(id)).fontSize),
     })),
-    focus: document.activeElement?.id,
+    focus: {
+      id: document.activeElement?.id,
+      label:
+        document.activeElement?.getAttribute('aria-label') ||
+        document.activeElement?.textContent?.trim(),
+    },
   };
 }
 
@@ -195,6 +202,19 @@ export async function captureCockpit({
     )
       errors.push('instrument deck overlaps the bottom controls');
 
+    if (width <= 760) {
+      const credit = components.find(
+        ({ selector }) => selector === '#cesium-credits',
+      );
+      if (!credit) errors.push('map attribution is missing');
+      else if (
+        collisions([...bottomControls, ...(deck ? [deck] : [])], [credit]).some(
+          ({ a, b }) => a === credit || b === credit,
+        )
+      )
+        errors.push('instrument deck or controls cover the map attribution');
+    }
+
     const stem = `${options.label}-${options.state}-${width}x${height}-${view}`;
     const crop = await captureLookImage(
       page,
@@ -224,7 +244,29 @@ export async function captureCockpit({
     );
   }
 
-  for (const [width, height] of [...viewports, [390, 844]]) {
+  async function focusReachableOption(selector) {
+    const focusedAndReachable = () =>
+      page.evaluate((selector) => {
+        const active = document.activeElement;
+        if (!active?.matches(selector)) return false;
+        const { left, top, width, height } = active.getBoundingClientRect();
+        const hit = document.elementFromPoint(
+          left + width / 2,
+          top + height / 2,
+        );
+        return active.contains(hit);
+      }, selector);
+
+    for (let i = 0; i < 16; i++) {
+      if (await focusedAndReachable()) return;
+      await page.keyboard.press('Tab');
+    }
+    throw new Error(
+      `Keyboard could not reach a visible option matching ${selector}`,
+    );
+  }
+
+  for (const [width, height] of [...viewports, [390, 844], [667, 390]]) {
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     await capture(width, height, 'instruments', '.cockpit-compass');
     for (const [button, name, selector, open] of [
@@ -243,6 +285,12 @@ export async function captureCockpit({
     ]) {
       await page.click(button);
       await page.waitForSelector(open, { ...wait, visible: true });
+      if (options.label === 'after' && height <= 480)
+        await focusReachableOption(
+          name === 'layers'
+            ? '.layers-menu .data-toggle-btn'
+            : '#frame-presets-menu .lens-button',
+        );
       await capture(width, height, name, selector, selector);
       await page.keyboard.press('Escape');
       await page.waitForFunction(
@@ -252,6 +300,29 @@ export async function captureCockpit({
           document.activeElement === document.querySelector(button),
         wait,
         button,
+      );
+    }
+
+    if (options.label === 'after' && height <= 480) {
+      await page.click('#cockpit-display-toggle-btn');
+      await page.waitForSelector('#cockpit-display-panel:not([hidden])', {
+        ...wait,
+        visible: true,
+      });
+      await focusReachableOption('#cockpit-display-panel button');
+      await capture(
+        width,
+        height,
+        'display',
+        '#cockpit-display-panel',
+        '#cockpit-display-panel',
+      );
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(
+        () =>
+          document.getElementById('cockpit-display-panel').hidden &&
+          document.activeElement?.id === 'cockpit-display-toggle-btn',
+        wait,
       );
     }
   }

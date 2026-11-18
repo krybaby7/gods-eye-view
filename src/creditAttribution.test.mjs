@@ -204,6 +204,9 @@ const RECOGNIZED = new Set([
   '#command-dock:has(#control-panel:not(.collapsed))',
   // the frame (roadmap 1.2): resolved by the frame test below
   'body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(.ui-embed) #cesium-credits',
+  // Cockpit hides the dock. qa-look checks its credit against the actual
+  // flight instruments and controls in portrait and landscape.
+  'body.cockpit-mode:not(.ui-clean-view):not(.recording-mode) #cesium-credits',
   'body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(.ui-embed) #command-dock',
   // rail
   '#right-context-rail',
