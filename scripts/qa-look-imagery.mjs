@@ -7,6 +7,7 @@ import {
   collisions,
   requiredContextFailures,
 } from '../src/tooling/qaLook.mjs';
+import { captureStable } from '../src/tooling/qaLookCapture.mjs';
 import { captureLookImage } from '../src/tooling/qaLookImage.mjs';
 
 const panel = '#recent-imagery-panel';
@@ -112,11 +113,23 @@ function measureImagery() {
     .map((node) => box(node));
   const heading = panel.querySelector('.panel-title');
   const frameState = window.lookFrameDiagnostics.snapshot();
+  const rail = document.getElementById('right-context-rail');
   return {
     target: box(panel),
     frames,
     panels,
     frameState,
+    rail: {
+      measuring: rail.hasAttribute('data-rail-measuring'),
+      allocation: panel.style.getPropertyValue(
+        '--right-panel-allocated-height',
+      ),
+      transitions: [rail, panel, panel.firstElementChild]
+        .flatMap((node) => node.getAnimations())
+        .filter(
+          ({ playState }) => playState === 'pending' || playState === 'running',
+        ).length,
+    },
     sheetCode: document.querySelector('#world-sheet-code')?.textContent,
     text: heading.textContent,
     surface: getComputedStyle(panel.firstElementChild).backgroundColor,
@@ -192,43 +205,72 @@ export async function captureImagery({
     await page.keyboard.press('Escape');
     await page.waitForSelector('#data-panel.collapsed', wait);
   }
+  const read = () => page.evaluate(measureImagery);
   async function settle() {
     let previous;
     let equal = 0;
-    for (let i = 0; i < 80; i++) {
-      const data = await page.evaluate(measureImagery);
+    // Allow the rail's delayed allocation to finish before reading bounds.
+    for (let i = 0; i < 120; i++) {
+      const data = await read();
       const sample = JSON.stringify(data);
-      equal = sample === previous ? equal + 1 : 1;
-      if (equal === 4) return data;
+      equal =
+        data.rail.measuring || data.rail.transitions
+          ? 0
+          : sample === previous
+            ? equal + 1
+            : 1;
+      if (equal === 9) return data;
       previous = sample;
       await new Promise((resolve) => setTimeout(resolve, 125));
     }
     throw new Error('Recent imagery did not settle');
   }
-  async function capture(view, width, height, data) {
+  async function capture(view, width, height) {
     const file = path.join(
       out,
       `${options.label}-${options.state}-${width}x${height}-imagery-${view}`,
     );
+    const full = `${file}-attempt-full.png`;
+    const crop = `${file}-attempt-crop.png`;
+    const discard = () =>
+      Promise.all([full, crop].map((name) => fs.rm(name, { force: true })));
+    let attempt;
+    try {
+      attempt = await captureStable({
+        settle,
+        read,
+        key: (data) => data,
+        capture: ({ target }) =>
+          captureLookImage(page, full, crop, target, { width, height }),
+        discard,
+      });
+    } catch (error) {
+      await discard();
+      await fs.writeFile(
+        `${file}-capture-attempts.json`,
+        JSON.stringify(
+          {
+            error: error.message,
+            attempts: error.attempts ?? [],
+          },
+          null,
+          2,
+        ),
+      );
+      throw error;
+    }
+    await fs.rename(full, `${file}-full.png`);
+    if (attempt.value) await fs.rename(crop, `${file}-crop.png`);
+    const { before: data, after, value: cropPixels } = attempt;
     const overlaps = collisions(data.frames, data.panels).filter(({ a, b }) =>
       [a, b].some(({ elementId }) => elementId === 'recent-imagery-panel'),
     );
     const issues = requiredContextFailures(data);
-    const cropPixels = await captureLookImage(
-      page,
-      `${file}-full.png`,
-      `${file}-crop.png`,
-      data.target,
-      { width, height },
-    );
     if (!cropPixels) issues.push('Recent imagery crop is empty');
     const { left, right, top, bottom } = data.target;
     if (left < 0 || top < 0 || right > width || bottom > height)
       issues.push('Recent imagery panel extends outside the viewport');
-    const after = await page.evaluate(measureImagery);
     issues.push(...captureStateFailures(data.frameState, after.frameState));
-    if (JSON.stringify(data.target) !== JSON.stringify(after.target))
-      issues.push('Recent imagery panel moved during capture');
     const legacyIssues = [];
     if (overlaps.length)
       legacyIssues.push('Recent imagery overlaps another panel or frame');
@@ -247,12 +289,14 @@ export async function captureImagery({
       state: options.state,
       ...data,
       cropPixels,
+      captureAttempts: attempt.attempts,
       overlaps,
       legacyIssues,
       ...(issues.length ? { error: issues.join('; ') } : {}),
     };
     report.cases.push(evidence);
     await fs.writeFile(`${file}.json`, JSON.stringify(evidence, null, 2));
+    return data;
   }
 
   await setEnabled(true);
@@ -267,11 +311,11 @@ export async function captureImagery({
   for (const [width, height] of viewports) {
     await markFrameStage(`${width}x${height} imagery ${options.state}`);
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
-    const empty = await settle();
     if (!filled) {
-      await capture('no-box', width, height, empty);
+      await capture('no-box', width, height);
       continue;
     }
+    const empty = await settle();
     await page.evaluate(() =>
       window.__gevRecentImagery.layer.setBox({
         west: 81.5,
@@ -281,12 +325,11 @@ export async function captureImagery({
       }),
     );
     await page.waitForSelector('#ri-strip .ri-thumb-img:not([hidden])', seen);
-    const populated = await settle();
+    const populated = await capture('results', width, height);
     if (!populated.thumbnails)
       throw new Error('Local imagery thumbnails did not decode');
     if (JSON.stringify(empty.blocks) !== JSON.stringify(populated.blocks))
       throw new Error('Imagery controls moved after the search');
-    await capture('results', width, height, populated);
     await page.click('#ri-mode [data-mode="basemap"]');
     await page.focus('#ri-strip');
     await page.keyboard.press('s');
@@ -299,7 +342,7 @@ export async function captureImagery({
       () => document.querySelector('#ri-opacity')?.value === '99',
       wait,
     );
-    const comparison = await settle();
+    const comparison = await capture('comparison', width, height);
     const moved = populated.blocks.flatMap((before, index) => {
       const after = comparison.blocks[index];
       return JSON.stringify(before) === JSON.stringify(after)
@@ -310,7 +353,6 @@ export async function captureImagery({
       throw new Error(
         `Imagery controls moved in comparison mode: ${JSON.stringify(moved)}`,
       );
-    await capture('comparison', width, height, comparison);
     await page.focus('#ri-opacity');
     await page.keyboard.press('End');
     await page.click(`${body} .rail-card-header`);
@@ -318,7 +360,7 @@ export async function captureImagery({
       `${body} .rail-card-header[aria-expanded="true"]`,
       seen,
     );
-    await capture('details', width, height, await settle());
+    await capture('details', width, height);
     await page.click(`${body} .rail-card-header`);
     await page.click('#ri-mode [data-mode="image"]');
     await page.click(action('clear'));
