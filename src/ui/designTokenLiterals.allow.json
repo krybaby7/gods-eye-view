@@ -193,31 +193,6 @@
     "count": 22
   },
   {
-    "path": "src/ui/styles/first-run.css",
-    "kind": "backdrop",
-    "count": 2
-  },
-  {
-    "path": "src/ui/styles/first-run.css",
-    "kind": "color",
-    "count": 27
-  },
-  {
-    "path": "src/ui/styles/first-run.css",
-    "kind": "font",
-    "count": 16
-  },
-  {
-    "path": "src/ui/styles/first-run.css",
-    "kind": "radius",
-    "count": 3
-  },
-  {
-    "path": "src/ui/styles/first-run.css",
-    "kind": "shadow",
-    "count": 1
-  },
-  {
     "path": "src/ui/styles/foundation.css",
     "kind": "color",
     "count": 7
