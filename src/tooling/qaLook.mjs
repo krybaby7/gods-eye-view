@@ -47,6 +47,7 @@ export function parseLookArgs(args) {
     'radio',
     'context',
     'controls',
+    'welcome',
   ];
   if (!panels.includes(panel))
     throw new Error(`Expected --panel ${panels.join('|')}`);
@@ -59,7 +60,8 @@ export function parseLookArgs(args) {
   if (panel === 'keys' && state !== 'empty')
     throw new Error('Keys only supports the keyless state');
   if (panel === 'keys') url.searchParams.set('setup', '1');
-  url.searchParams.set('welcome', '0');
+  const welcome = panel === 'welcome' ? '1' : '0';
+  url.searchParams.set('welcome', welcome);
   url.searchParams.set('world-fixtures', '1');
   for (const query of queries) {
     const at = query.indexOf('=');
@@ -67,7 +69,7 @@ export function parseLookArgs(args) {
     const key = query.slice(0, at);
     const value = query.slice(at + 1);
     if (
-      (key === 'welcome' && value !== '0') ||
+      (key === 'welcome' && value !== welcome) ||
       (key === 'world-fixtures' && value !== '1') ||
       (panel === 'keys' && key === 'setup' && value !== '1')
     )

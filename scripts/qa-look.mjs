@@ -43,6 +43,7 @@ import {
 import { captureRadio, radioFixture } from './qa-look-radio.mjs';
 import { captureContext, contextFixture } from './qa-look-context.mjs';
 import { captureControls } from './qa-look-controls.mjs';
+import { captureWelcome } from './qa-look-welcome.mjs';
 
 const options = parseLookArgs(process.argv.slice(2));
 const panelCapture = {
@@ -212,6 +213,10 @@ try {
     );
   }, wait);
   if (options.panel === 'keys') await verifyKeysQuery(page, wait);
+  if (options.panel === 'welcome') {
+    stage = 'welcome';
+    await captureWelcome({ page, options, out, report, markFrameStage, wait });
+  }
   stage = 'country-pick';
   await markFrameStage(stage);
   const pick = await page.waitForFunction(() => {
@@ -322,7 +327,9 @@ try {
       await failure(width, height, options.panel, 'journey', error);
     }
   }
-  for (const [width, height] of panelCapture ? [] : viewports) {
+  const sharedViewports =
+    panelCapture || options.panel === 'welcome' ? [] : viewports;
+  for (const [width, height] of sharedViewports) {
     await markFrameStage(`${width}x${height} viewport`);
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     if (options.panel === 'layers') {

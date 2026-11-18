@@ -667,3 +667,18 @@ test('controls looks register the shared surfaces capture', () => {
   assert.equal(options.panel, 'controls');
   assert.equal(options.state, 'filled');
 });
+
+test('welcome looks replay the launcher without changing other fixture defaults', () => {
+  const options = parseLookArgs([
+    '--url',
+    'http://localhost:5173',
+    '--label',
+    'after',
+    '--panel',
+    'welcome',
+    '--query',
+    'welcome=1',
+  ]);
+  assert.equal(options.url.searchParams.get('welcome'), '1');
+  assert.equal(options.url.searchParams.get('world-fixtures'), '1');
+});
