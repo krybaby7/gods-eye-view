@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { captureStable } from '../src/tooling/qaLookCapture.mjs';
 import { captureLookImage } from '../src/tooling/qaLookImage.mjs';
 import {
   captureStateFailures,
@@ -89,6 +90,14 @@ function measureContext() {
     text,
     sheetCode: find('#world-sheet-code')?.textContent,
     frameState: window.lookFrameDiagnostics.snapshot(),
+    worldEnabled:
+      window.__godsEyeView.dataManager.isEffectivelyEnabled('world'),
+    railTransitions: [
+      ...find('#right-context-rail').getAnimations(),
+      ...target.getAnimations(),
+    ].filter(
+      ({ playState }) => playState === 'running' || playState === 'pending',
+    ).length,
     scroll: {
       top: surface.scrollTop,
       height: surface.clientHeight,
@@ -107,14 +116,18 @@ export async function captureContext({
   markFrameStage,
   viewports,
 }) {
+  const read = () => page.evaluate(measureContext);
+  const key = (data) => data;
   async function settle() {
     let previous;
     let equal = 0;
-    for (let i = 0; i < 80; i++) {
-      const data = await page.evaluate(measureContext);
-      const sample = JSON.stringify(data);
-      equal = sample === previous ? equal + 1 : 1;
-      if (equal === 4) return data;
+    // The rail schedules a second allocation after its 240 ms settle timer.
+    // Wait for a quiet second and bracket every capture with fresh measures.
+    for (let i = 0; i < 120; i++) {
+      const data = await read();
+      const sample = JSON.stringify(key(data));
+      equal = data.railTransitions ? 0 : sample === previous ? equal + 1 : 1;
+      if (equal === 9) return data;
       previous = sample;
       await new Promise((resolve) => setTimeout(resolve, 125));
     }
@@ -124,15 +137,66 @@ export async function captureContext({
   async function capture(view, viewport, extra = {}) {
     const { width, height } = viewport;
     await markFrameStage(`${width}x${height} context ${view}`);
-    const data = await settle();
     const stem = path.join(
       out,
       `${options.label}-${options.state}-${width}x${height}-context-${view}`,
     );
+    const full = `${stem}-attempt-full.png`;
+    const crop = `${stem}-attempt-crop.png`;
+    let attempt;
+    const discard = () =>
+      Promise.all([full, crop].map((file) => fs.rm(file, { force: true })));
+    try {
+      attempt = await captureStable({
+        settle,
+        read,
+        key,
+        capture: (before) =>
+          captureLookImage(page, full, crop, before.target, viewport),
+        discard,
+      });
+    } catch (error) {
+      await discard();
+      await fs.writeFile(
+        `${stem}-capture-attempts.json`,
+        JSON.stringify(
+          {
+            error: error.message,
+            attempts: error.attempts ?? [],
+          },
+          null,
+          2,
+        ),
+      );
+      throw error;
+    }
+    await fs.rename(full, `${stem}-full.png`);
+    if (attempt.value) await fs.rename(crop, `${stem}-crop.png`);
+    const { before: data, after, value: cropPixels } = attempt;
     const overlaps = collisions(data.frames, data.panels).filter(({ a, b }) =>
       [a, b].some(({ elementId }) => elementId === 'global-context-panel'),
     );
-    const issues = requiredContextFailures(data);
+    const neutral =
+      view === 'collapsed' || view === 'chooser' || view === 'restored';
+    const visibleSheet = data.frames.some(({ name }) => name === 'sheet');
+    const issues = neutral ? requiredContextFailures(data) : [];
+    if (
+      data.frameState.today !== 'open' ||
+      !data.frames.some(({ name }) => name === 'Today')
+    )
+      issues.push('Today closed during the Context journey');
+    if (neutral && (!data.worldEnabled || data.frameState.sheet !== 'open'))
+      issues.push(
+        'World and the India sheet should be open outside an active Context mode',
+      );
+    if (
+      !neutral &&
+      (data.worldEnabled || data.frameState.sheet !== 'closed' || visibleSheet)
+    )
+      issues.push(
+        'Active Context mode did not yield the World layer and country sheet',
+      );
+
     const { left, top, right, bottom } = data.target;
     if (left < 0 || top < 0 || right > width || bottom > height)
       issues.push('Context extends outside the viewport');
@@ -155,18 +219,8 @@ export async function captureContext({
     )
       issues.push('Selected Context tab lost its keyboard focus indicator');
     if (options.label === 'after') issues.push(...legacyIssues);
-    const cropPixels = await captureLookImage(
-      page,
-      `${stem}-full.png`,
-      `${stem}-crop.png`,
-      data.target,
-      viewport,
-    );
-    const after = await page.evaluate(measureContext);
     issues.push(...captureStateFailures(data.frameState, after.frameState));
     if (!cropPixels) issues.push('Context crop is empty');
-    if (JSON.stringify(data.target) !== JSON.stringify(after.target))
-      issues.push('Context moved during capture');
     const evidence = {
       panel: 'context',
       view,
@@ -176,6 +230,7 @@ export async function captureContext({
       ...data,
       ...extra,
       cropPixels,
+      captureAttempts: attempt.attempts,
       overlaps,
       legacyIssues,
       ...(issues.length ? { error: issues.join('; ') } : {}),
@@ -184,10 +239,80 @@ export async function captureContext({
     await fs.writeFile(`${stem}.json`, JSON.stringify(evidence, null, 2));
   }
 
+  async function waitForSheet(open) {
+    await page.waitForFunction(
+      (expected) =>
+        document.body.dataset.sheet === (expected ? 'open' : 'closed') &&
+        window.__godsEyeView.dataManager.isEffectivelyEnabled('world') ===
+          expected,
+      wait,
+      open,
+    );
+  }
+
+  async function reopenIndiaSheet() {
+    await page.waitForFunction(
+      () =>
+        window.__godsEyeView.dataManager.layers
+          .get('world')
+          .module.getSnapshot().visible,
+      wait,
+    );
+    await page.evaluate(() => {
+      const { C } = window.lookQa;
+      const { viewer } = window.__godsEyeView;
+      viewer.camera.cancelFlight();
+      viewer.camera.setView({
+        destination: C.Cartesian3.fromDegrees(82, 22, 9000000),
+        orientation: { heading: 0, pitch: -Math.PI / 2, roll: 0 },
+      });
+      viewer.scene.requestRender();
+    });
+    const hit = await page.waitForFunction(() => {
+      const { C } = window.lookQa;
+      const { scene } = window.__godsEyeView.viewer;
+      const point = C.SceneTransforms.worldToWindowCoordinates(
+        scene,
+        C.Cartesian3.fromDegrees(81.7, 21.2),
+      );
+      if (!point) return false;
+      const canvas = scene.canvas.getBoundingClientRect();
+      for (const [dx, dy] of [
+        [0, 0],
+        [16, 0],
+        [-16, 0],
+        [0, 16],
+        [0, -16],
+        [24, 14],
+        [-24, 14],
+      ]) {
+        const probe = new C.Cartesian2(point.x + dx, point.y + dy);
+        const x = Math.round(probe.x + canvas.left);
+        const y = Math.round(probe.y + canvas.top);
+        if (
+          document.elementFromPoint(x, y) === scene.canvas &&
+          scene.pick(probe, 1, 1)?.id?.startsWith?.('world:IND:')
+        )
+          return { x, y };
+      }
+      scene.requestRender();
+      return false;
+    }, wait);
+    const { x, y } = await hit.jsonValue();
+    await hit.dispose();
+    await page.mouse.click(x, y);
+    await waitForSheet(true);
+    await page.waitForFunction(
+      () => document.getElementById('world-sheet-code')?.textContent === 'IND',
+      wait,
+    );
+  }
+
   for (const [width, height] of viewports) {
     const viewport = { width, height };
     await page.setViewport({ ...viewport, deviceScaleFactor: 1 });
     await page.waitForSelector(`${panel}.collapsed`, seen);
+    await waitForSheet(true);
     await capture('collapsed', viewport);
     await page.focus(disclosure);
     await page.keyboard.press('Enter');
@@ -200,6 +325,8 @@ export async function captureContext({
     await page.keyboard.press('Enter');
     await page.waitForSelector('#context-flights-view:not([hidden])', seen);
     await page.waitForSelector(`${contacts}[aria-busy="false"]`, wait);
+    // Entering either Context mode excludes World from its scene.
+    await waitForSheet(false);
     await capture('contacts', viewport);
     await page.keyboard.press('ArrowRight');
     await page.waitForSelector(
@@ -222,6 +349,7 @@ export async function captureContext({
           ),
         wait,
       );
+    await waitForSheet(false);
     await capture('missions', viewport, { focus });
     if (options.state === 'filled') {
       await page.click(rows);
@@ -238,6 +366,11 @@ export async function captureContext({
     await page.waitForSelector(`${missions}[aria-busy="false"]`, wait);
     await page.click(disclosure);
     await page.waitForSelector(`${panel}.collapsed`, seen);
+    // Exiting restores the World layer. A fresh country click restores
+    // the sheet because disabling World released the previous selection.
+    await markFrameStage(`${width}x${height} reopen country after Context`);
+    await reopenIndiaSheet();
+    await capture('restored', viewport);
   }
   if (!report.transport.contextReplies)
     report.errors.push('Context did not consume the local launch fixture');
