@@ -2,10 +2,16 @@
 /**
  * Browser QA for the floating CCTV panel: lift, resize from every handle,
  * minimum size, reload, and dock again. `--fail-on-retry` (or
- * QA_FAIL_ON_RETRY=1) fails on any header-press retry.
+ * QA_FAIL_ON_RETRY=1) fails on any header-press retry. `--fixtures` uses
+ * local provider fixtures and blocks external traffic, including workers.
  */
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { createDenyProxy } from '../src/tooling/qaLookProxy.mjs';
+import { createFixtureWorld, installFixtures } from './qa-world.fixtures.mjs';
 import { RESIZE_DIRECTIONS, resizeBox } from '../src/ui/panelResize.js';
 import {
   describePress,
@@ -90,17 +96,63 @@ async function main() {
   const urlIndex = args.indexOf('--url');
   const url = urlIndex >= 0 ? args[urlIndex + 1] : 'http://localhost:4173';
   if (args.includes('--fail-on-retry')) process.env.QA_FAIL_ON_RETRY = '1';
-  const browser = await puppeteer.launch({
-    headless: true,
-    executablePath:
-      process.env.PUPPETEER_EXECUTABLE_PATH ||
-      (await puppeteer.executablePath()),
-    args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader'],
-  });
+  const fixtures = args.includes('--fixtures');
+  const parsedUrl = new URL(url);
+  if (
+    fixtures &&
+    (parsedUrl.protocol !== 'http:' ||
+      !['localhost', '127.0.0.1', '[::1]'].includes(parsedUrl.hostname) ||
+      parsedUrl.username ||
+      parsedUrl.password ||
+      parsedUrl.pathname !== '/' ||
+      parsedUrl.search ||
+      parsedUrl.hash)
+  )
+    throw new Error('Fixture mode requires a loopback HTTP origin');
+  const origin = parsedUrl.origin;
+  let temporary;
+  let proxy;
+  let browser;
+  const report = {
+    transport: {
+      snapshots: 0,
+      refreshes: 0,
+      imageryTiles: 0,
+      suppressedApis: [],
+      suppressedHosts: [],
+    },
+    errors: [],
+  };
   const monitors = [];
   try {
+    if (fixtures) {
+      temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'gev-resize-'));
+      proxy = await createDenyProxy(origin);
+    }
+    browser = await puppeteer.launch({
+      headless: true,
+      executablePath:
+        process.env.PUPPETEER_EXECUTABLE_PATH ||
+        (await puppeteer.executablePath()),
+      args: [
+        '--no-sandbox',
+        '--use-gl=angle',
+        '--use-angle=swiftshader',
+        ...(fixtures
+          ? [
+              '--disable-quic',
+              `--proxy-server=${proxy.address}`,
+              '--proxy-bypass-list=<-loopback>',
+            ]
+          : []),
+      ],
+    });
     const page = await browser.newPage();
     await page.setViewport(VIEWPORT);
+    if (fixtures) {
+      const world = createFixtureWorld(path.join(temporary, 'world'));
+      await installFixtures(page, origin, world, report, { strict: true });
+    }
     const errors = [];
     monitors.push(watchPage(page, { name: 'panel', errors }));
     await hookRenderErrors(page);
@@ -224,6 +276,15 @@ async function main() {
         }
         return out.join(' ');
       }, PANEL_ID);
+    const bounds = await page.$eval('#cesiumContainer', (globe) => {
+      const { left, top, right, bottom } = globe.getBoundingClientRect();
+      return {
+        left: Math.ceil(Math.max(0, left)) + 6,
+        top: Math.ceil(Math.max(0, top)) + 6,
+        right: Math.floor(Math.min(innerWidth, right)) - 6,
+        bottom: Math.floor(Math.min(innerHeight, bottom)) - 6,
+      };
+    });
     const aboveAtDock = await railAbove();
     // On CI a panel above CCTV grows after load and can shift the header out
     // from under the press; the helper retries only such a provable miss.
@@ -248,13 +309,19 @@ async function main() {
     const moved = `docked at ${docked.left},${docked.top}; pressed at ${pressed.left},${pressed.top}`;
     near(
       lifted.left,
-      Math.max(6, pressed.left - 200),
+      Math.max(
+        bounds.left,
+        Math.min(bounds.right - lifted.width, pressed.left - 200),
+      ),
       2,
       `lifted left (${moved})`,
     );
     near(
       lifted.top,
-      Math.max(6, pressed.top - 100),
+      Math.max(
+        bounds.top,
+        Math.min(bounds.bottom - lifted.height, pressed.top - 100),
+      ),
       2,
       `lifted top (${moved})`,
     );
@@ -298,19 +365,30 @@ async function main() {
     );
     console.log('PASS: header drag lifts CCTV out of the rail');
 
+    const limits = {
+      minWidth: MIN_SIZE.width,
+      minHeight: MIN_SIZE.height,
+      bounds,
+    };
+    // A natural-height window can fill the globe. Shrink from its visible
+    // north-west corner first, so every later edge has room to grow.
+    const natural = await readPanel();
+    await drag(handlePoint(natural, 'nw'), 2000, 2000);
+    const compact = await readPanel();
+    const compactExpected = resizeBox(natural, 'nw', 2000, 2000, limits);
+    for (const key of ['left', 'top', 'width', 'height'])
+      near(compact[key], compactExpected[key], 2, `initial shrink ${key}`);
+    assert.deepEqual(driftedEdges(natural, compact, 'nw', 2), []);
+    near(compact.width, MIN_SIZE.width, 2, 'initial min width');
+    near(compact.height, MIN_SIZE.height, 2, 'initial min height');
+
     // Park near the top: the voice dock would cover the south corners once
     // the loop below has grown the window.
     {
       const header = await headerPoint();
-      await drag(header, 0, 120 - header.y);
+      await drag(header, 600 - header.x, 120 - header.y);
     }
 
-    const limits = {
-      minWidth: MIN_SIZE.width,
-      minHeight: MIN_SIZE.height,
-      viewportWidth: VIEWPORT.width,
-      viewportHeight: VIEWPORT.height,
-    };
     for (const dir of RESIZE_DIRECTIONS) {
       const before = await readPanel();
       const { dx, dy } = growthDelta(dir, 40);
@@ -329,6 +407,10 @@ async function main() {
       for (const key of ['left', 'top', 'width', 'height'])
         near(after[key], expected[key], 2, `${dir} ${key} (pointer on ${hit})`);
       assert.deepEqual(driftedEdges(before, after, dir, 2), [], `${dir} pins`);
+      assert.ok(after.left >= bounds.left - 1 && after.top >= bounds.top - 1);
+      assert.ok(
+        after.right <= bounds.right + 1 && after.bottom <= bounds.bottom + 1,
+      );
     }
     console.log('PASS: eight resize handles keep the opposite edge pinned');
 
@@ -451,7 +533,11 @@ async function main() {
 
     const renderErrors = await readRenderErrors(page);
     assert.deepEqual(
-      [...errors, ...renderErrors.map((text) => `scene.renderError: ${text}`)],
+      [
+        ...errors,
+        ...report.errors,
+        ...renderErrors.map((text) => `scene.renderError: ${text}`),
+      ],
       [],
       'no page errors and no Cesium render-loop errors',
     );
@@ -466,7 +552,9 @@ async function main() {
     if (dir) console.error(`failure evidence saved in ${dir}/`);
     throw error;
   } finally {
-    await browser.close();
+    await browser?.close();
+    await proxy?.close();
+    if (temporary) await fs.rm(temporary, { recursive: true, force: true });
   }
 }
 
