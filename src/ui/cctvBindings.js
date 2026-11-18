@@ -143,7 +143,7 @@ export function _initCctvPanel() {
       },
       { origin: 'user' },
     );
-    this.actions.showToast('CCTV calibration saved');
+    this.actions.showToast('Camera calibration saved');
   });
 
   this.listen(this._cctvCalibResetBtn, 'click', () => {

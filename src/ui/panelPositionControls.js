@@ -47,18 +47,16 @@ const FLOATING_STYLE_PROPERTIES = [
   'width',
   'height',
   'z-index',
+  '--panel-float-inline-limit',
+  '--panel-float-block-limit',
 ];
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function fitWindowExtent(value, minimum, viewportExtent) {
-  return clamp(
-    Math.round(value),
-    minimum,
-    Math.max(minimum, viewportExtent - 2 * VIEWPORT_MARGIN_PX),
-  );
+function fitWindowExtent(value, minimum, available) {
+  return clamp(Math.round(value), Math.min(minimum, available), available);
 }
 
 function placeAt(panelEl, left, top) {
@@ -133,47 +131,74 @@ export class PanelPositionControls {
     }
   }
 
-  /** Bring a floating window on-screen; shrink it only if it exceeds the viewport. */
-  _reclampPortablePanel(entry) {
-    const { panel, min } = entry;
-    const left = parseInt(panel.style.left, 10);
-    const top = parseInt(panel.style.top, 10);
-    if (!Number.isFinite(left) || !Number.isFinite(top)) return;
-    for (const [property, viewportExtent] of [
-      ['width', window.innerWidth],
-      ['height', window.innerHeight],
-    ]) {
-      const extent = parseFloat(panel.style[property]);
-      if (!Number.isFinite(extent)) continue;
-      const fitted = fitWindowExtent(extent, min[property], viewportExtent);
-      if (fitted < extent) panel.style[property] = `${fitted}px`;
+  /** Bounds in client pixels, matching the portable panels' fixed positioning. */
+  _portableBounds() {
+    const globe = document
+      .getElementById('cesiumContainer')
+      ?.getBoundingClientRect();
+    let left = Math.max(0, Math.ceil(globe?.left ?? 0));
+    let top = Math.max(0, Math.ceil(globe?.top ?? 0));
+    let right = Math.min(
+      window.innerWidth,
+      Math.floor(globe?.right ?? window.innerWidth),
+    );
+    let bottom = Math.min(
+      window.innerHeight,
+      Math.floor(globe?.bottom ?? window.innerHeight),
+    );
+    if (right <= left || bottom <= top) {
+      left = top = 0;
+      right = window.innerWidth;
+      bottom = window.innerHeight;
     }
-    const next = this._clampPortableWindow(entry, left, top);
-    panel.style.left = `${next.left}px`;
-    panel.style.top = `${next.top}px`;
+    const margin = (extent) =>
+      Math.min(VIEWPORT_MARGIN_PX, Math.max(0, Math.floor((extent - 1) / 2)));
+    const horizontalMargin = margin(right - left);
+    const verticalMargin = margin(bottom - top);
+    return {
+      left: left + horizontalMargin,
+      top: top + verticalMargin,
+      right: right - horizontalMargin,
+      bottom: bottom - verticalMargin,
+    };
   }
 
-  /**
-   * Clamp a floating window inside the viewport margin with its header above
-   * the command dock and voice pill, measured each time since the dock resizes.
-   */
-  _clampPortableWindow(
-    entry,
-    left,
-    top,
-    geometry = this._windowGeometry(entry),
-  ) {
-    const { width, height, header } = geometry;
-    const maxLeft = Math.max(
-      VIEWPORT_MARGIN_PX,
-      window.innerWidth - width - VIEWPORT_MARGIN_PX,
-    );
-    const maxTop = Math.max(
-      VIEWPORT_MARGIN_PX,
-      window.innerHeight - height - VIEWPORT_MARGIN_PX,
-    );
-    const x = clamp(left, VIEWPORT_MARGIN_PX, maxLeft);
-    let y = clamp(top, VIEWPORT_MARGIN_PX, maxTop);
+  _fitPortableSize(entry, bounds, size = entry.panel.style) {
+    const { panel, min } = entry;
+    for (const [property, cssLimit, available] of [
+      ['width', '--panel-float-inline-limit', bounds.right - bounds.left],
+      ['height', '--panel-float-block-limit', bounds.bottom - bounds.top],
+    ]) {
+      const limit = available + 'px';
+      if (panel.style.getPropertyValue(cssLimit) !== limit)
+        panel.style.setProperty(cssLimit, limit);
+      const requested = parseFloat(size[property]);
+      if (!Number.isFinite(requested)) continue;
+      const fitted =
+        fitWindowExtent(requested, min[property], available) + 'px';
+      if (panel.style[property] !== fitted) panel.style[property] = fitted;
+    }
+  }
+
+  _reclampPortablePanel(entry) {
+    const { panel } = entry;
+    const left = parseFloat(panel.style.left);
+    const top = parseFloat(panel.style.top);
+    if (!Number.isFinite(left) || !Number.isFinite(top)) return;
+    const bounds = this._portableBounds();
+    this._fitPortableSize(entry, bounds);
+    const next = this._clampPortableWindow(entry, left, top, bounds);
+    placeAt(panel, next.left, next.top);
+  }
+
+  /** Keep the window in the globe and its header clear of other fixed controls. */
+  _clampPortableWindow(entry, left, top, bounds) {
+    const { width, height, header } = this._windowGeometry(entry);
+    const { left: minLeft, top: minTop, right, bottom } = bounds;
+    const maxLeft = Math.max(minLeft, right - width);
+    const maxTop = Math.max(minTop, bottom - height);
+    const x = clamp(left, minLeft, maxLeft);
+    let y = clamp(top, minTop, maxTop);
     const obstacles = this._panelObstacles();
     for (let pass = 0; pass < obstacles.length; pass++) {
       const hit = obstacles.find(
@@ -186,7 +211,7 @@ export class PanelPositionControls {
       if (!hit) break;
       const above = hit.top - header - VIEWPORT_MARGIN_PX;
       y =
-        above >= VIEWPORT_MARGIN_PX
+        above >= minTop
           ? above
           : Math.min(maxTop, hit.bottom + VIEWPORT_MARGIN_PX);
     }
@@ -287,6 +312,7 @@ export class PanelPositionControls {
     // windows grow the same way when their content does.
     const observed = [
       this._ppToggles,
+      this._portablePanels.size && document.getElementById('cesiumContainer'),
       ...[...this._portablePanels.values()].map(({ panel }) => panel),
     ].filter(Boolean);
     if (observed.length && typeof ResizeObserver !== 'undefined') {
@@ -391,36 +417,23 @@ export class PanelPositionControls {
         panelEl.classList.add('panel-floating', 'panel-draggable');
         // A restored window must stack above the docked rail panels too.
         this._promotePanelZ(panelEl);
-        if (Number.isFinite(pos.width)) {
-          panelEl.style.width = `${fitWindowExtent(
-            pos.width,
-            portable.min.width,
-            window.innerWidth,
-          )}px`;
-        }
-        if (Number.isFinite(pos.height)) {
-          panelEl.style.height = `${fitWindowExtent(
-            pos.height,
-            portable.min.height,
-            window.innerHeight,
-          )}px`;
-        }
+        const bounds = this._portableBounds();
+        this._fitPortableSize(portable, bounds, pos);
+        const { left, top } = this._clampPortableWindow(
+          portable,
+          Math.round(pos.left),
+          Math.round(pos.top),
+          bounds,
+        );
+        placeAt(panelEl, left, top);
+      } else {
+        const { left, top } = this._clampToViewport(
+          Math.round(pos.left),
+          Math.round(pos.top),
+          panelEl,
+        );
+        placeAt(panelEl, left, top);
       }
-      // Clamp to the viewport: a position saved at one window size would otherwise land off-screen at
-      // another (audit U2 — observed a panel at x:-192). The drag handler clamps; restore must too,
-      // and a window saved under the command dock must not come back there.
-      const { left, top } = portable
-        ? this._clampPortableWindow(
-            portable,
-            Math.round(pos.left),
-            Math.round(pos.top),
-          )
-        : this._clampToViewport(
-            Math.round(pos.left),
-            Math.round(pos.top),
-            panelEl,
-          );
-      placeAt(panelEl, left, top);
       if (panelId === 'pp-toggles') {
         this._pinPanelToRight(panelEl);
       }
@@ -713,7 +726,6 @@ export class PanelPositionControls {
       let before = null;
       let offsetX = 0;
       let offsetY = 0;
-      let geometry = null;
 
       this._trackPointerGesture(event, {
         threshold: DRAG_THRESHOLD_PX,
@@ -723,7 +735,6 @@ export class PanelPositionControls {
           const rect = panelEl.getBoundingClientRect();
           offsetX = event.clientX - rect.left;
           offsetY = event.clientY - rect.top;
-          geometry = this._windowGeometry(entry, rect);
           before = geometryOf(panelEl);
           lifted = this._liftPanelOut(panelId, panelEl, rect);
           panelEl.classList.add('panel-dragging');
@@ -731,11 +742,13 @@ export class PanelPositionControls {
         },
         onMove: (moveEvent) => {
           moveEvent.preventDefault();
+          const bounds = this._portableBounds();
+          this._fitPortableSize(entry, bounds);
           const next = this._clampPortableWindow(
             entry,
             moveEvent.clientX - offsetX,
             moveEvent.clientY - offsetY,
-            geometry,
+            bounds,
           );
           panelEl.style.left = `${next.left}px`;
           panelEl.style.top = `${next.top}px`;
@@ -747,6 +760,7 @@ export class PanelPositionControls {
           setTimeout(() => {
             swallowNextClick = false;
           }, 0);
+          this._reclampPortablePanel(entry);
           this._savePanelPosition(panelId, panelEl);
           this._onPanelResized?.(panelId);
         },
@@ -765,6 +779,7 @@ export class PanelPositionControls {
       return;
     }
     Object.assign(panelEl.style, before);
+    this._reclampPortablePanel(this._portablePanels.get(panelId));
     this._onPanelResized?.(panelId);
   }
 
@@ -797,12 +812,7 @@ export class PanelPositionControls {
     let startBox = null;
     let lifted = false;
     let before = null;
-    const apply = ({ left, top, width, height }) => {
-      panelEl.style.left = `${left}px`;
-      panelEl.style.top = `${top}px`;
-      panelEl.style.width = `${width}px`;
-      panelEl.style.height = `${height}px`;
-    };
+    const entry = this._portablePanels.get(panelId);
 
     this._trackPointerGesture(event, {
       threshold: DRAG_THRESHOLD_PX,
@@ -818,26 +828,23 @@ export class PanelPositionControls {
         };
         panelEl.classList.add('panel-resizing');
         this._promotePanelZ(panelEl);
-        apply(startBox);
       },
       onMove: (moveEvent, dx, dy) => {
         moveEvent.preventDefault();
-        apply(
-          resizeBox(startBox, dir, dx, dy, {
-            minWidth: limits.width,
-            minHeight: limits.height,
-            viewportWidth: window.innerWidth,
-            viewportHeight: window.innerHeight,
-          }),
-        );
+        const bounds = this._portableBounds();
+        const next = resizeBox(startBox, dir, dx, dy, {
+          minWidth: limits.width,
+          minHeight: limits.height,
+          bounds,
+        });
+        this._fitPortableSize(entry, bounds, next);
+        placeAt(panelEl, next.left, next.top);
       },
       onStop: () => panelEl.classList.remove('panel-resizing'),
       onEnd: (resized) => {
         if (!resized) return;
-        // Re-clamping skipped the live gesture; a north edge may have moved
-        // the header under the command dock.
-        const entry = this._portablePanels.get(panelId);
-        if (entry) this._reclampPortablePanel(entry);
+        // A live resize can move the header under the command dock.
+        this._reclampPortablePanel(entry);
         this._savePanelPosition(panelId, panelEl);
         this._onPanelResized?.(panelId);
       },

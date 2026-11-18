@@ -91,15 +91,22 @@ test('fixed rail controls cannot be collapsed or gain persisted disclosure state
 const read = (relative) =>
   readFileSync(new URL(relative, import.meta.url), 'utf8');
 
-test('CCTV and Context keep their headers outside their scroll bodies', () => {
-  for (const file of ['layer-panels.html', 'context.html']) {
-    const markup = read(`./templates/${file}`);
-    assert.match(markup, /class="cyber-panel-body" data-rail-scroller/);
-    assert.ok(
-      markup.indexOf('class="panel-header"') <
-        markup.indexOf('class="cyber-panel-body"'),
-    );
-  }
+test('Cameras and Context keep their headers outside their scroll bodies', () => {
+  const cameras = read('./templates/layer-panels.html');
+  assert.match(cameras, /<h2 id="cctv-panel-title"[^>]*>Cameras<\/h2>/);
+  assert.match(cameras, /id="cctv-panel-body"[^>]*data-rail-scroller/);
+  assert.ok(
+    cameras.indexOf('id="cctv-panel-title"') <
+      cameras.indexOf('id="cctv-panel-body"'),
+  );
+  assert.match(read('./styles/kit.css'), /\.kit-panel-body\s*\{[^}]*overflow: auto;/);
+
+  const context = read('./templates/context.html');
+  assert.match(context, /class="cyber-panel-body" data-rail-scroller/);
+  assert.ok(
+    context.indexOf('class="panel-header"') <
+      context.indexOf('class="cyber-panel-body"'),
+  );
   assert.match(
     read('./styles/controls.css'),
     /\.cyber-panel-body\s*\{\s*display: contents;/,

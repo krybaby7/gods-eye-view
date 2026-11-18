@@ -170,31 +170,6 @@
     "count": 4
   },
   {
-    "path": "src/ui/styles/cctv.css",
-    "kind": "backdrop",
-    "count": 2
-  },
-  {
-    "path": "src/ui/styles/cctv.css",
-    "kind": "color",
-    "count": 52
-  },
-  {
-    "path": "src/ui/styles/cctv.css",
-    "kind": "font",
-    "count": 9
-  },
-  {
-    "path": "src/ui/styles/cctv.css",
-    "kind": "radius",
-    "count": 9
-  },
-  {
-    "path": "src/ui/styles/cctv.css",
-    "kind": "shadow",
-    "count": 2
-  },
-  {
     "path": "src/ui/styles/cockpit.css",
     "kind": "backdrop",
     "count": 4

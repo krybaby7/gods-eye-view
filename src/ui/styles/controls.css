@@ -104,19 +104,28 @@
   inset: auto;
   /* Above every docked rail panel; keep in step with PANEL_Z_FLOATING_FLOOR. */
   z-index: 111;
-  max-height: calc(100vh - 12px);
+  box-sizing: border-box;
+  max-width: var(--panel-float-inline-limit, calc(100vw - 12px));
+  max-height: var(--panel-float-block-limit, calc(100vh - 12px));
   margin: 0;
   flex: none;
   pointer-events: auto;
 }
 /* A collapsed window shows only its header strip; its inline height stays. */
 #right-context-rail > .panel-floating.collapsed {
-  max-height: max-content;
+  height: auto !important;
+}
+#right-context-rail
+  > :is(#cctv-panel, #street-level-panel).panel-floating
+  > :is(.cctv-panel-inner, .street-level-panel-inner) {
+  box-sizing: border-box;
+  min-height: 0;
+  max-height: var(--panel-float-block-limit, calc(100vh - 12px));
+  overflow: auto;
 }
 .panel-floating[style*='height'] > .cctv-panel-inner {
   box-sizing: border-box;
   height: 100%;
-  max-height: none;
 }
 .panel-resize-edge,
 .panel-resize-grip {

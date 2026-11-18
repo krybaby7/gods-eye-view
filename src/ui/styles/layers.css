@@ -190,7 +190,6 @@ button.search-layers-shortcut {
   min-height: 50px;
   box-sizing: border-box;
 }
-#right-context-rail #cctv-panel:not(.collapsed) .cctv-panel-inner,
 #right-context-rail
   #street-level-panel:not(.collapsed)
   .street-level-panel-inner {

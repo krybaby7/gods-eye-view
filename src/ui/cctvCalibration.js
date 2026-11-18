@@ -10,7 +10,7 @@ const signedNormalizeDeg = (deg) => ((((deg + 180) % 360) + 360) % 360) - 180;
  */
 const CCTV_CAL_FIELDS = {
   heading: {
-    label: 'HDG',
+    label: 'Heading',
     unit: '°',
     decimals: 1,
     get: (cam) => cam.headingDeg,
@@ -19,7 +19,7 @@ const CCTV_CAL_FIELDS = {
     }),
   },
   pitch: {
-    label: 'PITCH',
+    label: 'Pitch',
     unit: '°',
     decimals: 1,
     get: (cam) => cam.pitchDeg,
@@ -33,7 +33,7 @@ const CCTV_CAL_FIELDS = {
     toPatch: (value, base) => ({ fovDeg: value - base.fovDeg }),
   },
   range: {
-    label: 'RANGE',
+    label: 'Range',
     unit: 'm',
     decimals: 0,
     get: (cam) => cam.rangeM,
@@ -42,21 +42,21 @@ const CCTV_CAL_FIELDS = {
     }),
   },
   height: {
-    label: 'HGT',
+    label: 'Height',
     unit: 'm',
     decimals: 0,
     get: (cam) => cam.mountHeightM,
     toPatch: (value, base) => ({ heightM: value - base.mountHeightM }),
   },
   north: {
-    label: 'ΔN',
+    label: 'North offset',
     unit: 'm',
     decimals: 1,
     get: (cam) => cam.calibration?.offsetNorthM || 0,
     toPatch: (value) => ({ offsetNorthM: value }),
   },
   east: {
-    label: 'ΔE',
+    label: 'East offset',
     unit: 'm',
     decimals: 1,
     get: (cam) => cam.calibration?.offsetEastM || 0,
@@ -81,7 +81,7 @@ export function _resetCctvCalibration() {
     },
     { origin: 'user' },
   );
-  this.actions.showToast('CCTV calibration reset');
+  this.actions.showToast('Camera calibration reset');
 }
 
 export function _beginCctvCalValueEdit(chip) {
@@ -162,7 +162,7 @@ export function _syncCctvCalReadout(enabled, activeCamera) {
   if (this._cctvAdjustBtn) {
     const adjustOn = !!this._cctvState?.calibrationMode;
     this._cctvAdjustBtn.classList.toggle('active', adjustOn && canCalibrate);
-    this._cctvAdjustBtn.textContent = adjustOn ? 'ADJUST ON' : 'ADJUST';
+    this._cctvAdjustBtn.textContent = adjustOn ? 'Adjust on' : 'Adjust';
     this._cctvAdjustBtn.disabled = !canCalibrate;
   }
   if (this._cctvCalReadout) {
@@ -175,7 +175,7 @@ export function _syncCctvCalReadout(enabled, activeCamera) {
       const value = canCalibrate ? field.get(activeCamera) : null;
       chip.textContent = Number.isFinite(value)
         ? `${field.label} ${Number(value).toFixed(field.decimals)}${field.unit}`
-        : `${field.label} --`;
+        : `${field.label} —`;
       chip.disabled = !canCalibrate;
     }
   }
