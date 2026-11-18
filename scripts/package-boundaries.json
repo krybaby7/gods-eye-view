@@ -3288,7 +3288,8 @@
     "modules": [
       "src/layers/directions/index.js",
       "src/layers/directions/source.js",
-      "src/data/routeSteps.js"
+      "src/data/routeSteps.js",
+      "src/designTokens.js"
     ],
     "external": ["cesium"]
   },
@@ -3711,6 +3712,7 @@
       "src/view/index.js",
       "src/tools/views.js",
       "src/tools/globePanel.js",
+      "src/designTokens.js",
       "src/tools/queries/panelRequest.js"
     ],
     "external": ["satellite.js"]
@@ -3731,6 +3733,7 @@
     "modules": [
       "src/tools/panel.js",
       "src/tools/globePanel.js",
+      "src/designTokens.js",
       "src/app/globePanelRuntime.js"
     ],
     "external": []
