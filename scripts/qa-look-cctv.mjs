@@ -3,6 +3,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { captureStateFailures } from '../src/tooling/qaLook.mjs';
 import { captureLookImage } from '../src/tooling/qaLookImage.mjs';
+import { captureStable } from '../src/tooling/qaLookCapture.mjs';
 import { collisions, requiredContextFailures } from '../src/tooling/qaLook.mjs';
 
 // Synthetic public traffic camera: no live provider or image is represented.
@@ -115,6 +116,34 @@ function measure() {
   };
   return {
     target: box('Cameras', panel),
+    rail: box('right rail', document.querySelector('#right-context-rail')),
+    viewport: { width: innerWidth, height: innerHeight },
+    allocation: {
+      panel: panel.style.getPropertyValue('--right-panel-allocated-height'),
+      safeTop: document
+        .querySelector('#right-context-rail')
+        .style.getPropertyValue('--right-stack-safe-top'),
+      maxHeight: document
+        .querySelector('#right-context-rail')
+        .style.getPropertyValue('--right-stack-max-height'),
+      safeBottom: document.querySelector('#right-context-rail').dataset
+        .safeBottom,
+      transitions: [
+        panel,
+        document.querySelector('#right-context-rail'),
+      ].flatMap((n) =>
+        n
+          .getAnimations()
+          .filter(
+            (a) =>
+              a.playState === 'running' &&
+              ['top', 'height', 'max-height', 'transform'].includes(
+                a.transitionProperty,
+              ),
+          )
+          .map((a) => a.transitionProperty),
+      ),
+    },
     globe: box('globe', canvas),
     frames,
     panels,
@@ -358,17 +387,80 @@ export async function captureCctv({
           requestAnimationFrame(() => requestAnimationFrame(r)),
         ),
     );
-    let data;
-    let previous;
-    let equal = 0;
-    for (let i = 0; i < 60 && equal < 3; i++) {
-      data = await page.evaluate(measure);
-      const geometry = JSON.stringify(data.target);
-      equal = geometry === previous ? equal + 1 : 1;
-      previous = geometry;
-      if (equal < 3) await new Promise((resolve) => setTimeout(resolve, 125));
+    const stem = `${options.label}-${options.state}-${width}x${height}-cctv-${view}`;
+    const fullPath = path.join(out, `${stem}-full.png`);
+    const cropPath = path.join(out, `${stem}-crop.png`);
+    const tempFull = path.join(out, `${stem}-attempt-full.png`);
+    const tempCrop = path.join(out, `${stem}-attempt-crop.png`);
+    const read = () => page.evaluate(measure);
+    // Rail allocation is scheduled from resize/DOM observers and a 240 ms
+    // settle timer. Wait through a quiet second of measured geometry and, for
+    // seed fallback, until catalog geometry has finished loading.
+    const key = (d) => ({
+      target: d.target,
+      rail: d.rail,
+      globe: d.globe,
+      viewport: d.viewport,
+      allocation: d.allocation,
+      frames: d.frames,
+      panels: d.panels,
+      frameState: d.frameState,
+      loading: d.cameraState.loading,
+    });
+    const settle = async () => {
+      let previous,
+        equal = 0,
+        data;
+      for (let i = 0; i < 120 && equal < 9; i++) {
+        data = await read();
+        const sample = JSON.stringify(key(data));
+        equal =
+          sample === previous &&
+          data.allocation.transitions.length === 0 &&
+          (!seedFallback || !data.cameraState.loading.active)
+            ? equal + 1
+            : 1;
+        previous = sample;
+        if (equal < 9) await new Promise((resolve) => setTimeout(resolve, 125));
+      }
+      if (equal < 9)
+        throw new Error('Cameras rail did not settle before capture');
+      return data;
+    };
+    let captureResult;
+    try {
+      captureResult = await captureStable({
+        settle,
+        read,
+        key,
+        maxAttempts: 3,
+        capture: (before) =>
+          captureLookImage(page, tempFull, tempCrop, before.target, {
+            width,
+            height,
+          }),
+        discard: async () => {
+          await fs.rm(tempFull, { force: true });
+          await fs.rm(tempCrop, { force: true });
+        },
+      });
+    } catch (error) {
+      await fs.rm(tempFull, { force: true });
+      await fs.rm(tempCrop, { force: true });
+      await fs.writeFile(
+        path.join(out, `${stem}-capture-attempts.json`),
+        JSON.stringify(
+          { error: error.message, attempts: error.attempts ?? [] },
+          null,
+          2,
+        ),
+      );
+      throw error;
     }
-    if (equal < 3) throw new Error('Cameras did not settle before capture');
+    await fs.rename(tempFull, fullPath);
+    if (captureResult.value) await fs.rename(tempCrop, cropPath);
+    const data = captureResult.before;
+    data.cropPixels = captureResult.value;
     const issues = requiredContextFailures(data);
     const legacy = [];
     if (data.frameState.today !== 'open' || data.frameState.sheet !== 'open')
@@ -486,21 +578,13 @@ export async function captureCctv({
         `Navigation outside panel: ${outside.map((n) => n.elementId).join(', ')}`,
       );
     if (options.label === 'after' && legacy.length) issues.push(...legacy);
-    const stem = `${options.label}-${options.state}-${width}x${height}-cctv-${view}`;
-    data.cropPixels = await captureLookImage(
-      page,
-      path.join(out, `${stem}-full.png`),
-      path.join(out, `${stem}-crop.png`),
-      t,
-      { width, height },
-    );
     if (!data.cropPixels) issues.push('Panel has no screenshot pixels');
-    const after = await page.evaluate(measure);
-    issues.push(...captureStateFailures(data.frameState, after.frameState));
-    if (JSON.stringify(data.target) !== JSON.stringify(after.target))
-      issues.push('Panel moved during capture');
+    issues.push(
+      ...captureStateFailures(data.frameState, captureResult.after.frameState),
+    );
     const evidence = {
       seedFallback,
+      captureAttempts: captureResult.attempts,
       width,
       height,
       panel: 'cctv',
