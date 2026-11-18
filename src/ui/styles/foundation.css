@@ -407,6 +407,10 @@ body.cockpit-mode #cockpit-cloud-effects.active {
      row (looked like it was falling over). nowrap + a roomy max-width holds them inline. */
   white-space: nowrap;
   pointer-events: auto;
+  box-sizing: border-box;
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-chip);
+  background: var(--surface-space);
   font: var(--type-caption);
   color: var(--text-2);
 }
