@@ -285,6 +285,36 @@ test('right layout uses keyboard focus when there is no preferred panel', () => 
   assert.equal(f.second.classList.contains('collapsed'), false);
 });
 
+test('a focused disclosure stays visible when its panel closes in the exclusive right rail', () => {
+  const f = fixture('right');
+  f.first.id = 'cctv-panel';
+  const disclosure = element('cctv-disclosure');
+  f.first.children.push(disclosure);
+  const otherCollapsed = element('other-collapsed', { collapsed: true });
+  f.stack.children.push(otherCollapsed);
+  f.expand(f.second, 900);
+  f.options.documentRef.activeElement = disclosure;
+
+  f.run();
+  assert.equal(f.stack.classList.contains('layout-exclusive'), true);
+  assert.equal(f.stack.classList.contains('layout-focus'), true);
+  assert.equal(f.first.getAttribute('aria-hidden'), undefined);
+  assert.equal(otherCollapsed.getAttribute('aria-hidden'), 'true');
+  const reservedHeight = parseFloat(
+    f.second.style.getPropertyValue('--right-panel-allocated-height'),
+  );
+
+  f.options.documentRef.activeElement = f.second;
+  f.run();
+  assert.equal(f.first.getAttribute('aria-hidden'), 'true');
+  assert.equal(
+    parseFloat(
+      f.second.style.getPropertyValue('--right-panel-allocated-height'),
+    ),
+    reservedHeight + f.first.rect.height + 12,
+  );
+});
+
 for (const collapsed of [true, false]) {
   test(`right layout ignores a hidden ${collapsed ? 'collapsed' : 'expanded'} panel`, () => {
     const baseline = fixture('right');
