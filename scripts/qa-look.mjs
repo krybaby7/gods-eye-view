@@ -30,6 +30,7 @@ import {
   WEATHER_LOOK_REFERENCE,
 } from './qa-look-weather.fixtures.mjs';
 import { captureWeather } from './qa-look-weather.mjs';
+import { captureCctv, cctvFixture } from './qa-look-cctv.mjs';
 
 const options = parseLookArgs(process.argv.slice(2));
 const out =
@@ -96,6 +97,7 @@ try {
   }
   await installFixtures(page, options.url.origin, world, report, {
     strict: true,
+    cctv: options.panel === 'cctv' ? cctvFixture(options.state) : null,
     weather:
       options.panel === 'weather'
         ? createWeatherLookFixture(options.state)
@@ -274,6 +276,21 @@ try {
     [1440, 900],
     [1920, 1080],
   ];
+  if (options.panel === 'cctv') {
+    try {
+      await captureCctv({
+        page,
+        options,
+        out,
+        report,
+        markFrameStage,
+        viewports,
+      });
+    } catch (error) {
+      const { width, height } = page.viewport();
+      await failure(width, height, 'cctv', 'journey', error);
+    }
+  }
   if (options.panel === 'weather') {
     try {
       await captureWeather({
@@ -291,7 +308,7 @@ try {
     }
   }
   for (const [width, height] of viewports) {
-    if (options.panel === 'weather') break;
+    if (options.panel === 'weather' || options.panel === 'cctv') break;
     await markFrameStage(`${width}x${height} viewport`);
     await page.setViewport({ width, height, deviceScaleFactor: 1 });
     if (options.panel === 'layers') {

@@ -95,7 +95,7 @@ export async function installFixtures(
   origin,
   world,
   report,
-  { strict = false, firePerimeter = null, weather = null } = {},
+  { strict = false, firePerimeter = null, weather = null, cctv = null } = {},
 ) {
   const imagery = await fs.readFile(
     new URL(
@@ -183,6 +183,14 @@ export async function installFixtures(
           );
           if (detail) await reply(detail);
           else await reply({ error: 'Unknown World Board detail lens.' }, 404);
+        } else if (
+          cctv &&
+          request.method === 'GET' &&
+          (weatherReply = await cctv(url))
+        ) {
+          const counts = (report.transport.cctvReplies ??= {});
+          counts[url.pathname] = (counts[url.pathname] ?? 0) + 1;
+          await reply(weatherReply.value, 200, weatherReply.contentType);
         } else if (
           weather &&
           request.method === 'GET' &&
