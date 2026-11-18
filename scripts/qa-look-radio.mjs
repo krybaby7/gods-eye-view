@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { setTimeout as pause } from 'node:timers/promises';
 import { collisions } from '../src/tooling/qaLook.mjs';
+import { captureStable } from '../src/tooling/qaLookCapture.mjs';
 import { captureLookImage } from '../src/tooling/qaLookImage.mjs';
 
 const stations = [
@@ -54,25 +55,66 @@ function measure(selector) {
     node.getClientRects().length > 0 &&
     getComputedStyle(node).visibility === 'visible';
   const raw = box(target);
-  const crop = { ...raw };
-  for (let p = target.parentElement; p; p = p.parentElement) {
-    const css = getComputedStyle(p);
-    const clip = box(p);
-    if (['auto', 'scroll', 'hidden', 'clip'].includes(css.overflowX)) {
-      crop.left = Math.max(crop.left, clip.left);
-      crop.right = Math.min(crop.right, clip.right);
+  const clipOverflow = new Set(['auto', 'scroll', 'hidden', 'clip']);
+  function clipped(node) {
+    const rect = box(node);
+    rect.left = Math.max(rect.left, 0);
+    rect.top = Math.max(rect.top, 0);
+    rect.right = Math.min(rect.right, window.innerWidth);
+    rect.bottom = Math.min(rect.bottom, window.innerHeight);
+    const clips = [];
+    for (
+      let parent = node.parentElement;
+      parent;
+      parent = parent.parentElement
+    ) {
+      if (!parent.getClientRects().length) continue;
+      const css = getComputedStyle(parent);
+      const horizontal = clipOverflow.has(css.overflowX);
+      const vertical = clipOverflow.has(css.overflowY);
+      if (!horizontal && !vertical) continue;
+      // Scrollable paint is clipped at the scrollport, not the parent's
+      // border box. clientWidth/Height exclude borders and scrollbar gutters.
+      const bounds = parent.getBoundingClientRect();
+      const left = bounds.left + parent.clientLeft;
+      const top = bounds.top + parent.clientTop;
+      const right = left + parent.clientWidth;
+      const bottom = top + parent.clientHeight;
+      if (horizontal) {
+        rect.left = Math.max(rect.left, left);
+        rect.right = Math.min(rect.right, right);
+      }
+      if (vertical) {
+        rect.top = Math.max(rect.top, top);
+        rect.bottom = Math.min(rect.bottom, bottom);
+      }
+      clips.push({
+        id: parent.id || parent.className,
+        left,
+        top,
+        right,
+        bottom,
+        horizontal,
+        vertical,
+        scrollLeft: parent.scrollLeft,
+        scrollTop: parent.scrollTop,
+      });
     }
-    if (['auto', 'scroll', 'hidden', 'clip'].includes(css.overflowY)) {
-      crop.top = Math.max(crop.top, clip.top);
-      crop.bottom = Math.min(crop.bottom, clip.bottom);
-    }
+    return { rect, clips };
   }
+  const { rect: crop, clips } = clipped(target);
   const frameSelector =
     '#frame-top, #frame-bottom, #frame-today, #frame-rail, #frame-sheet';
   const panelSelector =
     '#right-context-rail > [data-panel-id], #data-panel, #command-dock';
   const boxes = (query) =>
-    [...document.querySelectorAll(query)].filter(visible).map(box);
+    [...document.querySelectorAll(query)]
+      .filter(visible)
+      .map((node) => clipped(node).rect)
+      .filter(({ left, right, top, bottom }) => right > left && bottom > top);
+  const rail = document.getElementById('right-context-rail');
+  const context = document.getElementById('global-context-panel');
+  const scroller = context.querySelector('.global-context-panel-inner');
   const filter = document.querySelector('#radio-filter');
   const sdr = document.querySelector('#sdr-connection-state');
   return {
@@ -80,9 +122,22 @@ function measure(selector) {
     panels: boxes(panelSelector),
     target: raw,
     crop,
-    contextExpanded: !document
-      .querySelector('#global-context-panel')
-      .classList.contains('collapsed'),
+    clips,
+    rail: {
+      measuring: rail.hasAttribute('data-rail-measuring'),
+      allocation: context.style.getPropertyValue(
+        '--right-panel-allocated-height',
+      ),
+      scrollHeight: scroller.scrollHeight,
+      scrollTop: scroller.scrollTop,
+      bounds: box(scroller),
+      transitions: [rail, context, scroller]
+        .flatMap((node) => node.getAnimations())
+        .filter(
+          ({ playState }) => playState === 'pending' || playState === 'running',
+        ).length,
+    },
+    contextExpanded: !context.classList.contains('collapsed'),
     compactExpanded:
       document
         .querySelector('#context-radio-toggle-btn')
@@ -122,18 +177,63 @@ export async function captureRadio({
 
   async function capture(width, height, view, selector) {
     await markFrameStage(`${width}x${height} radio ${view}`);
-    let prior;
-    let stable = 0;
-    let evidence;
-    for (let i = 0; i < 40 && stable < 3; i++) {
-      evidence = await page.evaluate(measure, selector);
-      const sample = JSON.stringify(evidence);
-      stable = sample === prior ? stable + 1 : 1;
-      prior = sample;
-      if (stable < 3) await pause(100);
+    const read = () => page.evaluate(measure, selector);
+    async function settle() {
+      let prior;
+      let stable = 0;
+      // Allow the delayed rail allocation and disclosure scrolling to settle.
+      for (let i = 0; i < 120; i++) {
+        const sample = await read();
+        const serialized = JSON.stringify(sample);
+        stable =
+          sample.rail.measuring || sample.rail.transitions
+            ? 0
+            : serialized === prior
+              ? stable + 1
+              : 1;
+        if (stable === 9) return sample;
+        prior = serialized;
+        await pause(125);
+      }
+      throw new Error(`Radio ${view} geometry did not settle`);
     }
-    if (stable < 3) throw new Error(`Radio ${view} geometry did not settle`);
-
+    const stem = `${options.label}-${options.state}-${width}x${height}-${view}`;
+    const screenshot = path.join(out, `${stem}.png`);
+    const cropFile = path.join(out, `${stem}-crop.png`);
+    const fullAttempt = path.join(out, `${stem}-attempt.png`);
+    const cropAttempt = path.join(out, `${stem}-attempt-crop.png`);
+    const discard = () =>
+      Promise.all(
+        [fullAttempt, cropAttempt].map((file) => fs.rm(file, { force: true })),
+      );
+    let attempt;
+    try {
+      attempt = await captureStable({
+        settle,
+        read,
+        key: (data) => data,
+        capture: ({ crop }) =>
+          captureLookImage(page, fullAttempt, cropAttempt, crop, {
+            width,
+            height,
+          }),
+        discard,
+      });
+    } catch (error) {
+      await discard();
+      await fs.writeFile(
+        path.join(out, `${stem}-capture-attempts.json`),
+        JSON.stringify(
+          { error: error.message, attempts: error.attempts ?? [] },
+          null,
+          2,
+        ),
+      );
+      throw error;
+    }
+    const { before: evidence, value: pixels } = attempt;
+    await fs.rename(fullAttempt, screenshot);
+    if (pixels) await fs.rename(cropAttempt, cropFile);
     const { crop, frames, panels, target } = evidence;
     const overlaps = collisions(frames, [...panels, crop]).filter(({ a, b }) =>
       [a.elementId, b.elementId].includes(target.elementId),
@@ -159,19 +259,14 @@ export async function captureRadio({
     if (options.label === 'after' && evidence.figure !== '12px')
       errors.push('volume figures must render at 12px');
 
-    const stem = `${options.label}-${options.state}-${width}x${height}-${view}`;
-    const screenshot = path.join(out, `${stem}.png`);
-    const cropFile = path.join(out, `${stem}-crop.png`);
-    const pixels = await captureLookImage(page, screenshot, cropFile, crop, {
-      width,
-      height,
-    });
+    if (!pixels) errors.push('target crop has no pixels');
     const result = {
       width,
       height,
       view,
       ...evidence,
       pixels,
+      captureAttempts: attempt.attempts,
       collisions: options.label === 'after' ? overlaps : [],
       ...(options.label === 'before' ? { baselineFindings: errors } : {}),
       ...(options.label === 'after' && errors.length
