@@ -2,31 +2,19 @@
 export function createSceneDialog(title, onClose) {
   const dialog = document.createElement('dialog');
   dialog.dataset.directorDialog = '';
-  dialog.className = 'director-sharing-dialog';
+  dialog.className = 'director-sharing-dialog kit-panel';
   dialog.setAttribute('aria-label', title);
-  Object.assign(dialog.style, {
-    background: '#08141e',
-    color: '#e3faff',
-    border: '1px solid #397080',
-    borderRadius: '6px',
-    padding: '20px',
-    width: 'min(720px,calc(100vw - 32px))',
-    boxSizing: 'border-box',
-    position: 'fixed',
-    inset: '0',
-    margin: 'auto',
-    maxHeight: 'calc(100vh - 32px)',
-    overflow: 'auto',
-    font: '14px/1.5 sans-serif',
-  });
   const heading = document.createElement('h2');
   heading.textContent = title;
-  heading.style.marginBottom = '12px';
+  heading.className = 'kit-panel-title';
   dialog.append(heading);
   const body = document.createElement('div'),
     footer = document.createElement('div'),
     status = document.createElement('p');
   status.setAttribute('role', 'status');
+  body.className = 'kit-panel-body';
+  status.className = 'kit-note';
+  footer.className = 'director-sharing-actions';
   dialog.append(body, status, footer);
   const listeners = [];
   function listen(node, type, fn) {
@@ -44,39 +32,20 @@ export function createSceneDialog(title, onClose) {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = label;
-    Object.assign(b.style, {
-      background: '#10242e',
-      color: '#e3faff',
-      border: '1px solid #397080',
-      borderRadius: '3px',
-      padding: '7px 11px',
-      margin: '6px 6px 6px 0',
-      cursor: 'pointer',
-      font: 'inherit',
-    });
+    b.className = 'kit-btn';
     listen(b, 'click', fn);
     parent.append(b);
     return b;
   }
   function input(label, value, { type = 'text', multiline = false } = {}) {
     const wrapper = document.createElement('label');
-    wrapper.style.display = 'block';
+    wrapper.className = 'director-sharing-field';
     wrapper.textContent = label;
     const node = document.createElement(multiline ? 'textarea' : 'input');
     if (!multiline) node.type = type;
     node.value = value;
     node.setAttribute('aria-label', label);
-    Object.assign(node.style, {
-      display: 'block',
-      boxSizing: 'border-box',
-      width: '100%',
-      padding: '7px',
-      margin: '6px 0 14px',
-      color: '#e3faff',
-      background: '#10242e',
-      border: '1px solid #397080',
-      font: multiline ? '12px monospace' : 'inherit',
-    });
+
     if (multiline) node.rows = 9;
     wrapper.append(node);
     body.append(wrapper);
@@ -116,15 +85,15 @@ export function mountSceneSharing(
   bar.dataset.directorAuthoring = '';
   bar.className = 'scene-controls';
   const entries = [
-    ['EDIT DETAILS', edit],
-    ['SHARE SCENE', share],
+    ['Edit details', edit],
+    ['Share scene', share],
   ];
   const removers = [];
   for (const [text, fn] of entries) {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = text;
-    b.className = 'scene-btn';
+    b.className = 'kit-btn scene-btn';
     b.addEventListener('click', fn);
     removers.push(() => b.removeEventListener('click', fn));
     bar.append(b);

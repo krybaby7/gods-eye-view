@@ -494,7 +494,7 @@ test('the inputs behind the measured constants are unchanged', () => {
   const creditBase = RULES.find((rule) => rule.parts.length === 1 && rule.parts[0] === '#cesium-credits');
   assert.ok(creditBase, '#cesium-credits base rule is missing');
   const declOf = (rule, prop) => rule.decls.find((decl) => decl.prop === prop)?.value;
-  assert.equal(declOf(creditBase, 'font-size'), '10px', 'credit font-size drives its measured 28px height');
+  assert.equal(declOf(creditBase, 'font'), 'var(--type-caption)', 'attribution uses the shared legible caption treatment');
   assert.equal(declOf(creditBase, 'white-space'), 'nowrap', 'a wrapping credit is taller than the measured 28px');
   for (const prop of ['height', 'min-height', 'max-height', 'line-height', 'padding']) {
     assert.equal(declOf(creditBase, prop), undefined, `#cesium-credits gained ${prop}; re-measure CREDIT_HEIGHT_PX`);

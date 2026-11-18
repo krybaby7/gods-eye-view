@@ -106,16 +106,16 @@
       </div>
     </div>
     <div class="pp-toggle-group">
-      <button class="pp-toggle-btn" id="draw-toggle" title="Draw on the world — click vertices, double-click or Enter to finish, Esc to cancel" aria-pressed="false">
+      <button class="pp-toggle-btn kit-btn" id="draw-toggle" title="Draw on the world — click vertices, double-click or Enter to finish, Esc to cancel" aria-pressed="false">
         <span class="pp-icon material-symbols-outlined" aria-hidden="true">draw</span>
         <span class="pp-label">Draw</span>
       </button>
       <div class="pp-slider-row" id="draw-mode-row">
         <span class="pp-slider-mini-label">Shape</span>
-        <div class="pp-mode-seg" role="radiogroup" aria-label="Shape to draw">
-          <button class="pp-mode-btn active" data-shape="area" role="radio" aria-checked="true">Area</button>
-          <button class="pp-mode-btn" data-shape="line" role="radio" aria-checked="false">Line</button>
-          <button class="pp-mode-btn" data-shape="pin" role="radio" aria-checked="false">Pin</button>
+        <div class="kit-seg draw-shape-seg" role="radiogroup" aria-label="Shape to draw">
+          <button class="pp-mode-btn kit-seg-item active" data-shape="area" role="radio" aria-checked="true">Area</button>
+          <button class="pp-mode-btn kit-seg-item" data-shape="line" role="radio" aria-checked="false">Line</button>
+          <button class="pp-mode-btn kit-seg-item" data-shape="pin" role="radio" aria-checked="false">Pin</button>
         </div>
       </div>
       <div class="pp-slider-row" id="draw-label-row">
@@ -127,7 +127,7 @@
           <option value="green">Green</option>
           <option value="red">Red</option>
         </select>
-        <button class="pp-mode-btn draw-clear-btn" id="draw-clear" type="button" title="Remove every mark from the board">Clear</button>
+        <button class="kit-btn quiet draw-clear-btn" id="draw-clear" type="button" title="Remove every mark from the board">Clear</button>
         <span class="draw-hint" id="draw-hint" aria-live="polite"></span>
       </div>
     </div>
