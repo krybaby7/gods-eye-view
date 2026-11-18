@@ -90,13 +90,16 @@ export function renderRadioState(state) {
   if (this._cockpitRadioEnableBtn) {
     this._cockpitRadioEnableBtn.classList.toggle('active', enabled);
     this._cockpitRadioEnableBtn.setAttribute('aria-pressed', String(enabled));
-    this._cockpitRadioEnableBtn.textContent = transitioning
-      ? lifecycleState.toUpperCase()
+    const cockpitPowerLabel = transitioning
+      ? lifecycleState === 'enabling'
+        ? 'Enabling…'
+        : 'Disabling…'
       : uncertain
-        ? 'RECONCILE'
+        ? 'Reconcile'
         : enabled
-          ? 'DISABLE'
-          : 'ENABLE';
+          ? 'Disable'
+          : 'Enable';
+    this._cockpitRadioEnableBtn.textContent = cockpitPowerLabel;
     this._cockpitRadioEnableBtn.setAttribute(
       'aria-label',
       uncertain
@@ -297,8 +300,8 @@ export function renderRadioState(state) {
   }
   if (this._cockpitRadioStation) {
     this._cockpitRadioStation.textContent = uncertain
-      ? 'UNCERTAIN'
-      : selected?.name || (state.loading ? 'SYNCING' : 'READY');
+      ? 'Uncertain'
+      : selected?.name || (state.loading ? 'Syncing…' : 'Ready');
   }
   if (this._radioPlaybackState) {
     const catalogSuffix = state.degraded

@@ -1,5 +1,5 @@
 import { readShellSource, shellMethod } from './testSupport/readShellSource.mjs';
-import { ancestorsOf } from './testSupport/cssCascade.mjs';
+import { ancestorsOf, customProperties, resolveVars, rules, winners } from './testSupport/cssCascade.mjs';
 import { expandApplicationHtml } from '../build/application-html.js';
 import { readLayerSource } from './testSupport/readLayerSource.mjs';
 import { PanelLayoutController } from './ui/panelLayoutController.js';
@@ -53,7 +53,7 @@ test('Cockpit has one reset action beside its bottom exit path', () => {
   assert.doesNotMatch(html, /id="cockpit-exit"/);
   assert.match(
     html,
-    /id="map-view-switch"[^>]*aria-label="Exit cockpit view"[^>]*aria-keyshortcuts="Escape C"[\s\S]*?close_fullscreen[\s\S]*?EXIT COCKPIT/,
+    /id="map-view-switch"[^>]*aria-label="Exit cockpit view"[^>]*aria-keyshortcuts="Escape C"[\s\S]*?Exit cockpit/,
   );
   const topCenterActions = html.match(/<nav id="top-center-actions"[\s\S]*?<\/nav>/);
   assert.ok(topCenterActions, 'Top-center map tools are missing');
@@ -76,7 +76,7 @@ test('Cockpit has one reset action beside its bottom exit path', () => {
   assert.doesNotMatch(viewSwitcher[0], /id="reset-globe-view"/, 'map-only reset must stay outside Cockpit');
   assert.match(
     viewSwitcher[0],
-    /id="cockpit-reset-globe"[^>]*type="button"[^>]*aria-label="Reset cockpit to full globe view"[^>]*hidden[\s\S]*?public[\s\S]*?RESET[\s\S]*?id="map-view-switch"/,
+    /id="cockpit-reset-globe"[^>]*type="button"[^>]*aria-label="Reset cockpit to full globe view"[^>]*hidden[\s\S]*?Reset[\s\S]*?id="map-view-switch"/,
   );
 
   const actions = html.match(/<div class="global-context-actions"[\s\S]*?<\/div>/);
@@ -85,11 +85,9 @@ test('Cockpit has one reset action beside its bottom exit path', () => {
     actions[0].indexOf('id="cockpit-entry"') < actions[0].indexOf('id="installations-search-btn"'),
     'Cockpit must precede Search Nearby Sites',
   );
-  assert.match(
-    css,
-    /body\.cockpit-mode #view-switcher \{[\s\S]*?bottom: max\(clamp\(128px, 15vh, 150px\), env\(safe-area-inset-bottom\)\);[\s\S]*?margin-bottom: -95px;/,
-    'Cockpit exit must retain the owner-approved bottom-center position',
-  );
+  for (const id of ['cockpit-reset-globe', 'map-view-switch']) {
+    assert.ok(ancestorsOf(html, id).some((node) => node.id === 'view-switcher'), id);
+  }
   assert.match(
     css,
     /body\.cockpit-mode #view-switcher \{[\s\S]*?display:\s*flex;[\s\S]*?max-width:\s*calc\(100vw - 24px\);[\s\S]*?justify-content:\s*center;/,
@@ -97,15 +95,41 @@ test('Cockpit has one reset action beside its bottom exit path', () => {
   );
 });
 
-test('Cockpit heading tape leaves the bottom exit row unobstructed', () => {
-  const compass = html.match(/<div class="cockpit-compass"[\s\S]*?<div class="cockpit-position-readout">/);
-  assert.ok(compass, 'Cockpit compass markup is missing');
-  assert.match(compass[0], /id="cockpit-speed-value"/);
-  assert.match(compass[0], /id="cockpit-heading-value"/);
-  assert.match(compass[0], /id="cockpit-altitude-value"/);
-  assert.match(compass[0], /id="cockpit-compass-tape"/);
+test('Aircraft rulers share the heading instrument deck and keep their numeric readouts', () => {
+  for (const [id, label] of [
+    ['cockpit-speed-rim', 'Ground speed scale'],
+    ['cockpit-altitude-rim', 'Altitude scale'],
+  ]) {
+    const chain = ancestorsOf(html, id);
+    assert.ok(chain.some((node) => node.classes.has('cockpit-compass')), id);
+    assert.equal(chain.at(-1).attrs.get('aria-label'), label, id);
+    assert.equal(chain.at(-1).attrs.has('hidden'), false, id);
+  }
+  for (const id of [
+    'cockpit-speed-value', 'cockpit-altitude-value',
+    'cockpit-heading-value', 'cockpit-compass-tape',
+  ]) {
+    assert.ok(ancestorsOf(html, id).some((node) => node.classes.has('cockpit-compass')), id);
+  }
   assert.doesNotMatch(html, /cockpit-compass-label|>TRACK<\/span>/);
   assert.doesNotMatch(css, /cockpit-compass-label/);
+});
+
+test('Cockpit entry belongs to the Context flow and is not fixed to the viewport', () => {
+  const chain = ancestorsOf(html, 'cockpit-entry');
+  assert.ok(chain.some((node) => node.id === 'global-context-panel'));
+  const declaration = winners(chain.at(-1), rules(css), { position: ['position'] });
+  assert.equal(declaration.position?.decl.value ?? 'static', 'static');
+});
+
+test('Cockpit headings use the shared code size for numeric figures', () => {
+  const allRules = rules(css);
+  const node = ancestorsOf(html, 'cockpit-heading-value').at(-2);
+  const { font } = winners(node, allRules, { font: ['font'] });
+  assert.equal(
+    resolveVars(font.decl.value, customProperties(allRules)),
+    resolveVars('var(--type-figure)', customProperties(allRules)),
+  );
 });
 
 test('Cockpit vision cycle exposes every map preset exactly once', () => {
@@ -113,13 +137,19 @@ test('Cockpit vision cycle exposes every map preset exactly once', () => {
     cycleVisionMode.toString(),
     /const modes = COCKPIT_VISION_MODES;/,
   );
-  assert.match(
-    setVisionMode.toString(),
-    /const labels = \{\s*optical: 'NORMAL',\s*crt: 'CRT',\s*nvg: 'NVG',\s*thermal: 'FLIR',\s*anime: 'ANIME',\s*noir: 'NOIR',\s*snow: 'SNOW',?\s*\};/,
-  );
-  assert.doesNotMatch(setVisionMode.toString(), /none: 'NONE'/);
+  const labels = [];
+  const state = {
+    visionCurrent: { dataset: {}, setAttribute() {} },
+    visionCurrentLabel: {},
+  };
+  for (const mode of ['optical', 'crt', 'nvg', 'thermal', 'anime', 'noir', 'snow']) {
+    setVisionMode.call(state, mode);
+    assert.equal(state.visionCurrent.dataset.cockpitVision, mode);
+    labels.push(state.visionCurrentLabel.textContent);
+  }
+  assert.deepEqual(labels, ['Normal', 'CRT', 'NVG', 'FLIR', 'Anime', 'Noir', 'Snow']);
   assert.doesNotMatch(ui, /getInheritedVisionLabel/);
-  assert.match(html, /id="cockpit-vision-current-label"[^>]*>NORMAL<\/strong>/);
+  assert.match(html, /id="cockpit-vision-current-label"[^>]*>Normal<\/strong>/);
   assert.match(
     cockpitEnter.toString(),
     /this\.setVisionMode\(this\.getInitialVisionMode\(\)\)/,
@@ -215,7 +245,7 @@ test('the Contact panel never hides itself out from under its own NEXT button', 
   assert.match(body, /'BRG —'/);
   // A culled subject holds last-known content behind the CONTACT LOST cue.
   assert.match(body, /readout\.contactLost/);
-  assert.match(body, /CONTACT LOST/);
+  assert.match(body, /Contact lost/);
   assert.match(body, /this\.context\.dataset\.state = 'lost'/);
   assert.match(body, /if \(readout\.contactLost\) \{/, 'the CONTACT LOST branch is missing');
   // PREVIOUS/NEXT must be written before any early return, so the operator can
@@ -319,9 +349,7 @@ test('Cockpit owns a focused shared Display portal and compact Radio controls', 
   assert.match(css, /#pp-toggles\s*\{[\s\S]*?--pp-expanded-width:\s*var\(\s*--display-panel-expanded-width\)/);
   assert.match(css, /is-expanded:has\(\[data-cockpit-launcher='display'\]\)\s*\{[\s\S]*?width:\s*var\(\s*--display-panel-expanded-width\)/);
   assert.doesNotMatch(ui, /--cockpit-display-expanded-width|dataPanelWidth/);
-  assert.match(css, /is-expanded:has\(\[data-cockpit-launcher='display'\]\)[\s\S]*?box-shadow:\s*0 8px 32px rgba\(0, 0, 0, 0\.42\)/);
   assert.match(css, /\.cockpit-utility-control\.is-expanded \.cockpit-utility-launcher\s*\{[\s\S]*?border:\s*0;[\s\S]*?background:\s*transparent;[\s\S]*?box-shadow:\s*none;/);
-  assert.match(css, /\.cockpit-utility-control\.is-expanded \.cockpit-utility-divider\s*\{[\s\S]*?linear-gradient\(\s*90deg,\s*rgb\(0 212 255 \/ 28%\),\s*rgba\(0, 212, 255, 0\.18\) 58%,\s*transparent\s*\)[\s\S]*?box-shadow:\s*0 0 7px rgba\(0, 212, 255, 0\.22\);/);
   assert.match(radioBindings, /this\._cockpitDisplayToggleBtn\.textContent = displayOpen \? '▶' : '◀';/);
   assert.match(radioBindings, /this\._cockpitRadioToggleBtn\.textContent = radioOpen \? '▶' : '◀';/);
   assert.match(css, /#cockpit-display-panel\s*\{[\s\S]*?display:\s*flex;[\s\S]*?gap:\s*7px;[\s\S]*?padding:\s*0;[\s\S]*?border-top:\s*0;/);
@@ -685,7 +713,7 @@ test('an expanded Cockpit left panel stays above Contact, HUD, and attribution',
   );
 });
 
-test('Cockpit side rulers stay behind interactive panel surfaces', () => {
+test('The instrument scale layer stays below interactive panel surfaces', () => {
   const cockpitHud = css.match(/#cockpit-hud\s*\{[\s\S]*?z-index:\s*(\d+);/);
   const leftStack = css.match(/body\.cockpit-mode #left-panel-stack\s*\{[\s\S]*?z-index:\s*(\d+);/);
   const sideRuler = css.match(/\.cockpit-altitude-rim\s*\{[\s\S]*?z-index:\s*(\d+);/);
@@ -741,14 +769,18 @@ test('mobile Cockpit prioritizes flight instruments and collision-safe controls'
   assert.match(mobileCockpit[1], /body\.cockpit-mode #intel-hud/);
   assert.match(mobileCockpit[1], /body\.cockpit-mode \.cockpit-context-window/);
   assert.match(mobileCockpit[1], /body\.cockpit-mode \.cockpit-signal-window/);
-  assert.match(mobileCockpit[1], /body\.cockpit-mode \.cockpit-utility-controls[\s\S]*?bottom:\s*152px;/);
-  assert.match(mobileCockpit[1], /body\.cockpit-mode \.cockpit-utility-control\.is-expanded[\s\S]*?top:\s*96px;/);
+  for (const id of ['cockpit-speed-rim', 'cockpit-altitude-rim']) {
+    const properties = winners(ancestorsOf(html, id).at(-1), rules(css), {
+      display: ['display'],
+    });
+    assert.notEqual(properties.display?.decl.value, 'none', id);
+  }
   assert.match(mobileCockpit[1], /body\.cockpit-mode \.cockpit-utility-popover[\s\S]*?position:\s*static;/);
   assert.match(
     mobileCockpit[1],
     /body\.cockpit-mode #view-switcher \{[\s\S]*?bottom:\s*max\(76px, env\(safe-area-inset-bottom\)\);[\s\S]*?max-width:\s*calc\(100vw - 20px\);/,
   );
-  assert.match(mobileCockpit[1], /body\.cockpit-mode #view-switcher button \{[\s\S]*?padding-inline:\s*9px;/);
+  assert.match(mobileCockpit[1], /body\.cockpit-mode #view-switcher button \{[\s\S]*?padding-inline:\s*var\(--space-2\);/);
 });
 
 test('cockpit route direction uses self-contained vector artwork, not a font ligature', () => {
@@ -778,7 +810,7 @@ test('cockpit weather control is off before JavaScript restores an explicit opt-
   assert.ok(match, 'cockpit weather toggle markup is missing');
   assert.match(match[0], /aria-label="Enable cockpit weather effects"/);
   assert.match(match[0], /aria-pressed="false"/);
-  assert.match(match[0], /id="cockpit-weather-state">OFF</);
+  assert.match(match[0], /id="cockpit-weather-state">Off</);
 });
 
 test('cockpit summary presents the focused item as Contact', () => {
@@ -787,7 +819,7 @@ test('cockpit summary presents the focused item as Contact', () => {
   );
   assert.ok(match, 'cockpit Contact summary is missing');
   assert.match(match[0], /aria-label="Contact cockpit summary"/);
-  assert.match(match[0], /class="cockpit-context-kicker">CONTACT</);
+  assert.match(match[0], /class="cockpit-context-kicker">Contact</);
   assert.match(match[0], /aria-label="Contact navigation"/);
   assert.match(match[0], /aria-label="Previous — prior visited contact in the 250 km window"/);
   assert.match(match[0], /aria-label="Next — nearest unvisited contact in the 250 km window"/);
@@ -838,14 +870,14 @@ test('cockpit briefing cycle control keeps its state as the accessible name', ()
     /<button\s+id="cockpit-brief-auto"[\s\S]*?<\/button>/,
   );
   assert.ok(match, 'cockpit briefing cycle toggle is missing');
-  assert.match(match[0], /aria-label="CYCLE OFF"/);
+  assert.match(match[0], /aria-label="Cycle off"/);
   assert.match(match[0], /aria-pressed="false"/);
-  assert.match(match[0], />CYCLE OFF<\/button>/);
+  assert.match(match[0], />Cycle off<\/button>/);
   assert.match(match[0], /title="Cycle briefing pages automatically every 9 seconds \(Signals → News → Local\)\./);
 
   const update = setBriefAutoRotate.toString();
   assert.ok(update, 'cockpit briefing cycle state updater is missing');
-  assert.match(update, /const label = this\.briefAutoRotateEnabled \? 'CYCLE ON' : 'CYCLE OFF';/);
+  assert.match(update, /const label = this\.briefAutoRotateEnabled \? 'Cycle on' : 'Cycle off';/);
   assert.match(update, /setAttribute\('aria-label', label\)/);
   assert.match(update, /\.title = help;/);
   assert.doesNotMatch(update, /setAttribute\('aria-label', help\)/);

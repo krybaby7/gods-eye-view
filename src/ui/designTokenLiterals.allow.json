@@ -138,31 +138,6 @@
     "count": 2
   },
   {
-    "path": "src/ui/styles/cockpit.css",
-    "kind": "backdrop",
-    "count": 4
-  },
-  {
-    "path": "src/ui/styles/cockpit.css",
-    "kind": "color",
-    "count": 150
-  },
-  {
-    "path": "src/ui/styles/cockpit.css",
-    "kind": "font",
-    "count": 82
-  },
-  {
-    "path": "src/ui/styles/cockpit.css",
-    "kind": "radius",
-    "count": 26
-  },
-  {
-    "path": "src/ui/styles/cockpit.css",
-    "kind": "shadow",
-    "count": 24
-  },
-  {
     "path": "src/ui/styles/controls.css",
     "kind": "backdrop",
     "count": 12
