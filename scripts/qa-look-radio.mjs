@@ -15,6 +15,8 @@ const stations = [
   lat,
   lon,
   streamUrl: `https://audio.example.test/${suffix}.mp3`,
+  homepage: null,
+  languages: ['English'],
   country: 'India',
   countryCode: 'IN',
   state: 'Chhattisgarh',
