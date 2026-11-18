@@ -15,8 +15,9 @@ request 31. Pull request 32 merged the corrections from the review of both piece
 A2, the shared kit and legend, merged on 17 November as pull request 33. The Layers menu
 restyle (B) merged that evening as pull request 34. Weather (C) merged on 18 November as pull
 request 35. Cameras (D) merged the same day as pull request 36. On 18 November the owner paused
-1.3 at that point and parked E–L and 1.6. Decision 37 records the pause, the separate decision
-about deploying current main and the topics for a fresh brainstorming chat.
+1.3 at that point and parked E–L and 1.6. Main at `1e2e589e` was deployed privately on the
+owner's PC at `http://localhost:4173`. Decision 37 records the release and the topics for a
+fresh brainstorming chat.
 Codex directs the work. For B, C and D, GPT-6.2 Sol implemented and GPT-6.1 Terra tested (decisions
 34 and 35). Section 10 gives the build history and the current status. Builds on
 `docs/superpowers/specs/2026-11-08-world-board-design.md` (the World Board spec, whose rules still
@@ -661,10 +662,19 @@ Added on 2026-11-18:
     history. Park E–L, beginning with E (Street level), and the test work in 1.6. This supersedes
     the earlier direction to do Street level next.
 
-    Consider deployment of current main separately. In a fresh brainstorming chat, revisit
-    priorities across country comparisons and scoring, Today news and events, board and live-layer
-    integration, and Claude features for the board. The owner left the order of those four topics
-    open and deferred implementation until after that discussion.
+    The owner chose a private deployment on this PC with their saved board and configured
+    providers. Main at `1e2e589ee6fd7b8cc2c7993c71aab4a240e1ce5d` was deployed at
+    `http://localhost:4173`. The listener is loopback-only, and a Windows sign-in launcher
+    is registered. The pinned release has its own directory and saved data, separate from
+    future development. HTTP verification matched the served HTML and both assets to the
+    build, and the API returned the saved board dated 11 November, with turn 6 and 256 country
+    records. Release verification used the saved board and the built files. Live feeds and
+    Claude were outside the scope of that check.
+
+    In a fresh brainstorming chat, revisit priorities across country comparisons and scoring,
+    Today news and events, board and live-layer integration, and Claude features for the board.
+    The owner left the order of those four topics open and deferred implementation until after
+    that discussion.
 
 ## 6. Risks
 
@@ -982,23 +992,23 @@ Raised on 2026-11-12 and not yet answered.
 ## 10. Building it
 
 Decisions 29 and 33 governed the builds below. The table records what merged and where work paused.
-Decision 37 supersedes the previous build order for unfinished work. Deployment of current main
-has its own decision, and future feature priorities are for a fresh brainstorming chat.
+Decision 37 supersedes the previous build order for unfinished work. The private deployment
+is complete, and future feature priorities are for a fresh brainstorming chat.
 
-| Order             | Piece                                                                | State on 2026-11-18                                                                             |
-| ----------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Done              | The Jev filer and the connection allowance (decisions 26 and 27, R8) | Merged as pull request 25                                                                       |
-| 1                 | Stage 0: the mock of six screens and the page of design tokens       | Done. Approved 2026-11-12 (decision 30)                                                         |
-| 2                 | Costume off, board on: the first pull request of section 7           | Merged as pull request 26 on 2026-11-13                                                         |
-| 3                 | The frame (1.2), built to the approved mock                          | Merged as pull request 28 on 2026-11-16                                                         |
-| 4                 | Words for numbers and the Overview tab (2.1 and 2.2)                 | Merged as pull request 27 on 2026-11-13                                                         |
-| 5                 | The tools menu (1.5)                                                 | Merged as pull request 29 on 2026-11-16                                                         |
-| 6                 | The layers menu (1.4)                                                | Merged as pull request 30 on 2026-11-17                                                         |
-| 7                 | One look (1.3), A1, A2 and B to D                                    | Merged as pull requests 31, 33, 34, 35 and 36, with corrections in pull request 32              |
-| Parked            | One look (1.3), E–L, and tests (1.6)                                 | Paused after Cameras (D) on 2026-11-18 (decision 37)                                            |
-| Separate decision | Deploy current main                                                  | Consider separately from feature priorities (decision 37)                                       |
-| Order open        | Unfinished feature work                                              | Revisit priorities in a fresh brainstorming chat (decision 37)                                  |
-| Beside            | Track R                                                              | The original milestones are in section 4. The earlier roadmap recorded this track as unstarted. |
+| Order      | Piece                                                                | State on 2026-11-18                                                                             |
+| ---------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Done       | The Jev filer and the connection allowance (decisions 26 and 27, R8) | Merged as pull request 25                                                                       |
+| 1          | Stage 0: the mock of six screens and the page of design tokens       | Done. Approved 2026-11-12 (decision 30)                                                         |
+| 2          | Costume off, board on: the first pull request of section 7           | Merged as pull request 26 on 2026-11-13                                                         |
+| 3          | The frame (1.2), built to the approved mock                          | Merged as pull request 28 on 2026-11-16                                                         |
+| 4          | Words for numbers and the Overview tab (2.1 and 2.2)                 | Merged as pull request 27 on 2026-11-13                                                         |
+| 5          | The tools menu (1.5)                                                 | Merged as pull request 29 on 2026-11-16                                                         |
+| 6          | The layers menu (1.4)                                                | Merged as pull request 30 on 2026-11-17                                                         |
+| 7          | One look (1.3), A1, A2 and B to D                                    | Merged as pull requests 31, 33, 34, 35 and 36, with corrections in pull request 32              |
+| Parked     | One look (1.3), E–L, and tests (1.6)                                 | Paused after Cameras (D) on 2026-11-18 (decision 37)                                            |
+| Deployed   | Private deployment of main at `1e2e589e`                             | Running at `http://localhost:4173` on the owner’s PC (decision 37)                              |
+| Order open | Unfinished feature work                                              | Revisit priorities in a fresh brainstorming chat (decision 37)                                  |
+| Beside     | Track R                                                              | The original milestones are in section 4. The earlier roadmap recorded this track as unstarted. |
 
 **Piece 2, costume off and board on.** Merged on 2026-11-13 as pull request 26 (merge commit
 `c9c6beee`), on the owner's word. Before the merge a separate agent ran the five gates again and
