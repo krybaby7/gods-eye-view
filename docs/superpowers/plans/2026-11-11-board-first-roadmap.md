@@ -683,6 +683,11 @@ Added on 2026-11-18:
     concurrently in separate worktrees. Context started from Radio's stylesheet split. The work
     was brought together for a shared regression run across those surfaces. Street level (E) and
     the visual regression milestone (1.6) remain parked under decision 37.
+39. **Move the direction work to Codex.** On 25 November the owner asked Codex to coordinate
+    the work. GPT-6.2 Sol builds the private pages and prepares their data. GPT-6.1 Terra tests
+    the pages independently, checks the counts and handles smaller, fully specified tasks.
+    Pieces with separate files run in parallel. The owner will review the layouts and sources
+    before choosing a direction. The priorities in decision 37 remain open.
 
 ## 6. Risks
 
