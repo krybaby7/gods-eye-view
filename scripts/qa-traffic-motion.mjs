@@ -78,7 +78,7 @@ try {
     });
     await page.setViewport({ width: 1280, height: 800 });
     await page.evaluateOnNewDocument(() =>
-      sessionStorage.setItem('gev:first-run-mission-session:v1', 'dismissed'),
+      sessionStorage.setItem('gev:first-run-tour:v1', 'seen'),
     );
     const u = new URL(url);
     u.searchParams.set('trafficRoads', mode);

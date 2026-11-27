@@ -1,246 +1,52 @@
-/* The dialog is non-modal so the visitor can still explore the globe. */
+/* The guide is non-modal, with the board visible around it. */
 #first-run-launcher {
   position: fixed;
   z-index: 175;
-  top: 50%;
-  left: 50%;
-  width: min(34rem, calc(100vw - 2 * var(--space-4)));
-  max-height: calc(100vh - 2 * var(--space-3));
+  inset: 50% auto auto 50%;
+  width: min(27rem, calc(100vw - 2 * var(--space-4)));
   max-height: calc(100dvh - 2 * var(--space-3));
-  display: flex;
-  flex-direction: column;
-  padding: var(--space-4);
-  overflow: hidden;
+  padding: var(--space-5);
+  overflow-y: auto;
   box-shadow: var(--shadow-pop);
-  opacity: 0;
-  transform: translate(-50%, calc(-50% + var(--space-3)));
-  transition:
-    opacity var(--transition-fast),
-    transform var(--transition-smooth);
-  pointer-events: none;
+  transform: translate(-50%, -50%);
 }
 
-#first-run-launcher[hidden] {
+#first-run-launcher[hidden],
+.first-run-actions [hidden] {
   display: none;
 }
 
-#first-run-launcher.visible {
-  opacity: 1;
-  transform: translate(-50%, -50%);
-  pointer-events: auto;
-}
-
-.first-run-header,
-.first-run-footer {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+#first-run-progress {
   color: var(--text-2);
   font: var(--type-caption);
+  margin: 0 0 var(--space-1);
 }
 
-.first-run-kicker {
-  font: var(--type-label);
-}
-
-#first-run-launcher .kit-panel-title {
-  flex: none;
-  margin-top: var(--space-2);
+#first-run-title {
+  margin: 0;
 }
 
 #first-run-description {
-  max-width: 29rem;
-  margin-top: var(--space-1);
   color: var(--text-2);
   font: var(--type-body);
+  margin: var(--space-2) 0 var(--space-4);
 }
 
-.first-run-choices {
-  display: grid;
-  gap: var(--space-2);
-  margin-top: var(--space-4);
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scroll-behavior: smooth;
-  scrollbar-width: thin;
-  scrollbar-color: var(--text-3) transparent;
-  scrollbar-gutter: stable;
-}
-
-.first-run-choices button {
-  display: grid;
-  grid-template-columns: var(--space-5) minmax(0, 1fr) var(--space-4);
-  gap: var(--space-3);
-  width: 100%;
-  min-height: 3.55rem;
-  padding: var(--space-2) var(--space-3);
-  text-align: left;
-  white-space: normal;
-}
-
-.first-run-choices button:focus-visible {
-  outline-offset: -3px;
-}
-
-/* Keep the active button focusable while its mission runs. */
-.first-run-choices button[aria-disabled='true'] {
-  cursor: wait;
-  pointer-events: none;
-}
-
-.first-run-choices button > span {
-  display: grid;
-}
-
-.first-run-choices strong {
-  font: var(--type-label);
-}
-
-.first-run-choices small {
-  color: var(--text-2);
-  font: var(--type-small);
-}
-
-.first-run-icon,
-.first-run-arrow {
-  width: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.first-run-icon {
-  color: var(--accent);
-}
-
-.first-run-arrow {
-  color: var(--text-2);
-}
-
-.first-run-footer {
-  margin-top: var(--space-3);
-}
-
-.first-run-suppress {
+.first-run-actions,
+.first-run-navigation {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  color: var(--text-1);
-  font: var(--type-control);
-  cursor: pointer;
 }
 
-.first-run-suppress input {
-  width: var(--space-4);
-  height: var(--space-4);
-  margin: 0;
-  accent-color: var(--accent);
-  cursor: pointer;
+.first-run-actions {
+  justify-content: space-between;
 }
 
-/* Hold one row for mission progress and errors. */
-.first-run-note {
-  min-height: 1lh;
-  margin-top: var(--space-2);
-}
-
-#first-run-launcher[data-state='loading'] .first-run-note {
-  color: var(--accent);
-}
-
-/* Keep this list in sync with EXCLUSIVE_SURFACE_CLASSES for Escape ownership. */
 body.ui-clean-view #first-run-launcher,
 body.recording-mode #first-run-launcher,
 body.cockpit-mode #first-run-launcher,
 body.scene-playback-mode #first-run-launcher {
   display: none;
-}
-
-@media (max-width: 620px) {
-  #first-run-launcher {
-    --first-run-bottom: 5.8rem;
-    top: auto;
-    bottom: var(--first-run-bottom);
-    max-height: calc(100vh - var(--first-run-bottom) - var(--space-3));
-    max-height: calc(100dvh - var(--first-run-bottom) - var(--space-3));
-    padding: var(--space-3);
-    transform: translate(-50%, var(--space-3));
-  }
-
-  #first-run-launcher.visible {
-    transform: translate(-50%, 0);
-  }
-
-  .first-run-choices button {
-    min-height: 3rem;
-  }
-
-  .first-run-footer > span:last-child {
-    display: none;
-  }
-}
-
-/* Keep the header and footer available while choices scroll on short screens. */
-@media (max-height: 620px) {
-  #first-run-launcher {
-    padding: var(--space-3);
-  }
-
-  .first-run-choices,
-  .first-run-footer {
-    margin-top: var(--space-2);
-  }
-
-  .first-run-choices button {
-    min-height: 2.7rem;
-  }
-}
-
-/* Only mask the list when it overflows, and remove the fade at its end. */
-.first-run-choices[data-scrollable='true'] {
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    currentColor calc(100% - var(--space-5)),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    currentColor calc(100% - var(--space-5)),
-    transparent 100%
-  );
-}
-
-@supports (animation-timeline: scroll(self block)) {
-  .first-run-choices[data-scrollable='true'] {
-    animation: first-run-scroll-fade linear both;
-    animation-timeline: scroll(self block);
-    animation-range: contain 80% contain 100%;
-  }
-}
-
-@keyframes first-run-scroll-fade {
-  to {
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      currentColor 100%,
-      transparent 100%
-    );
-    mask-image: linear-gradient(to bottom, currentColor 100%, transparent 100%);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #first-run-launcher,
-  .first-run-choices button {
-    transition: none;
-  }
-
-  .first-run-choices {
-    scroll-behavior: auto;
-  }
 }

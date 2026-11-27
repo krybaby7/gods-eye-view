@@ -1129,7 +1129,7 @@ async function clearFirstRun(page) {
     timeout: 150_000,
   });
   await page.evaluate(() =>
-    document.querySelector('.first-run-explore')?.click(),
+    document.querySelector('[data-first-run-skip]')?.click(),
   );
   await wait(500);
   await page.keyboard.press('Escape');

@@ -54,7 +54,7 @@ try {
       if (m.type() === 'error') result.errors.push(m.text());
     });
     await page.evaluateOnNewDocument(() =>
-      sessionStorage.setItem('gev:first-run-mission-session:v1', 'dismissed'),
+      sessionStorage.setItem('gev:first-run-tour:v1', 'seen'),
     );
     const url = new URL(args.find((a) => /^https?:/.test(a)));
     url.searchParams.set('trafficRoads', mode);

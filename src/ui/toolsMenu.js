@@ -78,6 +78,7 @@ export function createToolsMenu({
   const moved = [];
 
   const items = MENU_SECTIONS.map((name) => find(`frame-menu-item-${name}`));
+  const tour = find('frame-menu-item-tour');
   const panels = Object.fromEntries(
     MENU_SECTIONS.map((name) => [name, find(`frame-menu-${name}`)]),
   );
@@ -130,7 +131,8 @@ export function createToolsMenu({
   }
 
   // ── The list ──
-  const enabledItems = () => items.filter((item) => item && !item.hidden);
+  const enabledItems = () =>
+    [...items, tour].filter((item) => item && !item.hidden);
   function setListOpen(state, { focus = false } = {}) {
     list.hidden = !state;
     button.setAttribute('aria-expanded', String(state));
@@ -171,6 +173,7 @@ export function createToolsMenu({
       open(name);
     }),
   );
+  listen(tour, 'click', () => setListOpen(false, { focus: true }));
   listen(document, 'pointerdown', (event) => {
     if (list.hidden) return;
     const host = button.parentNode;

@@ -141,7 +141,9 @@ try {
   page.on('pageerror', (error) =>
     report.errors.push(error.stack || error.message),
   );
-  await page.goto(options.url.href, {
+  const startupUrl = new URL(options.url);
+  if (options.panel === 'welcome') startupUrl.searchParams.delete('welcome');
+  await page.goto(startupUrl.href, {
     waitUntil: 'domcontentloaded',
     timeout: wait.timeout,
   });
@@ -217,7 +219,33 @@ try {
   if (options.panel === 'keys') await verifyKeysQuery(page, wait);
   if (options.panel === 'welcome') {
     stage = 'welcome';
-    await captureWelcome({ page, options, out, report, markFrameStage, wait });
+    await captureWelcome({
+      page,
+      options,
+      out,
+      report,
+      markFrameStage,
+      wait,
+      verifyWelcomeReload: async () => {
+        const returning = await browser.newPage();
+        try {
+          await installFixtures(returning, startupUrl.origin, world, report, {
+            strict: true,
+          });
+          await returning.goto(startupUrl.href, {
+            waitUntil: 'domcontentloaded',
+            timeout: wait.timeout,
+          });
+          await returning.waitForSelector(
+            '#frame-menu-item-tour:not([hidden])',
+            wait,
+          );
+          await returning.waitForSelector('#first-run-launcher[hidden]', wait);
+        } finally {
+          await returning.close();
+        }
+      },
+    });
   }
   stage = 'country-pick';
   await markFrameStage(stage);
