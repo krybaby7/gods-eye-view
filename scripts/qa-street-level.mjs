@@ -329,11 +329,11 @@ async function clearFirstRun(page) {
     timeout: 150_000,
   });
   await page.evaluate(() =>
-    document.querySelector('.first-run-explore')?.click(),
+    document.querySelector('[data-first-run-skip]')?.click(),
   );
   await settle(
     page,
-    () => !document.querySelector('.first-run-explore'),
+    () => !document.querySelector('#first-run-launcher:not([hidden])'),
     null,
     {
       timeout: 3_000,

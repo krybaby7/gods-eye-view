@@ -255,7 +255,7 @@ async function main() {
       await page.setViewport({ width: 1600, height: 900 });
       await page.evaluateOnNewDocument(() => {
         // This harness inspects cards, so keep first-run chrome out of the view.
-        localStorage.setItem('gev:first-run-mission:v1', 'suppressed');
+        localStorage.setItem('gev:first-run-tour:v1', 'seen');
       });
       page.on('pageerror', (err) => console.error(`    [page-error] ${err.message}`));
 
