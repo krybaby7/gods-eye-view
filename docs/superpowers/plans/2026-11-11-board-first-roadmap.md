@@ -689,6 +689,27 @@ Added on 2026-11-18:
     Pieces with separate files run in parallel. The owner will review the layouts and sources
     before choosing a direction. The priorities in decision 37 remain open.
 
+Added on 2026-11-27:
+
+40. **Make Global Eye View ready for the owner's test.** The owner asked to “make sure our app is
+    complete (for my personal use but still i want it polished) so I can properly test it and see
+    what i d like to change/keep/deepen”. They asked for “GPT Astra as the orchestrator that does
+    the thinking, and GPT 6.2 Sol agents as the ones that do all the legwork”. For this pass, Astra
+    directs and judges the evidence. GPT-6.2 Sol reads, builds, tests, independently reviews and
+    deploys. Decisions 33 and 34 govern merges.
+
+    The pass has eight outcomes: Today shows existing stories or a way forward, the welcome
+    introduces the board and offers a tour, the top bar has one search box, the visible name is
+    Global Eye View, Street level shares the panel design, fonts and icons ship with the app, an
+    independent fixture walk checks everything reachable from the frame, and the verified build
+    runs on the owner's PC. This resumes Street level (E) for the pass. The priorities in
+    decision 37 remain open.
+
+    The director's initial readings, for the owner to confirm, are to keep the npm package
+    identifier, use data already held in the browser for frame search with an explicit Enter
+    action for remote place lookup, and allow country-scale changes in Today alongside available
+    theatre stories.
+
 ## 6. Risks
 
 - **Stage 1 is bigger than it looks.** Most of its lines are in panels the owner did not write.
@@ -1005,10 +1026,10 @@ Raised on 2026-11-12 and not yet answered.
 ## 10. Building it
 
 Decisions 29 and 33 governed the builds below. The table records what merged and where work paused.
-Decision 37 paused unfinished work and decision 38 resumed F–L. Future feature priorities are
-for a fresh brainstorming chat.
+Decision 37 paused unfinished work, decision 38 resumed F–L and decision 40 resumed Street level
+for the test-ready pass. Future feature priorities are for a fresh brainstorming chat.
 
-| Order      | Piece                                                                | State on 2026-11-18                                                                             |
+| Order      | Piece                                                                | State on 2026-11-28                                                                             |
 | ---------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | Done       | The Jev filer and the connection allowance (decisions 26 and 27, R8) | Merged as pull request 25                                                                       |
 | 1          | Stage 0: the mock of six screens and the page of design tokens       | Done. Approved 2026-11-12 (decision 30)                                                         |
@@ -1019,7 +1040,8 @@ for a fresh brainstorming chat.
 | 6          | The layers menu (1.4)                                                | Merged as pull request 30 on 2026-11-17                                                         |
 | 7          | One look (1.3), A1, A2 and B to D                                    | Merged as pull requests 31, 33, 34, 35 and 36, with corrections in pull request 32              |
 | 8          | One look (1.3), F–L                                                  | Merged as pull request 37 on 2026-11-18 (decision 38)                                           |
-| Parked     | Street level (E) and visual regression tests (1.6)                   | Paused on 2026-11-18 (decisions 37 and 38)                                                      |
+| 9          | Test-ready pass                                                      | Name merged as pull request 38; other outcomes in progress (decision 40)                        |
+| Parked     | Visual regression tests (1.6)                                        | Paused on 2026-11-18 (decisions 37 and 38)                                                      |
 | Deployed   | Private deployment of main at `1e2e589e`                             | Running at `http://localhost:4173` on the owner’s PC (decision 37)                              |
 | Order open | Unfinished feature work                                              | Revisit priorities in a fresh brainstorming chat (decision 37)                                  |
 | Beside     | Track R                                                              | The original milestones are in section 4. The earlier roadmap recorded this track as unstarted. |
@@ -1614,6 +1636,15 @@ These are the director's readings, taken on the plan's recommendation and not ye
 The plan read the layers menu at its first stage, before it was joined to the tools menu, so part of
 what it says 1.4 removes is wrong: at the second stage 1.4 removes only `src/data/localLayers.js`.
 Each brief reads its files again on `main` after 1.4 merges.
+
+**Test-ready pass, the name.** Pull request 38 merged on 28 November. The app and its README
+show Global Eye View, and the README preserves the original project credit and the MIT notice.
+The npm package identifier and the existing machine-facing names are kept. The merge
+`85e59f6a` has the same tree as the tested head `659068c9`. The main suite passed 7,298 tests
+and skipped 10, and all 14 supplemental tests passed. Fixture browser checks covered the
+name, World Board, news, searches, lenses, legend, Layers, Weather, Cameras and resizing.
+The app showed its new name at 1280×720, 1440×900 and 1920×1080. An independent read verified
+the final change. The installed release remains at `1e2e589e`.
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
