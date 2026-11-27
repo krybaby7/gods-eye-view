@@ -407,6 +407,8 @@ export default async function phase8({
       await page.keyboard.press('ArrowDown');
       assert.equal(await focused(), 'frame-menu-item-display');
       await page.keyboard.press('End');
+      assert.equal(await focused(), 'frame-menu-item-tour');
+      await page.keyboard.press('ArrowUp');
       assert.equal(await focused(), 'frame-menu-item-tools');
       await page.keyboard.press('Escape');
       await page.waitForSelector('#frame-menu-list[hidden]', wait);

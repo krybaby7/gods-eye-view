@@ -40,7 +40,7 @@ export function startApplicationChrome({
   const delayTimer = setTimeout(resolveDelay, 1000);
   const revealFirstRun = () => {
     if (disposed || signal.aborted || firstRun) return;
-    firstRun = initializeWelcome?.({ styleManager, dataManager });
+    firstRun = initializeWelcome?.({ styleManager, documentRef: document });
     clearTimeout(revealTimer);
     loadingScreen.removeEventListener('transitionend', revealFirstRun);
   };

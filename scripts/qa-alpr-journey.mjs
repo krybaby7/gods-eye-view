@@ -181,7 +181,7 @@ try {
   page = await browser.newPage();
   await page.setViewport({ width: 1440, height: 900 });
   await page.evaluateOnNewDocument(() =>
-    sessionStorage.setItem('gev:first-run-mission-session:v1', 'dismissed'),
+    sessionStorage.setItem('gev:first-run-tour:v1', 'seen'),
   );
   page.on('console', (message) => {
     if (message.type() === 'error') result.consoleErrors.push(message.text());

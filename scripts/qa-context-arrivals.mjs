@@ -93,7 +93,7 @@ async function openPage({ aircraft = false } = {}) {
     ).push(`${response.status()} ${url.pathname}${url.search}`);
   });
   await page.evaluateOnNewDocument((aircraft) => {
-    sessionStorage.setItem('gev:first-run-mission-session:v1', 'dismissed');
+    sessionStorage.setItem('gev:first-run-tour:v1', 'seen');
     if (!aircraft) return;
     // Synthetic traffic through the app's own feed endpoints: one aircraft
     // flying north over Camp Mabry, one loitering near Fort Cavazos.

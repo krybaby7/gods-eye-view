@@ -21,8 +21,13 @@ test('HUD sliders and location search have descriptive explicit names', () => {
   }
 });
 
-test('the first-run checkbox keeps its native visible label', () => {
-  assert.match(html, /<label\b[^>]*class="first-run-suppress"[^>]*>\s*<input type="checkbox" data-first-run-suppress \/>\s*<span>Don't show this again<\/span>\s*<\/label>/);
+test('the welcome stays outside the accessibility tree until it opens', () => {
+  const dialog = html.match(/<aside\s+id="first-run-launcher"[^>]*>/)?.[0];
+  assert.ok(dialog);
+  assert.match(dialog, /\bhidden\b/);
+  assert.match(dialog, /role="dialog"/);
+  const title = dialog.match(/aria-labelledby="([^"]+)"/)?.[1];
+  assert.ok(title && html.includes(`id="${title}"`));
 });
 
 test('generated style sliders use the visible parameter label as their name', () => {

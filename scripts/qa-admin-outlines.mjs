@@ -84,7 +84,7 @@ let marker = 'startup';
 try {
   page = await browser.newPage();
   await page.evaluateOnNewDocument(() => {
-    sessionStorage.setItem('gev:first-run-mission-session:v1', 'dismissed');
+    sessionStorage.setItem('gev:first-run-tour:v1', 'seen');
   });
   await page.setViewport({ width: 1280, height: 800 });
   const client = await page.createCDPSession();

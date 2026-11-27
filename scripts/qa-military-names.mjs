@@ -62,7 +62,7 @@ try {
       result.packs.push(u.pathname);
   });
   await page.evaluateOnNewDocument(() =>
-    sessionStorage.setItem('gev:first-run-mission-session:v1', 'dismissed'),
+    sessionStorage.setItem('gev:first-run-tour:v1', 'seen'),
   );
   await page.goto(url + (url.includes('?') ? '&' : '?') + 'welcome=0', {
     waitUntil: 'domcontentloaded',

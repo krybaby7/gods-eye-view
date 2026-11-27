@@ -299,7 +299,7 @@ let page;
 try {
   page = await browser.newPage();
   await page.evaluateOnNewDocument(() => {
-    sessionStorage.setItem('gev:first-run-mission-session:v1', 'dismissed');
+    sessionStorage.setItem('gev:first-run-tour:v1', 'seen');
   });
   await page.setViewport({ width: 1440, height: 1000 });
   beginView('startup');
@@ -1170,7 +1170,7 @@ try {
       page = await browser.newPage();
       await page.setViewport({ width: 1440, height: 1000 });
       await page.evaluateOnNewDocument(() => {
-        sessionStorage.setItem('gev:first-run-mission-session:v1', 'dismissed');
+        sessionStorage.setItem('gev:first-run-tour:v1', 'seen');
         const original = window.fetch;
         window.fetch = (input, init) =>
           new URL(typeof input === 'string' ? input : input.url, location.href)
