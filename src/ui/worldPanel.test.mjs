@@ -201,3 +201,86 @@ test('the panel shows the failed tick save alongside queued manual progress', (t
   assert.match(status, /Loading World Board · 1 \/ 2 sources/);
   assert.match(status, /could not be saved/);
 });
+
+test('sheet close lets an owning caller restore focus after the sheet is hidden', async (t) => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    disconnect() {}
+  };
+  t.after(() => delete globalThis.ResizeObserver);
+  const document = panelDocument();
+  const sheet = document.getElementById('world-character-sheet');
+  const close = document.getElementById('world-sheet-close');
+  const opener = document.getElementById('frame-today-open');
+  const setup = {
+    enabled: true,
+    lenses: [{ id: 'condition', label: 'Condition' }],
+    lens: 'condition',
+    indicators: load('indicators'),
+    sources: load('sources'),
+    countryIndex: [],
+    features: {},
+    countries: {
+      IND: { name: 'India', coverage: { known: 0, total: 18 }, slots: {} },
+    },
+    selected: 'IND',
+  };
+  let snapshot = setup;
+  let owned = true;
+  const listeners = new Set();
+  function publish(next) {
+    snapshot = next;
+    for (const listener of listeners) listener(snapshot);
+  }
+  const panel = createWorldPanel({
+    document,
+    takeCountryReturnFocus() {
+      if (!owned) return null;
+      return () => {
+        assert.equal(sheet.hidden, true);
+        opener.focus();
+      };
+    },
+    layer: {
+      getSnapshot: () => snapshot,
+      subscribe(listener) {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+      getDetail: async () => null,
+      clearSelection: () => publish({ ...setup, selected: null }),
+    },
+  });
+  t.after(() => panel.destroy());
+
+  close.focus();
+  close.click();
+  assert.equal(sheet.hidden, true);
+  assert.notEqual(document.activeElement?.dataset.worldLens, 'condition');
+  await Promise.resolve();
+  assert.equal(document.activeElement?.id, opener.id);
+
+  publish(setup);
+  const heading = document.getElementById('world-sheet-name');
+  heading.focus();
+  let prevented = false;
+  sheet.dispatchEvent({
+    type: 'keydown',
+    target: heading,
+    key: 'Escape',
+    preventDefault() {
+      prevented = true;
+    },
+    stopPropagation() {},
+  });
+  assert.equal(prevented, true);
+  assert.equal(sheet.hidden, true);
+  await Promise.resolve();
+  assert.equal(document.activeElement?.id, opener.id);
+
+  owned = false;
+  publish(setup);
+  close.focus();
+  close.click();
+  assert.equal(document.activeElement?.dataset.worldLens, 'condition');
+});

@@ -418,6 +418,19 @@ export function createWorldLayer({
       return source.getDetail(country, lens, options);
     },
 
+    selectCountry(iso3) {
+      const country = /^[A-Z]{3}$/.test(iso3) && snapshot.countries[iso3];
+      if (!lifecycle || !country || country.kind === 'disputed') return false;
+      select(iso3);
+      return true;
+    },
+
+    countryCenter(iso3) {
+      const country = /^[A-Z]{3}$/.test(iso3) && snapshot.countries[iso3];
+      if (!lifecycle || !country || country.kind === 'disputed') return null;
+      return geometry?.labelPoint(iso3) ?? null;
+    },
+
     clearSelection() {
       if (selected || card) select(null);
     },

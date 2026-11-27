@@ -198,7 +198,11 @@ function turnList(document, turn, fallback) {
   return list;
 }
 
-export function createWorldPanel({ layer, document = globalThis.document }) {
+export function createWorldPanel({
+  layer,
+  document = globalThis.document,
+  takeCountryReturnFocus,
+}) {
   const find = (id) => document.getElementById(id);
   const bar = find('world-lens-bar');
   const legend = find('world-legend');
@@ -568,17 +572,32 @@ export function createWorldPanel({ layer, document = globalThis.document }) {
   turnChip.addEventListener('click', () => setTurnOpen(turnPopup.hidden), {
     signal,
   });
-  close.addEventListener(
-    'click',
-    () => {
-      if (layer.getSnapshot().card) {
-        layer.closeCard();
-        return;
-      }
+  function closeSheet({ onlyOwned = false } = {}) {
+    const { card, selected } = layer.getSnapshot();
+    if (card) {
+      if (onlyOwned) return false;
+      layer.closeCard();
+      return true;
+    }
+    const returnFocus = selected ? takeCountryReturnFocus?.() : null;
+    if (onlyOwned && !returnFocus) return false;
+    if (!returnFocus)
       lensButtons
         .find((node) => node.getAttribute('aria-pressed') === 'true')
         ?.focus();
-      layer.clearSelection();
+    layer.clearSelection();
+    // The Sheet and frame observers see the closed state before focus returns.
+    if (returnFocus) queueMicrotask(returnFocus);
+    return true;
+  }
+  close.addEventListener('click', () => closeSheet(), { signal });
+  sheet.addEventListener(
+    'keydown',
+    (event) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (!closeSheet({ onlyOwned: true })) return;
+      event.preventDefault();
+      event.stopPropagation();
     },
     { signal },
   );

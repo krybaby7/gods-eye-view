@@ -1,3 +1,4 @@
+import { Cartesian3 } from 'cesium';
 import { SceneDirector } from '../scenes/director.js';
 import { initAnnotations } from '../annotations/index.js';
 import { initDrawTool } from '../annotations/drawTool.js';
@@ -7,7 +8,7 @@ import { createSituationPanel } from '../ui/situationPanel.js';
 import { createSearchesPanel } from '../ui/searchesPanel.js';
 import { createWorldPanel } from '../ui/worldPanel.js';
 import { createFrame } from '../ui/frame.js';
-import { createToolsMenu } from '../ui/toolsMenu.js';
+import { createToolsMenu, openMenuSection } from '../ui/toolsMenu.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
 import { installViews, isEmbeddedInline } from './embed.js';
 import { installScopeMask, destroyScopeMask } from '../scopeMask.js';
@@ -136,10 +137,14 @@ export function createApplicationTools({
   if (startChrome)
     defer(startChrome({ loadingScreen, styleManager, dataManager, signal }));
   const world = dataManager.layers.get('world')?.module;
+  let frame;
   if (world) {
     // The sheet sits in the frame's right column and is open whenever it has
     // something to show, so the panel needs no opener.
-    const panel = createWorldPanel({ layer: world });
+    const panel = createWorldPanel({
+      layer: world,
+      takeCountryReturnFocus: () => frame?.takeCountryReturnFocus?.(),
+    });
     defer(() => panel.destroy());
   }
   // Idle render governor: flips the scene into requestRenderMode whenever
@@ -228,9 +233,30 @@ export function createApplicationTools({
   debug.voiceCommands = voiceCommands;
   // The frame comes last: its bottom bar delegates to the zoom and voice
   // controls built above.
-  const frame = createFrame({
+  function frameCountry(iso3) {
+    const center = world?.countryCenter?.(iso3);
+    if (!center) return false;
+    return styleManager.runImmediateNavigation('country', () => {
+      viewer.camera.flyTo({
+        // Keep this a board-scale view, clear of individual map objects.
+        destination: Cartesian3.fromDegrees(center.lon, center.lat, 5_500_000),
+        orientation: { heading: 0, pitch: -Math.PI / 2, roll: 0 },
+        duration: 1.5,
+      });
+      return true;
+    });
+  }
+  frame = createFrame({
     requestRender: governorRequestRender,
     world,
+    news,
+    openSources: () => openMenuSection('sources'),
+    openCountry: (iso3) => {
+      if (!world?.selectCountry?.(iso3)) return false;
+      frameCountry(iso3);
+      return true;
+    },
+    frameCountry,
   });
   defer(() => frame.destroy());
   // The top bar's menu takes the original tools off the globe, after the

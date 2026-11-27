@@ -661,22 +661,100 @@ body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
 .frame-empty {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 16px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--line-soft);
+}
+
+.frame-empty[hidden],
+.frame-today-list[hidden],
+.frame-today-more[hidden] {
+  display: none;
 }
 
 .frame-empty p {
   margin: 0;
 }
 
-.frame-empty-title {
-  font: var(--type-heading);
+.frame-empty .frame-btn {
+  align-self: flex-start;
 }
 
 .frame-empty-text {
   font: var(--type-small);
   color: var(--text-2);
+}
+
+.frame-today-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line-soft);
+}
+
+.frame-today-row {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--surface-1);
+  color: var(--text-1);
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.frame-today-row:hover {
+  background: var(--surface-2);
+}
+
+.frame-today-row[aria-expanded='true'] {
+  background: var(--surface-3);
+}
+
+.frame-today-row:focus-visible {
+  outline-offset: -2px;
+}
+
+.frame-today-title {
+  font: var(--type-heading);
+}
+
+.frame-today-context {
+  margin: 0;
+  color: var(--text-2);
+  font: var(--type-caption);
+}
+
+.frame-today-reason {
+  color: var(--text-2);
+  font: var(--type-small);
+}
+
+.frame-today-more {
+  margin: var(--space-3) var(--space-4);
+}
+
+.frame-today-story-body {
+  color: var(--text-1);
+  font: var(--type-body);
+  overflow-wrap: anywhere;
+}
+
+.frame-today-story-body h3 {
+  margin: var(--space-3) 0 var(--space-2);
+  font: var(--type-heading);
+}
+
+.frame-today-story-body ul {
+  margin: 0;
+  padding-inline-start: var(--space-4);
+}
+
+.frame-today-source-link {
+  color: var(--link);
 }
 
 /* ── The sheet: content first ── */
