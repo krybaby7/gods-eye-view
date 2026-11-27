@@ -204,6 +204,10 @@ const RECOGNIZED = new Set([
   '#command-dock:has(#control-panel:not(.collapsed))',
   // the frame (roadmap 1.2): resolved by the frame test below
   'body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(.ui-embed) #cesium-credits',
+  // Cockpit hides the dock. qa-look checks its credit against the actual
+  // flight instruments and controls in portrait and landscape.
+  'body.cockpit-mode:not(.ui-clean-view):not(.recording-mode) #cesium-credits',
+  'body.cockpit-mode:is(.recording-mode, .ui-clean-view) #cesium-credits',
   'body.gev-frame:not(.ui-clean-view):not(.recording-mode):not(.cockpit-mode):not(.ui-embed) #command-dock',
   // rail
   '#right-context-rail',
@@ -488,13 +492,24 @@ test('custom properties inside modelled offsets are provably non-negative', () =
   assert.match(writer, /const stackHeight =\s*pinnedCount > 1[\s\S]{0,160}?`calc\(\$\{locationHeightPx\}px \+ \$\{presetsHeightPx\}px \+ 1\.2rem\)`/);
 });
 
+test('the Cesium credit row stays inside its positioned backing', () => {
+  const row = RULES.find(({ parts }) =>
+    parts.includes('#cesium-credits > .cesium-widget-credits'),
+  );
+  assert.ok(row, 'Cesium gives the app credit container a positioned child');
+  const declarations = new Map(row.decls.map(({ prop, value }) => [prop, value]));
+  assert.equal(declarations.get('position'), 'static');
+  assert.equal(declarations.get('font'), 'inherit');
+  assert.equal(declarations.get('color'), 'inherit');
+});
+
 test('the inputs behind the measured constants are unchanged', () => {
   // 28px credit / 62px dock are measured, not derived. Guard the CSS that
   // determines them so a change forces a re-measure instead of a silent drift.
   const creditBase = RULES.find((rule) => rule.parts.length === 1 && rule.parts[0] === '#cesium-credits');
   assert.ok(creditBase, '#cesium-credits base rule is missing');
   const declOf = (rule, prop) => rule.decls.find((decl) => decl.prop === prop)?.value;
-  assert.equal(declOf(creditBase, 'font-size'), '10px', 'credit font-size drives its measured 28px height');
+  assert.equal(declOf(creditBase, 'font'), 'var(--type-caption)', 'attribution uses the shared legible caption treatment');
   assert.equal(declOf(creditBase, 'white-space'), 'nowrap', 'a wrapping credit is taller than the measured 28px');
   for (const prop of ['height', 'min-height', 'max-height', 'line-height', 'padding']) {
     assert.equal(declOf(creditBase, prop), undefined, `#cesium-credits gained ${prop}; re-measure CREDIT_HEIGHT_PX`);
@@ -625,6 +640,19 @@ test('the tray only spans the credit corner at the widths the model covers', () 
     && rule.decls.some((decl) => decl.prop === 'width' && decl.value.includes('--dock-popover-mobile-width')));
   assert.equal(widened.length, 1);
   assert.equal(parseMediaCondition(widened[0].media[0]), 900);
+});
+
+test('compact Cockpit recording and clean view use the reserved credit strip', () => {
+  const compact = 'body.cockpit-mode:is(.recording-mode, .ui-clean-view) #cesium-credits';
+  for (const mode of ['recording-mode', 'ui-clean-view']) {
+    const standard = `body.${mode} #cesium-credits`;
+    for (const width of [390, 667, 760]) {
+      const credit = resolve(['#cesium-credits', standard, compact], 'bottom', width, mode);
+      assert.equal(credit.part, compact);
+      assert.equal(credit.decl.value, 'var(--cockpit-credit-bottom)');
+    }
+    assert.equal(resolve(['#cesium-credits', standard, compact], 'bottom', 761, mode).part, standard);
+  }
 });
 
 test('the credit line is never suppressed to make room', () => {

@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { createRecentImageryPanel } from './recentImagery.js';
 import { createRecentImageryLayer } from '../layers/recentImagery/index.js';
 import {
@@ -366,7 +365,7 @@ test('the readout mounts in the rail body, hides while the layer is off and open
   assert.equal(panel.hidden, false);
   assert.equal(f.collapse.clicked, 1, 'first appearance expands');
   assert.equal(panel.classList.contains('collapsed'), false);
-  assert.equal(f.count.textContent, '4 DAYS');
+  assert.equal(f.count.textContent, '4 days');
   f.collapse.click();
   f.layer.disable();
   f.layer.enable();
@@ -383,7 +382,7 @@ test('the readout mounts in the rail body, hides while the layer is off and open
   assert.equal(g.collapse.clicked, 0);
 });
 
-test('the body is a fixed stack of seven blocks in a fixed order, each with a fixed height in the stylesheet', () => {
+test('the body uses the shared kit in its seven-block reading order', () => {
   const f = fixture();
   assert.deepEqual(
     f.root.children.map((node) => node.id || node.className),
@@ -397,150 +396,14 @@ test('the body is a fixed stack of seven blocks in a fixed order, each with a fi
       'ri-details',
     ],
   );
-  const css = readFileSync(
-    new URL('./styles/recent-imagery.css', import.meta.url),
-    'utf8',
-  );
-  const rule = (selector) => {
-    const start = css.indexOf(`${selector} {`);
-    assert.ok(start >= 0, selector);
-    return css.slice(start, css.indexOf('}', start));
-  };
-  assert.match(rule('.recent-imagery-readout .ri-actions-row'), /height: 22px/);
-  assert.match(rule('.recent-imagery-readout .ri-line'), /height: 14px/);
-  assert.match(rule('.recent-imagery-readout .ri-strip'), /height: 120px/);
-  assert.match(rule('.recent-imagery-readout .ri-card'), /height: 112px/);
-  assert.match(
-    rule('.recent-imagery-readout .ri-selection'),
-    /grid-template-rows: 20px 20px 20px/,
-  );
-  assert.match(rule('.recent-imagery-readout .ri-slot'), /height: 20px/);
-  assert.match(rule('.recent-imagery-readout .ri-controls'), /height: 22px/);
-  assert.match(
-    rule('.recent-imagery-readout .is-reserved'),
-    /visibility: hidden/,
-  );
+  assert.ok(f.byId('ri-mode').classList.contains('kit-seg'));
+  assert.ok(f.byAction('select-box').classList.contains('kit-chip'));
+  assert.ok(f.byId('ri-swap').classList.contains('kit-btn'));
+  assert.ok(f.byId('ri-details').children[0].classList.contains('kit-card'));
 });
 
-/*
- * A DOM-structure guard, not a layout-shift check: the fake DOM has no
- * layout, so this pins what the layout rests on (every control keeps its
- * place in the tree, nothing is hidden, and every block that must not change
- * height keeps the class the stylesheet fixes it by). The live gate
- * `scripts/qa-recent-imagery.mjs` measures the real rectangles.
- */
-test('no control changes place in the tree, no block is hidden and every fixed-height block keeps its height class across every state (DOM-structure guard)', async () => {
+test('controls and reserved slots stay mounted in every imagery state', async () => {
   const f = fixture();
-  const cssRule = (file, selector) => {
-    const css = readFileSync(new URL(file, import.meta.url), 'utf8');
-    const start = css.indexOf(`${selector} {`);
-    assert.ok(start >= 0, `${file} has ${selector}`);
-    return css.slice(start, css.indexOf('}', start));
-  };
-  const readout = (selector) =>
-    cssRule(
-      './styles/recent-imagery.css',
-      `.recent-imagery-readout ${selector}`,
-    );
-  /**
-   * Every block that must keep its height: the node carrying the class, that
-   * class, and the rule it gets its height from. The mode row is the first
-   * 20 px track of the selection grid. The details header has no height of
-   * its own: it is the last block, so it moves nothing below it, and its
-   * title is held to one line.
-   */
-  const fixedHeightBlocks = () => {
-    const mode = f.byId('ri-mode');
-    const header = f
-      .byId('ri-details')
-      .find((node) => node.classList.contains('rail-card-header'));
-    return {
-      'ri-actions': [
-        f.byId('ri-actions'),
-        'ri-actions-row',
-        readout('.ri-actions-row'),
-        /height: 22px/,
-      ],
-      'ri-notice': [
-        f.byId('ri-notice'),
-        'ri-line',
-        readout('.ri-line'),
-        /height: 14px/,
-      ],
-      'ri-zoom-in': [
-        f.byId('ri-zoom-in')?.parentNode === f.byId('ri-notice')
-          ? f.byId('ri-zoom-in')
-          : null,
-        'ri-zoom-in',
-        readout('.ri-zoom-in'),
-        /height: 14px/,
-      ],
-      'ri-strip': [
-        f.byId('ri-strip'),
-        'ri-strip',
-        readout('.ri-strip'),
-        /height: 120px/,
-      ],
-      'ri-hint': [
-        f.byId('ri-hint'),
-        'ri-line',
-        readout('.ri-line'),
-        /height: 14px/,
-      ],
-      'ri-mode': [
-        mode.parentNode.children[0] === mode ? mode.parentNode : null,
-        'ri-selection',
-        readout('.ri-selection'),
-        /grid-template-rows: 20px 20px 20px/,
-      ],
-      'ri-slot-a': [
-        f.byId('ri-slot-a'),
-        'ri-slot',
-        readout('.ri-slot'),
-        /height: 20px/,
-      ],
-      'ri-slot-b': [
-        f.byId('ri-slot-b'),
-        'ri-slot',
-        readout('.ri-slot'),
-        /height: 20px/,
-      ],
-      'ri-controls': [
-        f.byId('ri-controls'),
-        'ri-controls',
-        readout('.ri-controls'),
-        /height: 22px/,
-      ],
-      'ri-swap': [
-        f.byId('ri-swap')?.parentNode === f.byId('ri-controls')
-          ? f.byId('ri-swap')
-          : null,
-        'data-toggle-chip',
-        readout('.data-toggle-chip'),
-        /height: 22px/,
-      ],
-      'details header': [
-        f.root.children.at(-1) === f.byId('ri-details')
-          ? header?.find((node) => node.classList.contains('rail-card-title'))
-          : null,
-        'rail-card-nowrap',
-        cssRule('./styles/kit.css', '.rail-card-nowrap'),
-        /white-space: nowrap/,
-      ],
-    };
-  };
-  const assertFixedHeights = (label) => {
-    for (const [name, [node, className, rule, fixed]] of Object.entries(
-      fixedHeightBlocks(),
-    )) {
-      assert.ok(node, `${name} is in place (${label})`);
-      assert.ok(
-        node.classList.contains(className),
-        `${name} carries .${className} (${label})`,
-      );
-      assert.match(rule, fixed, `.${className} fixes ${name}`);
-    }
-  };
   const controls = () => ({
     'select-box': f.byAction('select-box'),
     'use-view': f.byAction('use-view'),
@@ -589,11 +452,9 @@ test('no control changes place in the tree, no block is hidden and every fixed-h
     return out;
   };
   const baseline = layout();
-  assertFixedHeights('built');
   const states = [];
   const record = (label) => {
     assert.deepEqual(layout(), baseline, label);
-    assertFixedHeights(label);
     states.push(label);
   };
   f.layer.enable();
@@ -638,7 +499,7 @@ test('no control changes place in the tree, no block is hidden and every fixed-h
   assert.equal(states.length, 12);
 });
 
-test('cards carry thumbnail, date, sensor, cloud, START HERE and PREVIEW; the chips follow the mode without moving', async () => {
+test('cards carry thumbnail, date, sensor, cloud, Start here and Preview; the chips follow the mode without moving', async () => {
   const f = fixture();
   await f.ready();
   f.thumbnails.setStatus(S18, 'present');
@@ -650,7 +511,7 @@ test('cards carry thumbnail, date, sensor, cloud, START HERE and PREVIEW; the ch
   assert.equal(f.part(s18, 'ri-card-cloud').textContent, '12% cloud');
   assert.equal(f.part(s18, 'ri-card-start').hidden, false);
   assert.match(f.part(s18, 'ri-card-start').title, /Newest low-cloud day/);
-  assert.equal(f.part(s18, 'ri-card-flag').textContent, 'PREVIEW');
+  assert.equal(f.part(s18, 'ri-card-flag').textContent, 'Preview');
   assert.equal(
     f.part(f.card(V21), 'ri-card-cloud').textContent,
     'cloud unknown',
@@ -664,7 +525,7 @@ test('cards carry thumbnail, date, sensor, cloud, START HERE and PREVIEW; the ch
     f.part(f.card(L16), 'ri-card-sensor').textContent,
     'Landsat 8/9 · 30 m',
   );
-  // IMAGE: one SHOW chip; the B chip keeps its box but is invisible.
+  // Image: one Show chip; the B chip keeps its box but is invisible.
   const [a, b] = [f.chip(S18, 'a'), f.chip(S18, 'b')];
   assert.deepEqual(
     [
@@ -673,7 +534,7 @@ test('cards carry thumbnail, date, sensor, cloud, START HERE and PREVIEW; the ch
       b.classList.contains('is-reserved'),
       b.disabled,
     ],
-    ['SHOW', 'false', true, true],
+    ['Show', 'false', true, true],
   );
   assert.equal(a.getAttribute('aria-label'), 'Show Sep 18');
   a.click();
@@ -729,14 +590,14 @@ test('the selection bar reads the mode, both rows and a preview, with × reserve
       node.getAttribute('aria-checked'),
     ]),
     [
-      ['IMAGE', 'radio', 'true'],
-      ['VS BASEMAP', 'radio', 'false'],
+      ['Image', 'radio', 'true'],
+      ['Vs basemap', 'radio', 'false'],
       ['A / B', 'radio', 'false'],
     ],
   );
-  assert.equal(rowText(f, 'a'), 'IMAGE | Sep 18 · Sentinel-2 · 30 m · preview');
+  assert.equal(rowText(f, 'a'), 'Image | Sep 18 · Sentinel-2 · 30 m · preview');
   assert.equal(f.byId('ri-slot-a').dataset.state, 'preview');
-  assert.equal(rowText(f, 'b'), 'VS | Basemap');
+  assert.equal(rowText(f, 'b'), 'Vs | Basemap');
   assert.equal(f.byId('ri-slot-b').classList.contains('lit'), false, 'dimmed');
   const unpinA = f.byId('ri-unpin-a');
   assert.deepEqual(
@@ -748,7 +609,7 @@ test('the selection bar reads the mode, both rows and a preview, with × reserve
     [true, true, '×'],
   );
   f.key('s');
-  assert.equal(rowText(f, 'a'), 'IMAGE | Sep 18 · Sentinel-2 · 30 m');
+  assert.equal(rowText(f, 'a'), 'Image | Sep 18 · Sentinel-2 · 30 m');
   assert.equal(f.byId('ri-slot-a').dataset.state, 'pinned');
   assert.equal(unpinA.disabled, false);
   assert.equal(unpinA.getAttribute('aria-label'), 'Unpin the image');
@@ -854,7 +715,7 @@ test('Escape clears the preview first, then cancels the box tool, then blurs the
   assert.equal(idle.defaultPrevented, false);
 });
 
-test('the notice line shows the refusal, then errors, then CLEAR, then the Esri note; the hint names the next step and that SWAP trades the sides', async () => {
+test('the notice line shows the refusal, then errors, then CLEAR, then the Esri note; the hint names the next step and that Swap trades the sides', async () => {
   const controller = fakeController();
   let active = 'photoreal';
   controller.getActiveId = () => active;
@@ -886,11 +747,11 @@ test('the notice line shows the refusal, then errors, then CLEAR, then the Esri 
   f.chip(S18, 'a').click();
   assert.equal(hint.textContent, 'S on another day replaces it · × unpins');
   f.layer.setMode('basemap');
-  assert.equal(hint.textContent, 'Drag the divider · SWAP trades sides');
+  assert.equal(hint.textContent, 'Drag the divider · Swap trades sides');
   f.layer.setMode('ab');
   assert.equal(hint.textContent, '← → preview the other side · A or B pins it');
   f.chip(L16, 'b').click();
-  assert.equal(hint.textContent, 'Drag the divider · SWAP trades sides');
+  assert.equal(hint.textContent, 'Drag the divider · Swap trades sides');
   f.layer.setAssignment('b', null);
   f.layer.setAssignment('a', null);
   assert.equal(hint.textContent, '← → preview · A or B pins the focused day');
@@ -899,7 +760,7 @@ test('the notice line shows the refusal, then errors, then CLEAR, then the Esri 
   assert.equal(notice.classList.contains('info'), true);
 });
 
-test('an oversized box offers ZOOM IN in a fixed slot at the end of the notice line; it asks the layer to fit', async () => {
+test('an oversized box offers Zoom in in a fixed slot at the end of the notice line; it asks the layer to fit', async () => {
   const f = fixture();
   const flights = [];
   f.viewer.scene.canvas.clientHeight = 500;
@@ -913,7 +774,7 @@ test('an oversized box offers ZOOM IN in a fixed slot at the end of the notice l
   const notice = f.byId('ri-notice');
   const zoom = f.byId('ri-zoom-in');
   assert.equal(zoom.tagName, 'BUTTON');
-  assert.equal(zoom.textContent, 'ZOOM IN');
+  assert.equal(zoom.textContent, 'Zoom in');
   assert.equal(notice.children.at(-1), zoom, 'the right end of the line');
   const reserved = () => [
     zoom.classList.contains('is-reserved'),
@@ -948,7 +809,7 @@ test('an oversized box offers ZOOM IN in a fixed slot at the end of the notice l
   assert.deepEqual(reserved(), [true, true, 'true', false]);
 });
 
-test('the divider exists only while a swipe is live, labelled A / B or IMAGE / BASEMAP; SWAP trades its sides and Space does nothing', async () => {
+test('the divider exists only while a swipe is live, labelled A / B or Image / Basemap; Swap trades its sides and Space does nothing', async () => {
   const f = fixture();
   const swap = f.byId('ri-swap');
   const swapState = () => [
@@ -966,7 +827,7 @@ test('the divider exists only while a swipe is live, labelled A / B or IMAGE / B
     return [owned.a?.splitDirection, owned.b?.splitDirection];
   };
   assert.equal(swap.tagName, 'BUTTON');
-  assert.equal(swap.textContent, 'SWAP');
+  assert.equal(swap.textContent, 'Swap');
   assert.equal(swap.parentNode, f.byId('ri-controls'));
   await f.ready();
   await f.settleLease();
@@ -976,18 +837,18 @@ test('the divider exists only while a swipe is live, labelled A / B or IMAGE / B
   assert.equal(f.snap().swapped, false, 'no swipe, nothing to swap');
   f.layer.setMode('basemap');
   assert.equal(f.splits.length, 1);
-  assert.deepEqual(labels(), ['IMAGE', 'BASEMAP']);
+  assert.deepEqual(labels(), ['Image', 'Basemap']);
   assert.equal(f.splits[0].options.id, 'recent-imagery-split-line');
   assert.deepEqual(swapState(), [false, false, 'false', 'false']);
   assert.deepEqual(directions(), ['left', undefined]);
-  // VS BASEMAP: SWAP puts the image right of the basemap, and back.
+  // Vs basemap: Swap puts the image right of the basemap, and back.
   swap.click();
   assert.equal(f.snap().swapped, true);
-  assert.deepEqual(labels(), ['BASEMAP', 'IMAGE']);
+  assert.deepEqual(labels(), ['Basemap', 'Image']);
   assert.deepEqual(directions(), ['right', undefined]);
   assert.deepEqual(swapState(), [false, false, 'false', 'true']);
   swap.click();
-  assert.deepEqual(labels(), ['IMAGE', 'BASEMAP']);
+  assert.deepEqual(labels(), ['Image', 'Basemap']);
   assert.deepEqual(directions(), ['left', undefined]);
   f.layer.setMode('ab');
   f.layer.setAssignment('a', S18);
@@ -1009,7 +870,7 @@ test('the divider exists only while a swipe is live, labelled A / B or IMAGE / B
   }
   assert.equal(f.splits.at(-1), split, 'the divider is untouched');
   assert.equal(f.snap().swapped, false);
-  // SWAP: A moves right and B left, the labels follow; the divider stays.
+  // Swap: A moves right and B left, the labels follow; the divider stays.
   swap.click();
   assert.equal(split.destroyed, true);
   assert.deepEqual(labels(), ['B', 'A']);
@@ -1026,13 +887,13 @@ test('the divider exists only while a swipe is live, labelled A / B or IMAGE / B
   assert.deepEqual(labels(), ['A', 'B']);
   assert.deepEqual(directions(), ['left', 'right']);
   assert.equal(swap.getAttribute('aria-pressed'), 'false');
-  // Unpinning B ends the swipe and SWAP goes back to its reserved slot.
+  // Unpinning B ends the swipe and Swap goes back to its reserved slot.
   f.byId('ri-unpin-b').click();
   assert.equal(f.splits.at(-1).destroyed, true);
   assert.deepEqual(swapState(), [true, true, 'true', 'false']);
 });
 
-test('opacity drives both images; EXPORT downloads the pin or the preview and EXPORT B only exists in A / B', async () => {
+test('opacity drives both images; Export downloads the pin or the preview and Export B only exists in A / B', async () => {
   const f = fixture();
   await f.ready();
   const exportA = f.byAction('export-a');
@@ -1044,7 +905,7 @@ test('opacity drives both images; EXPORT downloads the pin or the preview and EX
       exportB.classList.contains('is-reserved'),
       exportB.disabled,
     ],
-    ['EXPORT', false, true, true],
+    ['Export', false, true, true],
   );
   f.byId('ri-opacity').value = '40';
   f.byId('ri-opacity').dispatch('input');
@@ -1074,7 +935,7 @@ test('opacity drives both images; EXPORT downloads the pin or the preview and EX
       exportB.textContent,
       exportB.classList.contains('is-reserved'),
     ],
-    ['EXPORT A', 'EXPORT B', false],
+    ['Export A', 'Export B', false],
   );
   const failing = fixture({
     fetchImpl: async () => response({ ok: false, status: 503 }),
@@ -1103,7 +964,7 @@ test('DETAILS is a collapsed rail card holding every note, and the empty-days to
   assert.match(text, /Sep 18, 2026 17:12Z/);
   assert.match(text, /Acquired 17:12Z–17:14Z · Coverage full/);
   assert.match(text, /S30-2026-09-18 · 17:12Z · 12% cloud/);
-  assert.match(text, /START HERE · newest clear day/);
+  assert.match(text, /Start here · newest clear day/);
   assert.match(
     text,
     /Daily overview for today may still be empty until the pass/,
@@ -1113,10 +974,10 @@ test('DETAILS is a collapsed rail card holding every note, and the empty-days to
   const toggle = f.byAction('toggle-empty');
   assert.equal(toggle.disabled, true, 'nothing hidden yet');
   f.thumbnails.probe(L16, 'empty');
-  assert.equal(toggle.textContent, 'SHOW EMPTY DAYS · 1');
+  assert.equal(toggle.textContent, 'Show empty days · 1');
   toggle.click();
   assert.equal(f.snap().showUnavailable, true);
-  assert.equal(toggle.textContent, 'HIDE EMPTY DAYS');
+  assert.equal(toggle.textContent, 'Hide empty days');
   header.click();
   assert.equal(article.dataset.open, 'false');
 });

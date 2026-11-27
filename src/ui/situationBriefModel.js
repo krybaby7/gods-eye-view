@@ -49,7 +49,7 @@ const BRIEF_ERRORS = Object.freeze({
   model_error: 'the model returned an error',
 });
 const RETRY_DISABLED_REASONS = Object.freeze({
-  no_key: 'Needs PERPLEXITY_API_KEY — add it in Provider Settings',
+  no_key: 'Needs PERPLEXITY_API_KEY — add it in Data sources and keys',
   over_budget: "Today's budget is used up",
   in_flight: 'A digest or brief is running',
 });

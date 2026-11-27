@@ -1,8 +1,8 @@
+import { RADIO_CATEGORY_COLORS } from '../../designTokens.js';
 import {
   RADIO_LABEL_SEGMENTER,
   RADIO_GLOBE_LABEL_MAX_CHARS,
   RADIO_GLOBE_INTERACTION_MAX_DISTANCE_M,
-  RADIO_CATEGORY_COLORS,
 } from './policy.js';
 
 export function createLabels({ state: layerState, services, parts, source }) {

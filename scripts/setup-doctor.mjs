@@ -178,7 +178,7 @@ export function buildCapabilitySummary(
     flights,
     voice: configured('OPENAI_API_KEY')
       ? 'available'
-      : 'off until an OpenAI key is added, or a Codex ChatGPT sign-in is selected in Provider Settings (experimental)',
+      : 'off until an OpenAI key is added, or a Codex ChatGPT sign-in is selected in Data sources and keys (experimental)',
     vessels: configured('AISSTREAM_API_KEY') ? 'live AISStream feed' : 'off until an AISStream key is added',
     fires: configured('FIRMS_MAP_KEY') ? 'live NASA FIRMS feed' : 'off until a FIRMS key is added',
     traffic: configured('TOMTOM_API_KEY') ? 'live TomTom flow' : 'built-in traffic simulation',
@@ -227,7 +227,7 @@ export function formatSetupReport(report, { readyMessage } = {}) {
     ? 'Ready. Run ./scripts/dev-fresh.sh, then open http://localhost:4173.'
     : 'Ready. Run npm run dev, then open http://localhost:4173.');
   const lines = [
-    "God's Eye View setup doctor",
+    "Global Eye View setup doctor",
     '',
     `[${symbol(report.node.level)}] Node ${report.node.version}: ${report.node.summary}`,
     report.npm.available ? `[OK] npm ${report.npm.version}` : '[ERROR] npm was not found',

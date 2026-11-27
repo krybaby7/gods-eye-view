@@ -99,7 +99,7 @@ test('KEY REQUIRED shows no raw error code under the pill', () => {
 
 test('a key Mapillary rejected reads KEY REJECTED and names the fix', () => {
   const error =
-    'Mapillary rejected MAPILLARY_CLIENT_TOKEN — replace it in Provider Settings';
+    'Mapillary rejected MAPILLARY_CLIENT_TOKEN — replace it in Data sources and keys';
   const view = presentStreetLevelPanel(
     snapshot({
       enabled: true,
@@ -523,7 +523,7 @@ test('KEY REQUIRED points at Street View when it would draw with the Google key'
     }),
   );
   const guidance =
-    'Needs MAPILLARY_CLIENT_TOKEN — add it in Provider Settings, or light STREET VIEW to use your Google Maps key';
+    'Needs MAPILLARY_CLIENT_TOKEN — add it in Data sources and keys, or light STREET VIEW to use your Google Maps key';
   assert.equal(view.status.text, 'KEY REQUIRED');
   assert.equal(view.status.title, guidance);
   assert.equal(view.meta, guidance);

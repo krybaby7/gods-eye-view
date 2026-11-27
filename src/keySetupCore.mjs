@@ -1,5 +1,5 @@
 /**
- * Key setup ("POWER UP") — the pure core.
+ * Data sources and keys — the pure core.
  *
  * One registry and pure functions; its only import is the proxy-header check
  * shared with the other local gates (localRequestGate.mjs). The dev server's
@@ -35,7 +35,7 @@ export const KEY_SETUP_APPEND_HEADER =
 export const KEY_SETUP_KEYS = Object.freeze([
   Object.freeze({
     id: 'google-maps',
-    title: 'GOOGLE MAPS',
+    title: 'Google Maps',
     unlocks: 'The photorealistic 3D planet, place search + Street View',
     getUrl: 'https://developers.google.com/maps/documentation/tile/get-api-key',
     envVars: Object.freeze(['GOOGLE_MAPS_API_KEY']),
@@ -44,7 +44,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'google-maps-server',
-    title: 'GOOGLE MAPS — SERVER',
+    title: 'Google Maps — SERVER',
     unlocks: 'Places context + Street View fallback; optional separate key',
     getUrl:
       'https://developers.google.com/maps/documentation/places/web-service/get-api-key',
@@ -54,7 +54,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'openai',
-    title: 'OPENAI',
+    title: 'OpenAI',
     unlocks: 'Voice control — API key or ChatGPT OAuth',
     getUrl: 'https://platform.openai.com/api-keys',
     envVars: Object.freeze(['OPENAI_API_KEY']),
@@ -62,7 +62,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'aisstream',
-    title: 'AISSTREAM',
+    title: 'AISStream',
     unlocks: 'Live ships, worldwide',
     getUrl: 'https://aisstream.io',
     envVars: Object.freeze(['AISSTREAM_API_KEY']),
@@ -78,7 +78,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'perplexity',
-    title: 'PERPLEXITY',
+    title: 'Perplexity',
     unlocks:
       'Optional metered provider for War Monitor Refresh and Situation Brief',
     getUrl: 'https://www.perplexity.ai/account/api/keys',
@@ -87,7 +87,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'search-reliefweb',
-    title: 'RELIEFWEB · SEARCH LAYERS',
+    title: 'ReliefWeb · Search Layers',
     unlocks:
       'Optional humanitarian reports for globe research. Enter your approved ReliefWeb appname',
     getUrl: 'https://apidoc.reliefweb.int/#appname',
@@ -96,7 +96,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'tomtom',
-    title: 'TOMTOM',
+    title: 'TomTom',
     unlocks: 'Real live traffic (keyless runs a simulation)',
     getUrl: 'https://my.tomtom.com/keys',
     envVars: Object.freeze(['TOMTOM_API_KEY']),
@@ -104,7 +104,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'cesium-ion',
-    title: 'CESIUM ION',
+    title: 'Cesium ion',
     unlocks: 'Bing imagery map stacks + world terrain',
     getUrl: 'https://ion.cesium.com/tokens',
     envVars: Object.freeze(['CESIUM_ION_TOKEN']),
@@ -113,7 +113,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'opensky',
-    title: 'OPENSKY',
+    title: 'OpenSky',
     unlocks: 'More flight-polling credits (anonymous works without)',
     getUrl: 'https://opensky-network.org',
     envVars: Object.freeze(['OPENSKY_CLIENT_ID', 'OPENSKY_CLIENT_SECRET']),
@@ -121,7 +121,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'mapillary',
-    title: 'MAPILLARY',
+    title: 'Mapillary',
     unlocks:
       'Street-level imagery and coverage in the Street Level layer. Free: register an app in the Mapillary developer dashboard and paste its Client Token',
     getUrl: 'https://www.mapillary.com/dashboard/developers',
@@ -131,7 +131,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
   Object.freeze({
     id: 'launch-library',
-    title: 'LAUNCH LIBRARY',
+    title: 'Launch Library',
     unlocks: 'Higher space-missions request allowance',
     getUrl: 'https://thespacedevs.com',
     envVars: Object.freeze(['LL2_API_TOKEN']),
@@ -139,7 +139,7 @@ export const KEY_SETUP_KEYS = Object.freeze([
   }),
 ]);
 
-/** Hostnames a Provider Settings request may arrive under or originate from. */
+/** Hostnames a Data sources and keys request may arrive under or originate from. */
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 /** Socket addresses that count as this machine. */
 const LOOPBACK_ADDRESSES = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
@@ -234,7 +234,7 @@ export function isSharingEnabled(env = {}) {
 }
 
 /**
- * The admission gate for the Provider Settings endpoints — pure, exported so
+ * The admission gate for the Data sources and keys endpoints — pure, exported so
  * every refusal below is pinned by a unit assertion rather than a review note.
  *
  * Why each check exists:
@@ -272,7 +272,7 @@ export function admitKeySetupRequest({
     return {
       ok: false,
       status: 403,
-      error: 'Provider Settings does not answer proxied requests',
+      error: 'Data sources and keys does not answer proxied requests',
     };
   }
   // Every sharing signal the launcher recognizes (scripts/pinokio-preflight.mjs)
@@ -280,7 +280,7 @@ export function admitKeySetupRequest({
   // two files could drift apart on. One DELIBERATE divergence: preflight is a
   // boot check that treats an empty PINOKIO_SHARE_VAR as sharing-on (fail closed
   // before Start), but here an empty/unset value is the NORMAL git-clone and
-  // Pinokio state — treating it as sharing would disable Provider Settings for
+  // Pinokio state — treating it as sharing would disable Data sources and keys for
   // every ordinary launch. So a bare/sentinel value is not sharing; only a real
   // tunnel var is. This is defense in depth regardless: the loopback+Host checks
   // below independently refuse LAN/tunnel traffic, and under Pinokio the launcher
@@ -289,14 +289,15 @@ export function admitKeySetupRequest({
     return {
       ok: false,
       status: 403,
-      error: 'Provider Settings is disabled while sharing is enabled',
+      error: 'Data sources and keys is disabled while sharing is enabled',
     };
   }
   if (!LOOPBACK_ADDRESSES.has(String(remoteAddress || ''))) {
     return {
       ok: false,
       status: 403,
-      error: 'Provider Settings answers only the machine running the server',
+      error:
+        'Data sources and keys answers only the machine running the server',
     };
   }
   const authority = localAuthority(hostHeader, protocol);
@@ -304,7 +305,7 @@ export function admitKeySetupRequest({
     return {
       ok: false,
       status: 403,
-      error: 'Provider Settings answers only local hostnames',
+      error: 'Data sources and keys answers only local hostnames',
     };
   }
   if (
@@ -314,7 +315,7 @@ export function admitKeySetupRequest({
     return {
       ok: false,
       status: 403,
-      error: 'Provider Settings requires an exact local Origin',
+      error: 'Data sources and keys requires an exact local Origin',
     };
   }
   if (origin !== undefined && origin !== null && origin !== '') {
@@ -367,7 +368,7 @@ export function knownKeySetupEnvVars() {
 export function keySetupRequirement(id) {
   const entry = KEY_SETUP_KEYS.find((candidate) => candidate.id === id);
   if (!entry || entry.hidden) return '';
-  return `Needs ${entry.envVars.join(' + ')} — add it in Provider Settings`;
+  return `Needs ${entry.envVars.join(' + ')} — add it in Data sources and keys`;
 }
 
 /**
@@ -394,7 +395,7 @@ export function keySetupWithAlternatives(requirement, alternatives = []) {
 
 /**
  * Decide whether a live provider value belongs to a source outside the store
- * Provider Settings is allowed to edit. `wasExternalAtBoot` carries source
+ * Data sources and keys is allowed to edit. `wasExternalAtBoot` carries source
  * provenance without carrying the credential itself; it closes the otherwise
  * undecidable case where an exported value and a dotenv assignment happen to
  * contain the same bytes.

@@ -877,6 +877,7 @@
       "src/ui/styles/cockpit.css",
       "src/ui/styles/overlays.css",
       "src/ui/styles/layers.css",
+      "src/ui/styles/context-awareness.css",
       "src/ui/styles/radio.css",
       "src/ui/styles/cctv.css",
       "src/ui/styles/scenes.css",
@@ -1461,6 +1462,7 @@
   "radio-layer": {
     "exports": ["./layers/radio"],
     "modules": [
+      "src/designTokens.js",
       "src/data/iconOrientation.js",
       "src/data/idSwitches.js",
       "src/data/layerState.js",
@@ -3286,7 +3288,8 @@
     "modules": [
       "src/layers/directions/index.js",
       "src/layers/directions/source.js",
-      "src/data/routeSteps.js"
+      "src/data/routeSteps.js",
+      "src/designTokens.js"
     ],
     "external": ["cesium"]
   },
@@ -3709,6 +3712,7 @@
       "src/view/index.js",
       "src/tools/views.js",
       "src/tools/globePanel.js",
+      "src/designTokens.js",
       "src/tools/queries/panelRequest.js"
     ],
     "external": ["satellite.js"]
@@ -3729,6 +3733,7 @@
     "modules": [
       "src/tools/panel.js",
       "src/tools/globePanel.js",
+      "src/designTokens.js",
       "src/app/globePanelRuntime.js"
     ],
     "external": []

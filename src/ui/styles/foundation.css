@@ -86,6 +86,15 @@
   --live-sea: #3fe0c8;
   --live-space: #bda4ff;
   --ownership-documented: #519bd4;
+  --cat-all: #b9fbff;
+  --cat-news: #44adff;
+  --cat-talk: #f2b84b;
+  --cat-weather: #ff5c78;
+  --cat-public-safety: #ff8b4a;
+  --cat-aviation-marine: #a87cff;
+  --cat-traffic-transit: #ffd166;
+  --cat-music: #54d17a;
+  --cat-other: #9aa7b3;
   --radius-panel: 16px;
   --radius-control: 10px;
   --radius-chip: 6px;
@@ -398,10 +407,21 @@ body.cockpit-mode #cockpit-cloud-effects.active {
      row (looked like it was falling over). nowrap + a roomy max-width holds them inline. */
   white-space: nowrap;
   pointer-events: auto;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: rgba(232, 234, 237, 0.55);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  box-sizing: border-box;
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-chip);
+  background: var(--surface-space);
+  font: var(--type-caption);
+  color: var(--text-2);
+}
+/* Cesium's widget defaults to an absolute row inside its own globe container.
+   Here the app already positions the credit host, so the row sizes its backing. */
+#cesium-credits > .cesium-widget-credits {
+  position: static;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-shadow: inherit;
 }
 #cesium-credits .cesium-credit-logoContainer,
 #cesium-credits .cesium-credit-textContainer,
@@ -411,7 +431,7 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 }
 #cesium-credits a,
 #cesium-credits .cesium-credit-expand-link {
-  color: rgba(232, 234, 237, 0.7);
+  color: var(--text-2);
 }
 
 /* Cesium's stock attribution lightbox grows with every registered data source.
@@ -428,6 +448,8 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   max-width: calc(100vw - 2rem);
   max-height: min(70dvh, 36rem);
   overflow: hidden;
+  background: var(--surface-1);
+  color: var(--text-1);
 }
 
 .cesium-credit-lightbox > ul {
@@ -439,8 +461,7 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
-  font-size: 12px !important;
-  line-height: 1.35;
+  font: var(--type-caption) !important;
   white-space: normal;
 }
 
@@ -482,17 +503,10 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   min-width: 214px;
   padding: 9px 14px;
   color: var(--text-primary);
-  background: var(--glass-bg);
+  background: var(--surface-1);
   border: 1px solid var(--glass-border);
-  border-radius: 999px;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 0 20px rgba(0, 212, 255, 0.08);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  font-family: var(--font-mono);
+  border-radius: var(--radius-pill);
+  font: var(--type-small);
   pointer-events: auto;
 }
 
@@ -501,19 +515,16 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   height: 34px;
   flex: 0 0 auto;
   color: var(--accent);
-  background: rgba(0, 212, 255, 0.06);
-  border: 1px solid rgba(0, 212, 255, 0.28);
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
   border-radius: var(--btn-radius);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0;
+  font: var(--type-control);
   cursor: pointer;
 }
 
 #gev-voice-button:hover {
-  color: #ffffff;
+  color: var(--text-1);
   border-color: var(--accent);
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.22);
 }
 
 .gev-voice-readout {
@@ -523,7 +534,7 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 }
 
 #gev-voice-status {
-  font-size: 10px;
+  font: var(--type-small);
   color: var(--accent);
 }
 
@@ -531,38 +542,38 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   max-width: 132px;
   margin-top: 2px;
   overflow: hidden;
-  color: var(--text-secondary);
-  font-size: 9px;
+  color: var(--text-2);
+  font: var(--type-small);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 #gev-voice-control[data-status='listening'] {
-  border-color: rgba(92, 255, 198, 0.45);
+  border-color: var(--accent);
 }
 
 #gev-voice-control[data-status='listening'] #gev-voice-status {
-  color: #5cffc6;
+  color: var(--rel-partner);
 }
 
 #gev-voice-control[data-status='executing'] {
-  border-color: rgba(255, 220, 120, 0.55);
+  border-color: var(--line-strong);
 }
 
 #gev-voice-control[data-status='executing'] #gev-voice-status {
-  color: #ffdc78;
+  color: var(--status-reduced);
 }
 
 #gev-voice-control[data-status='error'] {
   align-items: flex-start;
   width: min(440px, calc(100vw - 72px));
-  border-color: rgba(255, 92, 110, 0.6);
+  border-color: var(--status-disrupted);
   /* Multi-line error block reads as a panel, not a capsule */
   border-radius: var(--panel-radius);
 }
 
 #gev-voice-control[data-status='error'] #gev-voice-status {
-  color: #ff5c6e;
+  color: var(--status-disrupted);
 }
 
 #gev-voice-control[data-status='error'] .gev-voice-readout {
@@ -573,7 +584,7 @@ body.cockpit-mode #cockpit-cloud-effects.active {
 #gev-voice-control[data-status='error'] #gev-voice-detail {
   max-width: none;
   overflow: visible;
-  color: #ffb4bd;
+  color: var(--status-disrupted);
   line-height: 1.45;
   text-overflow: clip;
   white-space: pre-wrap;

@@ -20,8 +20,8 @@ export function updateContext(info, heading) {
     this.pushCockpitSignal(
       'context-status',
       'info',
-      'CONTEXT STANDBY',
-      'ENABLE GLOBAL CONTEXT FOR PROXIMITY PINGS',
+      'Context standby',
+      'Enable Global Context for proximity signals',
     );
     return;
   }
@@ -53,7 +53,7 @@ export function updateContext(info, heading) {
     this.context.dataset.state = 'lost';
     if (this.contextUncertainty) {
       this.contextUncertainty.textContent =
-        'CONTACT LOST · LAST KNOWN READOUT · NOT AN ALL-CLEAR';
+        'Contact lost · Last known readout · Not an all-clear';
     }
     // The cue changes the footer's height; re-run layout once on the way in
     // rather than every frame the contact stays lost.
@@ -61,8 +61,8 @@ export function updateContext(info, heading) {
     this.pushCockpitSignal(
       'context-status',
       'warning',
-      `CONTACT LOST · ${snapshot.subject.label || snapshot.subject.id || 'SUBJECT'}`,
-      'SUBJECT LEFT ITS FEED · READOUT HOLDING LAST KNOWN',
+      `Contact lost · ${snapshot.subject.label || snapshot.subject.id || 'Subject'}`,
+      'Subject left its feed · Readout shows last known values',
     );
     return;
   }
@@ -83,8 +83,8 @@ export function updateContext(info, heading) {
   const closestLabel = this.services.formatAwarenessLabel(closest);
   if (this.contextNearestLabel) {
     this.contextNearestLabel.textContent = closest
-      ? `${closest.cohort.label.toUpperCase()} · ${closestLabel}`
-      : 'NO AVAILABLE EXAMPLE';
+      ? `${closest.cohort.label} · ${closestLabel}`
+      : 'No available example';
     this.contextNearestLabel.setAttribute(
       'aria-label',
       closest && closestLabel === '—'
@@ -95,7 +95,7 @@ export function updateContext(info, heading) {
   if (this.contextDistance) {
     const distanceM = closest?.distanceM;
     this.contextDistance.textContent = Number.isFinite(distanceM)
-      ? `${distanceM < 10000 ? (distanceM / 1000).toFixed(1) : Math.round(distanceM / 1000)} KM`
+      ? `${distanceM < 10000 ? (distanceM / 1000).toFixed(1) : Math.round(distanceM / 1000)} km`
       : '—';
     this.contextDistance.setAttribute(
       'aria-label',
@@ -134,14 +134,14 @@ export function updateContext(info, heading) {
   }
   if (this.contextBearing) {
     if (relative === null) this.contextBearing.textContent = 'BRG —';
-    else if (Math.abs(relative) < 8) this.contextBearing.textContent = 'AHEAD';
+    else if (Math.abs(relative) < 8) this.contextBearing.textContent = 'Ahead';
     else
       this.contextBearing.textContent = `${relative < 0 ? 'L' : 'R'} ${String(Math.round(Math.abs(relative))).padStart(3, '0')}°`;
   }
   if (this.contextUncertainty) {
     this.contextUncertainty.textContent = unknownCount
-      ? `${unknownCount} INPUT${unknownCount === 1 ? '' : 'S'} UNKNOWN · NOT AN ALL-CLEAR`
-      : 'AVAILABLE INPUTS CURRENT · NOT AN ALL-CLEAR';
+      ? `${unknownCount} input${unknownCount === 1 ? '' : 's'} unknown · Not an all-clear`
+      : 'Available inputs current · Not an all-clear';
   }
   if (this.contextUpdated) {
     this.contextUpdated.textContent = Number.isFinite(snapshot.evaluatedAt)

@@ -225,8 +225,11 @@ export async function captureWeather({
     const wind = card('wind');
     const forecastFocus = await openCard('wind');
     const motion = `${wind} [data-chip-id="motion"]`;
-    if (await page.$(`${motion}[aria-pressed="false"]`))
-      await page.click(motion);
+    await page.waitForSelector(`${motion}[aria-pressed]:not([disabled])`, seen);
+    if (await page.$(`${motion}[aria-pressed="false"]`)) {
+      await page.focus(motion);
+      await page.keyboard.press('Space');
+    }
     // A parked flow keeps the forecast field readable and prevents wind
     // animation from driving continuous SwiftShader renders in this journey.
     await page.waitForSelector(`${motion}[aria-pressed="true"]`, seen);

@@ -1,10 +1,12 @@
 /**
- * The God's Eye View panel: an MCP Apps view (`io.modelcontextprotocol/ui`) that shows
- * God's Eye View inside a conversation. The panel is a small page that runs
+ * The Global Eye View panel: an MCP Apps view (`io.modelcontextprotocol/ui`) that shows
+ * Global Eye View inside a conversation. The panel is a small page that runs
  * the app's panel build inside itself in embed mode, loading it through the
  * MCP server, and sends it each view the show_in_gods_eye_view tool returns;
  * see docs/TOOLS.md.
  */
+
+import { DESIGN_COLORS } from '../designTokens.js';
 
 export const GLOBE_PANEL_URI = 'ui://gods-eye-view/globe';
 /** Where the app's server serves its panel build (see build/panel.js). */
@@ -60,7 +62,7 @@ const PANEL_APP_BASE_URL = 'https://app.gods-eye-view.invalid/';
 export const PANEL_REQUEST_TOOL = 'panel_request';
 
 /**
- * The panel page: its status line, the Open in God's Eye View button, and
+ * The panel page: its status line, the Open in Global Eye View button, and
  * the panel's script, `runtime`, which loads the app through the MCP server
  * and shows each view a tool returns.
  */
@@ -83,15 +85,19 @@ function panelHtml(runtime, panelKey) {
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>God's Eye View</title>
+<title>Global Eye View</title>
 <style>
-  html, body { margin: 0; height: 100%; min-height: ${PANEL_HEIGHT_PX}px; background: #05070a;
-    color: #b8c4cc; font: 13px/1.4 system-ui, sans-serif; overflow: hidden; }
+  html, body { margin: 0; height: 100%; min-height: ${PANEL_HEIGHT_PX}px; background: ${DESIGN_COLORS['--surface-space']};
+    color: ${DESIGN_COLORS['--text-2']}; font: 400 13px/19px system-ui, sans-serif; overflow: hidden; }
   #status { position: absolute; inset: 0; z-index: 10000; display: flex; align-items: center;
     justify-content: center; padding: 0 24px; text-align: center; }
   #actions { position: absolute; right: 10px; top: 10px; z-index: 10001; display: flex; gap: 6px; }
-  #actions button { padding: 6px 10px; border: 1px solid #3a4a55; border-radius: 6px;
-    background: rgba(5, 7, 10, 0.75); color: #dfe8ee; font: inherit; cursor: pointer; }
+  #actions button { padding: 6px 10px; min-height: 34px;
+    border: 1px solid ${DESIGN_COLORS['--line-strong']}; border-radius: 10px;
+    background: ${DESIGN_COLORS['--surface-2']}; color: ${DESIGN_COLORS['--text-1']};
+    font: 500 13px/19px system-ui, sans-serif; cursor: pointer; }
+  #actions button:hover { background: ${DESIGN_COLORS['--surface-3']}; }
+  #actions button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
   #actions button[hidden] { display: none; }
 </style>
 </head>
@@ -99,7 +105,7 @@ function panelHtml(runtime, panelKey) {
 <div id="status">Waiting for a view…</div>
 <div id="actions">
 <button id="expand" type="button" hidden>Expand</button>
-<button id="open" type="button" hidden>Open in God's Eye View</button>
+<button id="open" type="button" hidden>Open in Global Eye View</button>
 </div>
 <script>${script}</script>
 </body>
@@ -124,8 +130,8 @@ export function createGlobePanelResource({ runtime, panelKey }) {
   return Object.freeze({
     uri: GLOBE_PANEL_URI,
     name: 'globe',
-    title: "God's Eye View globe",
-    description: "Live God's Eye View, showing the view a tool returns.",
+    title: 'Global Eye View globe',
+    description: 'Live Global Eye View, showing the view a tool returns.',
     mimeType: MCP_APP_MIME_TYPE,
     text: panelHtml(runtime, panelKey),
     _meta: {

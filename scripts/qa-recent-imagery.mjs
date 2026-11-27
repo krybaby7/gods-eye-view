@@ -428,7 +428,7 @@ try {
     'the body is a rail scroller holding the readout, under a RECENT IMAGERY header',
     railPlacement.scroller &&
       railPlacement.readoutInBody &&
-      railPlacement.title === 'RECENT IMAGERY',
+      railPlacement.title === 'Recent imagery',
     JSON.stringify(railPlacement),
   );
   const listOf = (selector, key) =>
@@ -502,7 +502,7 @@ try {
   );
   check(
     'the header count reads the day count',
-    /^\d+ DAYS?$/.test(countText),
+    /^\d+ days?$/.test(countText),
     countText,
   );
   const startHere = await page.evaluate(() =>
@@ -641,7 +641,7 @@ try {
       )?.textContent,
     targetKey,
   );
-  check('the previewed card wears PREVIEW', flag === 'PREVIEW', flag);
+  check('the previewed card wears PREVIEW', flag === 'Preview', flag);
 
   // ── IMAGE: S pins the focused day; focus no longer moves the map ────────
   await pressOnStrip('s');
@@ -698,7 +698,7 @@ try {
   check(
     'VS BASEMAP shows the divider, labelled IMAGE / BASEMAP',
     basemapSwipe &&
-      JSON.stringify(current.splitLabels) === '["IMAGE","BASEMAP"]',
+      JSON.stringify(current.splitLabels) === '["Image","Basemap"]',
     JSON.stringify(current.splitLabels),
   );
   check(
@@ -728,7 +728,7 @@ try {
   );
   check(
     'the hint says SWAP trades the sides (VS BASEMAP)',
-    current.hintText === 'Drag the divider · SWAP trades sides',
+    current.hintText === 'Drag the divider · Swap trades sides',
     current.hintText,
   );
   await checkLayout('vs basemap');
@@ -820,7 +820,7 @@ try {
   );
   check(
     'the hint says SWAP trades the sides (A / B)',
-    current.hintText === 'Drag the divider · SWAP trades sides',
+    current.hintText === 'Drag the divider · Swap trades sides',
     current.hintText,
   );
   await checkLayout('A / B, both pinned');
@@ -1020,7 +1020,7 @@ try {
     'ZOOM IN shows at the right end of the notice line, which keeps its height',
     refusalLine.chipVisible &&
       refusalLine.chipAtEnd &&
-      Math.abs(refusalLine.lineHeight - 14) <= 0.5,
+      Math.abs(refusalLine.lineHeight - layoutBaseline.rects.notice[3]) <= 0.5,
     JSON.stringify(refusalLine),
   );
   await checkLayout('refused');

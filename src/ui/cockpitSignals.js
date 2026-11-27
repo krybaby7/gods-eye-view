@@ -126,7 +126,7 @@ export function updateCockpitSignals(snapshot, unknownCount) {
       key: `flight:${subject.layerId}:${subject.id}`,
       tone: 'track',
       title: subject.label || subject.id,
-      detail: `${subject.layerId === 'military' ? 'MILITARY FLIGHT' : 'COMMERCIAL FLIGHT'} · CURRENT`,
+      detail: `${subject.layerId === 'military' ? 'Military flight' : 'Commercial flight'} · Current`,
       target: { layerId: subject.layerId, id: String(subject.id) },
       distanceM: -1,
     });
@@ -145,10 +145,10 @@ export function updateCockpitSignals(snapshot, unknownCount) {
         // contact reads as its registration here too. Same helper the
         // Context panel's nearest list uses.
         title: this.services.formatAwarenessLabel(item),
-        detail: `${cohort.id === 'military' ? 'MILITARY FLIGHT' : 'COMMERCIAL FLIGHT'} · ${
+        detail: `${cohort.id === 'military' ? 'Military flight' : 'Commercial flight'} · ${
           Number.isFinite(item.distanceM)
-            ? `${item.distanceM < 10000 ? (item.distanceM / 1000).toFixed(1) : Math.round(item.distanceM / 1000)} KM`
-            : 'DISTANCE UNKNOWN'
+            ? `${item.distanceM < 10000 ? (item.distanceM / 1000).toFixed(1) : Math.round(item.distanceM / 1000)} km`
+            : 'Distance unknown'
         }`,
         target: { layerId: cohort.id, id: String(id) },
         distanceM: item.distanceM ?? Infinity,
@@ -169,8 +169,8 @@ export function updateCockpitSignals(snapshot, unknownCount) {
     nextItems.splice(4, Math.max(0, nextItems.length - 4), {
       key: 'input-status',
       tone: 'warning',
-      title: `${unknownCount} INPUT${unknownCount === 1 ? '' : 'S'} UNKNOWN`,
-      detail: sources || 'SOURCE STATUS UNAVAILABLE',
+      title: `${unknownCount} input${unknownCount === 1 ? '' : 's'} unknown`,
+      detail: sources || 'Source status unavailable',
       target: null,
       timestamp:
         previous.get('input-status')?.timestamp ||

@@ -7,16 +7,23 @@ import {
   rules,
 } from './testSupport/cssCascade.mjs';
 
-// CSS and globe drawing both consume these semantic colours; compare values,
+// CSS and the globe and standalone panel consume these semantic colours; compare values,
 // not the spelling or organisation of either consumer's implementation.
-test('globe semantic colours agree with the corresponding CSS tokens', async () => {
-  const { DESIGN_COLORS } = await import('./designTokens.js');
+test('shared semantic colours agree with the corresponding CSS tokens', async () => {
+  const { DESIGN_COLORS, RADIO_CATEGORY_COLORS } =
+    await import('./designTokens.js');
   const css = readFileSync(
     new URL('./ui/styles/foundation.css', import.meta.url),
     'utf8',
   );
   const properties = customProperties(rules(css));
   const keys = [
+    '--surface-space',
+    '--surface-2',
+    '--surface-3',
+    '--line-strong',
+    '--text-1',
+    '--text-2',
     '--rel-war',
     '--rel-sanctions',
     '--rel-ally',
@@ -35,6 +42,11 @@ test('globe semantic colours agree with the corresponding CSS tokens', async () 
     '--live-space',
     '--ownership-documented',
   ];
+  for (const [category, color] of Object.entries(RADIO_CATEGORY_COLORS)) {
+    const token = `--cat-${category}`;
+    assert.equal(DESIGN_COLORS[token], color, token);
+    keys.push(token);
+  }
   for (const key of keys) {
     assert.ok(properties.has(key), `missing CSS token ${key}`);
     assert.equal(

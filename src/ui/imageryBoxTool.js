@@ -12,6 +12,7 @@ import {
   pointerOwner,
   releasePointer,
 } from '../data/inputOwnership.js';
+import { DESIGN_COLORS } from '../designTokens.js';
 import { validateBox } from '../layers/recentImagery/model.js';
 
 /** The id this tool claims the pointer under. */
@@ -61,7 +62,7 @@ export function initImageryBoxTool({
   let attaching = Promise.resolve(viewer.dataSources.add(dataSource)).catch(
     () => null,
   );
-  const stroke = cesium.Color.fromCssColorString('#8be9ff');
+  const stroke = cesium.Color.fromCssColorString(DESIGN_COLORS['--accent']);
   const previewRectangle = () => {
     const box = dragBox();
     return box

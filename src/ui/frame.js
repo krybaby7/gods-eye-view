@@ -276,8 +276,15 @@ export function createFrame({
     const credits = find('cesium-credits');
     if (credits) {
       const observer = new ResizeObserver(() => {
-        const width = Math.ceil(credits.getBoundingClientRect().width);
-        body.style.setProperty('--frame-credits-width', `${width}px`);
+        const { width, height } = credits.getBoundingClientRect();
+        body.style.setProperty(
+          '--frame-credits-width',
+          `${Math.ceil(width)}px`,
+        );
+        body.style.setProperty(
+          '--frame-credits-height',
+          `${Math.ceil(height)}px`,
+        );
       });
       observer.observe(credits);
       observers.push(observer);
@@ -431,6 +438,7 @@ export function createFrame({
       delete body.dataset.today;
       delete body.dataset.sheet;
       body.style.removeProperty('--frame-credits-width');
+      body.style.removeProperty('--frame-credits-height');
       layout('destroy');
     },
   };

@@ -1,14 +1,19 @@
+import { readFileSync } from 'node:fs';
+import { expandApplicationHtml } from '../build/application-html.js';
 import { readStylesheet } from './testSupport/readStylesheet.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  ancestorsOf,
   customProperties,
   resolveVars,
   rules,
+  winners,
 } from './testSupport/cssCascade.mjs';
 
 const css = readStylesheet(new URL('../style.css', import.meta.url));
-const vars = customProperties(rules(css));
+const authors = rules(css);
+const vars = customProperties(authors);
 
 function assertRing(rule, { important = false } = {}) {
   const outline = /outline:\s*2px\s+solid\s+([^;]+);/.exec(rule);
@@ -78,10 +83,38 @@ test('Location city, POI, search toggle and search field use an inset ring', () 
 });
 
 test('Cockpit Display and Radio launcher glyphs have a complete inset ring', () => {
-  const body = ruleBody('.cockpit-utility-glyph:focus-visible');
-  assert.match(body, /outline:\s*2px solid var\(--text-primary\)/);
-  assert.match(body, /outline-offset:\s*-3px/);
-  assert.doesNotMatch(body, /outline:\s*none/);
+  const html = expandApplicationHtml(
+    readFileSync(new URL('../index.html', import.meta.url), 'utf8'),
+  );
+  for (const id of ['cockpit-display-toggle-btn', 'cockpit-radio-toggle-btn']) {
+    const chain = ancestorsOf(html, id);
+    chain.find(({ tag }) => tag === 'body').classes.add('cockpit-mode');
+    const glyph = chain.at(-1);
+    const control = chain.find(({ classes }) =>
+      classes.has('cockpit-utility-control'),
+    );
+    for (const expanded of [false, true]) {
+      if (expanded) control.classes.add('is-expanded');
+      const focus = winners(glyph, authors, {
+        outline: ['width', 'style', 'color'],
+        'outline-width': ['width'],
+        'outline-style': ['style'],
+        'outline-color': ['color'],
+        'outline-offset': ['offset'],
+      });
+      const reason = `${id} (${expanded ? 'expanded' : 'collapsed'})`;
+      const color = resolveVars('var(--text-1)', vars);
+      const widthPattern = /^2px(?: |$)/;
+      const stylePattern = /(?:^| )solid(?: |$)/;
+      assert.match(focus.width?.decl.value ?? '', widthPattern, reason);
+      assert.match(focus.style?.decl.value ?? '', stylePattern, reason);
+      assert.ok(
+        resolveVars(focus.color?.decl.value ?? '', vars).endsWith(color),
+        reason,
+      );
+      assert.equal(focus.offset?.decl.value, '-3px', reason);
+    }
+  }
 });
 
 test('focusable controls do not animate the global outline', () => {

@@ -38,8 +38,8 @@ export function setContextCollapsed(collapsed) {
       `${expanded ? 'Collapse' : 'Expand'} Contact panel`,
     );
     this.contextToggle.title = `${expanded ? 'Collapse' : 'Expand'} contact panel`;
-    const icon = this.contextToggle.querySelector('.material-symbols-outlined');
-    if (icon) icon.textContent = expanded ? 'chevron_left' : 'chevron_right';
+    const icon = this.contextToggle.querySelector('.cockpit-disclosure-arrow');
+    if (icon) icon.textContent = expanded ? '‹' : '›';
   }
   if (this.active && wasCollapsed && !this.contextCollapsed) {
     window.dispatchEvent(new CustomEvent('gev:cockpit-context-expanded'));
@@ -61,9 +61,8 @@ export function setSignalCollapsed(collapsed, { user = false } = {}) {
       `${expanded ? 'Collapse' : 'Expand'} cockpit briefing panel`,
     );
     this.signalToggle.title = `${expanded ? 'Collapse' : 'Expand'} briefing panel`;
-    const icon = this.signalToggle.querySelector('.material-symbols-outlined');
-    if (icon)
-      icon.textContent = expanded ? 'right_panel_close' : 'right_panel_open';
+    const icon = this.signalToggle.querySelector('.cockpit-disclosure-arrow');
+    if (icon) icon.textContent = expanded ? '›' : '‹';
   }
   if (this.signalCollapsed) this.stopBriefRotation();
   else this.startBriefRotation({ reset: true });

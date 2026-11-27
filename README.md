@@ -1,30 +1,15 @@
 <div align="center">
 
-# 🌐 God's Eye View
+# 🌐 Global Eye View
 
-[![CI](https://github.com/bilawalsidhu/gods-eye-view/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bilawalsidhu/gods-eye-view/actions/workflows/ci.yml) [![Reached #1 on GitHub Trending](https://img.shields.io/badge/%231_GitHub_Trending-thank_you!-F0A63C?style=flat-square&logo=github)](https://x.com/bilawalsidhu/status/2093798887815348521)
+A local globe for exploring what is happening around the world. The World
+Board lets you compare countries across the Overview, Strength and Energy
+lenses and open a country sheet for the sources behind each reading.
 
-### A spy-satellite simulator in your browser — then you realize the sources are public and the data is real.
+Global Eye View is a fork of [God's Eye View](https://github.com/bilawalsidhu/gods-eye-view)
+by Bilawal Sidhu, released under the [MIT License](LICENSE).
 
-Photorealistic 3D globe. Live aircraft, ships, satellites, earthquakes, traffic, and public cameras. Hands-free voice control powered by a realtime AI agent.
-
-_No place left behind._
-
-![Orbital HUD, a tracked live globe, FLIR terrain — then OPEN SOURCED](docs/media/hero-open-source-reveal.gif)
-
-<a href="https://www.youtube.com/@bilawalsidhu">
-  <img src="docs/media/youtube-popular-videos.png" alt="The God's Eye View video series on YouTube" width="100%">
-</a>
-
-▶️ **From the project behind the viral God's Eye View series** _(formerly WorldView)_ — [5M+ on YouTube](https://youtube.com/playlist?list=PL6qSg2I-7_koPbDnSMo0QeeHX_RknA2uv&si=nBGYMoHWQw41v93Q) · [25M+ across socials](https://www.google.com/search?q=god%27s+eye+view)
-
-🏆 **Reached #1 on GitHub Trending, daily and weekly · August 2026**
-
-**[#8 Product of the Day](https://www.producthunt.com/products/god-s-eye-view?launch=god-s-eye-view)** · Hunted by Chris Messina, creator of the hashtag
-
-_“pretty cool”_ — [Brendan Eich](https://x.com/BrendanEich/status/2094592096401490266), creator of JavaScript and co-founder of Mozilla and Brave · Featured on **[Pinokio](https://pinokio.co/posts/01m1m4p9xxm3qw7dnnpj2wr93g)**
-
-⚡ **Start without API keys.** Install with [Pinokio](https://pinokio.co/apps/github-com-bilawalsidhu-gods-eye-view) or run locally from the terminal. Add optional keys inside the app. **[→ Quick Start](#-quick-start)**
+**[Quick Start](#-quick-start)** · **[Watch the original project’s walkthrough](https://www.youtube.com/watch?v=GRJaKcXZS94)**
 
 </div>
 
@@ -40,11 +25,9 @@ _“pretty cool”_ — [Brendan Eich](https://x.com/BrendanEich/status/20945920
 
 ## 🌍 Why This Exists
 
-God's Eye View brings public signals into one explorable globe. Track the world live. Talk to it. Break it. Extend it.
-
-Flight transponders, ship beacons, orbital elements, seismographs, and public cameras already tell us a lot about the world. God's Eye View puts them in the same place, so you can move between a global picture and an individual aircraft, ship, or street. It runs locally in your browser, with source code you can inspect and extend.
-
-> Half the magic is that it looks like a forbidden cockpit. The other half is that every line of code is inspectable.
+Global Eye View opens on the World Board. Select a country to see its
+condition and the underlying evidence, or use Layers and Presets to explore
+additional public data on the globe. The app runs locally in your browser.
 
 Most feeds are live or regularly refreshed. Traffic is simulated along real
 roads using aggregate location data. CCTV camera poses and rocket launch
@@ -89,33 +72,33 @@ Start with the included data sources, then add your own. Each layer is a separat
 
 ## ⚡ Quick Start
 
-**Start without an account or API keys.** Both paths open the same app with
+**Start without an account or API keys.** The app opens with
 Esri satellite imagery and keyless terrain. OSM is the fallback if Esri is
-unreachable. Flights, military traffic, satellites, earthquakes, public
-cameras, radio, and launches are available without keys.
+unreachable.
 
 For photorealistic 3D, add a **Cesium ion token** for eligible personal,
 non-commercial use, or a **Google Maps key** for the direct, metered route and
 Google place search. Provider terms and quotas apply. Add keys through the
-app's menu (**Menu ▸ Data sources and keys**); [Keys & Costs](#-api-keys) explains the options.
+app’s menu (**Menu ▸ Data sources and keys**). See [Keys & Costs](#-api-keys)
+for the options.
 
-> **Already installed?** Update to the latest version. Older versions query
-> public OpenStreetMap Overpass servers, which now refuse them, so Traffic,
-> Mapped Installations and ALPR stay empty until you update.
+**Already installed?** Update to a current release of the project you
+installed. Older builds query public OpenStreetMap Overpass servers that
+refuse their requests, so Traffic, Mapped Installations and ALPR can stay
+empty until you update.
 
-### Path 1 — One click, no terminal
+### Path 1 — Pinokio
 
 1. Install or update [Pinokio](https://desktop.pinokio.co/) to **8.2 or later**.
-2. Open [God's Eye View in Pinokio](https://pinokio.co/apps/github-com-bilawalsidhu-gods-eye-view).
-3. Click **Install**, then **Start**.
+2. Open the launcher in this fork’s `pinokio/` directory from your local
+   checkout. The [public Pinokio listing](https://pinokio.co/apps/github-com-bilawalsidhu-gods-eye-view)
+   is for the upstream God’s Eye View project.
+3. Click **Install**, then **Start**. For an existing local launcher, use **Update**.
 
-Available on **Windows, macOS, and Linux**. The Pinokio maintainer reports
-cross-platform testing of the fixed installer. The launcher installs the
-locked dependencies, finds a free local port, and opens the app.
-
-**Tried before and installation failed?** Update Pinokio and try again.
-Version 8.2 fixes the launcher installation issue;
-[details from the Pinokio maintainer](https://pinokio.co/posts/01m1m4p9xxm3qw7dnnpj2wr93g).
+Available on Windows, macOS and Linux. The launcher installs the locked
+dependencies, finds a free local port and opens the app. If installation
+failed on an older Pinokio release, see the
+[maintainer’s notes on the 8.2 fix](https://pinokio.co/posts/01m1m4p9xxm3qw7dnnpj2wr93g).
 
 ### Path 2 — Terminal / coding agent
 
@@ -123,7 +106,7 @@ Use **Node.js 24.x (24.14.0 or later) or 26.x**. The setup doctor warns about
 Node 25, which is end-of-life.
 
 ```bash
-git clone https://github.com/bilawalsidhu/gods-eye-view.git
+git clone https://github.com/krybaby7/gods-eye-view.git
 cd gods-eye-view
 npm ci
 npm run doctor
@@ -177,7 +160,7 @@ Configure issue is resolved. On macOS, the Keychain via
 
 </details>
 
-The server binds to **localhost** on both paths, and Provider Settings answers
+The server binds to **localhost** on both paths, and Data sources and keys answers
 requests only from your machine. Browser-side keys (Google Maps, Cesium ion)
 must be restricted at their providers — [SECURITY.md](SECURITY.md) shows how,
 and it carries the LAN-sharing rules alongside [Keys & Costs](#-api-keys).
@@ -234,7 +217,7 @@ _Why cockpit mode exists: you're riding a real aircraft over real terrain — an
 
 ## 🎙️ Talk to It
 
-> Voice can use an **OpenAI API key** or, on the same machine, an opt-in signed-in **ChatGPT/Codex OAuth** session. The API-key path remains the default. Selecting ChatGPT OAuth in Provider Settings reuses an existing local sign-in or starts the Codex browser sign-in flow and selects OAuth when it completes. The OpenAI key still drives the **AI HUD summary**: a terse, five-word intelligence-style readout of the current view that regenerates as you move.
+> Voice can use an **OpenAI API key** or, on the same machine, an opt-in signed-in **ChatGPT/Codex OAuth** session. The API-key path remains the default. Selecting ChatGPT OAuth in Data sources and keys reuses an existing local sign-in or starts the Codex browser sign-in flow and selects OAuth when it completes. The OpenAI key still drives the **AI HUD summary**: a terse, five-word intelligence-style readout of the current view that regenerates as you move.
 
 The OAuth option is experimental. OpenAI documents ChatGPT plan usage for the [Responses API](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference); a supported third-party Realtime contract for reusing Codex tokens has not been confirmed. A successful token mint does not establish billing or support terms.
 
@@ -248,7 +231,7 @@ Click **GEV MIC**, grant the microphone, and just talk. This is more than a voic
 - **🎯 Entity Q&A.** Click any plane, ship, or datacenter and ask _"what's this?"_ It answers using the object's live telemetry.
 - **👁️ Visual grounding.** At street level, it reads a viewport screenshot to identify legible signage and building names, and is instructed never to hallucinate labels.
 - **🎬 Cinematic framing.** _"Show me the planes overhead"_ pulls the camera back, angles it, and frames the live traffic like a director.
-- **🔒 Honest and secure.** The agent only confirms actions that succeeded. Your `OPENAI_API_KEY` never touches the browser; the client only gets a short-lived session token. If you choose **USE CHATGPT OAUTH** in Provider Settings, the local server uses that sign-in only to mint the same kind of short-lived Realtime credential, and refuses the OAuth path for non-loopback clients.
+- **🔒 Honest and secure.** The agent only confirms actions that succeeded. Your `OPENAI_API_KEY` never touches the browser; the client only gets a short-lived session token. If you choose **Use ChatGPT OAuth** in Data sources and keys, the local server uses that sign-in only to mint the same kind of short-lived Realtime credential, and refuses the OAuth path for non-loopback clients.
 
 Thirty tools, four jobs — the commands below come straight from the product's voice test suite and tool playbook:
 
@@ -284,7 +267,7 @@ _Ask for radio near anywhere and the globe starts broadcasting — every station
 
 ---
 
-**💬 Or ask from Claude and Codex.** God's Eye View is also an MCP server: ask Claude Desktop, Codex or ChatGPT desktop to show a place, and the live globe opens right in the conversation. Setup takes a minute — see [docs/MCP_SETUP.md](docs/MCP_SETUP.md).
+**💬 Or ask from Claude and Codex.** Global Eye View is also an MCP server: ask Claude Desktop, Codex or ChatGPT desktop to show a place, and the live globe opens right in the conversation. Setup takes a minute — see [docs/MCP_SETUP.md](docs/MCP_SETUP.md).
 
 ## 🛰️ What's on the Globe
 
@@ -448,7 +431,7 @@ Eight keys. Five have a free tier, and the three 🔴 ones are metered:
 | --- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 🟡  | **Cesium ion**  | 🗺️ Google Photorealistic 3D, world terrain, and additional ion-hosted imagery stacks. The free Community plan is for eligible individual, personal/non-commercial use and has quotas          | [cesium.com/ion](https://cesium.com/ion) — use a public `assets:read` token and check current [pricing/eligibility](https://cesium.com/platform/cesium-ion/pricing/) |
 | 🔴  | **Google Maps** | Direct Google Photorealistic 3D, Google place search and Street View ([Map Tiles API](https://developers.google.com/maps/documentation/tile); Street View also needs the Maps JavaScript API) | [Google Cloud Console](https://console.cloud.google.com/) — URL-restrict it                                                                                          |
-| 🔴  | **OpenAI**      | 🎙️ Voice + AI HUD summary through an API key. Provider Settings also offers **USE CHATGPT OAUTH** for cloud voice without removing the API-key option                                         | [platform.openai.com](https://platform.openai.com) — API-key usage is metered, see costs below                                                                       |
+| 🔴  | **OpenAI**      | 🎙️ Voice + AI HUD summary through an API key. Data sources and keys also offers **Use ChatGPT OAuth** for cloud voice without removing the API-key option                                         | [platform.openai.com](https://platform.openai.com) — API-key usage is metered, see costs below                                                                       |
 | 🟡  | **AISStream**   | 🚢 Live global ships                                                                                                                                                                          | [aisstream.io](https://aisstream.io) — free signup                                                                                                                   |
 | 🟡  | **NASA FIRMS**  | 🔥 Live active fires                                                                                                                                                                          | [firms.modaps.eosdis.nasa.gov](https://firms.modaps.eosdis.nasa.gov/api/map_key/) — free                                                                             |
 | 🟡  | **TomTom**      | 🚦 Live flow speeds and congestion colors for the simulated traffic layer                                                                                                                     | [my.tomtom.com](https://my.tomtom.com/keys) — free tier available                                                                                                    |
@@ -528,7 +511,7 @@ Honest numbers, roughly, as of mid-2026 — always check the provider pricing pa
 | **🟢 Most layers**       | **$0, no signup.** OpenSky anon, USGS, CelesTrak, adsb.lol, city CCTV, Radio Browser, GBFS, Launch Library 2, transit feeds, OSRM routing, NOAA and ECMWF weather, OpenStreetMap ALPR mapping, bundled datasets.                                                                     |
 | **🟡 The free-key tier** | **$0 with a signup.** AISStream, FIRMS, TomTom, OpenSky, plus Cesium ion for eligible personal/non-commercial use. Provider quotas and eligibility still apply.                                                                                                                      |
 | **🗺️ Google 3D tiles**   | **Free through an eligible Cesium ion Community account within its quota; metered through a direct Google key.** Use the direct route for Google place search or commercial deployment, verify current provider terms, and set budget alerts where billing is enabled.               |
-| **🔴 OpenAI voice**      | API-key sessions keep the live spend readout, STD/MINI model toggle, $2 warning, and **$5 hard cap**. ChatGPT OAuth is an explicit choice in Provider Settings. Its usage is tracked without an API-dollar estimate or spend cap. The voice context window stays deliberately short. |
+| **🔴 OpenAI voice**      | API-key sessions keep the live spend readout, STD/MINI model toggle, $2 warning, and **$5 hard cap**. ChatGPT OAuth is an explicit choice in Data sources and keys. Its usage is tracked without an API-dollar estimate or spend cap. The voice context window stays deliberately short. |
 
 Google's direct 3D route is surprisingly generous: the first 1,000 Photorealistic
 3D Tiles sessions each month are currently free, and one root request supports
@@ -546,7 +529,7 @@ Everything above is the deliberately cheap baseline — enough to get a real tas
 
 By default nobody else can reach your server — it binds to localhost. To share on your LAN, opt in explicitly (`npm run dev -- --host 0.0.0.0 --port 4173`, or `HOST=0.0.0.0 ./scripts/dev-fresh.sh` on macOS/Linux). IP addresses work as they are; if you use a LAN hostname, add it with `GEV_ALLOWED_HOSTS=globe.lan`, since binding to `0.0.0.0` does not trust arbitrary Host headers. But know that ⚠️ **a LAN-visible server brokers your configured API keys to anyone who can reach it.** Per-IP throttles on the cost-bearing endpoints are on by default (`GEV_RATELIMIT_OPENAI_PER_MIN`, `GEV_RATELIMIT_GOOGLE_PER_MIN` — see `.env.example` to tune them), but before anything else, **configure provider quotas, usage limits, and billing alerts**: app-level throttles are not billing caps, and a budget alert alone does not stop spending. Full threat model in [SECURITY.md](SECURITY.md).
 
-Provider Settings is disabled when the server is shared, so remote users cannot
+Data sources and keys is disabled when the server is shared, so remote users cannot
 access the key-entry panel.
 
 **Pinokio LAN and Cloudflare sharing remain disabled for this launcher.** Use
@@ -557,20 +540,18 @@ a separately reviewed authentication proxy if remote access is required.
 
 ## 📋 Responsible & Open
 
-God's Eye View runs on **public data, clear sources, and local-first execution.** No secrets, no private datasets, no mystery scraping — anything involving a private key is brokered server-side. It has the visual grammar of a classified ops room, built entirely from open signals and inspectable code.
+Global Eye View runs on **public data, clear sources, and local-first execution.** The app keeps private keys on the server.
 
 **The line.** This project models **events, assets, infrastructure, and systems** — aircraft, vessels, satellites, fires, cameras, cities. It does not build features for named-person search, face recognition, or tracking individuals, and pull requests that cross that line won't be merged. People are not a query type here.
 
-**Come build it.** This is the canonical live 3D client from the project that kicked off the recent wave of spatial-intelligence tools — and it's a canvas: the layers here are the signals one person could find and fuse. Add a city pack, a data source, a style, a voice tool. It's the window through which you see the world; bring that window to others.
-
 **Status:** An evolving open-source client for exploration and learning — a fast, hackable foundation, not a hardened production service. Released under the **[MIT License](LICENSE)**. Bundled and live datasets carry their own terms — see **[DATA_SOURCES.md](DATA_SOURCES.md)**. Security model: **[SECURITY.md](SECURITY.md)**. Want to contribute? **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
-**Maintainers:** [Bilawal Sidhu](https://github.com/bilawalsidhu) and [Sameh Khamis](https://github.com/samehkhamis) at [Halfpixel](https://halfpixel.ai).
+**Upstream maintainers:** [Bilawal Sidhu](https://github.com/bilawalsidhu) and [Sameh Khamis](https://github.com/samehkhamis) at [Halfpixel](https://halfpixel.ai).
 
 <sub>Media note: the capture GIFs on this page show Google Photorealistic 3D Tiles and live data layers, used promotionally with in-frame attribution; they aren't licensed for standalone reuse. See [media provenance and permissions](docs/media/README.md); full source terms in [DATA_SOURCES.md](DATA_SOURCES.md).</sub>
 
 > [!IMPORTANT]
-> God's Eye View is an exploratory visualization of public and third-party data.
+> Global Eye View is an exploratory visualization of public and third-party data.
 > Data may be delayed, incomplete, modeled, inferred, or wrong. Do not use it
 > for flight or maritime navigation, emergency response, medical or health
 > decisions, investment decisions, or other safety-critical or operational
@@ -578,24 +559,8 @@ God's Eye View runs on **public data, clear sources, and local-first execution.*
 
 ---
 
-## 🧭 What's Next
+## Credits
 
-First — thank you. To everyone who watched the God-view demos and went off to build their own, and to everyone who kept asking for the code: I'm grateful. And when I polled whether this should go open source, you weren't subtle about it:
-
-<img src="docs/media/open-source-survey.png" alt="Community survey on open-sourcing God's Eye View" width="460">
-
-So here it is. Step inside the spy-thriller cockpit — except the data is real — and let's turn this into our shared sandbox for making sense of the world, and have fun doing it. This repo is the baseline, it stays open, and the whole point is for you to break things and bolt on layers we haven't thought of yet.
-
-One heads-up from the inside: build in this space for a week and you learn that **the present is the cheap part**. The moment you try to go back in time — tiling, serving, and scrubbing _what happened_ and _what changed_ at any real resolution — the data gets expensive and the compute gets brutal. That's the long game.
-
-**Update — a hosted version is coming.** We originally planned to keep this repository as the open-source client and build a separate professional product. Then the launch happened, and the loudest request wasn't another feature — it was _"just give me a link."_ So we're building an official hosted God's Eye View at [Halfpixel](https://halfpixel.ai): no installation, just open it in your browser. The hosted version is the easiest way into this open-source project. More soon.
-
----
-
-<div align="center">
-
-▶️ [Watch the God's Eye View series](https://youtube.com/playlist?list=PL6qSg2I-7_koPbDnSMo0QeeHX_RknA2uv&si=nBGYMoHWQw41v93Q) · 📬 [Map the World](https://maptheworld.ai/) — the newsletter behind the project
-
-**🌐 God's Eye View. No place left behind.**
-
-</div>
+The original [God's Eye View](https://github.com/bilawalsidhu/gods-eye-view)
+project and [video series](https://youtube.com/playlist?list=PL6qSg2I-7_koPbDnSMo0QeeHX_RknA2uv)
+are by Bilawal Sidhu.

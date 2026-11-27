@@ -1,5 +1,12 @@
 // Colours shared by foundation.css and the globe. This module is also used in Node.
 export const DESIGN_COLORS = Object.freeze({
+  '--accent': '#00d4ff',
+  '--surface-space': '#05070b',
+  '--surface-2': '#1b1c28',
+  '--surface-3': '#262838',
+  '--line-strong': 'rgba(255, 255, 255, 0.16)',
+  '--text-1': '#e8eaed',
+  '--text-2': '#aab0bb',
   '--rel-war': '#db474f',
   '--rel-armed': '#f4525d',
   '--rel-sanctions': '#e8933f',
@@ -17,6 +24,27 @@ export const DESIGN_COLORS = Object.freeze({
   '--live-sea': '#3fe0c8',
   '--live-space': '#bda4ff',
   '--ownership-documented': '#519bd4',
+  '--cat-all': '#b9fbff',
+  '--cat-news': '#44adff',
+  '--cat-talk': '#f2b84b',
+  '--cat-weather': '#ff5c78',
+  '--cat-public-safety': '#ff8b4a',
+  '--cat-aviation-marine': '#a87cff',
+  '--cat-traffic-transit': '#ffd166',
+  '--cat-music': '#54d17a',
+  '--cat-other': '#9aa7b3',
+});
+
+export const RADIO_CATEGORY_COLORS = Object.freeze({
+  all: DESIGN_COLORS['--cat-all'],
+  news: DESIGN_COLORS['--cat-news'],
+  talk: DESIGN_COLORS['--cat-talk'],
+  weather: DESIGN_COLORS['--cat-weather'],
+  'public-safety': DESIGN_COLORS['--cat-public-safety'],
+  'aviation-marine': DESIGN_COLORS['--cat-aviation-marine'],
+  'traffic-transit': DESIGN_COLORS['--cat-traffic-transit'],
+  music: DESIGN_COLORS['--cat-music'],
+  other: DESIGN_COLORS['--cat-other'],
 });
 
 function rgb(hex) {

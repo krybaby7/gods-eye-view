@@ -1,17 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createFakeDocument } from './testSupport/fakeDocument.mjs';
 import {
   collectKeyUpdates,
+  initKeySetup,
   keySetupChipLabel,
   stripKeylessBasemapFromHash,
   waitForChatGptOAuth,
 } from './keySetup.js';
 
 test('the chip counts what is missing, and retires the count at zero', () => {
-  assert.equal(keySetupChipLabel({ setCount: 0, total: 8 }), 'POWER UP · 8 KEYS WAITING');
-  assert.equal(keySetupChipLabel({ setCount: 7, total: 8 }), 'POWER UP · 1 KEY WAITING');
-  assert.equal(keySetupChipLabel({ setCount: 8, total: 8 }), 'POWERED UP');
-  assert.equal(keySetupChipLabel(null), 'POWERED UP', 'no status is not a broken label');
+  assert.equal(keySetupChipLabel({ setCount: 0, total: 8 }), '8 keys missing');
+  assert.equal(keySetupChipLabel({ setCount: 7, total: 8 }), '1 key missing');
+  assert.equal(keySetupChipLabel({ setCount: 8, total: 8 }), 'Data sources and keys');
+  assert.equal(keySetupChipLabel(null), 'Data sources and keys', 'no status is not a broken label');
 });
 
 test('collectKeyUpdates keeps only non-empty trimmed values', () => {
@@ -100,7 +102,6 @@ test('the first Google key strips ONLY the keyless OSM basemap from the share ha
 });
 
 test('aborting pending setup removes its surface and ignores a late response', async () => {
-  const { initKeySetup } = await import('./keySetup.js');
   const removed = [];
   const chip = { remove: () => removed.push('chip') };
   const root = { dataset: {}, remove: () => removed.push('root') };
@@ -120,4 +121,60 @@ test('aborting pending setup removes its surface and ignores a late response', a
   assert.deepEqual(removed, ['chip', 'root']);
   resolveResponse({ ok: true, json: async () => ({ keys: [] }) });
   assert.equal(await pending, null);
+});
+
+
+test('opening setup without editable key fields focuses the close button', async (t) => {
+  const previousFrame = Object.getOwnPropertyDescriptor(globalThis, 'requestAnimationFrame');
+  let frame;
+  Object.defineProperty(globalThis, 'requestAnimationFrame', {
+    configurable: true,
+    value: (callback) => { frame = callback; },
+  });
+  t.after(() => {
+    if (previousFrame) Object.defineProperty(globalThis, 'requestAnimationFrame', previousFrame);
+    else delete globalThis.requestAnimationFrame;
+  });
+
+  const document = createFakeDocument();
+  const chip = document.createElement('button');
+  chip.id = 'key-setup-chip';
+  const root = document.createElement('aside');
+  root.id = 'key-setup';
+  const close = document.createElement('button');
+  close.setAttribute('data-key-setup-close', '');
+  const rows = document.createElement('div');
+  rows.setAttribute('data-key-setup-rows', '');
+  root.append(close, rows);
+  document.body.append(chip, root);
+  const launcher = document.createElement('button');
+  launcher.isConnected = true;
+  document.body.append(launcher);
+  launcher.focus();
+
+  const setup = await initKeySetup({
+    documentRef: document,
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => ({
+        total: 1,
+        setCount: 1,
+        keys: [{
+          id: 'google-maps',
+          title: 'Google Maps',
+          envVars: ['GOOGLE_MAPS_API_KEY'],
+          set: true,
+          managed: 'external',
+        }],
+      }),
+    }),
+  });
+  t.after(() => setup.destroy());
+  assert.equal(root.querySelector('input'), null);
+  assert.equal(chip.hidden, true);
+  chip.click();
+  frame();
+  assert.equal(document.activeElement, close);
+  close.click();
+  assert.equal(document.activeElement, launcher);
 });

@@ -115,18 +115,6 @@ export const CATEGORY_MATCHERS = Object.freeze({
   'traffic-transit': ['traffic', 'transit', 'transport', 'rail', 'metro'],
 });
 
-export const RADIO_CATEGORY_COLORS = Object.freeze({
-  all: '#b9fbff',
-  news: '#44adff',
-  talk: '#f2b84b',
-  weather: '#ff5c78',
-  'public-safety': '#ff8b4a',
-  'aviation-marine': '#a87cff',
-  'traffic-transit': '#ffd166',
-  music: '#54d17a',
-  other: '#9aa7b3',
-});
-
 export const RADIO_CLUSTER_LABELS = Object.freeze({
   news: 'NEWS',
   talk: 'TALK',

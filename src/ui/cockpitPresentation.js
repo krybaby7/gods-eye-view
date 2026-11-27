@@ -35,7 +35,7 @@ export const COCKPIT_BRIEF_CYCLE_OFF_HELP =
   'Cycle briefing pages automatically every 9 seconds (Signals → News → Local). Pauses while you hover or focus the panel. Live signal data refreshes continuously either way.';
 
 export const COCKPIT_BRIEF_CYCLE_ON_HELP =
-  'Stop automatic page cycling. Previous, Next, and the SIG/NEWS/LOCAL tabs stay available.';
+  'Stop automatic page cycling. Previous, Next, and the Signals, News and Local tabs stay available.';
 
 export const COCKPIT_REGIONAL_REFRESH_MS = 5 * 60_000;
 
@@ -44,21 +44,21 @@ export const COCKPIT_REGIONAL_REFRESH_DISTANCE_M = 25_000;
 export const COCKPIT_BRIEF_PAGES = [
   {
     id: 'signals',
-    kicker: 'LIVE SIGNALS',
-    subtitle: 'OBSERVED / MAPPED PINGS',
-    source: 'SOURCE-BACKED EVENTS · NO SYNTHETIC NEWS',
+    kicker: 'Live signals',
+    subtitle: 'Observed or mapped signals',
+    source: 'Source-backed events',
   },
   {
     id: 'news',
-    kicker: 'REGIONAL NEWS',
-    subtitle: 'LATEST LOCATION-MATCHED REPORTING',
-    source: 'GOOGLE NEWS RSS · LOCATION QUERY · RECENT',
+    kicker: 'Regional news',
+    subtitle: 'Latest reporting for this location',
+    source: 'Google News RSS · Location query · Recent',
   },
   {
     id: 'local',
-    kicker: 'LOCAL INFO',
-    subtitle: 'PLACE / CONDITIONS / POSITION',
-    source: 'NATURAL EARTH · OPEN-METEO · UTC',
+    kicker: 'Local information',
+    subtitle: 'Place, conditions and position',
+    source: 'Natural Earth · Open-Meteo · UTC',
   },
 ];
 

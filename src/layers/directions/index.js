@@ -17,6 +17,7 @@
  */
 
 import * as Cesium from 'cesium';
+import { DESIGN_COLORS } from '../../designTokens.js';
 import {
   formatRouteDistance,
   formatRouteDuration,
@@ -39,8 +40,12 @@ export const DEFAULT_DIRECTIONS_MODE = 'car';
 
 /** Route colour — the annotation palette's cyan, so voice routes and Directions match. */
 export const DIRECTIONS_ROUTE_COLOR = '#39d0ff';
-const MARKER_A_COLOR = Cesium.Color.fromCssColorString('#5dff9f');
-const MARKER_B_COLOR = Cesium.Color.fromCssColorString('#ff6b6b');
+const MARKER_A_COLOR = Cesium.Color.fromCssColorString(
+  DESIGN_COLORS['--rel-partner'],
+);
+const MARKER_B_COLOR = Cesium.Color.fromCssColorString(
+  DESIGN_COLORS['--rel-armed'],
+);
 const STEP_COLOR = Cesium.Color.WHITE.withAlpha(0.95);
 const STEP_OUTLINE = Cesium.Color.fromCssColorString(DIRECTIONS_ROUTE_COLOR);
 const STEP_PIXEL_SIZE = 8;

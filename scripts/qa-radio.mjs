@@ -318,7 +318,7 @@ async function main() {
         filterPalette: Array.from(document.getElementById('radio-filter').options).map((entry) => ({
           id: entry.value,
           label: entry.textContent,
-          color: entry.dataset.radioColor,
+          color: getComputedStyle(entry).color,
         })),
         enablePressed: document.getElementById('radio-enable-btn').getAttribute('aria-pressed'),
         launcherExpanded: document.getElementById('context-radio-toggle-btn').getAttribute('aria-expanded'),
@@ -344,14 +344,14 @@ async function main() {
     check(
       'station-tag options show category-colored circles before their labels',
       initial.filterPalette.every((entry) => entry.label.startsWith('● '))
-        && musicOption?.color === '#54d17a'
-        && newsOption?.color === '#44adff',
+        && musicOption?.color === 'rgb(84, 209, 122)'
+        && newsOption?.color === 'rgb(68, 173, 255)',
       JSON.stringify({ musicOption, newsOption }),
     );
     check('All is the initial Radio filter', initial.state.filter === 'all' && initial.state.filteredCount === 750, `${initial.state.filteredCount} stations`);
     check(
       'the default All filter exposes a draggable directory tuner band',
-      initial.tunerVisible && initial.tunerCount === 750 && initial.tunerLabel === 'DIRECTORY BAND',
+      initial.tunerVisible && initial.tunerCount === 750 && initial.tunerLabel === 'Directory band',
       JSON.stringify({ visible: initial.tunerVisible, count: initial.tunerCount, label: initial.tunerLabel }),
     );
     const uncertainPresentation = await page.evaluate(async () => {
@@ -463,12 +463,12 @@ async function main() {
         && uncertainPresentation.volumeDisabled
         && /compact Radio controls/i.test(uncertainPresentation.disclosureLabel)
         && /uncertain/i.test(uncertainPresentation.compactPowerLabel)
-        && uncertainPresentation.compactPowerText === 'RECONCILE'
+        && uncertainPresentation.compactPowerText === 'Reconcile'
         && /uncertain/i.test(uncertainPresentation.fullLabel)
-        && uncertainPresentation.fullText === 'RECONCILE'
-        && uncertainPresentation.layerState === 'UNCERTAIN'
+        && uncertainPresentation.fullText === 'Reconcile'
+        && uncertainPresentation.layerState === 'Uncertain'
         && /uncertain/i.test(uncertainPresentation.playbackMessage)
-        && uncertainPresentation.miniStation === 'RADIO STATE UNCERTAIN'
+        && uncertainPresentation.miniStation === 'Radio state uncertain'
         && uncertainPresentation.dataRailText === 'UNCERTAIN'
         && uncertainPresentation.dataRailState === 'uncertain'
         // The switch's label is the layer's name; its state is the row's.
@@ -527,10 +527,10 @@ async function main() {
         && disablingPresentation.manager.lifecycleState === 'disabling'
         && disablingPresentation.presentationActive === false
         && disablingPresentation.markerSourceVisible === false
-        && disablingPresentation.full === 'DISABLING'
+        && disablingPresentation.full === 'Disabling…'
         && /compact Radio controls/i.test(disablingPresentation.disclosure)
-        && disablingPresentation.compactPower === 'DISABLING'
-        && disablingPresentation.layerState === 'DISABLING'
+        && disablingPresentation.compactPower === 'Disabling…'
+        && disablingPresentation.layerState === 'Disabling…'
         && /disabling/i.test(disablingPresentation.message)
         && disablingPresentation.stopDisabled
         && disablingPresentation.volumeDisabled,
@@ -603,12 +603,12 @@ async function main() {
         && enablingPresentation.manager.lifecycleState === 'enabling'
         && enablingPresentation.presentationActive === false
         && enablingPresentation.markerSourceVisible === false
-        && enablingPresentation.full === 'ENABLING'
+        && enablingPresentation.full === 'Enabling…'
         && enablingPresentation.disclosure === 'Go to expanded Radio section'
         && enablingPresentation.disclosureControls === 'radio-panel'
         && enablingPresentation.disclosureExpanded === 'true'
-        && enablingPresentation.compactPower === 'ENABLING'
-        && enablingPresentation.layerState === 'ENABLING'
+        && enablingPresentation.compactPower === 'Enabling…'
+        && enablingPresentation.layerState === 'Enabling…'
         && /enabling/i.test(enablingPresentation.message)
         && enablingPresentation.tunerHidden
         && enablingPresentation.stopDisabled

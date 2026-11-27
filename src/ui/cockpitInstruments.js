@@ -4,7 +4,6 @@ import {
   normalizeCockpitVisionMode,
 } from '../cockpitVisionPolicy.js';
 import {
-  altitudeRulerCurveInset,
   altitudeRulerTicks,
   bearingBetweenCoordinates,
   cockpitAltitudeDisplayFt,
@@ -31,7 +30,7 @@ export function updateHud(
   const heading = normalizeHeading(this.heading ?? info.track ?? 0);
   if (this.callsign) {
     this.callsign.textContent =
-      info.callsign || info.registration || info.icao24 || 'AIRCRAFT';
+      info.callsign || info.registration || info.icao24 || 'Aircraft';
   }
   const speedKt = Number.isFinite(info.velocityMps)
     ? info.velocityMps * 1.94384
@@ -49,11 +48,6 @@ export function updateHud(
     element.hidden = !tick;
     if (!tick) return;
     element.style.setProperty('--slot', tick.slot.toFixed(4));
-    element.style.setProperty('--depth', tick.depth.toFixed(4));
-    element.style.setProperty(
-      '--curve',
-      altitudeRulerCurveInset(tick.slot).toFixed(5),
-    );
     element.classList.toggle('major', tick.major);
     const label = element.querySelector('b');
     if (label) label.textContent = formatSpeedRulerTick(tick.valueKt);
@@ -86,11 +80,6 @@ export function updateHud(
     element.hidden = !tick;
     if (!tick) return;
     element.style.setProperty('--slot', tick.slot.toFixed(4));
-    element.style.setProperty('--depth', tick.depth.toFixed(4));
-    element.style.setProperty(
-      '--curve',
-      altitudeRulerCurveInset(tick.slot).toFixed(5),
-    );
     element.classList.toggle('major', tick.major);
     const label = element.querySelector('b');
     if (label) label.textContent = formatAltitudeRulerTick(tick.valueFt);
@@ -109,7 +98,7 @@ export function updateHud(
       this.compassTape.innerHTML = divisions
         .map((division, index) => {
           const slot = index - 3;
-          return `<span class="${slot === 0 ? 'active' : ''}" style="--slot:${slot};--depth:${Math.abs(slot)}">${formatCompassDivision(division)}</span>`;
+          return `<span class="${slot === 0 ? 'active' : ''}">${formatCompassDivision(division)}</span>`;
         })
         .join('');
     }
@@ -127,13 +116,13 @@ export function updateHud(
   }
   if (this.aircraftMeta) {
     const feedState = this.surfaceAcquiring
-      ? 'ACQUIRING SURFACE'
+      ? 'Acquiring surface'
       : this.surfaceFallback
-        ? 'SURFACE FALLBACK'
+        ? 'Surface fallback'
         : info.stale
-          ? 'STALE FEED'
-          : 'LIVE TRACK';
-    this.aircraftMeta.textContent = `${info.layerId === 'military' ? 'MILITARY' : 'COMMERCIAL'} · ${feedState} · COURSE ALIGNED`;
+          ? 'Stale feed'
+          : 'Live track';
+    this.aircraftMeta.textContent = `${info.layerId === 'military' ? 'Military' : 'Commercial'} · ${feedState}`;
   }
   this.updateRoute(info);
   if (
@@ -158,13 +147,13 @@ export function updateRoute(info) {
   const validDestination =
     Number.isFinite(destination?.lat) && Number.isFinite(destination?.lon);
   const routeLabel = (airport) =>
-    [airport?.code, airport?.name].filter(Boolean).join(' · ') || 'UNKNOWN';
+    [airport?.code, airport?.name].filter(Boolean).join(' · ') || 'Unknown';
   if (this.routeFrom) this.routeFrom.textContent = routeLabel(origin);
   if (this.routeTo) this.routeTo.textContent = routeLabel(destination);
   if (this.routeStatus) {
     this.routeStatus.textContent = validDestination
-      ? 'ARROW · ESTIMATED DIRECTION'
-      : 'ROUTE DATA UNAVAILABLE';
+      ? 'Arrow · Estimated direction'
+      : 'Route data unavailable';
   }
   if (this.route) this.route.hidden = !origin && !destination;
   if (
@@ -198,7 +187,7 @@ export function updateRoute(info) {
     );
   }
   if (this.routeDirectionLabel) {
-    this.routeDirectionLabel.textContent = `DEST ${String(Math.round(destinationBearing)).padStart(3, '0')}°`;
+    this.routeDirectionLabel.textContent = `Dest ${String(Math.round(destinationBearing)).padStart(3, '0')}°`;
   }
 }
 
@@ -211,20 +200,20 @@ export function syncWeatherToggle(enabled) {
     `${active ? 'Disable' : 'Enable'} cockpit weather effects`,
   );
   this.weatherToggle.title = `${active ? 'Disable' : 'Enable'} cockpit weather effects`;
-  if (this.weatherState) this.weatherState.textContent = active ? 'ON' : 'OFF';
+  if (this.weatherState) this.weatherState.textContent = active ? 'On' : 'Off';
 }
 
 export function setVisionMode(mode, { revealParameters = false } = {}) {
   const next = normalizeCockpitVisionMode(mode);
   this.visionMode = next;
   const labels = {
-    optical: 'NORMAL',
+    optical: 'Normal',
     crt: 'CRT',
     nvg: 'NVG',
     thermal: 'FLIR',
-    anime: 'ANIME',
-    noir: 'NOIR',
-    snow: 'SNOW',
+    anime: 'Anime',
+    noir: 'Noir',
+    snow: 'Snow',
   };
   const names = {
     optical: 'Normal',
