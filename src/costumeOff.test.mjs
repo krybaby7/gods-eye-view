@@ -56,7 +56,7 @@ function ruleBody(css, selector) {
 
 test('the title stays as a plain element other code can measure', () => {
   assert.match(html, /<div id="title-bar">/);
-  assert.match(html, /GOD'S EYE <span class="title-accent">VIEW<\/span>/, 'same title text');
+  assert.match(html, /Global Eye <span class="title-accent">View<\/span>/, 'same title text');
   for (const gone of [
     'title-glow',
     'class="subtitle"',
