@@ -61,27 +61,26 @@
 
   <!-- Street Level Panel (moved into #right-context-rail at runtime) -->
   <div id="street-level-panel" class="panel-collapsible collapsed" data-panel-id="street-level-panel">
-    <div class="street-level-panel-inner" data-rail-scroller>
-      <div class="panel-header">
-        <span class="panel-title">STREET LEVEL</span>
-        <span class="panel-divider"></span>
-        <button id="sl-status" class="sl-status" type="button" aria-pressed="false" title="Turn Street Level on or off">OFF</button>
-        <button class="panel-collapse-btn" data-collapse-target="street-level-panel" title="Expand panel">◀</button>
+    <div class="street-level-panel-inner kit-panel" data-rail-scroller>
+      <div class="panel-header kit-panel-head">
+        <h2 id="street-level-panel-title" class="panel-title kit-panel-title">Street level</h2>
+        <button id="sl-status" class="sl-status kit-btn quiet" type="button" aria-pressed="false" title="Turn Street level on or off">Off</button>
+        <button class="panel-collapse-btn kit-iconbtn" type="button" data-collapse-target="street-level-panel" aria-controls="sl-body" aria-expanded="false" aria-label="Expand Street level" title="Expand Street level">◀</button>
       </div>
       <div id="sl-body" class="sl-body">
         <div class="sl-main">
           <div id="sl-viewer-wrap" class="sl-viewer-wrap" hidden>
             <div class="sl-viewer-bar">
               <div class="sl-viewer-tools">
-                <button id="sl-viewer-expand" class="scene-btn" type="button" aria-pressed="false" title="Expand the street-level view (Esc shrinks it)"><span class="sl-btn-icon" aria-hidden="true">⤢</span><span class="sl-btn-text">EXPAND</span></button>
-                <div class="sl-seg" role="radiogroup" aria-label="Image fit">
-                  <button type="button" class="sl-seg-btn is-active" data-sl-render="letterbox" role="radio" aria-checked="true" title="Fit: show the whole photo, with dark bars where its shape differs from the frame">FIT</button>
-                  <button type="button" class="sl-seg-btn" data-sl-render="fill" role="radio" aria-checked="false" tabindex="-1" title="Fill: fill the frame edge to edge, cropping the photo">FILL</button>
+                <button id="sl-viewer-expand" class="kit-btn" type="button" aria-pressed="false" aria-label="Expand" title="Expand the street-level view"><span class="sl-btn-icon" aria-hidden="true">⤢</span><span class="sl-btn-text">Expand</span></button>
+                <div class="sl-seg kit-seg" role="radiogroup" aria-label="Image fit">
+                  <button type="button" class="sl-seg-btn kit-seg-item is-active" data-sl-render="letterbox" role="radio" aria-checked="true" title="Fit: show the whole photo, with dark bars where its shape differs from the frame">Fit</button>
+                  <button type="button" class="sl-seg-btn kit-seg-item" data-sl-render="fill" role="radio" aria-checked="false" tabindex="-1" title="Fill: fill the frame edge to edge, cropping the photo">Fill</button>
                 </div>
-                <button id="sl-follow-btn" class="scene-btn" type="button" aria-pressed="false" aria-label="Camera follows view" title="Camera follows view: move the globe camera wherever the street-level view looks"><span class="sl-btn-icon" aria-hidden="true">⌖</span><span class="sl-btn-text">FOLLOW</span></button>
+                <button id="sl-follow-btn" class="kit-btn" type="button" aria-pressed="false" aria-label="Camera follows view" title="Camera follows view: move the globe camera wherever the street-level view looks"><span class="sl-btn-icon" aria-hidden="true">⌖</span><span class="sl-btn-text">Follow</span></button>
               </div>
               <div class="sl-viewer-tools sl-viewer-tools-right">
-                <button id="sl-viewer-close" class="sl-viewer-x" type="button" title="Close the image and deselect it on the map" aria-label="Close the street-level image">×</button>
+                <button id="sl-viewer-close" class="sl-viewer-x kit-iconbtn" type="button" title="Close the image and deselect it on the map" aria-label="Close the street-level image">×</button>
               </div>
             </div>
             <div class="sl-viewer-stage">
@@ -98,7 +97,7 @@
           </div>
           <div class="sl-settings">
             <div class="sl-providers" role="group" aria-label="Imagery providers">
-              <span class="cctv-summary-label">PROVIDERS</span>
+              <span class="sl-label">Providers</span>
               <div id="sl-provider-chips" class="sl-chips"></div>
             </div>
             <div id="sl-error" class="sl-error" role="alert" hidden><span aria-hidden="true">⚠</span> <span id="sl-error-text"></span></div>
@@ -106,24 +105,24 @@
                  focusable so their tooltip can say how to add the key. -->
             <fieldset id="sl-controls" class="sl-controls">
               <div id="sl-pano-row" class="sl-filters" role="group" aria-label="Imagery filters">
-                <span class="cctv-summary-label">IMAGERY</span>
-                <div class="sl-seg" role="radiogroup" aria-label="Panorama filter">
-                  <button type="button" class="sl-seg-btn is-active" data-sl-pano="all" role="radio" aria-checked="true">ALL</button>
-                  <button type="button" class="sl-seg-btn" data-sl-pano="pano" role="radio" aria-checked="false" tabindex="-1">360°</button>
-                  <button type="button" class="sl-seg-btn" data-sl-pano="flat" role="radio" aria-checked="false" tabindex="-1">FLAT</button>
+                <span class="sl-label">Imagery</span>
+                <div class="sl-seg kit-seg" role="radiogroup" aria-label="Panorama filter">
+                  <button type="button" class="sl-seg-btn kit-seg-item is-active" data-sl-pano="all" role="radio" aria-checked="true">All</button>
+                  <button type="button" class="sl-seg-btn kit-seg-item" data-sl-pano="pano" role="radio" aria-checked="false" tabindex="-1">360°</button>
+                  <button type="button" class="sl-seg-btn kit-seg-item" data-sl-pano="flat" role="radio" aria-checked="false" tabindex="-1">Flat</button>
                 </div>
               </div>
               <div id="sl-since-row" class="sl-since">
-                <label class="cctv-summary-label" for="sl-since">SINCE</label>
-                <input id="sl-since" class="sl-range" type="range" min="0" max="8" step="1" value="0" aria-valuetext="ANY DATE" aria-describedby="sl-since-label" />
-                <output id="sl-since-label" class="sl-since-label" for="sl-since">ANY DATE</output>
+                <label class="sl-label" for="sl-since">Since</label>
+                <input id="sl-since" class="sl-range" type="range" min="0" max="8" step="1" value="0" aria-valuetext="Any date" aria-describedby="sl-since-label" />
+                <output id="sl-since-label" class="sl-since-label" for="sl-since">Any date</output>
               </div>
             </fieldset>
             <ul id="sl-legend" class="sl-legend" aria-label="Coverage colours"></ul>
             <!-- The hint says how to open imagery; the button does it without a pointer. -->
             <div class="sl-meta-row">
               <div id="sl-coverage-meta" class="sl-meta"></div>
-              <button id="sl-nearest-btn" class="scene-btn sl-nearest-btn" type="button" hidden>OPEN STREET VIEW</button>
+              <button id="sl-nearest-btn" class="kit-btn sl-nearest-btn" type="button" hidden>Open Street View</button>
             </div>
           </div>
         </div>

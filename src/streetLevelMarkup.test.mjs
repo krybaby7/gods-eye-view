@@ -23,14 +23,17 @@ test('Street Level is an ordinary collapsible GEV panel that starts collapsed', 
   );
   assert.match(
     html,
-    /<button class="panel-collapse-btn" data-collapse-target="street-level-panel"/,
+    /<button class="panel-collapse-btn kit-iconbtn"[^>]*data-collapse-target="street-level-panel"/,
   );
-  assert.match(html, /<span class="panel-title">STREET LEVEL<\/span>/);
+  assert.match(
+    html,
+    /<h2 id="street-level-panel-title" class="panel-title kit-panel-title">Street level<\/h2>/,
+  );
   // Provider-neutral header: no vendor mark; the inner restores its scroll.
   assert.doesNotMatch(html, /sl-mark|mly-mark/);
   assert.match(
     html,
-    /<div class="street-level-panel-inner" data-rail-scroller>/,
+    /<div class="street-level-panel-inner kit-panel" data-rail-scroller>/,
   );
   assert.doesNotMatch(
     html,
@@ -102,7 +105,7 @@ test('the keyless state gates the controls rather than leaving dead buttons', ()
   // The header pill is the layer's on/off switch, not just a readout.
   assert.match(
     html,
-    /<button id="sl-status" class="sl-status" type="button" aria-pressed="false"/,
+    /<button id="sl-status" class="sl-status kit-btn quiet" type="button" aria-pressed="false"/,
   );
   assert.match(
     controls,
@@ -122,8 +125,8 @@ test('the expanded viewer is a modal dialog that restores focus', () => {
 test('labels say what the buttons do', () => {
   for (const label of [
     'aria-label="Camera follows view"',
-    'PROVIDERS',
-    'SINCE',
+    '>Providers<',
+    '>Since<',
   ])
     assert.ok(html.includes(label), label);
   // The provider chips are the on/off switch; no separate buttons.
@@ -210,16 +213,16 @@ test('Clean View, recording and the cockpit hide the expanded viewer on <body> (
 test('the expanded viewer keeps the panel tokens (P3)', () => {
   assert.match(
     panelCss,
-    /#street-level-panel,\s*\.sl-viewer-wrap \{\s*--sl-green:[^}]*--sl-text:[^}]*--sl-text-small:/,
+    /#street-level-panel,\s*\.sl-viewer-wrap \{\s*--sl-text:\s*var\(--type-body\);[^}]*--sl-text-small:\s*var\(--type-small\)/,
   );
 });
 
 test('radiogroups are one tab stop and their focus ring is not clipped (P3)', () => {
-  const seg = /\.sl-seg \{([^}]*)\}/.exec(panelCss)[1];
+  const seg = /\.kit-seg \{([^}]*)\}/.exec(css)[1];
   assert.doesNotMatch(seg, /overflow/);
   assert.match(
     panelCss,
-    /\.sl-seg-btn:focus-visible \{[^}]*outline: 1px solid/,
+    /\.sl-seg-btn:focus-visible \{[^}]*outline: 2px solid/,
   );
   for (const [group, checked] of [
     ['data-sl-render', 'letterbox'],
@@ -240,13 +243,8 @@ test('radiogroups are one tab stop and their focus ring is not clipped (P3)', ()
   }
 });
 
-test('OPEN STREET VIEW keeps its width beside a long coverage line', () => {
-  // .scene-btn grows and shrinks (flex: 1) and loads after this stylesheet:
-  // only a more specific rule keeps the button from being squeezed.
-  assert.match(css, /\.scene-btn \{[^}]*flex: 1;/);
-  assert.match(
-    panelCss,
-    /\.sl-meta-row \.sl-nearest-btn \{\s*flex: 0 0 auto;\s*\}/,
-  );
+test('the Street View action can wrap next to a long coverage line', () => {
+  assert.match(html, /id="sl-nearest-btn" class="kit-btn sl-nearest-btn"/);
+  assert.match(panelCss, /\.sl-meta-row \{[^}]*flex-wrap: wrap;/);
   assert.match(panelCss, /\.sl-meta-row \.sl-meta \{[^}]*min-width: 0;/);
 });

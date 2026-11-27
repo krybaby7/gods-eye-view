@@ -75,14 +75,14 @@ function deepMerge(target, source) {
   return out;
 }
 
-test('a key-gated layer disables every control and flags KEY REQUIRED', () => {
+test('a key-gated layer disables every control and flags Key required', () => {
   const view = presentStreetLevelPanel(snapshot({ keyRequired: true }));
   assert.equal(view.controlsDisabled, true);
-  assert.equal(view.status.text, 'KEY REQUIRED');
+  assert.equal(view.status.text, 'Key required');
   assert.equal(view.status.tone, 'warn');
 });
 
-test('KEY REQUIRED shows no raw error code under the pill', () => {
+test('Key required shows no raw error code under the pill', () => {
   const view = presentStreetLevelPanel(
     snapshot({
       enabled: true,
@@ -91,13 +91,13 @@ test('KEY REQUIRED shows no raw error code under the pill', () => {
       providers: [provider({ keyRequired: true, error: 'no_key' })],
     }),
   );
-  assert.equal(view.status.text, 'KEY REQUIRED');
+  assert.equal(view.status.text, 'Key required');
   assert.equal(view.error, null);
   // The chip still says how to add the key.
   assert.match(view.providers[0].title, /^Mapillary: Needs /);
 });
 
-test('a key Mapillary rejected reads KEY REJECTED and names the fix', () => {
+test('a key Mapillary rejected reads Key rejected and names the fix', () => {
   const error =
     'Mapillary rejected MAPILLARY_CLIENT_TOKEN — replace it in Data sources and keys';
   const view = presentStreetLevelPanel(
@@ -109,7 +109,7 @@ test('a key Mapillary rejected reads KEY REJECTED and names the fix', () => {
       providers: [provider({ keyRequired: true, keyRejected: true, error })],
     }),
   );
-  assert.equal(view.status.text, 'KEY REJECTED');
+  assert.equal(view.status.text, 'Key rejected');
   assert.equal(view.status.tone, 'warn');
   assert.equal(view.controlsDisabled, true);
   assert.equal(view.error, error);
@@ -117,44 +117,44 @@ test('a key Mapillary rejected reads KEY REJECTED and names the fix', () => {
   assert.equal(view.providers[0].title, `Mapillary: ${error}`);
 });
 
-test('a key problem outranks loading on the pill: KEY REJECTED, then KEY REQUIRED (M65)', () => {
+test('a key problem outranks loading on the pill: Key rejected, then Key required (M65)', () => {
   // A keyless provider can still report loading (its status check, a retry):
   // the pill must say what is wrong, not that something is on its way.
   const loading = { enabled: true, coverage: { loading: true } };
   assert.equal(
     presentStreetLevelPanel(snapshot({ ...loading, keyRequired: true })).status
       .text,
-    'KEY REQUIRED',
+    'Key required',
   );
   assert.equal(
     presentStreetLevelPanel(
       snapshot({ ...loading, keyRequired: true, keyRejected: true }),
     ).status.text,
-    'KEY REJECTED',
+    'Key rejected',
   );
 });
 
 test('the header pill is the on/off switch and reads OFF, LOADING or ON', () => {
   assert.deepEqual(presentStreetLevelPanel(snapshot()).status, {
-    text: 'OFF',
+    text: 'Off',
     tone: '',
     pressed: false,
-    title: 'Turn Street Level on',
+    title: 'Turn Street level on',
   });
   assert.deepEqual(
     presentStreetLevelPanel(
       snapshot({ enabled: true, coverage: { loading: true } }),
     ).status,
     {
-      text: 'LOADING',
+      text: 'Loading',
       tone: 'busy',
       pressed: true,
-      title: 'Turn Street Level off',
+      title: 'Turn Street level off',
     },
   );
   assert.deepEqual(
     presentStreetLevelPanel(snapshot({ enabled: true })).status,
-    { text: 'ON', tone: 'on', pressed: true, title: 'Turn Street Level off' },
+    { text: 'On', tone: 'on', pressed: true, title: 'Turn Street level off' },
   );
   assert.equal(
     presentStreetLevelPanel(snapshot({ enabled: true, keyRequired: true }))
@@ -203,7 +203,7 @@ test('one chip per provider: on, off, loading, and keyless as an error chip', ()
       ['google-street-view', true, 'error', false],
     ],
   );
-  assert.equal(view.providers[0].label, 'MAPILLARY');
+  assert.equal(view.providers[0].label, 'Mapillary');
   assert.equal(view.providers[1].title, 'Panoramax imagery off');
   assert.match(
     view.providers[3].title,
@@ -270,7 +270,7 @@ test('the SINCE slider runs from any date on the left to the last month on the r
 test('the SINCE readout names the window and the cut-off date it means today', () => {
   const now = Date.UTC(2026, 8, 25);
   const any = presentStreetLevelPanel(snapshot(), { now });
-  assert.deepEqual(any.since, { index: 0, days: 0, label: 'ANY DATE' });
+  assert.deepEqual(any.since, { index: 0, days: 0, label: 'Any date' });
   const year = presentStreetLevelPanel(
     snapshot({ filter: { pano: 'pano', sinceDays: 365 } }),
     { now },
@@ -279,14 +279,14 @@ test('the SINCE readout names the window and the cut-off date it means today', (
   assert.deepEqual(year.since, {
     index: 5,
     days: 365,
-    label: 'LAST YEAR · SINCE 2025-09-25',
+    label: 'Last year · since 2025-09-25',
   });
   const custom = presentStreetLevelPanel(
     snapshot({ filter: { pano: 'all', sinceDays: 400 } }),
     { now },
   );
   assert.equal(custom.since.index, 5);
-  assert.equal(custom.since.label, 'LAST 400 DAYS · SINCE 2025-08-21');
+  assert.equal(custom.since.label, 'Last 400 days · since 2025-08-21');
 });
 
 test('legend passes through in the layer’s order', () => {
@@ -368,7 +368,7 @@ test('viewer caption reads "Image by" left, date right, and links to the provide
     view.viewer.link,
     'https://www.mapillary.com/app/?pKey=1814275685699406&focus=photo',
   );
-  assert.equal(view.viewer.linkLabel, 'MAPILLARY ↗');
+  assert.equal(view.viewer.linkLabel, 'Mapillary ↗');
   assert.equal(view.viewer.follow.disabled, false);
   assert.equal(view.wantsOpen, true);
 });
@@ -393,7 +393,7 @@ test('FOLLOW is disabled off Google 3D and says where to switch', () => {
   assert.equal(off3d.viewer.follow.disabled, true);
   assert.match(
     off3d.viewer.follow.title,
-    /needs the Google 3D map.*MAP SOURCE/,
+    /needs the Google 3D map.*Map source/,
   );
   const on3d = presentStreetLevelPanel(
     snapshot({ street: { ...open, followAvailable: true } }),
@@ -430,7 +430,7 @@ test('a Street View caption names the place, dates it by month, and offers no FI
   );
   assert.equal(view.viewer.captionLeft, '1014 10th St · Image by Google');
   assert.equal(view.viewer.captionRight, '360° · 0° · 2023-01');
-  assert.equal(view.viewer.linkLabel, 'STREET VIEW ↗');
+  assert.equal(view.viewer.linkLabel, 'Google Street View ↗');
   assert.equal(view.viewer.renderModes, false);
 });
 
@@ -452,7 +452,7 @@ test('the meta line keeps the sequence count and adds the other providers’ hin
   );
 });
 
-test('OPEN STREET VIEW shows while Street View is on, and waits for street zoom', () => {
+test('Open Google Street View shows while Street View is on, and waits for street zoom', () => {
   const streetView = provider({
     id: 'google',
     name: 'Google Street View',
@@ -471,7 +471,7 @@ test('OPEN STREET VIEW shows while Street View is on, and waits for street zoom'
   const ready = view({ groundClickReady: true });
   assert.deepEqual(ready, {
     visible: true,
-    label: 'OPEN STREET VIEW',
+    label: 'Open Google Street View',
     title: 'Open Google Street View at the centre of the view',
     disabled: false,
     providerIds: ['google'],
@@ -501,7 +501,7 @@ test('OPEN STREET VIEW shows while Street View is on, and waits for street zoom'
   );
 });
 
-test('KEY REQUIRED points at Street View when it would draw with the Google key', () => {
+test('Key required points at Street View when it would draw with the Google key', () => {
   const view = presentStreetLevelPanel(
     snapshot({
       enabled: true,
@@ -524,10 +524,10 @@ test('KEY REQUIRED points at Street View when it would draw with the Google key'
   );
   const guidance =
     'Needs MAPILLARY_CLIENT_TOKEN — add it in Data sources and keys, or light STREET VIEW to use your Google Maps key';
-  assert.equal(view.status.text, 'KEY REQUIRED');
+  assert.equal(view.status.text, 'Key required');
   assert.equal(view.status.title, guidance);
   assert.equal(view.meta, guidance);
-  // Off Google 3D Street View is not listed: plain KEY REQUIRED.
+  // Off Google 3D Street View is not listed: plain Key required.
   const plain = presentStreetLevelPanel(
     snapshot({
       enabled: true,
@@ -536,6 +536,6 @@ test('KEY REQUIRED points at Street View when it would draw with the Google key'
       keyAlternatives: [],
     }),
   );
-  assert.equal(plain.status.text, 'KEY REQUIRED');
+  assert.equal(plain.status.text, 'Key required');
   assert.notEqual(plain.meta, guidance);
 });
