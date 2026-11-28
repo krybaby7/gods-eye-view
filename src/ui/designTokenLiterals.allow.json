@@ -149,11 +149,6 @@
   },
   {
     "path": "src/ui/styles/controls.css",
-    "kind": "family",
-    "count": 1
-  },
-  {
-    "path": "src/ui/styles/controls.css",
     "kind": "font",
     "count": 29
   },
@@ -171,11 +166,6 @@
     "path": "src/ui/styles/foundation.css",
     "kind": "color",
     "count": 7
-  },
-  {
-    "path": "src/ui/styles/foundation.css",
-    "kind": "family",
-    "count": 1
   },
   {
     "path": "src/ui/styles/foundation.css",
@@ -246,6 +236,12 @@
     "path": "src/ui/styles/layers.css",
     "kind": "shadow",
     "count": 2
+  },
+  {
+    "path": "src/ui/styles/local-fonts.css",
+    "kind": "family",
+    "count": 14,
+    "reason": "Only the bundled @font-face descriptors, which require literal family names. Components use foundation tokens."
   },
   {
     "path": "src/ui/styles/location.css",
