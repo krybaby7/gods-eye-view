@@ -708,8 +708,11 @@ Added on 2026-11-27:
     The director's initial readings, for the owner to confirm, are to keep the npm package
     identifier, use data already held in the browser for frame search with an explicit Enter
     action for remote place lookup, and allow country-scale changes in Today alongside available
-    theatre stories. The welcome appears once after this update, with a new storage key. The
-    tour introduces the frame in four steps and can be reopened from the Menu.
+    theatre stories. Today shows five items before Show more. The War Monitor switch governs
+    whether its saved digests appear there. The welcome appears once after this update, with a
+    new storage key. The tour introduces Today, how to find a country, the country sheet and the
+    Menu. It can be reopened from the Menu. The top-bar field is Search this board. Search
+    Layers with Claude keeps its own panel.
 
 ## 6. Risks
 
@@ -1041,7 +1044,7 @@ for the test-ready pass. Future feature priorities are for a fresh brainstorming
 | 6          | The layers menu (1.4)                                                | Merged as pull request 30 on 2026-11-17                                                         |
 | 7          | One look (1.3), A1, A2 and B to D                                    | Merged as pull requests 31, 33, 34, 35 and 36, with corrections in pull request 32              |
 | 8          | One look (1.3), F–L                                                  | Merged as pull request 37 on 2026-11-18 (decision 38)                                           |
-| 9          | Test-ready pass                                                      | Name, welcome, fonts, Street level and Today merged as pull requests 38–42 (decision 40)       |
+| 9          | Test-ready pass                                                      | First six outcomes merged as pull requests 38–43 (decision 40)                                  |
 | Parked     | Visual regression tests (1.6)                                        | Paused on 2026-11-18 (decisions 37 and 38)                                                      |
 | Deployed   | Private deployment of main at `1e2e589e`                             | Running at `http://localhost:4173` on the owner’s PC (decision 37)                              |
 | Order open | Unfinished feature work                                              | Revisit priorities in a fresh brainstorming chat (decision 37)                                  |
@@ -1688,6 +1691,17 @@ opens Data sources and keys to guide readers to Refresh without starting an upda
 `2cf007cf`. All 23 cumulative gate steps passed, including 14 Today fixture checks. The main suite
 passed 7,296 tests with 10 skipped, and all 14 supplemental tests passed. The same head passed
 the separate Street level fixture. The installed release remains at `1e2e589e`.
+
+**Test-ready pass, search.** Pull request 43 merged on 28 November. Search this board in the
+top bar offers grouped keyboard-accessible matches for countries, bundled cities, focused layer
+and preset controls, and menu commands. A country match opens its sheet. If no local match
+appears, the field offers an external place lookup. The lookup runs only on explicit Enter and
+accepts cities and countries. Search Layers with Claude remains a separate tool. The gated head
+`13b0c423` has the
+same tree as merge `d492b442`. All 24 cumulative gate steps passed, including nine search
+checks at three desktop sizes and a 390-pixel browser width. The main suite passed 7,304 tests
+with 10 skipped, all 14 supplemental tests passed, and the separate Street level fixture passed.
+The installed release remains at `1e2e589e`.
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
