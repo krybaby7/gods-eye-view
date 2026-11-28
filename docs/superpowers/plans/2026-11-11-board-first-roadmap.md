@@ -1041,7 +1041,7 @@ for the test-ready pass. Future feature priorities are for a fresh brainstorming
 | 6          | The layers menu (1.4)                                                | Merged as pull request 30 on 2026-11-17                                                         |
 | 7          | One look (1.3), A1, A2 and B to D                                    | Merged as pull requests 31, 33, 34, 35 and 36, with corrections in pull request 32              |
 | 8          | One look (1.3), F–L                                                  | Merged as pull request 37 on 2026-11-18 (decision 38)                                           |
-| 9          | Test-ready pass                                                      | Name, welcome and bundled fonts merged as pull requests 38–40 (decision 40)                     |
+| 9          | Test-ready pass                                                      | Name, welcome, fonts and Street level merged as pull requests 38–41 (decision 40)               |
 | Parked     | Visual regression tests (1.6)                                        | Paused on 2026-11-18 (decisions 37 and 38)                                                      |
 | Deployed   | Private deployment of main at `1e2e589e`                             | Running at `http://localhost:4173` on the owner’s PC (decision 37)                              |
 | Order open | Unfinished feature work                                              | Revisit priorities in a fresh brainstorming chat (decision 37)                                  |
@@ -1666,6 +1666,17 @@ the same tree as merge `e87e7cc6`. The full gate passed 7,277 main tests with 10
 14 supplemental tests. It also covered the board, news, searches, lenses, legend, Layers,
 Weather, Cameras and resizing. The same commit passed separate name and welcome fixture checks.
 Independent review cleared the verified change. The installed release remains at `1e2e589e`.
+
+**Test-ready pass, Street level.** Pull request 41 merged on 28 November. Street level now uses
+the shared panel, buttons and chips. The photo, switches and filters stay together in the panel,
+and the viewer can still be expanded. Fixtures decoded an image and checked the controls at
+1280×720, 1440×900 and 1920×1080. The smallest measured text was 13 px and the lowest contrast
+was about 8.54:1. Scrolling reached the date, legend and coverage text, and Tab could leave
+the inline panel. The gated head `ec41c27e` has the same tree as merge `b983bc00`. All 24
+cumulative gate steps passed, including the name, welcome and both font cases. The main suite
+passed 7,277 tests with 10 skipped, and all 14 supplemental tests passed. The same head passed
+the separate Street level fixture. Independent review cleared the verified change. The installed
+release remains at `1e2e589e`.
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
