@@ -122,7 +122,7 @@ export function createLayersMenu({ document, signal, observers }) {
   if (!button || !menu) {
     if (button) button.hidden = true;
     if (cockpitLayers) cockpitLayers.hidden = true;
-    return { close() {}, closePresets, destroy() {} };
+    return { open: () => false, close() {}, closePresets, destroy() {} };
   }
 
   // Measure the rail independently of its visibility so covered panels can
@@ -335,6 +335,11 @@ export function createLayersMenu({ document, signal, observers }) {
   });
 
   return {
+    open() {
+      if (!isOpen()) toggle();
+      syncOpen();
+      return isOpen();
+    },
     close: closeMenu,
     closePresets,
     destroy() {

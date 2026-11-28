@@ -105,6 +105,7 @@ export async function installFixtures(
     radio = null,
     context = null,
     todayNews = null,
+    boardGeocode = null,
   } = {},
 ) {
   const imagery = await fs.readFile(
@@ -203,6 +204,15 @@ export async function installFixtures(
           report.transport.todayNewsReplies =
             (report.transport.todayNewsReplies ?? 0) + 1;
           await reply(todayNews);
+        } else if (
+          boardGeocode &&
+          url.pathname === '/api/geocode' &&
+          request.method === 'GET'
+        ) {
+          const query = url.searchParams.get('q');
+          (report.transport.boardGeocodeQueries ??= []).push(query);
+          const { body, status = 200 } = boardGeocode(query);
+          await reply(body, status);
         } else if (keys && request.method === 'GET' && keys.has(url.pathname)) {
           await reply(keys.get(url.pathname));
         } else if (

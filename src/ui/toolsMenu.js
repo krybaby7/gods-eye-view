@@ -66,7 +66,13 @@ export function createToolsMenu({
   const find = (id) => document.getElementById(id);
   const button = find('frame-menu');
   const list = find('frame-menu-list');
-  if (!button || !list) return { open: () => false, close() {}, destroy() {} };
+  if (!button || !list)
+    return {
+      canOpen: () => false,
+      open: () => false,
+      close() {},
+      destroy() {},
+    };
 
   const listeners = [];
   const listen = (target, type, handler, capture = false) => {
@@ -182,10 +188,13 @@ export function createToolsMenu({
   });
 
   // ── The section panels ──
-  function open(name, { returnFocus = button } = {}) {
-    const panel = panels[name];
+  function canOpen(name) {
     const index = MENU_SECTIONS.indexOf(name);
-    if (!panel || index < 0 || items[index]?.hidden) return false;
+    return index >= 0 && Boolean(panels[name]) && !items[index]?.hidden;
+  }
+  function open(name, { returnFocus = button } = {}) {
+    if (!canOpen(name)) return false;
+    const panel = panels[name];
     setListOpen(false);
     for (const [other, node] of Object.entries(panels))
       if (node && other !== name) node.hidden = true;
@@ -384,6 +393,7 @@ export function createToolsMenu({
   }
 
   const instance = {
+    canOpen,
     open,
     close: () => close(),
     destroy() {

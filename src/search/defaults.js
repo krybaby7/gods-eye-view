@@ -8,6 +8,20 @@ import { createCoordinateGeocoder } from './coordinateGeocoder.js';
 import { createPresetGeocoder } from './presetGeocoder.js';
 import { createAlpsGeocoder } from './alpsGeocoder.js';
 
+/** The app's unkeyed place route uses the existing Google-shaped adapter. */
+export function createLocalNominatimGeocoder({
+  fetchImpl = (...args) => fetch(...args),
+  endpoint = '/api/geocode',
+} = {}) {
+  return createGoogleGeocoder({
+    request(query, { bias, signal }) {
+      const params = new URLSearchParams({ q: query });
+      if (bias) params.set('bounds', bias);
+      return fetchImpl(`${endpoint}?${params}`, { signal });
+    },
+  });
+}
+
 /**
  * Coordinates, bundled names and the unqualified Alps first — all offline —
  * then Google when configured, then keyless Photon, then the local Nominatim
@@ -57,20 +71,9 @@ export function createDefaultPlaceSearch({
               },
             }),
             createPhotonGeocoder({ fetchImpl, endpoint: endpoints.photon }),
-            // Last resort: the local Nominatim route, which answers with no key when
-            // neither of the two above did. It speaks the same result shape, so it
-            // rides the existing Google adapter rather than needing its own.
-            createGoogleGeocoder({
-              request(query, { bias, signal }) {
-                const params = new URLSearchParams({ q: query });
-                if (bias) params.set('bounds', bias);
-                return fetchImpl(
-                  `${endpoints.nominatim || '/api/geocode'}?${params}`,
-                  {
-                    signal,
-                  },
-                );
-              },
+            createLocalNominatimGeocoder({
+              fetchImpl,
+              endpoint: endpoints.nominatim || undefined,
             }),
           ]),
     ],
