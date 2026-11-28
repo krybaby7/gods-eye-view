@@ -1044,7 +1044,7 @@ for the test-ready pass. Future feature priorities are for a fresh brainstorming
 | 6          | The layers menu (1.4)                                                | Merged as pull request 30 on 2026-11-17                                                         |
 | 7          | One look (1.3), A1, A2 and B to D                                    | Merged as pull requests 31, 33, 34, 35 and 36, with corrections in pull request 32              |
 | 8          | One look (1.3), F–L                                                  | Merged as pull request 37 on 2026-11-18 (decision 38)                                           |
-| 9          | Test-ready pass                                                      | First six outcomes merged as pull requests 38–43 (decision 40)                                  |
+| 9          | Test-ready pass                                                      | First seven outcomes merged as pull requests 38–44 (decision 40)                                |
 | Parked     | Visual regression tests (1.6)                                        | Paused on 2026-11-18 (decisions 37 and 38)                                                      |
 | Deployed   | Private deployment of main at `1e2e589e`                             | Running at `http://localhost:4173` on the owner’s PC (decision 37)                              |
 | Order open | Unfinished feature work                                              | Revisit priorities in a fresh brainstorming chat (decision 37)                                  |
@@ -1702,6 +1702,16 @@ same tree as merge `d492b442`. All 24 cumulative gate steps passed, including ni
 checks at three desktop sizes and a 390-pixel browser width. The main suite passed 7,304 tests
 with 10 skipped, all 14 supplemental tests passed, and the separate Street level fixture passed.
 The installed release remains at `1e2e589e`.
+
+**Test-ready pass, independent walk.** Pull request 44 merged on 28 November. An independent
+fixture walk at 1280×720, 1440×900 and 1920×1080 found unclear country-score wording,
+overlapping Map source labels, hard-to-read Situation controls, a crowded Search Layers with
+Claude heading and a misleading hint when Radio is off. The fixes clarify the text and make the affected
+controls fit. Follow-up fixtures checked those states and the main frame. Voice was viewed
+inactive. The walk did not exercise a microphone, live services or the Cockpit. The gated head
+`be8cb768` has the same tree as merge `8c1b5373`. All 26 cumulative gate steps, the separate
+Street level fixture and all 14 supplemental tests passed. The main suite passed 7,305 tests
+with 10 skipped. The installed release remains at `1e2e589e`.
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
