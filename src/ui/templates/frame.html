@@ -14,6 +14,13 @@
       </div>
       <span id="world-progress" class="frame-progress" role="status" hidden></span>
     </div>
+    <div id="frame-search" class="frame-search">
+      <input id="frame-search-input" type="search" role="combobox" aria-label="Search this board" aria-controls="frame-search-list" aria-autocomplete="list" aria-expanded="false" placeholder="Search this board" autocomplete="off" spellcheck="false">
+      <div id="frame-search-popup" class="frame-popup frame-search-popup" hidden>
+        <div id="frame-search-list" role="listbox" aria-label="Board matches" hidden></div>
+        <div id="frame-search-status" class="frame-search-status" role="status"></div>
+      </div>
+    </div>
     <span class="frame-grow"></span>
     <div id="frame-gauges" class="frame-gauges" role="group" aria-label="World gauges" hidden></div>
     <span class="frame-sep" aria-hidden="true"></span>

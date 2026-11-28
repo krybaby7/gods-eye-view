@@ -15,7 +15,8 @@ const steps = [
   },
   {
     title: 'Find a country',
-    description: 'Select a country on the globe to open its sheet.',
+    description:
+      'Use Search this board or select a country on the globe to open its sheet.',
   },
   {
     title: 'Country sheet',

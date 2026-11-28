@@ -454,6 +454,7 @@ export function createFrame({
     /** Fold Today away or open it again, as the fold and open buttons do. */
     setToday: (state) => setToday(state, { persist: true }),
     takeCountryReturnFocus: todayPanel.takeCountryReturnFocus,
+    openLayers: layersMenu.open,
     destroy() {
       events.abort();
       unsubscribe?.();
