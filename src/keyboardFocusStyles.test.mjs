@@ -121,7 +121,9 @@ test('focusable controls do not animate the global outline', () => {
   for (const selector of [
     '.panel-collapse-btn {',
     '#top-center-actions button {',
-    '.data-toggle-chip {',
+    '.kit-chip {',
+    '.kit-chip.pick {',
+    '.data-toggle-chip:not(:where(.kit-chip)) {',
     '.scene-btn {',
     '.scene-shot-btn {',
   ]) {

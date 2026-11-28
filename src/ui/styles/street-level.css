@@ -1,107 +1,86 @@
-/* ── Street Level panel ─────────────────────────────────────────
-   The rail owns position and width (layers.css). The expanded viewer is
-   re-parented to <body>, so it carries the tokens too. */
+/* The rail owns placement. The expanded viewer keeps the same type tokens. */
 #street-level-panel,
 .sl-viewer-wrap {
-  --sl-green: #05cb63;
-  --sl-text: 0.62rem;
-  --sl-text-small: 0.6rem;
+  --sl-text: var(--type-body);
+  --sl-text-small: var(--type-small);
 }
 
 .street-level-panel-inner {
   position: relative;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--panel-radius);
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  box-sizing: border-box;
+  box-shadow: var(--shadow-pop);
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 212, 255, 0.46) rgba(255, 255, 255, 0.06);
+  scrollbar-color: var(--line-strong) transparent;
 }
 
-/* Class-qualified, not id-qualified, so a theme's header rule still wins. */
-.street-level-panel-inner > .panel-header {
-  gap: 8px;
+#street-level-panel .kit-panel-head {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
 }
 
-.sl-status {
-  font-family: var(--font-mono);
-  font-size: var(--sl-text-small);
-  letter-spacing: 0.1em;
-  padding: 2px 7px;
-  border-radius: 999px;
-  border: 1px solid var(--glass-border-hover);
-  color: var(--text-secondary);
-  white-space: nowrap;
+#street-level-panel-title {
+  color: var(--text-1);
+  font: var(--type-title);
+  letter-spacing: normal;
+  text-transform: none;
 }
 
-button.sl-status {
-  background: transparent;
-  font: inherit;
-  font-family: var(--font-mono);
-  font-size: var(--sl-text-small);
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  transition:
-    border-color var(--transition-fast),
-    color var(--transition-fast);
+#street-level-panel.collapsed .kit-panel-head {
+  box-sizing: border-box;
+  height: 100%;
+  padding: var(--space-1) var(--space-3);
+  border-bottom: 0;
 }
 
-button.sl-status:hover,
-button.sl-status:focus-visible {
-  color: var(--text-primary);
-  border-color: var(--accent);
-  outline: none;
-}
-
-.sl-status.is-on {
-  color: var(--sl-green);
-  border-color: rgba(5, 203, 99, 0.55);
-}
-
-.sl-status.is-busy {
-  color: var(--accent);
-  border-color: rgba(0, 212, 255, 0.55);
-}
-
-.sl-status.is-warn {
-  color: #ffb300;
-  border-color: rgba(255, 179, 0, 0.55);
-}
-
-/* Collapsed strips hide the body entirely: nothing to paint or tab into. */
+/* Collapsed strips hide the body entirely, including its tab stops. */
 #street-level-panel.collapsed .sl-body,
-#street-level-panel.collapsed .sl-status {
+#street-level-panel.collapsed .sl-status,
+.sl-nearest-btn[hidden],
+.sl-seg[hidden],
+.sl-controls[hidden],
+.sl-filters[hidden],
+.sl-since[hidden],
+.sl-legend[hidden],
+.sl-viewer-wrap[hidden],
+.sl-viewer-placeholder[hidden],
+.sl-image-link[hidden] {
   display: none;
 }
 
-.sl-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 0;
+.sl-status {
+  white-space: nowrap;
 }
 
-.sl-main {
+#street-level-panel .sl-status.is-on {
+  color: var(--link);
+}
+
+#street-level-panel .sl-status.is-busy {
+  color: var(--accent);
+}
+
+#street-level-panel .sl-status.is-warn,
+.sl-chips .kit-chip.chip-error {
+  color: var(--alert-watch);
+  border-color: var(--alert-watch);
+}
+
+.sl-body,
+.sl-main,
+.sl-controls,
+.sl-settings {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
   min-width: 0;
+}
+
+.sl-body {
+  min-height: 0;
+  padding: var(--space-3);
 }
 
 .sl-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
@@ -112,184 +91,105 @@ button.sl-status:focus-visible {
   pointer-events: none;
 }
 
-/* In a resized window only this block scrolls; the viewer keeps its room. */
 .sl-settings {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   min-height: 0;
 }
 
-/* ── Providers ───────────────────────────────────────────────────────────── */
-.sl-providers {
+.sl-providers,
+.sl-filters,
+.sl-legend {
   display: flex;
   align-items: center;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.sl-label {
+  color: var(--text-1);
+  font: var(--type-label);
 }
 
 .sl-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
-/* `--chip-color` comes from the provider. */
-.sl-chips .data-toggle-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
+/* The provider's own colour identifies its coverage, including in the legend. */
 .sl-chips .data-toggle-chip::before {
   content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-pill);
   background: var(--chip-color, currentColor);
   opacity: 0.45;
   flex: none;
-}
-
-.sl-chips .data-toggle-chip.active {
-  color: var(--chip-color, var(--accent));
-  border-color: var(--chip-color, var(--accent));
-  background: color-mix(
-    in srgb,
-    var(--chip-color, var(--accent)) 14%,
-    transparent
-  );
 }
 
 .sl-chips .data-toggle-chip.active::before {
   opacity: 1;
 }
 
-.sl-chips .data-toggle-chip.chip-error {
-  color: #ffb300;
-  border-color: rgba(255, 179, 0, 0.55);
-}
-
-/* The coverage hint and OPEN STREET VIEW share a line; the hint wraps. */
 .sl-meta-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .sl-meta-row .sl-meta {
-  flex: 1 1 auto;
+  flex: 1 1 12ch;
   min-width: 0;
 }
 
-/* Scoped to outrank .scene-btn's flex: 1, which squeezed the button to its
-   min-width beside a long coverage line and clipped its one-line label. */
-.sl-meta-row .sl-nearest-btn {
-  flex: 0 0 auto;
+.sl-nearest-btn {
+  max-width: 100%;
+  white-space: normal;
 }
 
-.sl-nearest-btn[hidden] {
-  display: none;
-}
-
-/* ── Errors ──────────────────────────────────────────────────────────────── */
 .sl-error {
-  font-family: var(--font-sans);
-  font-size: 0.72rem;
-  line-height: 1.4;
-  color: #ff8a80;
-}
-
-/* ── Filters and legend ──────────────────────────────────────────────────── */
-.sl-filters {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-/* No overflow clipping: it would cut off the buttons' focus ring. The end
-   buttons round themselves instead. */
-.sl-seg {
-  display: inline-flex;
-  border: 1px solid var(--glass-border-hover);
-  border-radius: 999px;
-}
-
-.sl-seg[hidden],
-.sl-controls[hidden],
-.sl-filters[hidden],
-.sl-since[hidden],
-.sl-legend[hidden] {
-  display: none;
-}
-
-.sl-seg-btn {
-  font-family: var(--font-mono);
-  font-size: var(--sl-text-small);
-  letter-spacing: 0.08em;
-  padding: 4px 9px;
-  border: 0;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.sl-seg-btn:first-child {
-  border-radius: 999px 0 0 999px;
-}
-
-.sl-seg-btn:last-child {
-  border-radius: 0 999px 999px 0;
-}
-
-.sl-seg-btn + .sl-seg-btn {
-  border-left: 1px solid var(--glass-border);
+  font: var(--sl-text-small);
+  color: var(--status-disrupted);
 }
 
 .sl-seg-btn:focus-visible {
   position: relative;
-  outline: 1px solid var(--accent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-.sl-seg-btn.is-active {
-  background: rgba(5, 203, 99, 0.22);
-  color: var(--text-primary);
+.sl-seg-btn[aria-checked='true'] {
+  background: var(--surface-3);
+  color: var(--text-1);
 }
 
 .sl-since {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 4px 10px;
+  gap: var(--space-1) var(--space-2);
 }
 
 .sl-range {
   width: 100%;
   min-width: 0;
   margin: 0;
-  accent-color: var(--sl-green);
+  accent-color: var(--accent);
   cursor: pointer;
 }
 
 .sl-range:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 3px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .sl-since-label {
   grid-column: 2;
-  font-family: var(--font-mono);
-  font-size: var(--sl-text-small);
-  letter-spacing: 0.08em;
-  color: var(--text-primary);
+  font: var(--sl-text-small);
+  color: var(--text-2);
 }
 
 .sl-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -298,38 +198,30 @@ button.sl-status:focus-visible {
 .sl-legend li {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-family: var(--font-mono);
-  font-size: var(--sl-text-small);
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
+  gap: var(--space-1);
+  font: var(--sl-text-small);
+  color: var(--text-2);
 }
 
 .sl-legend-swatch {
-  width: 14px;
-  height: 3px;
-  border-radius: 2px;
-  display: inline-block;
+  width: var(--space-4);
+  height: var(--radius-mark);
+  border-radius: var(--radius-mark);
 }
 
-/* ── Embedded viewer ─────────────────────────────────────────────────────── */
 .sl-viewer-wrap {
   position: relative;
   container-type: inline-size;
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
-  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-panel);
   overflow: hidden;
-  border: 1px solid var(--glass-border-hover);
-  background: #000;
+  background: var(--surface-space);
 }
 
-.sl-viewer-wrap[hidden] {
-  display: none;
-}
-
-/* Nothing sits over the image, so the provider's own controls stay clear. */
+/* Nothing sits over the image, keeping provider controls clear. */
 .sl-viewer-stage {
   position: relative;
   display: flex;
@@ -349,20 +241,16 @@ button.sl-status:focus-visible {
   display: grid;
   place-items: center;
   z-index: 3;
-  background: rgba(0, 0, 0, 0.35);
-}
-
-.sl-viewer-placeholder[hidden] {
-  display: none;
+  background: color-mix(in srgb, var(--surface-space) 65%, transparent);
 }
 
 .sl-viewer-placeholder::after {
   content: '';
   width: 28px;
   height: 28px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-top-color: var(--sl-green);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--accent);
   animation: sl-spin 0.9s linear infinite;
 }
 
@@ -376,121 +264,79 @@ button.sl-status:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  padding: 5px 6px;
-  background: rgba(10, 10, 15, 0.85);
-  border-bottom: 1px solid var(--glass-border);
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .sl-viewer-tools {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   min-width: 0;
   flex-wrap: wrap;
 }
 
-.sl-viewer-tools .scene-btn {
-  padding: 4px 8px;
-  font-size: var(--sl-text-small);
-  background: rgba(10, 10, 15, 0.75);
-  flex: none;
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.sl-viewer-tools .sl-seg {
-  background: rgba(10, 10, 15, 0.75);
-}
-
 @container (max-width: 380px) {
+  .sl-viewer-tools .kit-btn {
+    min-width: 34px;
+    padding-inline: var(--space-1);
+  }
+
   .sl-viewer-tools .sl-btn-text {
     display: none;
   }
 }
 
 .sl-viewer-x {
-  flex: none;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(10, 10, 15, 0.8);
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 1.1rem;
-  line-height: 1;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  transition: all var(--transition-fast);
-}
-
-.sl-viewer-x:hover {
-  color: #0a0a0f;
-  background: #fff;
-  border-color: #fff;
+  font: var(--type-title);
 }
 
 .sl-image-meta {
-  flex: 0 0 auto;
-  padding: 6px 10px;
-  font-family: var(--font-mono);
-  font-size: var(--sl-text-small);
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-  background: rgba(0, 0, 0, 0.7);
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
-  justify-content: space-between;
   align-items: center;
-  gap: 2px 10px;
-  min-height: 26px;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-2);
+  background: var(--surface-1);
+  color: var(--text-2);
+  font: var(--sl-text-small);
 }
 
 .sl-image-by {
-  color: var(--text-primary);
-  overflow-wrap: anywhere;
   min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-1);
 }
 
-.sl-image-by:empty {
+.sl-image-by:empty,
+.sl-meta:empty {
   display: none;
 }
 
 .sl-image-right {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-2);
   margin-left: auto;
-  white-space: nowrap;
+}
+
+.sl-image-when {
+  font: var(--type-control-figure);
 }
 
 .sl-image-link {
-  color: var(--sl-green);
-  text-decoration: none;
-  letter-spacing: 0.1em;
-}
-
-.sl-image-link[hidden] {
-  display: none;
-}
-
-.sl-image-link:hover {
+  color: var(--link);
   text-decoration: underline;
 }
 
 .sl-meta {
-  font-family: var(--font-mono);
-  font-size: var(--sl-text-small);
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-}
-
-.sl-meta:empty {
-  display: none;
+  color: var(--text-2);
+  font: var(--sl-text-small);
 }
 
 /* ── Floating window ─────────────────────────────────────────────────────── */
@@ -543,9 +389,9 @@ button.sl-status:focus-visible {
   z-index: 141;
   display: flex;
   flex-direction: column;
-  font-family: var(--font-mono);
-  border-color: rgba(0, 212, 255, 0.55);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
+  font: var(--sl-text);
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-pop);
   outline: none;
 }
 
@@ -561,40 +407,15 @@ button.sl-status:focus-visible {
   aspect-ratio: auto;
 }
 
-.sl-viewer-wrap-expanded .sl-image-meta {
-  font-size: 0.66rem;
-  padding: 10px 14px;
-}
-
+.sl-viewer-wrap-expanded .sl-image-meta,
 .sl-viewer-wrap-expanded .sl-viewer-bar {
-  padding: 8px 10px;
-}
-
-.sl-viewer-wrap-expanded .sl-viewer-tools .scene-btn {
-  padding: 8px 14px;
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
-  color: var(--text-primary);
-  border-color: rgba(0, 212, 255, 0.6);
-  background: rgba(10, 10, 15, 0.82);
-}
-
-.sl-viewer-wrap-expanded #sl-viewer-expand::after {
-  content: ' · ESC';
-  color: var(--text-secondary);
-}
-
-.sl-viewer-wrap-expanded .sl-viewer-x {
-  width: 34px;
-  height: 34px;
-  font-size: 1.3rem;
+  padding: var(--space-2) var(--space-3);
 }
 
 /* ── Short viewports ─────────────────────────────────────────────────────── */
 @media (max-height: 640px) {
-  .street-level-panel-inner {
-    padding: 10px;
-    gap: 6px;
+  .sl-body {
+    padding: var(--space-2);
   }
 
   .sl-viewer {

@@ -374,31 +374,6 @@
     "count": 7
   },
   {
-    "path": "src/ui/styles/street-level.css",
-    "kind": "backdrop",
-    "count": 2
-  },
-  {
-    "path": "src/ui/styles/street-level.css",
-    "kind": "color",
-    "count": 30
-  },
-  {
-    "path": "src/ui/styles/street-level.css",
-    "kind": "font",
-    "count": 5
-  },
-  {
-    "path": "src/ui/styles/street-level.css",
-    "kind": "radius",
-    "count": 9
-  },
-  {
-    "path": "src/ui/styles/street-level.css",
-    "kind": "shadow",
-    "count": 2
-  },
-  {
     "path": "src/ui/styles/world-phase-4.css",
     "kind": "color",
     "count": 2,

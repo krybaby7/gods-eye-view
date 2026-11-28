@@ -1041,7 +1041,7 @@ test('arrow keys move the selection within a radiogroup, which has one tab stop 
     controls.destroy();
   }));
 
-test('under KEY REQUIRED the provider chip stays live and explains the key instead of toggling (P3)', () =>
+test('under Key required the provider chip stays live and explains the key instead of toggling (P3)', () =>
   withDom(async (dom) => {
     const { calls, chip, controls } = stubPanel(
       dom,
@@ -1141,7 +1141,7 @@ test('a <body> child added while the viewer is expanded goes inert with the rest
     }),
   ));
 
-test('OPEN STREET VIEW opens the nearest panorama at the view centre without moving the camera', () =>
+test('Open Google Street View opens the nearest panorama at the view centre without moving the camera', () =>
   withDom(async (dom) => {
     const state = uiState();
     state.providers.push({
@@ -1158,7 +1158,7 @@ test('OPEN STREET VIEW opens the nearest panorama at the view centre without mov
     layer.openNearest = (point, options) => asked.push([point, options]);
     const button = dom.root.querySelector('#sl-nearest-btn');
     assert.equal(button.hidden, false);
-    assert.equal(button.textContent, 'OPEN STREET VIEW');
+    assert.equal(button.textContent, 'Open Google Street View');
     button.click();
     assert.deepEqual(asked, [
       [
