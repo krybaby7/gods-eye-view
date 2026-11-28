@@ -265,6 +265,10 @@ export function createApplicationTools({
     requestRender: governorRequestRender,
     world,
     news,
+    selectStory: news
+      ? (storyId) => news.selectStory(storyId, { focus: true })
+      : undefined,
+    clearStory: news ? () => news.clearSelection() : undefined,
     openSources: () => openMenuSection('sources'),
     openCountry,
     frameCountry,

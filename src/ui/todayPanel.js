@@ -1,22 +1,62 @@
 import { buildTodayItems } from './todayItems.js';
 
 const VISIBLE_ITEMS = 5;
-const dateFormat = new Intl.DateTimeFormat('en-GB', {
+/** Outlets a row names before "and N more"; the opened story names all. */
+const ROW_OUTLETS = 3;
+const dayFormat = new Intl.DateTimeFormat('en-GB', {
   dateStyle: 'medium',
   timeZone: 'UTC',
 });
+const monthFormat = new Intl.DateTimeFormat('en-GB', {
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+const clockFormat = new Intl.DateTimeFormat('en-GB', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+  timeZone: 'UTC',
+});
 
-function readingContext(row) {
-  const date = row.date ? dateFormat.format(new Date(row.date)) : null;
-  const turn = row.turn ? `Turn ${row.turn}` : null;
-  return [row.place, date, turn].filter(Boolean).join(' · ');
+/**
+ * A fixed date at the precision the item holds: "2025", "Oct 2026",
+ * "9 Nov 2026" or "9 Nov 2026, 08:05 UTC". Never relative, so it cannot go
+ * stale while the list sits open.
+ */
+function when(date) {
+  if (!date) return null;
+  if (date.length === 4) return date;
+  const at = new Date(date.length === 7 ? `${date}-01` : date);
+  if (date.length === 7) return monthFormat.format(at);
+  if (date.length === 10) return dayFormat.format(at);
+  return `${dayFormat.format(at)}, ${clockFormat.format(at)} UTC`;
 }
 
-/** Present browser-held board readings and cached developments in the frame. */
+function readingContext(row) {
+  const turn = row.turn ? `Turn ${row.turn}` : null;
+  const date = when(row.date);
+  const dated = date && row.dateLabel ? `${row.dateLabel} ${date}` : date;
+  return [row.place, dated, turn].filter(Boolean).join(' · ');
+}
+
+function outletLine(sources) {
+  const named = sources.slice(0, ROW_OUTLETS).join(' · ');
+  const rest = sources.length - ROW_OUTLETS;
+  return rest > 0 ? `${named} and ${rest} more` : named;
+}
+
+/**
+ * Present the digest's stories and the board's alerts and turn changes in
+ * the frame. Opening a story selects it through the news layer's own
+ * selectStory, so its pin lights and the globe flies there when it has one.
+ */
 export function createTodayPanel({
   document,
   world,
   news,
+  selectStory,
+  clearStory,
   openSources,
   openCountry,
   frameCountry,
@@ -30,6 +70,8 @@ export function createTodayPanel({
   const countrySheet = find('world-character-sheet');
   const storyTitle = find('frame-today-story-title');
   const storyContext = find('frame-today-story-context');
+  const storySummary = find('frame-today-story-summary');
+  const storyNew = find('frame-today-story-new');
   const storySources = find('frame-today-story-sources');
   const storyClose = find('frame-today-story-close');
   if (!list || !story) return { destroy() {} };
@@ -39,6 +81,11 @@ export function createTodayPanel({
   let newsSnapshot = news?.getSnapshot() ?? null;
   let expanded = false;
   let openId = null;
+  // The news story Today selected, so closing clears only its own choice.
+  let selectedByToday = null;
+  // The story the map selected for Today's opened story; when the map's
+  // selection moves elsewhere, Today's view closes to match it.
+  let openedSelected = null;
   let countryOpener = null;
   let rendered = null;
   let renderedStory = null;
@@ -55,29 +102,39 @@ export function createTodayPanel({
     const signature = JSON.stringify([
       row.title,
       context,
-      row.sources,
-      row.citation,
+      row.summary,
+      row.whatsNew,
+      row.citations,
     ]);
     if (signature === renderedStory) return;
     renderedStory = signature;
-    const citationId = 'frame-today-story-source-link';
-    const restoreCitationFocus = document.activeElement?.id === citationId;
+    const focusedOutlet = storySources.contains(document.activeElement)
+      ? document.activeElement.textContent
+      : null;
     storyTitle.textContent = row.title;
     storyContext.textContent = context;
+    if (storySummary) {
+      storySummary.textContent = row.summary;
+      storySummary.hidden = !row.summary;
+    }
+    if (storyNew) {
+      storyNew.textContent = row.whatsNew ? `New: ${row.whatsNew}` : '';
+      storyNew.hidden = !row.whatsNew;
+    }
+    let refocus = null;
     storySources.replaceChildren(
-      ...row.sources.map((source) => {
-        if (source !== row.citation.outlet) return makeText('li', '', source);
+      ...row.citations.map(({ outlet, href }) => {
         const item = document.createElement('li');
-        const link = makeText('a', 'frame-today-source-link', source);
-        link.id = citationId;
-        link.setAttribute('href', row.citation.href);
+        const link = makeText('a', 'frame-today-source-link', outlet);
+        link.setAttribute('href', href);
         link.setAttribute('target', '_blank');
         link.setAttribute('rel', 'noopener noreferrer');
+        if (outlet === focusedOutlet) refocus = link;
         item.append(link);
         return item;
       }),
     );
-    if (restoreCitationFocus) find(citationId)?.focus({ preventScroll: true });
+    refocus?.focus({ preventScroll: true });
   }
 
   function focusToday(rowId) {
@@ -88,12 +145,21 @@ export function createTodayPanel({
     target?.focus({ preventScroll: true });
   }
 
+  function releaseStory() {
+    const id = selectedByToday;
+    selectedByToday = null;
+    if (id && news?.getSnapshot()?.selectedStoryId === id) clearStory?.();
+  }
+
   function closeStory({ restoreFocus = true } = {}) {
     if (!openId) return;
     const previousId = openId;
     openId = null;
+    openedSelected = null;
+    renderedStory = null;
     story.hidden = true;
     buttons.get(previousId)?.setAttribute('aria-expanded', 'false');
+    releaseStory();
     if (restoreFocus) focusToday(previousId);
   }
 
@@ -119,7 +185,18 @@ export function createTodayPanel({
     fillStory(row);
     story.hidden = false;
     buttons.get(openId)?.setAttribute('aria-expanded', 'true');
-    if (row.target.iso3) frameCountry?.(row.target.iso3);
+    // The news layer flies to a story it pins; one it does not pin but placed
+    // in a country frames that country; anything else leaves the view alone.
+    // The selection is Today's only if Today changed it: closing must not
+    // clear a story the viewer had already selected elsewhere.
+    const before = news?.getSnapshot()?.selectedStoryId ?? null;
+    // The layer notifies while selecting; nothing is followed until it has.
+    openedSelected = null;
+    const selected = Boolean(selectStory?.(row.target.id));
+    selectedByToday =
+      selected && before !== row.target.id ? row.target.id : null;
+    openedSelected = selected ? row.target.id : null;
+    if (!row.target.mapped && row.target.iso3) frameCountry?.(row.target.iso3);
     queueMicrotask(() => {
       if (openId === row.id) storyTitle.focus({ preventScroll: true });
     });
@@ -131,14 +208,14 @@ export function createTodayPanel({
     button.type = 'button';
     button.className = 'frame-today-row';
     button.dataset.todayItem = row.id;
-    if (row.target.kind === 'development') {
+    if (row.target.kind === 'story') {
       button.setAttribute('aria-controls', story.id);
       button.setAttribute('aria-expanded', String(row.id === openId));
     }
     button.append(
       makeText('span', 'frame-today-title', row.title),
       makeText('span', 'frame-today-context', readingContext(row)),
-      makeText('span', 'frame-today-context', row.sources.join(' · ')),
+      makeText('span', 'frame-today-context', outletLine(row.sources)),
       makeText('span', 'frame-today-reason', row.reason),
     );
     button.addEventListener('click', () => activate(row));
@@ -210,6 +287,14 @@ export function createTodayPanel({
 
   const updateNews = () => {
     newsSnapshot = news.getSnapshot();
+    if (
+      openedSelected &&
+      (newsSnapshot?.selectedStoryId ?? null) !== openedSelected
+    ) {
+      // Another pin, or a cleared selection: follow the map, keep focus put.
+      selectedByToday = null;
+      closeStory({ restoreFocus: false });
+    }
     render();
   };
 
