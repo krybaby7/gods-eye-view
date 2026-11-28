@@ -397,8 +397,8 @@ export function createWorldPanel({
       : 'No published values for this territory.';
     find('world-hp-label').textContent =
       condition.score === null
-        ? 'HP · Condition unknown'
-        : `HP · Weakest bar · ${condition.label} ${scoreText(condition.score)}`;
+        ? 'Lowest condition score unknown'
+        : `Lowest condition score · ${condition.label} ${scoreText(condition.score)}`;
     find('world-hp-track').replaceChildren(scoreBar(document, condition.score));
     renderTab({ preserve: !selectionChanged });
     const turn = worldTurn(snapshot.turn, iso3);

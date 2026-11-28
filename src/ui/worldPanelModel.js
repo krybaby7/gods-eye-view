@@ -55,7 +55,7 @@ function rowFor(snapshot, country, indicator, source) {
   const score = scoreOrUnknown(entry?.score);
   const flags = [];
   if (score === null) flags.push('Unknown');
-  if (country.condition?.slot === indicator.slot) flags.push('Weakest');
+  if (country.condition?.slot === indicator.slot) flags.push('Lowest score');
   if (entry?.stale) flags.push('Stale');
   if (indicator.lowConfidence) flags.push('Low conf.');
   if (observation?.method === 'source-forecast') flags.push('Source forecast');
@@ -161,7 +161,7 @@ export function describeWorldHover(snapshot, iso3) {
     : '';
   return {
     name,
-    value: `${strength ? '' : 'Weakest bar · '}${label} ${displayScore(result.score)}${period}`,
+    value: `${strength ? '' : 'Lowest condition score · '}${label} ${displayScore(result.score)}${period}`,
   };
 }
 

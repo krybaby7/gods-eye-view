@@ -2075,6 +2075,103 @@ async function main() {
 
     if (fixtures)
       await step(
+        'theater controls and Situation reading text fit at three desktop sizes',
+        async () => {
+          try {
+            for (const [width, height] of [
+              [1280, 720],
+              [1440, 900],
+              [1920, 1080],
+            ]) {
+              await page.setViewport({ width, height });
+              const fit = await page.$eval('#situation-panel', (panel) => {
+                const select = panel.querySelector('.situation-theater');
+                const style = getComputedStyle(select);
+                const measure = document
+                  .createElement('canvas')
+                  .getContext('2d');
+                measure.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+                const label = select.selectedOptions[0]?.textContent ?? '';
+                const padding =
+                  Number.parseFloat(style.paddingLeft) +
+                  Number.parseFloat(style.paddingRight);
+                const controls = Array.from(select.parentElement.children)
+                  .filter((element) => element.getClientRects().length)
+                  .map((element) => element.getBoundingClientRect().toJSON());
+                const reading = panel.querySelectorAll(
+                  [
+                    '.situation-digest-line',
+                    '.situation-subhead',
+                    '.situation-chip',
+                    '.situation-note',
+                    '.situation-footer',
+                    '.situation-story-meta',
+                    '.situation-story-times',
+                    '.situation-brief-coverage',
+                    '.situation-brief-age',
+                    '.situation-brief-meta',
+                  ].join(','),
+                );
+                const fonts = Array.from(reading)
+                  .filter(
+                    (element) =>
+                      element.textContent.trim() &&
+                      element.getClientRects().length,
+                  )
+                  .map((element) => ({
+                    name: element.className,
+                    size: Number.parseFloat(getComputedStyle(element).fontSize),
+                  }));
+                return {
+                  label,
+                  textWidth: measure.measureText(label).width,
+                  // Allow for the browser's native disclosure arrow.
+                  labelWidth: select.clientWidth - padding - 20,
+                  controls,
+                  fonts,
+                  chipsFit: Array.from(
+                    panel.querySelectorAll('.situation-chips .situation-chip'),
+                  ).every((chip) => chip.scrollWidth <= chip.clientWidth + 1),
+                };
+              });
+              const where = `${width}×${height}`;
+              assert.ok(
+                fit.chipsFit,
+                `Situation category labels fit at ${where}`,
+              );
+              assert.ok(
+                fit.label && fit.labelWidth >= fit.textWidth,
+                `Full theater label fits at ${where}: ${JSON.stringify(fit)}`,
+              );
+              assert.ok(
+                fit.fonts.length >= 3 &&
+                  fit.fonts.every(({ size }) => size >= 13),
+                `Readable Situation text at ${where}: ${JSON.stringify(fit.fonts)}`,
+              );
+              for (const [index, box] of fit.controls.entries())
+                assert.ok(
+                  !fit.controls
+                    .slice(index + 1)
+                    .some(
+                      (other) =>
+                        Math.min(box.right, other.right) -
+                          Math.max(box.left, other.left) >
+                          1 &&
+                        Math.min(box.bottom, other.bottom) -
+                          Math.max(box.top, other.top) >
+                          1,
+                    ),
+                  `Situation controls stay separate at ${where}`,
+                );
+            }
+          } finally {
+            await page.setViewport(VIEWPORT);
+          }
+        },
+      );
+
+    if (fixtures)
+      await step(
         'at 720 px and 390 px the panel and the Brief fit without horizontal scroll',
         async () => {
           for (const [width, height, name] of [

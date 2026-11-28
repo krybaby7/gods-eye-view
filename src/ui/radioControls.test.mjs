@@ -172,3 +172,29 @@ test('destruction releases an active tuner pointer after revoking listeners', ()
     f.cleanup();
   }
 });
+
+test('the empty station card points to Enable only while Radio is off', () => {
+  const f = fixture();
+  const hint = new Element();
+  f.controls._radioStationMeta = hint;
+  f.controls.radio.getTunerStations = () => [];
+  f.actions.setEnabled = () =>
+    assert.fail('Rendering the hint must not change power');
+  const state = { enabled: false, filteredCount: 0, audioState: 'stopped' };
+  try {
+    f.controls._renderRadioState(state);
+    assert.equal(hint.textContent, 'Choose Enable to turn on Radio.');
+    assert.equal(f.enable.textContent, 'Enable');
+    assert.equal(f.next.disabled, true);
+    assert.deepEqual(f.calls, [['panel', 'radio-panel', true]]);
+
+    f.controls._renderRadioState({ ...state, enabled: true, loading: true });
+    assert.equal(hint.textContent, 'Loading station directory…');
+    f.controls._renderRadioState({ ...state, enabled: true, filteredCount: 1 });
+    assert.equal(hint.textContent, 'Choose a globe marker or use next.');
+    assert.equal(f.next.disabled, false);
+    assert.deepEqual(f.calls, [['panel', 'radio-panel', true]]);
+  } finally {
+    f.cleanup();
+  }
+});
