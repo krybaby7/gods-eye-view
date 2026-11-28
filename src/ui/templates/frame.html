@@ -43,9 +43,11 @@
     </div>
     <div id="frame-today-body" class="frame-today-body">
       <div id="frame-today-empty" class="frame-empty">
-        <p class="frame-empty-title">Nothing is listed yet</p>
-        <p class="frame-empty-text">What is happening in the world will be listed here, ranked, each item one sentence with its place, its time and its sources.</p>
+        <p class="frame-empty-text">No dated updates are available yet.</p>
+        <button id="frame-today-next" class="frame-btn" type="button">Open data sources</button>
       </div>
+      <ol id="frame-today-list" class="frame-today-list" aria-label="Ranked updates" hidden></ol>
+      <button id="frame-today-more" class="frame-btn frame-today-more" type="button" aria-controls="frame-today-list" aria-expanded="false" hidden>Show more</button>
     </div>
   </aside>
 
@@ -61,7 +63,7 @@
       <header class="frame-sheet-head">
         <div class="frame-sheet-titles">
           <span class="frame-kind"><span id="world-sheet-code" class="frame-code"></span><span id="world-hp-label"></span></span>
-          <h2 id="world-sheet-name" class="frame-display">Country</h2>
+          <h2 id="world-sheet-name" class="frame-display" tabindex="-1">Country</h2>
           <div id="world-hp-track"></div>
         </div>
         <button id="world-sheet-close" class="frame-iconbtn" type="button" aria-label="Clear country selection" title="Close the sheet">
@@ -84,6 +86,21 @@
           <p id="world-coverage" class="world-detail"></p>
           <p id="world-no-data" class="world-detail" hidden></p>
         </div>
+      </div>
+    </section>
+    <section id="frame-today-story" class="frame-sheet-content" aria-labelledby="frame-today-story-title" hidden>
+      <header class="frame-sheet-head">
+        <div class="frame-sheet-titles">
+          <h2 id="frame-today-story-title" class="frame-display" tabindex="-1"></h2>
+          <p id="frame-today-story-context" class="frame-today-context"></p>
+        </div>
+        <button id="frame-today-story-close" class="frame-iconbtn" type="button" aria-label="Close story" title="Close story">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+        </button>
+      </header>
+      <div class="frame-sheet-body frame-today-story-body" data-rail-scroller>
+        <h3>Sources</h3>
+        <ul id="frame-today-story-sources"></ul>
       </div>
     </section>
   </aside>

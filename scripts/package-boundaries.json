@@ -2453,6 +2453,8 @@
       "src/ui/worldEnergyPanels.js",
       "src/ui/worldPanelModel.js",
       "src/ui/frame.js",
+      "src/ui/todayPanel.js",
+      "src/ui/todayItems.js",
       "src/ui/layersMenu.js",
       "src/ui/toolsMenu.js",
       "src/ui/menuSections.js",
