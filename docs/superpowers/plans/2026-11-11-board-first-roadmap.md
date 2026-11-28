@@ -1764,6 +1764,16 @@ the saved board is turn 6 of 2026-11-11 with 256 countries. One page load, with 
 request blocked, showed the name, the search box and Today listing the board's own alerts.
 `releases\1e2e589e` is kept for going back. Not checked: a Refresh, live map tiles, a phone.
 
+**Test-ready pass, the red note.** After that install the top bar showed “The World Board refresh
+could not be saved.” The cause was how the app had been started, not the app, a feed or the way
+the release was placed. It had been started from a Claude desktop session, and Windows gives every
+program such a session starts a redirected view of the AppData folder. In that view a new file
+cannot be created through the release's link to the saved data, so every save failed with “file
+already exists”. The saved board was not touched, and the earlier release would have failed the
+same way. Started through Explorer with its login shortcut, the app saved a live alert check at
+15:03 on 28 November and the note was gone. No code changed. The installed app is to be started
+only by that shortcut, never directly from an agent's shell.
+
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
 is filed (decision 31). Every screen is drawn over a capture of the owner's saved board (section
