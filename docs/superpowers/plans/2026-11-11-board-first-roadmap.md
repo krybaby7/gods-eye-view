@@ -708,7 +708,8 @@ Added on 2026-11-27:
     The director's initial readings, for the owner to confirm, are to keep the npm package
     identifier, use data already held in the browser for frame search with an explicit Enter
     action for remote place lookup, and allow country-scale changes in Today alongside available
-    theatre stories.
+    theatre stories. The welcome appears once after this update, with a new storage key. The
+    tour introduces the frame in four steps and can be reopened from the Menu.
 
 ## 6. Risks
 
@@ -1040,7 +1041,7 @@ for the test-ready pass. Future feature priorities are for a fresh brainstorming
 | 6          | The layers menu (1.4)                                                | Merged as pull request 30 on 2026-11-17                                                         |
 | 7          | One look (1.3), A1, A2 and B to D                                    | Merged as pull requests 31, 33, 34, 35 and 36, with corrections in pull request 32              |
 | 8          | One look (1.3), F–L                                                  | Merged as pull request 37 on 2026-11-18 (decision 38)                                           |
-| 9          | Test-ready pass                                                      | Name merged as pull request 38; other outcomes in progress (decision 40)                        |
+| 9          | Test-ready pass                                                      | Name and welcome merged as pull requests 38 and 39 (decision 40)                                |
 | Parked     | Visual regression tests (1.6)                                        | Paused on 2026-11-18 (decisions 37 and 38)                                                      |
 | Deployed   | Private deployment of main at `1e2e589e`                             | Running at `http://localhost:4173` on the owner’s PC (decision 37)                              |
 | Order open | Unfinished feature work                                              | Revisit priorities in a fresh brainstorming chat (decision 37)                                  |
@@ -1645,6 +1646,16 @@ and skipped 10, and all 14 supplemental tests passed. Fixture browser checks cov
 name, World Board, news, searches, lenses, legend, Layers, Weather, Cameras and resizing.
 The app showed its new name at 1280×720, 1440×900 and 1920×1080. An independent read verified
 the final change. The installed release remains at `1e2e589e`.
+
+**Test-ready pass, the welcome.** Pull request 39 merged on 28 November. The welcome introduces
+Global Eye View, offers a four-step tour and can be skipped. The Menu can reopen the tour.
+Fixtures checked the first opening, repeat opening, skip, completion, keyboard focus and replay.
+Separate pictures checked the layout at 1280×720, 1440×900 and 1920×1080. The tested head
+`b242eb4a` has the same tree as merge `dd7f6646`. The main suite passed 7,276 tests and skipped
+10 tests. All 14 supplemental tests passed. The lower count reflects replacing tests of the old
+launch screen with tests of the tour. The full gate also checked the board, news, searches,
+lenses, legend, Layers, Weather, Cameras and resizing. Independent review cleared the verified
+change. The installed release remains at `1e2e589e`.
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
