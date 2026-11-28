@@ -356,9 +356,12 @@ export class StreetLevelControls {
       const icon = button.querySelector('.sl-btn-icon');
       const text = button.querySelector('.sl-btn-text');
       if (icon) icon.textContent = on ? '⤡' : '⤢';
-      if (text) text.textContent = on ? 'SHRINK' : 'EXPAND';
+      if (text) text.textContent = on ? 'Shrink' : 'Expand';
       button.setAttribute('aria-pressed', String(on));
       button.setAttribute('aria-label', on ? 'Shrink' : 'Expand');
+      button.title = on
+        ? 'Shrink the street-level view (Esc)'
+        : 'Expand the street-level view';
     }
     if (!on && dock) this.actions.dockPanel?.();
     this._requestResize();
@@ -491,7 +494,7 @@ export class StreetLevelControls {
       setProp(
         el.status,
         'className',
-        `sl-status${view.status.tone ? ` is-${view.status.tone}` : ''}`,
+        `sl-status kit-btn quiet${view.status.tone ? ` is-${view.status.tone}` : ''}`,
       );
       setAttr(el.status, 'aria-pressed', String(view.status.pressed));
       setProp(el.status, 'title', view.status.title);
@@ -503,7 +506,9 @@ export class StreetLevelControls {
   }
 
   _renderProviders(view) {
-    syncChipGroup(this._elements.providerChips, view.providers);
+    syncChipGroup(this._elements.providerChips, view.providers, {
+      appearance: 'kit-chip pick',
+    });
   }
 
   _renderError(view) {

@@ -9,15 +9,15 @@ const DAY_MS = 86_400_000;
 
 /** SINCE slider stops, in relative days so a share link keeps its meaning. */
 export const SINCE_STOPS = Object.freeze([
-  Object.freeze({ days: 0, label: 'ANY DATE' }),
-  Object.freeze({ days: 3652, label: 'LAST 10 YEARS' }),
-  Object.freeze({ days: 1826, label: 'LAST 5 YEARS' }),
-  Object.freeze({ days: 1095, label: 'LAST 3 YEARS' }),
-  Object.freeze({ days: 730, label: 'LAST 2 YEARS' }),
-  Object.freeze({ days: 365, label: 'LAST YEAR' }),
-  Object.freeze({ days: 182, label: 'LAST 6 MONTHS' }),
-  Object.freeze({ days: 91, label: 'LAST 3 MONTHS' }),
-  Object.freeze({ days: 30, label: 'LAST MONTH' }),
+  Object.freeze({ days: 0, label: 'Any date' }),
+  Object.freeze({ days: 3652, label: 'Last 10 years' }),
+  Object.freeze({ days: 1826, label: 'Last 5 years' }),
+  Object.freeze({ days: 1095, label: 'Last 3 years' }),
+  Object.freeze({ days: 730, label: 'Last 2 years' }),
+  Object.freeze({ days: 365, label: 'Last year' }),
+  Object.freeze({ days: 182, label: 'Last 6 months' }),
+  Object.freeze({ days: 91, label: 'Last 3 months' }),
+  Object.freeze({ days: 30, label: 'Last month' }),
 ]);
 
 /** The exact stop for a day count, else the nearest one. */
@@ -37,13 +37,13 @@ export function sinceStopIndex(days) {
 function presentSince(days, now) {
   const value = Number(days) || 0;
   const index = sinceStopIndex(value);
-  if (value <= 0) return { index, days: 0, label: 'ANY DATE' };
+  if (value <= 0) return { index, days: 0, label: 'Any date' };
   const stop = SINCE_STOPS[index];
-  const window = stop.days === value ? stop.label : `LAST ${value} DAYS`;
+  const window = stop.days === value ? stop.label : `Last ${value} days`;
   return {
     index,
     days: value,
-    label: `${window} · SINCE ${formatDate(now - value * DAY_MS)}`,
+    label: `${window} · since ${formatDate(now - value * DAY_MS)}`,
   };
 }
 
@@ -74,21 +74,21 @@ function keyGuidance(state) {
 
 function presentStatus(state) {
   const pressed = state.enabled === true;
-  const title = pressed ? 'Turn Street Level off' : 'Turn Street Level on';
+  const title = pressed ? 'Turn Street level off' : 'Turn Street level on';
   if (state.keyRejected)
-    return { text: 'KEY REJECTED', tone: 'warn', pressed, title };
+    return { text: 'Key rejected', tone: 'warn', pressed, title };
   if (state.keyRequired)
     return {
-      text: 'KEY REQUIRED',
+      text: 'Key required',
       tone: 'warn',
       pressed,
       title: keyGuidance(state) || title,
     };
   if (state.coverage.loading)
-    return { text: 'LOADING', tone: 'busy', pressed, title };
+    return { text: 'Loading', tone: 'busy', pressed, title };
   return pressed
-    ? { text: 'ON', tone: 'on', pressed, title }
-    : { text: 'OFF', tone: '', pressed, title };
+    ? { text: 'On', tone: 'on', pressed, title }
+    : { text: 'Off', tone: '', pressed, title };
 }
 
 /** A chip is lit only while the layer and its provider are both on. */
@@ -105,7 +105,7 @@ function presentProviders(state) {
     else if (provider.error) title = `${provider.name}: ${provider.error}`;
     return {
       id: provider.id,
-      label: provider.label,
+      label: provider.name || provider.label,
       color: provider.color || null,
       title,
       active: on,
@@ -124,6 +124,7 @@ function presentProviders(state) {
 
 function presentViewer(state) {
   const { street } = state;
+  const providerName = street.providerName || street.providerLabel;
   const right = [];
   if (street.isPano) right.push('360°');
   if (Number.isFinite(street.bearing))
@@ -141,14 +142,14 @@ function presentViewer(state) {
     captionLeft: left.join(' · '),
     captionRight: right.join(' · '),
     link: street.externalUrl || null,
-    linkLabel: street.providerLabel ? `${street.providerLabel} ↗` : '',
+    linkLabel: providerName ? `${providerName} ↗` : '',
     follow: {
       pressed: street.follow === true,
       disabled: street.open !== true || street.followAvailable !== true,
       title:
         street.followAvailable === true
           ? 'Camera follows view: move the globe camera wherever the street-level view looks'
-          : 'Camera follow needs the Google 3D map: choose Google 3D under MAP SOURCE',
+          : 'Camera follow needs the Google 3D map: choose Google 3D under Map source',
     },
   };
 }
@@ -171,7 +172,7 @@ function presentNearest(state) {
   const ready = state.groundClickReady === true;
   return {
     visible: true,
-    label: `OPEN ${targets.map((provider) => provider.label).join(' / ')}`,
+    label: `Open ${names}`,
     title: ready
       ? `Open ${names} at the centre of the view`
       : `Zoom in to a street to open ${names} here`,

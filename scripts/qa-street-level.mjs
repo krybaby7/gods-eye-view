@@ -426,12 +426,12 @@ async function assertKeylessGate(page) {
     }),
   );
   await page.waitForFunction(
-    () => document.getElementById('sl-status').textContent === 'KEY REQUIRED',
+    () => document.getElementById('sl-status').textContent === 'Key required',
     { timeout: 30_000 },
   );
   const info = await readPanel(page);
   assert.equal(info.controlsDisabled, true);
-  assert.equal(info.status, 'KEY REQUIRED');
+  assert.equal(info.status, 'Key required');
   const chip = await page.$eval(
     '#sl-provider-chips [data-chip-id="mapillary"]',
     (node) => ({
@@ -693,7 +693,7 @@ async function main() {
     );
     if (!status.configured) {
       await step(
-        'keyless install gates the controls and reports KEY REQUIRED',
+        'keyless install gates the controls and reports Key required',
         () => assertKeylessGate(page),
       );
       await skipStep(
@@ -824,7 +824,7 @@ async function main() {
                 node.getAttribute('aria-pressed'),
               ].join(':'),
             ),
-            'BUTTON:ON:true',
+            'BUTTON:On:true',
           );
           await clickPanelControl(page, '#sl-status');
           await page.waitForFunction(
@@ -832,7 +832,7 @@ async function main() {
             { timeout: 15_000 },
           );
           await page.waitForFunction(
-            () => document.getElementById('sl-status').textContent === 'OFF',
+            () => document.getElementById('sl-status').textContent === 'Off',
             { timeout: 5_000 },
           );
           assert.equal((await ui()).coverage.count, 0);
@@ -939,13 +939,13 @@ async function main() {
             `${narrowed.coverage.count} ≤ ${before}`,
           );
           await settle(page, () =>
-            /^LAST YEAR/.test(
+            /^Last year/.test(
               document.getElementById('sl-since-label').textContent,
             ),
           );
           assert.match(
             await page.$eval('#sl-since-label', (node) => node.textContent),
-            /^LAST YEAR · SINCE \d{4}-\d{2}-\d{2}$/,
+            /^Last year · since \d{4}-\d{2}-\d{2}$/,
           );
           await setStop(0);
           await uiUntil((u) => u.filter.sinceDays === 0);
@@ -953,12 +953,12 @@ async function main() {
             page,
             () =>
               document.getElementById('sl-since-label').textContent ===
-              'ANY DATE',
+              'Any date',
           );
           assert.equal((await ui()).filter.sinceDays, 0);
           assert.equal(
             await page.$eval('#sl-since-label', (node) => node.textContent),
-            'ANY DATE',
+            'Any date',
           );
         },
       );
@@ -1013,7 +1013,7 @@ async function main() {
       const QUIET_MS = 2 * COVERAGE_MOVE_DEBOUNCE_MS + 200;
       if (fixtures)
         await step(
-          'a key Mapillary rejects reads KEY REJECTED, stops asking (a pan that asks while accepted asks nothing while rejected), and clears when switched off',
+          'a key Mapillary rejects reads Key rejected, stops asking (a pan that asks while accepted asks nothing while rejected), and clears when switched off',
           async () => {
             // Positive control: with the key accepted, the same pan-and-wait
             // the rejected half uses does see new tile requests.
@@ -1027,9 +1027,9 @@ async function main() {
             );
             fixture.tiles = 'rejected';
             await clickPanelControl(page, '#sl-status');
-            await statusText('OFF');
+            await statusText('Off');
             await clickPanelControl(page, '#sl-status');
-            await statusText('KEY REJECTED');
+            await statusText('Key rejected');
             const shown = await page.evaluate(() => ({
               error: document.getElementById('sl-error').textContent,
               errorHidden: document.getElementById('sl-error').hidden,
@@ -1049,7 +1049,7 @@ async function main() {
             assert.equal(after, rejectedAt, 'no tile requests while rejected');
             // Off clears the message; with a good key it comes back as ON.
             await clickPanelControl(page, '#sl-status');
-            await statusText('OFF');
+            await statusText('Off');
             assert.equal(
               await page.$eval(
                 '#sl-error',
@@ -1061,13 +1061,13 @@ async function main() {
             fixture.tiles = 'ok';
             await clickPanelControl(page, '#sl-status');
             await waitForCoverage(page);
-            await statusText('ON');
+            await statusText('On');
           },
         );
       else
         await skipStep(
           'fixtures only',
-          'a key Mapillary rejects reads KEY REJECTED and stops asking',
+          'a key Mapillary rejects reads Key rejected and stops asking',
         );
 
       const fixtureIds = new Map(
@@ -1227,7 +1227,7 @@ async function main() {
           assert.ok(view.when.length > 0, 'caption shows the capture date');
           assert.equal(street.providerId, 'mapillary');
           firstImageId = street.imageId;
-          assert.equal(view.link, 'MAPILLARY ↗');
+          assert.equal(view.link, 'Mapillary ↗');
           if (fixtures) {
             const known = fixtureIds.get(street.imageId);
             assert.ok(known, `a fixture photo opened (${street.imageId})`);
@@ -1464,7 +1464,7 @@ async function main() {
             .classList.contains('sl-viewer-wrap-expanded'),
         );
       await step(
-        'EXPAND opens a modal dialog (the rest of <body> inert) and Esc returns focus to the button',
+        'Expand opens a modal dialog (the rest of <body> inert) and Esc returns focus to the button',
         async () => {
           await openById(firstImageId);
           const inertBefore = await page.evaluate(
@@ -1606,7 +1606,7 @@ async function main() {
         },
       );
       await step(
-        'SHRINK after EXPAND docks the window back in the rail at its default size, viewer inside the panel',
+        'Shrink after Expand docks the window back in the rail at its default size, viewer inside the panel',
         async () => {
           await clickPanelControl(page, '#sl-viewer-expand');
           await settle(page, () =>
@@ -1966,7 +1966,7 @@ async function main() {
             }));
             assert.match(shown.by, /Image by /);
             assert.match(shown.when, /\d{4}-\d{2}$/, 'dated by month');
-            assert.equal(shown.label, 'GOOGLE STREET VIEW ↗');
+            assert.equal(shown.label, 'Google Street View ↗');
             assert.match(shown.href, /map_action=pano&pano=/);
             assert.equal(shown.fitFillHidden, true, 'no FIT/FILL for Google');
             assert.equal(shown.panorama, true);
@@ -1993,7 +1993,7 @@ async function main() {
               ),
               'the pose bearing follows the drag',
             );
-            // The keyboard path: OPEN STREET VIEW at the view centre.
+            // The keyboard path: Open Google Street View at the view centre.
             await closePhoto();
             await uiUntil((u) => u.street.open === false);
             await clickPanelControl(page, '#sl-nearest-btn');
@@ -2006,7 +2006,7 @@ async function main() {
                 null,
                 { timeout: 30_000 },
               ),
-              'OPEN STREET VIEW opens the panorama at the view centre',
+              'Open Google Street View opens the panorama at the view centre',
             );
             // Leaving Google 3D closes the panorama (Google's terms).
             await stacks.set('esri-imagery');
@@ -2084,7 +2084,7 @@ async function main() {
       );
       if (fixtures)
         await step(
-          'keyless install (a second page, no key on the server) gates the controls and reports KEY REQUIRED',
+          'keyless install (a second page, no key on the server) gates the controls and reports Key required',
           async () => {
             const keyless = await browser.newPage();
             await keyless.setViewport(VIEWPORTS[0]);
@@ -2104,7 +2104,7 @@ async function main() {
       else
         await skipStep(
           'fixtures only',
-          'keyless install (a second page) reports KEY REQUIRED',
+          'keyless install (a second page) reports Key required',
         );
       if (fixtures)
         await step(
