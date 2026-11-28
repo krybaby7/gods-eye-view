@@ -24,41 +24,91 @@ const views = [
   [1440, 900],
   [1920, 1080],
 ];
-const title = 'A governance report is available for India.';
 const day = (index) => `2026-11-0${9 - index}T10:00:00Z`;
-const civicHeadlines = [
-  'Parliament approved funding for public libraries.',
-  'Councils published the annual parks report.',
-  'Public schools began the new term.',
-  'A public consultation opened on housing policy.',
-  'Libraries extended weekend hours.',
-  'A museum reopened after renovations.',
+// Invented outlets and ordinary invented headlines: no real reporting.
+const outlets = [
+  ['fixture-gazette', 'Fixture Gazette', 'https://gazette.invalid'],
+  ['sample-courier', 'Sample Courier', 'https://courier.invalid'],
+  ['example-ledger', 'Example Ledger', 'https://ledger.invalid'],
 ];
+const located = {
+  id: 'fixture-event',
+  title: 'Fixture Harbour ferry terminal closed after a strike nearby.',
+  summary:
+    'Invented fixture summary: the ferry terminal in Fixture Harbour stayed closed for the day.',
+  whatsNew: 'Invented fixture update: a third outlet reported the closure.',
+  category: 'armed-conflict',
+  kind: 'event',
+  place: { name: 'Fixture Harbour' },
+  location: { lat: 19.1, lon: 72.9, precision: 'city', method: 'gazetteer' },
+  itemIds: outlets.map(([id]) => `event-${id}`),
+};
+const unlocated = {
+  id: 'fixture-development',
+  title: 'Fixture assembly scheduled a second reading of a library bill.',
+  summary:
+    'Invented fixture summary: the assembly set a date for the second reading.',
+  whatsNew: '',
+  category: 'elections-governance',
+  kind: 'development',
+  place: { name: 'India' },
+  location: null,
+  itemIds: outlets.slice(0, 2).map(([id]) => `development-${id}`),
+};
+const fillers = [
+  'Fixture councils published the annual parks report.',
+  'Fixture schools began the new term.',
+  'A fixture consultation opened on housing policy.',
+  'Fixture libraries extended weekend hours.',
+].map((title, index) => ({
+  id: `fixture-filler-${index}`,
+  title,
+  summary: title,
+  whatsNew: '',
+  category: 'elections-governance',
+  kind: 'development',
+  place: null,
+  location: null,
+  itemIds: [`filler-${index}`],
+}));
 const news = {
   revision: 'today-fixture',
   theater: {
     id: 'world',
     name: 'World affairs',
-    categories: [{ id: 'elections-governance', label: 'Governance' }],
+    categories: [
+      { id: 'armed-conflict', label: 'Armed conflict' },
+      { id: 'elections-governance', label: 'Governance' },
+    ],
   },
-  sources: [{ id: 'fixture-paper', name: 'Fixture Gazette' }],
-  items: civicHeadlines.map((headline, index) => ({
-    id: `source-${index}`,
-    title: headline,
-    sourceId: 'fixture-paper',
-    url: `https://example.invalid/civic-report-${index}`,
-    publishedAt: day(index),
-  })),
-  stories: civicHeadlines.map((headline, index) => ({
-    id: `civic-${index}`,
-    title: headline,
-    summary: headline,
-    category: 'elections-governance',
-    kind: 'development',
+  sources: outlets.map(([id, name]) => ({ id, name })),
+  items: [
+    ...outlets.map(([id, , home]) => ({
+      id: `event-${id}`,
+      title: located.title,
+      sourceId: id,
+      url: `${home}/fixture-event`,
+      publishedAt: day(0),
+    })),
+    ...outlets.slice(0, 2).map(([id, , home]) => ({
+      id: `development-${id}`,
+      title: unlocated.title,
+      sourceId: id,
+      url: `${home}/fixture-development`,
+      publishedAt: day(1),
+    })),
+    ...fillers.map((story, index) => ({
+      id: `filler-${index}`,
+      title: story.title,
+      sourceId: outlets[0][0],
+      url: `${outlets[0][2]}/fixture-filler-${index}`,
+      publishedAt: day(index + 2),
+    })),
+  ],
+  stories: [located, unlocated, ...fillers].map((story, index) => ({
+    ...story,
     status: 'open',
     updatedAt: day(index),
-    itemIds: [`source-${index}`],
-    ...(index === 0 && { place: { name: 'India' } }),
   })),
 };
 const report = {
@@ -214,6 +264,62 @@ try {
   await page.waitForSelector('#frame-today-list:not([hidden])', wait);
   await page.click('#frame-menu-sources [data-menu-close="true"]');
 
+  const alertRow = '[data-today-item="alert:fixture-country-alert"]';
+  const eventRow = '[data-today-item="story:world:fixture-event"]';
+  const developmentRow = '[data-today-item="story:world:fixture-development"]';
+  const rowCount = () =>
+    page.$$eval('#frame-today-list > li', (nodes) => nodes.length);
+  const rowIds = () =>
+    page.$$eval('#frame-today-list button', (nodes) =>
+      nodes.map((node) => node.dataset.todayItem),
+    );
+  const selectedStory = () =>
+    page.evaluate(
+      () =>
+        window.__godsEyeView.dataManager.layers.get('news').module.getSnapshot()
+          .selectedStoryId,
+    );
+  const openedStory = () =>
+    page.evaluate(() => ({
+      title: document.getElementById('frame-today-story-title').textContent,
+      summary: document.getElementById('frame-today-story-summary').textContent,
+      fresh: document.getElementById('frame-today-story-new').textContent,
+      freshHidden: document.getElementById('frame-today-story-new').hidden,
+      links: [...document.querySelectorAll('#frame-today-story-sources a')].map(
+        (link) => [link.textContent, link.href, link.target, link.rel],
+      ),
+    }));
+  const sourceLinks = (story, count) =>
+    outlets
+      .slice(0, count)
+      .map(([, name, home]) => [
+        name,
+        `${home}/${story}`,
+        '_blank',
+        'noopener noreferrer',
+      ])
+      .sort((a, b) => a[0].localeCompare(b[0]));
+  await page.waitForSelector(eventRow, wait);
+  assert.equal(await rowCount(), 5);
+  assert.deepEqual((await rowIds()).slice(0, 2), [
+    'story:world:fixture-event',
+    'story:world:fixture-development',
+  ]);
+  assert.deepEqual(
+    await page.$eval(eventRow, (row) =>
+      [...row.children].map((part) => part.textContent),
+    ),
+    [
+      located.title,
+      'Fixture Harbour · 9 Nov 2026, 10:00 UTC',
+      'Example Ledger · Fixture Gazette · Sample Courier',
+      'Reported by 3 outlets',
+    ],
+  );
+  console.log(
+    '[PASS] a located conflict event and an unlocated development lead under their own titles',
+  );
+
   stage = 'populate a synthetic country alert';
   showAlert = true;
   await page.evaluate(async () => {
@@ -221,71 +327,72 @@ try {
     await data.setEnabled('world', false, { origin: 'user' });
     await data.setEnabled('world', true, { origin: 'user' });
   });
-  const alertRow = '[data-today-item="alert:fixture-country-alert"]';
-  await page.waitForSelector(alertRow, wait);
-  const rowCount = () =>
-    page.$$eval('#frame-today-list > li', (nodes) => nodes.length);
-  assert.equal(await rowCount(), 5);
-  assert.equal(
-    await page.$eval(
-      '#frame-today-list li:first-child button',
-      (node) => node.dataset.todayItem,
-    ),
-    'alert:fixture-country-alert',
+  await page.waitForFunction(
+    () =>
+      document.querySelectorAll('#frame-today-list > li').length === 5 &&
+      !document.getElementById('frame-today-more').hidden,
+    wait,
   );
+  assert.ok(!(await page.$(alertRow)));
   await page.click('#frame-today-more');
   assert.equal(await rowCount(), 7);
+  assert.equal((await rowIds()).at(-1), 'alert:fixture-country-alert');
   await page.click('#frame-today-more');
   assert.equal(await rowCount(), 5);
+  // The alert ranks seventh; keep the list open so the steps below reach it.
+  await page.click('#frame-today-more');
   console.log(
-    '[PASS] a country alert ranks first and More reveals the remaining rows',
+    '[PASS] stories rank before the country alert and More reveals the remaining rows',
   );
 
-  stage = 'open a cached report and country';
+  stage = 'open the located story';
   const beforeOpening = usedEndpoints();
-  await page.click('[data-today-item="digest:world:civic-0"]');
+  await page.click(eventRow);
   await page.waitForSelector('#frame-today-story:not([hidden])', wait);
   await page.waitForFunction(
     () => document.activeElement.id === 'frame-today-story-title',
     wait,
   );
-  assert.equal(
-    await page.$eval(
-      '#frame-today-story-title',
-      (heading) => heading.textContent,
-    ),
-    title,
+  const event = await openedStory();
+  assert.equal(event.title, located.title);
+  assert.equal(event.summary, located.summary);
+  assert.equal(event.freshHidden, false);
+  assert.equal(event.fresh, `New: ${located.whatsNew}`);
+  assert.deepEqual(event.links, sourceLinks('fixture-event', 3));
+  assert.equal(await selectedStory(), 'fixture-event');
+  assert.deepEqual(usedEndpoints(), beforeOpening);
+  console.log(
+    '[PASS] the opened story shows its summary, what is new and every source link, and the news layer selects it',
   );
-  assert.match(
-    await page.$eval(
-      '#frame-today-story-sources',
-      (sources) => sources.textContent,
-    ),
-    /Fixture Gazette/,
-  );
-  assert.equal(
-    await page.evaluate(
-      () =>
-        window.__godsEyeView.dataManager.layers.get('news').module.getSnapshot()
-          .selectedStoryId,
-    ),
-    null,
-  );
-  const sourceLink = await page.$eval(
-    '#frame-today-story-source-link',
-    (link) => link.href,
-  );
-  assert.equal(sourceLink, 'https://example.invalid/civic-report-0');
+  await capture('story');
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('#frame-today-story[hidden]', wait);
+  assert.equal(await selectedStory(), null);
+  console.log('[PASS] closing the story clears the news selection it made');
+
+  stage = 'open the unlocated story placed in a country';
+  await page.click(developmentRow);
+  await page.waitForSelector('#frame-today-story:not([hidden])', wait);
+  const development = await openedStory();
+  assert.equal(development.title, unlocated.title);
+  assert.equal(development.summary, unlocated.summary);
+  assert.equal(development.freshHidden, true);
+  assert.deepEqual(development.links, sourceLinks('fixture-development', 2));
+  assert.equal(await selectedStory(), 'fixture-development');
   await page.waitForFunction(() => {
     const height =
       window.__godsEyeView.viewer.camera.positionCartographic.height;
     return height > 5_400_000 && height < 5_600_000;
   }, wait);
   assert.deepEqual(usedEndpoints(), beforeOpening);
-  await capture('story');
-  await page.keyboard.press('Escape');
+  await page.click('#frame-today-story-close');
   await page.waitForSelector('#frame-today-story[hidden]', wait);
+  assert.equal(await selectedStory(), null);
+  console.log(
+    '[PASS] an unlocated story in a country frames that country and closes cleanly',
+  );
 
+  stage = 'open the country alert';
   const beforeCountry = usedEndpoints();
   await page.click(alertRow);
   await page.waitForFunction(
@@ -295,13 +402,13 @@ try {
     wait,
   );
   // The existing Overview reads the local diplomacy projection once. The cached
-  // story and country activation never ask for snapshots, news or refreshes.
+  // stories and country activation never ask for snapshots, news or refreshes.
   assert.deepEqual(usedEndpoints(), {
     ...beforeCountry,
     detail: [...beforeCountry.detail, { country: 'IND', lens: 'diplomacy' }],
   });
   console.log(
-    '[PASS] cached story opens offline; the Country Sheet reads only its saved diplomacy projection',
+    '[PASS] cached stories open offline; the Country Sheet reads only its saved diplomacy projection',
   );
 
   await capture('filled');
