@@ -8,6 +8,13 @@ import { createSituationPanel } from '../ui/situationPanel.js';
 import { createSearchesPanel } from '../ui/searchesPanel.js';
 import { createWorldPanel } from '../ui/worldPanel.js';
 import { createFrame } from '../ui/frame.js';
+import { createBoardSearch } from '../ui/boardSearch.js';
+import {
+  boardSearchCommands,
+  openBoardSearchControl,
+} from '../ui/boardSearchControls.js';
+import { createLocalNominatimGeocoder } from '../search/defaults.js';
+import { CITY_POIS } from '../locations.js';
 import { createToolsMenu, openMenuSection } from '../ui/toolsMenu.js';
 import { initGevVoiceCommands } from '../voice/gevRealtime.js';
 import { installViews, isEmbeddedInline } from './embed.js';
@@ -233,29 +240,33 @@ export function createApplicationTools({
   debug.voiceCommands = voiceCommands;
   // The frame comes last: its bottom bar delegates to the zoom and voice
   // controls built above.
-  function frameCountry(iso3) {
-    const center = world?.countryCenter?.(iso3);
-    if (!center) return false;
-    return styleManager.runImmediateNavigation('country', () => {
+  function framePlace({ lng, lat }, height) {
+    return styleManager.runImmediateNavigation('board-place', () => {
       viewer.camera.flyTo({
-        // Keep this a board-scale view, clear of individual map objects.
-        destination: Cartesian3.fromDegrees(center.lon, center.lat, 5_500_000),
+        destination: Cartesian3.fromDegrees(lng, lat, height),
         orientation: { heading: 0, pitch: -Math.PI / 2, roll: 0 },
         duration: 1.5,
       });
       return true;
     });
   }
+  function frameCountry(iso3) {
+    const center = world?.countryCenter?.(iso3);
+    return center
+      ? framePlace({ lng: center.lon, lat: center.lat }, 5_500_000)
+      : false;
+  }
+  function openCountry(iso3) {
+    if (!world?.selectCountry?.(iso3)) return false;
+    frameCountry(iso3);
+    return true;
+  }
   frame = createFrame({
     requestRender: governorRequestRender,
     world,
     news,
     openSources: () => openMenuSection('sources'),
-    openCountry: (iso3) => {
-      if (!world?.selectCountry?.(iso3)) return false;
-      frameCountry(iso3);
-      return true;
-    },
+    openCountry,
     frameCountry,
   });
   defer(() => frame.destroy());
@@ -263,6 +274,39 @@ export function createApplicationTools({
   // voice control has placed itself in the dock and the frame is up.
   const toolsMenu = createToolsMenu({ document, dataManager, news });
   defer(() => toolsMenu.destroy());
+  const boardSearch = createBoardSearch({
+    document,
+    getModel: () => ({
+      countries: world?.getSnapshot?.().countries,
+      cities: CITY_POIS,
+      availableLayers: new Set(dataManager.getAll().map(({ id }) => id)),
+      availableCommands: boardSearchCommands(document, toolsMenu),
+    }),
+    activate: (target, returnFocus) => {
+      if (target.kind === 'country' && target.iso3) {
+        if (!openCountry(target.iso3)) return false;
+        queueMicrotask(() => {
+          if (document.activeElement === returnFocus)
+            document.getElementById('world-sheet-name')?.focus();
+        });
+        return true;
+      }
+      if (target.kind === 'country' || target.kind === 'place')
+        return framePlace(
+          target,
+          target.kind === 'country' ? 5_500_000 : 220_000,
+        );
+      return openBoardSearchControl(
+        document,
+        target,
+        toolsMenu,
+        frame.openLayers,
+        returnFocus,
+      );
+    },
+    lookup: createLocalNominatimGeocoder().geocode,
+  });
+  defer(() => boardSearch.destroy());
   defer(
     installViews({
       shell: styleManager,

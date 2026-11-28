@@ -71,7 +71,9 @@ export const LAYER_GROUPS = Object.freeze([
     row('directions', 'Directions'),
     row('recent-imagery', 'Recent imagery'),
     row('radio', 'Radio'),
-    row('searches', 'Search layers', { opensPanel: 'searches-panel' }),
+    row('searches', 'Search Layers with Claude', {
+      opensPanel: 'searches-panel',
+    }),
   ]),
 ]);
 

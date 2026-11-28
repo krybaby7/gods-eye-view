@@ -235,6 +235,14 @@ body #data-panel.layers-menu:focus-visible {
   white-space: nowrap;
 }
 
+.layers-menu [data-layer-id='searches'] .data-name {
+  padding-block: var(--space-1);
+  overflow: visible;
+  text-overflow: clip;
+  text-wrap: balance;
+  white-space: normal;
+}
+
 .layers-menu .data-toggle-state {
   grid-column: 3;
   grid-row: 1;
