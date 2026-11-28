@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const SRC_ROOT = fileURLToPath(new URL('.', import.meta.url));
 const REPO_ROOT = path.resolve(SRC_ROOT, '..');
 const INDEX_HTML = path.join(REPO_ROOT, 'index.html');
+const FONT_DIR = path.join(REPO_ROOT, 'public', 'fonts');
 
 /** The glyph written as element text: `<span class="material-symbols-outlined">radar</span>`. */
 const SPAN_TEXT =
@@ -41,11 +42,8 @@ function sourceFiles(directory = SRC_ROOT) {
 /**
  * Glyph names the sources ask the icon font for.
  *
- * Errs WIDE on purpose. A name the font does not carry costs nothing — Google
- * ignores an unknown `icon_names` entry and still returns 200 — while a glyph
- * the subset is missing breaks the interface SILENTLY: the ligature never
- * forms, so the element renders the literal word `right_panel_open` instead of
- * falling back to a visible box.
+ * A missing ligature renders its name as text after the font loads. This scan
+ * also covers app code that changes an icon dynamically.
  *
  * A literal to the LEFT of a `?` is the condition being tested, not the text
  * being shown, so it is dropped: `status === 'loading' ? …` must not enrol
@@ -67,25 +65,25 @@ function referencedGlyphs() {
       const assigned = statement.includes('?')
         ? statement.slice(statement.indexOf('?') + 1)
         : statement;
-      for (const literal of assigned.matchAll(STRING_LITERAL)) add(literal[1]);
+      for (const [_, glyph] of assigned.matchAll(STRING_LITERAL)) {
+        // These literals set labels on regular text controls.
+        if (glyph === 'on' && relative === 'src/ui/cctvPresentation.js')
+          continue;
+        if (glyph === 'normal' && relative === 'src/ui/visualSettings.js')
+          continue;
+        add(glyph);
+      }
     }
   }
   return found;
 }
 
-/** The `icon_names` list index.html asks Google for. */
-function subsettedGlyphs(html = readFileSync(INDEX_HTML, 'utf8')) {
-  const match =
-    /Material\+Symbols\+Outlined[^"]*[?&]icon_names=([a-z0-9_,]+)/.exec(html);
-  assert.ok(
-    match,
-    'index.html must request Material Symbols with an icon_names subset',
+test('every glyph the sources render is in the bundled subset', () => {
+  const subset = new Set(
+    readFileSync(path.join(FONT_DIR, 'material-symbols-glyphs.txt'), 'utf8')
+      .trim()
+      .split(/\s+/),
   );
-  return new Set(match[1].split(','));
-}
-
-test('every glyph the sources render is in the icon_names subset', () => {
-  const subset = subsettedGlyphs();
   const missing = [...referencedGlyphs()]
     .filter(([glyph]) => !subset.has(glyph))
     .map(([glyph, file]) => `${glyph} (${file})`);
@@ -93,10 +91,20 @@ test('every glyph the sources render is in the icon_names subset', () => {
   assert.deepEqual(
     missing,
     [],
-    'Glyphs named by the sources but absent from the index.html icon_names list. ' +
-      'Add them there — an unlisted glyph renders as its own name on screen: ' +
+    'Update the bundled font and its glyph list together: ' +
       missing.join(', '),
   );
+});
+
+test('the app and MCP panel do not allow requests to Google Fonts', () => {
+  for (const filename of [
+    INDEX_HTML,
+    'build/vite.js',
+    'src/tools/globePanel.js',
+  ]) {
+    const file = readFileSync(path.resolve(REPO_ROOT, filename), 'utf8');
+    assert.doesNotMatch(file, /fonts\.(googleapis|gstatic)\.com/, filename);
+  }
 });
 
 test('the unused Material Icons Round family is not loaded', () => {

@@ -32,7 +32,7 @@ test('the globe panel is an MCP Apps resource that loads the app through its ser
   assert.equal(resource.mimeType, MCP_APP_MIME_TYPE);
   assert.equal(MCP_APP_MIME_TYPE, 'text/html;profile=mcp-app');
   const { csp } = resource._meta.ui;
-  // The panel reaches only map and font providers; the app's own files
+  // The panel reaches only map providers; the app's own files
   // and data come through the MCP server, so no app address is declared.
   assert.deepEqual(csp.connectDomains, csp.resourceDomains);
   assert.ok(csp.resourceDomains.includes('https://tile.googleapis.com'));

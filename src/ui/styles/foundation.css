@@ -19,6 +19,8 @@
   --menu-bg: var(--surface-1);
   --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
   --font-sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --font-symbols: 'Material Symbols Outlined';
+  --symbol-size: 24px;
   --panel-radius: var(--radius-panel);
   --btn-radius: var(--radius-control);
   --panel-surface-shadow: var(--shadow-pop);
@@ -340,11 +342,32 @@ body.cockpit-mode #cockpit-cloud-effects.active {
   will-change: width, height;
 }
 
+.material-symbols-outlined {
+  font-family: var(--font-symbols);
+  font-weight: normal;
+  font-style: normal;
+  font-size: var(--symbol-size);
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Keep ligature names from appearing when the icon face is late or missing. */
+:root:not(.material-symbols-ready) .material-symbols-outlined {
+  visibility: hidden;
+}
+
 .celestial-marker {
   position: absolute;
   z-index: 2;
   transform: translate(-50%, -50%);
-  font-family: 'Material Symbols Outlined';
+  font-family: var(--font-symbols);
   font-size: 20px;
   font-weight: 400;
   font-style: normal;

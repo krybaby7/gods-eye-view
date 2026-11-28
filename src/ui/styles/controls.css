@@ -583,7 +583,7 @@
 .pp-icon.material-symbols-outlined {
   width: 14px;
   overflow: hidden;
-  font-family: 'Material Symbols Outlined';
+  font-family: var(--font-symbols);
   font-size: 14px;
   font-weight: 400;
   font-style: normal;
