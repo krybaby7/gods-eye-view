@@ -714,6 +714,29 @@ Added on 2026-11-27:
     Menu. It can be reopened from the Menu. The top-bar field is Search this board. Search
     Layers with Claude keeps its own panel.
 
+41. **Today shows the stories themselves and leaves none out.** Claude read the test-ready pass
+    on 2026-11-28. Today, as built in pull request 42, never showed a story's own headline: a
+    story read “A governance report is available for India.” It also left out every story filed
+    under conflict, protest or rights, every story with a place on the map, every story of kind
+    `event`, any story whose text matched a list of military words, and four of the twelve alert
+    feeds. Decision 40 and section 10 called this “civic” and did not say what was left out. The
+    roadmap never asked for it. Asked “Fix Today here before the new build is installed?”, the
+    owner answered “Yes, fix first”. An Opus 5.5 agent built the fix, one Sonnet 5.5 agent read
+    it and another ran the checks. Claude directed, merged and installed.
+
+    Today now lists every open story under its own headline, with its place, the time of its
+    last update, its outlets and why it is listed. Opening one shows its summary, what is new
+    and a link to each outlet. It also selects the story on the globe, which flies to a pinned
+    story. The rules that remain are about sourcing only: an open story with a headline, a date
+    and at least one outlet that can be named and linked. Every alert feed the top bar counts
+    can appear.
+
+    Claude's readings, for the owner to confirm: stories rank above alerts, and alerts above
+    turn changes. Stories rank by the number of outlets, then the newest. The Situation panel's
+    filters do not narrow Today. An alert is one plain sentence made from the country and the
+    kind, never the feed's own label, and alerts coded from news read “reported”. Today still
+    follows the one theatre chosen in the Situation panel.
+
 ## 6. Risks
 
 - **Stage 1 is bigger than it looks.** Most of its lines are in panels the owner did not write.
@@ -1044,9 +1067,8 @@ for the test-ready pass. Future feature priorities are for a fresh brainstorming
 | 6          | The layers menu (1.4)                                                | Merged as pull request 30 on 2026-11-17                                                         |
 | 7          | One look (1.3), A1, A2 and B to D                                    | Merged as pull requests 31, 33, 34, 35 and 36, with corrections in pull request 32              |
 | 8          | One look (1.3), F–L                                                  | Merged as pull request 37 on 2026-11-18 (decision 38)                                           |
-| 9          | Test-ready pass                                                      | Changes merged in pull requests 38–45. Installation pending (decision 40)                       |
+| 9          | Test-ready pass                                                      | Merged as pull requests 38–46 and installed on 2026-11-28 (decisions 40 and 41)                 |
 | Parked     | Visual regression tests (1.6)                                        | Paused on 2026-11-18 (decisions 37 and 38)                                                      |
-| Pending    | Private installation of the test-ready release                       | Final installation verification remains pending                                                 |
 | Order open | Unfinished feature work                                              | Revisit priorities in a fresh brainstorming chat (decision 37)                                  |
 | Beside     | Track R                                                              | The original milestones are in section 4. The earlier roadmap recorded this track as unstarted. |
 
@@ -1721,7 +1743,26 @@ loopback. The gated head `13f63ecd` has the same tree as merge `13419cea`. All 2
 steps and the separate Street level fixture passed. The main suite passed 7,312 tests with
 10 skipped, all 14 supplemental tests passed, and the dedicated verifier passed all seven
 cases. The production build and a synthetic saved board also passed a guarded preview rehearsal.
-Final installation verification remains pending.
+The one installation attempt of that pass failed inside its own proof script, before any request
+to the app, and left the app switched off with the launcher restored.
+
+**Test-ready pass, Today's stories.** Pull request 46 merged on 28 November (decision 41). Today
+lists every open story under its own headline, and every alert feed. The gated head `20a59e0b`
+has the same tree as merge `8cb32b38`. All 23 gate steps and the separate Street level fixture
+passed. The main suite passed 7,323 tests with 10 skipped, and all 14 supplemental tests passed.
+The Today fixture run passed 18 checks: a located conflict story is listed under its own
+headline, opens with its summary and outlet links, and the globe flies to it. An independent
+read found nothing that breaks and seven points to fix, all fixed before the merge. The earlier
+pass's private name check and its walk scripts were not run again. No story written from real
+news has been seen in Today: none exists on the owner's PC until a Refresh.
+
+**Test-ready pass, installation.** On 28 November the build of merge `8cb32b38` was placed beside
+`1e2e589e` and `13419cea` in the installed copy, with the saved data linked as before. The
+launcher was pointed at it and started the way the login shortcut starts it. The release checker
+passed against the running app: the served entry and its four linked files match the build, and
+the saved board is turn 6 of 2026-11-11 with 256 countries. One page load, with every outside
+request blocked, showed the name, the search box and Today listing the board's own alerts.
+`releases\1e2e589e` is kept for going back. Not checked: a Refresh, live map tiles, a phone.
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
