@@ -104,6 +104,7 @@ export async function installFixtures(
     imageryFixture = null,
     radio = null,
     context = null,
+    todayNews = null,
   } = {},
 ) {
   const imagery = await fs.readFile(
@@ -187,12 +188,21 @@ export async function installFixtures(
           url.pathname === '/api/world/detail' &&
           request.method === 'GET'
         ) {
-          const detail = await world.detail(
-            url.searchParams.get('country'),
-            url.searchParams.get('lens'),
-          );
+          const country = url.searchParams.get('country');
+          const lens = url.searchParams.get('lens');
+          if (todayNews)
+            (report.transport.todayWorldDetails ??= []).push({ country, lens });
+          const detail = await world.detail(country, lens);
           if (detail) await reply(detail);
           else await reply({ error: 'Unknown World Board detail lens.' }, 404);
+        } else if (
+          todayNews &&
+          url.pathname === '/api/news' &&
+          request.method === 'GET'
+        ) {
+          report.transport.todayNewsReplies =
+            (report.transport.todayNewsReplies ?? 0) + 1;
+          await reply(todayNews);
         } else if (keys && request.method === 'GET' && keys.has(url.pathname)) {
           await reply(keys.get(url.pathname));
         } else if (

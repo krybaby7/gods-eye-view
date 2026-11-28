@@ -2,6 +2,7 @@ import { frameDate, refreshedLabel, worldGauges } from './frameGauges.js';
 import { createFrameLegend } from './frameLegend.js';
 import { createLayersMenu } from './layersMenu.js';
 import { announceMenuOpen, closeWhenAnotherOpens } from './menuSections.js';
+import { createTodayPanel } from './todayPanel.js';
 
 /** Window width below which Today starts folded to its rail. */
 export const FRAME_TODAY_OPEN_MIN_WIDTH = 1100;
@@ -47,6 +48,10 @@ function write(storage, key, value) {
  * @param {Storage} [options.storage]
  * @param {(reason: string) => void} [options.requestRender]
  * @param {{getSnapshot: Function, subscribe: Function}} [options.world]
+ * @param {{getSnapshot: Function, subscribe: Function}} [options.news]
+ * @param {() => void} [options.openSources]
+ * @param {(iso3: string) => void} [options.openCountry]
+ * @param {(iso3: string) => void} [options.frameCountry]
  * @param {() => Date} [options.now]
  */
 export function createFrame({
@@ -55,6 +60,10 @@ export function createFrame({
   storage = globalThis.localStorage,
   requestRender = () => {},
   world = null,
+  news = null,
+  openSources,
+  openCountry,
+  frameCountry,
   now = () => new Date(),
 } = {}) {
   const body = document.body;
@@ -71,6 +80,15 @@ export function createFrame({
 
   // ── Today and its rail ──
   const today = find('frame-today');
+  const todayStory = find('frame-today-story');
+  const todayPanel = createTodayPanel({
+    document,
+    world,
+    news,
+    openSources,
+    openCountry,
+    frameCountry,
+  });
   const fold = find('frame-today-fold');
   const open = find('frame-today-open');
   function setToday(state, { persist = false, focus = false } = {}) {
@@ -112,16 +130,21 @@ export function createFrame({
     'click',
     () => {
       // Opening Today where both cannot fit closes the sheet.
-      if (shared?.matches && sheetOpen()) find('world-sheet-close')?.click();
+      if (shared?.matches && sheetOpen()) {
+        const storyOpen = todayStory && !todayStory.hidden;
+        find(
+          storyOpen ? 'frame-today-story-close' : 'world-sheet-close',
+        )?.click();
+      }
       setToday('open', { persist: true, focus: true });
     },
     { signal },
   );
 
   // ── The sheet: open while the board shows something in it ──
-  const sheet = find('world-character-sheet');
+  const sheets = [find('world-character-sheet'), todayStory].filter(Boolean);
   function syncSheet() {
-    const next = sheet && !sheet.hidden ? 'open' : 'closed';
+    const next = sheets.some((sheet) => !sheet.hidden) ? 'open' : 'closed';
     if (body.dataset.sheet === next) return;
     body.dataset.sheet = next;
     // Opening the sheet where both cannot fit folds Today.
@@ -130,9 +153,13 @@ export function createFrame({
   }
   syncSheet();
   keepGlobe();
-  if (sheet && typeof MutationObserver !== 'undefined') {
+  if (sheets.length && typeof MutationObserver !== 'undefined') {
     const observer = new MutationObserver(syncSheet);
-    observer.observe(sheet, { attributes: true, attributeFilter: ['hidden'] });
+    for (const sheet of sheets)
+      observer.observe(sheet, {
+        attributes: true,
+        attributeFilter: ['hidden'],
+      });
     observers.push(observer);
   }
 
@@ -426,6 +453,7 @@ export function createFrame({
   return {
     /** Fold Today away or open it again, as the fold and open buttons do. */
     setToday: (state) => setToday(state, { persist: true }),
+    takeCountryReturnFocus: todayPanel.takeCountryReturnFocus,
     destroy() {
       events.abort();
       unsubscribe?.();
@@ -434,6 +462,7 @@ export function createFrame({
       for (const node of [...ownFocus.keys()]) routeFocus(node, false);
       legend.close();
       layersMenu.destroy();
+      todayPanel.destroy();
       body.classList.remove('gev-frame');
       delete body.dataset.today;
       delete body.dataset.sheet;
