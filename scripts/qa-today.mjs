@@ -109,6 +109,7 @@ const news = {
     ...story,
     status: 'open',
     updatedAt: day(index),
+    sourceCount: story.itemIds.length,
   })),
 };
 const report = {
@@ -360,9 +361,15 @@ try {
   assert.equal(event.fresh, `New: ${located.whatsNew}`);
   assert.deepEqual(event.links, sourceLinks('fixture-event', 3));
   assert.equal(await selectedStory(), 'fixture-event');
+  // The news layer's own flight ends at its story standoff, about 90 km up.
+  await page.waitForFunction(
+    () =>
+      window.__godsEyeView.viewer.camera.positionCartographic.height < 500_000,
+    wait,
+  );
   assert.deepEqual(usedEndpoints(), beforeOpening);
   console.log(
-    '[PASS] the opened story shows its summary, what is new and every source link, and the news layer selects it',
+    '[PASS] the opened story shows its summary, what is new and every source link, and the news layer selects and flies to it',
   );
   await capture('story');
   await page.keyboard.press('Escape');
