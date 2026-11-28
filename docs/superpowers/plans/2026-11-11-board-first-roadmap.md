@@ -1044,9 +1044,9 @@ for the test-ready pass. Future feature priorities are for a fresh brainstorming
 | 6          | The layers menu (1.4)                                                | Merged as pull request 30 on 2026-11-17                                                         |
 | 7          | One look (1.3), A1, A2 and B to D                                    | Merged as pull requests 31, 33, 34, 35 and 36, with corrections in pull request 32              |
 | 8          | One look (1.3), F–L                                                  | Merged as pull request 37 on 2026-11-18 (decision 38)                                           |
-| 9          | Test-ready pass                                                      | First seven outcomes merged as pull requests 38–44 (decision 40)                                |
+| 9          | Test-ready pass                                                      | Changes merged in pull requests 38–45. Installation pending (decision 40)                       |
 | Parked     | Visual regression tests (1.6)                                        | Paused on 2026-11-18 (decisions 37 and 38)                                                      |
-| Deployed   | Private deployment of main at `1e2e589e`                             | Running at `http://localhost:4173` on the owner’s PC (decision 37)                              |
+| Pending    | Private installation of the test-ready release                       | Final installation verification remains pending                                                 |
 | Order open | Unfinished feature work                                              | Revisit priorities in a fresh brainstorming chat (decision 37)                                  |
 | Beside     | Track R                                                              | The original milestones are in section 4. The earlier roadmap recorded this track as unstarted. |
 
@@ -1648,7 +1648,7 @@ The npm package identifier and the existing machine-facing names are kept. The m
 and skipped 10, and all 14 supplemental tests passed. Fixture browser checks covered the
 name, World Board, news, searches, lenses, legend, Layers, Weather, Cameras and resizing.
 The app showed its new name at 1280×720, 1440×900 and 1920×1080. An independent read verified
-the final change. The installed release remains at `1e2e589e`.
+the final change. The installed release was still at `1e2e589e`.
 
 **Test-ready pass, the welcome.** Pull request 39 merged on 28 November. The welcome introduces
 Global Eye View, offers a four-step tour and can be skipped. The Menu can reopen the tour.
@@ -1658,7 +1658,7 @@ Separate pictures checked the layout at 1280×720, 1440×900 and 1920×1080. The
 10 tests. All 14 supplemental tests passed. The lower count reflects replacing tests of the old
 launch screen with tests of the tour. The full gate also checked the board, news, searches,
 lenses, legend, Layers, Weather, Cameras and resizing. Independent review cleared the verified
-change. The installed release remains at `1e2e589e`.
+change. The installed release was still at `1e2e589e`.
 
 **Test-ready pass, the fonts.** Pull request 40 merged on 28 November. Inter, JetBrains Mono and
 Material Symbols Outlined are bundled with their licences. Icons stay blank until the font
@@ -1668,7 +1668,7 @@ Matching Context pictures cover 1280×720, 1440×900 and 1920×1080. The tested 
 the same tree as merge `e87e7cc6`. The full gate passed 7,277 main tests with 10 skipped and all
 14 supplemental tests. It also covered the board, news, searches, lenses, legend, Layers,
 Weather, Cameras and resizing. The same commit passed separate name and welcome fixture checks.
-Independent review cleared the verified change. The installed release remains at `1e2e589e`.
+Independent review cleared the verified change. The installed release was still at `1e2e589e`.
 
 **Test-ready pass, Street level.** Pull request 41 merged on 28 November. Street level now uses
 the shared panel, buttons and chips. The photo, switches and filters stay together in the panel,
@@ -1679,7 +1679,7 @@ the inline panel. The gated head `ec41c27e` has the same tree as merge `b983bc00
 cumulative gate steps passed, including the name, welcome and both font cases. The main suite
 passed 7,277 tests with 10 skipped, and all 14 supplemental tests passed. The same head passed
 the separate Street level fixture. Independent review cleared the verified change. The installed
-release remains at `1e2e589e`.
+release was still at `1e2e589e`.
 
 **Test-ready pass, Today.** Pull request 42 merged on 28 November. Today ranks the saved stories
 and civic board changes it can explain from their recorded dates and sources. It shows up to five
@@ -1690,7 +1690,7 @@ opens Data sources and keys to guide readers to Refresh without starting an upda
 1920×1080 and keyboard focus on dismissal. The gated head `84a3a2df` has the same tree as merge
 `2cf007cf`. All 23 cumulative gate steps passed, including 14 Today fixture checks. The main suite
 passed 7,296 tests with 10 skipped, and all 14 supplemental tests passed. The same head passed
-the separate Street level fixture. The installed release remains at `1e2e589e`.
+the separate Street level fixture. The installed release was still at `1e2e589e`.
 
 **Test-ready pass, search.** Pull request 43 merged on 28 November. Search this board in the
 top bar offers grouped keyboard-accessible matches for countries, bundled cities, focused layer
@@ -1701,7 +1701,7 @@ accepts cities and countries. Search Layers with Claude remains a separate tool.
 same tree as merge `d492b442`. All 24 cumulative gate steps passed, including nine search
 checks at three desktop sizes and a 390-pixel browser width. The main suite passed 7,304 tests
 with 10 skipped, all 14 supplemental tests passed, and the separate Street level fixture passed.
-The installed release remains at `1e2e589e`.
+The installed release was still at `1e2e589e`.
 
 **Test-ready pass, independent walk.** Pull request 44 merged on 28 November. An independent
 fixture walk at 1280×720, 1440×900 and 1920×1080 found unclear country-score wording,
@@ -1711,7 +1711,17 @@ controls fit. Follow-up fixtures checked those states and the main frame. Voice 
 inactive. The walk did not exercise a microphone, live services or the Cockpit. The gated head
 `be8cb768` has the same tree as merge `8c1b5373`. All 26 cumulative gate steps, the separate
 Street level fixture and all 14 supplemental tests passed. The main suite passed 7,305 tests
-with 10 skipped. The installed release remains at `1e2e589e`.
+with 10 skipped. The installed release was still at `1e2e589e`.
+
+**Test-ready pass, release verification.** Pull request 45 merged on 28 November. The release
+checker compares the served entry and linked scripts and stylesheets against the built files.
+It validates a separately supplied saved board before making any request. It reports the
+saved turn number, as-of date and country count, and requests only the linked static files on
+loopback. The gated head `13f63ecd` has the same tree as merge `13419cea`. All 27 cumulative
+steps and the separate Street level fixture passed. The main suite passed 7,312 tests with
+10 skipped, all 14 supplemental tests passed, and the dedicated verifier passed all seven
+cases. The production build and a synthetic saved board also passed a guarded preview rehearsal.
+Final installation verification remains pending.
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
