@@ -1041,7 +1041,7 @@ for the test-ready pass. Future feature priorities are for a fresh brainstorming
 | 6          | The layers menu (1.4)                                                | Merged as pull request 30 on 2026-11-17                                                         |
 | 7          | One look (1.3), A1, A2 and B to D                                    | Merged as pull requests 31, 33, 34, 35 and 36, with corrections in pull request 32              |
 | 8          | One look (1.3), F–L                                                  | Merged as pull request 37 on 2026-11-18 (decision 38)                                           |
-| 9          | Test-ready pass                                                      | Name, welcome, fonts and Street level merged as pull requests 38–41 (decision 40)               |
+| 9          | Test-ready pass                                                      | Name, welcome, fonts, Street level and Today merged as pull requests 38–42 (decision 40)       |
 | Parked     | Visual regression tests (1.6)                                        | Paused on 2026-11-18 (decisions 37 and 38)                                                      |
 | Deployed   | Private deployment of main at `1e2e589e`                             | Running at `http://localhost:4173` on the owner’s PC (decision 37)                              |
 | Order open | Unfinished feature work                                              | Revisit priorities in a fresh brainstorming chat (decision 37)                                  |
@@ -1677,6 +1677,17 @@ cumulative gate steps passed, including the name, welcome and both font cases. T
 passed 7,277 tests with 10 skipped, and all 14 supplemental tests passed. The same head passed
 the separate Street level fixture. Independent review cleared the verified change. The installed
 release remains at `1e2e589e`.
+
+**Test-ready pass, Today.** Pull request 42 merged on 28 November. Today ranks the saved stories
+and civic board changes it can explain from their recorded dates and sources. It shows up to five
+items before Show more. The War Monitor switch governs whether its saved digests appear. Board
+changes open the country sheet and frame a supported country. Saved civic digests open sourced
+details and frame a matched country. Theatre-only items leave the view in place. The empty action
+opens Data sources and keys to guide readers to Refresh without starting an update. Fixtures checked filled, empty and open-story views at 1280×720, 1440×900 and
+1920×1080 and keyboard focus on dismissal. The gated head `84a3a2df` has the same tree as merge
+`2cf007cf`. All 23 cumulative gate steps passed, including 14 Today fixture checks. The main suite
+passed 7,296 tests with 10 skipped, and all 14 supplemental tests passed. The same head passed
+the separate Street level fixture. The installed release remains at `1e2e589e`.
 
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
