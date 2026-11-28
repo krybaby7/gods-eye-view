@@ -810,6 +810,15 @@ body.gev-frame:has([data-world-lens='diplomacy'][aria-pressed='true'])
   overflow-wrap: anywhere;
 }
 
+.frame-today-story-body p {
+  margin: 0 0 var(--space-2);
+}
+
+.frame-today-story-new {
+  color: var(--text-2);
+  font: var(--type-small);
+}
+
 .frame-today-story-body h3 {
   margin: var(--space-3) 0 var(--space-2);
   font: var(--type-heading);

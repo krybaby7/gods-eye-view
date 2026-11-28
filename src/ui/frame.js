@@ -49,6 +49,9 @@ function write(storage, key, value) {
  * @param {(reason: string) => void} [options.requestRender]
  * @param {{getSnapshot: Function, subscribe: Function}} [options.world]
  * @param {{getSnapshot: Function, subscribe: Function}} [options.news]
+ * @param {(storyId: string) => boolean} [options.selectStory] Selects a news
+ *   story, its pin and its flight, for a story opened from Today.
+ * @param {() => void} [options.clearStory] Clears that news selection.
  * @param {() => void} [options.openSources]
  * @param {(iso3: string) => void} [options.openCountry]
  * @param {(iso3: string) => void} [options.frameCountry]
@@ -61,6 +64,8 @@ export function createFrame({
   requestRender = () => {},
   world = null,
   news = null,
+  selectStory,
+  clearStory,
   openSources,
   openCountry,
   frameCountry,
@@ -85,6 +90,8 @@ export function createFrame({
     document,
     world,
     news,
+    selectStory,
+    clearStory,
     openSources,
     openCountry,
     frameCountry,
