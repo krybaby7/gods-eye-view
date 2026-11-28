@@ -254,7 +254,22 @@ body.gev-frame #frame-tools .map-source-section {
 }
 
 body.gev-frame #frame-tools .map-stack-chip-row {
-  flex-wrap: wrap;
+  grid-template-columns: repeat(auto-fit, minmax(min(100px, 100%), 1fr));
+  gap: var(--space-2);
+}
+
+body.gev-frame #frame-tools .map-stack-chip {
+  align-items: center;
+  min-width: 0;
+  min-height: var(--space-6);
+  text-align: center;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+body.gev-frame #frame-tools .map-stack-chip-req {
+  flex: none;
+  white-space: nowrap;
 }
 
 /* Display options: one column of full-width rows. */

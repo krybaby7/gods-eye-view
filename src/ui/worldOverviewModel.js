@@ -49,10 +49,12 @@ export function conditionLine(sheetModel) {
     }));
   const known = bars.filter(({ score }) => score !== null);
   const { score, label } = sheetModel.condition;
-  const text =
+  const rating =
     score === null
-      ? `${known.length} of ${bars.length} bars have a figure, too few to name a weakest bar.`
-      : `Weakest bar: ${label}, ${bandWord(score).toLowerCase()} at ${Math.round(score)}. ${known.length} of ${bars.length} bars have a figure.`;
+      ? 'Lowest condition score is unknown.'
+      : `${label} is rated ${bandWord(score).toLowerCase()}.`;
+  const areas = bars.length === 1 ? 'condition area' : 'condition areas';
+  const text = `${rating} Scores available for ${known.length} of ${bars.length} ${areas}.`;
   return {
     id: 'condition',
     title: 'Condition',

@@ -133,9 +133,15 @@ export default async function phase1({
     async () => {
       await pickCountry(81.7, 21.2, 'IND');
       assert.equal(await text('#world-sheet-name'), 'India');
-      assert.match(await text('#world-hover'), /Weakest bar.*24 \/ 100.*2024/s);
+      assert.match(
+        await text('#world-hover'),
+        /Lowest condition score.*24 \/ 100.*2024/s,
+      );
       assert.match(await text('#world-coverage'), /17 of 18.*2026-11-08/);
-      assert.match(await text('#world-hp-label'), /Weakest bar.*24 \/ 100/);
+      assert.match(
+        await text('#world-hp-label'),
+        /^Lowest condition score · Government 24 \/ 100$/u,
+      );
       const condition = await checkRows('condition', {
         C1: 24,
         C2: 67,
@@ -144,7 +150,7 @@ export default async function phase1({
         C5: 58,
         C6: null,
       });
-      assert.deepEqual(condition[0].flags, ['Weakest', 'Stale']);
+      assert.deepEqual(condition[0].flags, ['Lowest score', 'Stale']);
       assert.deepEqual(condition[5].flags, ['Unknown']);
       await page.click(slot('C1'));
       const why = await text('#world-why-C1');

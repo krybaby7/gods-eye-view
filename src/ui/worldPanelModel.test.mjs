@@ -48,7 +48,7 @@ test('sheet exposes coverage, forecast provenance and the actual formula', () =>
   );
   assert.equal(sheet.condition.label, 'Fiscal');
   const row = sheet.rows.find(({ slot }) => slot === 'C5');
-  assert.deepEqual(row.flags, ['Weakest', 'Stale', 'Source forecast']);
+  assert.deepEqual(row.flags, ['Lowest score', 'Stale', 'Source forecast']);
   assert.equal(row.value, '130.8% of GDP');
   assert.equal(row.rawValue, 130.8);
   assert.equal(row.sourceUrl, 'https://www.imf.org/external/datamapper/');
@@ -74,7 +74,7 @@ test('hover reflects the active lens, exact data-year median and forecast period
     describeWorldHover({ ...snapshot, lens: 'condition' }, 'USA'),
     {
       name: 'United States',
-      value: 'Weakest bar · Fiscal 16 / 100 (2026, source forecast)',
+      value: 'Lowest condition score · Fiscal 16 / 100 (2026, source forecast)',
     },
   );
   assert.equal(

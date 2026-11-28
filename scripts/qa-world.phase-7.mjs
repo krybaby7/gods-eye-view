@@ -70,7 +70,7 @@ export default async function phase7({
       );
       assert.match(
         byId.condition.text,
-        /Weakest bar: Government, (very weak|weak) at \d+\. 5 of 6 bars have a figure\./,
+        /Government is rated (very weak|weak)\. Scores available for 5 of 6 condition areas\./u,
       );
       assert.match(byId.condition.text, /Societal cooperation\s*Unknown/);
       assert.match(
