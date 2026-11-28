@@ -1774,6 +1774,13 @@ same way. Started through Explorer with its login shortcut, the app saved a live
 15:03 on 28 November and the note was gone. No code changed. The installed app is to be started
 only by that shortcut, never directly from an agent's shell.
 
+**Test-ready pass, clean-up.** On 28 November, on the owner's word, the finished work of the pass
+was deleted: the folder `gev-today-stories`, Codex's twelve `gev-test-ready-…` folders, their nine
+merged branches on the PC and on the fork, and the unused release `13419cea`. Every deleted head
+was contained in `main`, and the gate summaries and pictures that the records cite were first
+copied into `qa-artifacts/handoff-2026-11-27/` and `qa-artifacts/handoff-2026-11-28/`. Left for the
+owner to decide: Codex's eleven `gev-one-look-…` folders and the six older `feat/…` branches.
+
 **The stage 0 mock.** A private artifact, <https://claude.ai/artifact/Xz8cSXbG97cCbXVrkTrPoK>. It
 holds eight boards: the six screens of stage 0, the page of design tokens and the board on how news
 is filed (decision 31). Every screen is drawn over a capture of the owner's saved board (section
