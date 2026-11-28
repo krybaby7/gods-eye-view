@@ -185,12 +185,15 @@ export function renderRadioState(state) {
           .filter(Boolean)
           .join(' · ')
       : '';
-    this._radioStationMeta.textContent = selected
-      ? [place, signal].filter(Boolean).join('  /  ') ||
-        'Directory metadata only'
-      : state.loading
-        ? 'Loading station directory…'
-        : 'Choose a globe marker or use next.';
+    const off = !enabled && !transitioning && !uncertain && !state.loading;
+    this._radioStationMeta.textContent = off
+      ? 'Choose Enable to turn on Radio.'
+      : selected
+        ? [place, signal].filter(Boolean).join('  /  ') ||
+          'Directory metadata only'
+        : state.loading
+          ? 'Loading station directory…'
+          : 'Choose a globe marker or use next.';
   }
   if (this._radioStationTags) {
     const tags = Array.isArray(selected?.tags) ? selected.tags.slice(0, 8) : [];

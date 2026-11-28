@@ -1,5 +1,11 @@
 /* The shared rail surface owns disclosure, geometry, and theme tokens. */
+#searches-panel .panel-surface-title {
+  text-wrap: balance;
+  white-space: normal;
+}
+
 #searches-panel-count {
+  flex: none;
   margin-inline-start: auto;
   font-variant-numeric: tabular-nums;
 }

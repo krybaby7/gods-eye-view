@@ -25,8 +25,15 @@
   align-items: center;
 }
 
-.situation-row > select {
-  flex: 1 1 auto;
+.situation-row:has(> .situation-theater) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.situation-row > .situation-theater {
+  grid-column: 1 / -1;
+  width: 100%;
 }
 
 .situation-refresh {
@@ -47,11 +54,11 @@
 .situation-claim-meta,
 .situation-footer {
   color: var(--text-secondary);
-  font-size: 11px;
+  font: var(--type-small);
 }
 
 .situation-digest-line {
-  font: 11px/1.45 var(--font-mono);
+  font: var(--type-small);
   color: var(--text-primary);
 }
 
@@ -107,6 +114,16 @@
   align-items: center;
   gap: 5px;
   cursor: pointer;
+}
+
+.situation-chips .situation-chip {
+  max-width: 100%;
+  font: var(--type-control);
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .situation-chip[aria-pressed='false'],
@@ -185,7 +202,7 @@
 
 .situation-story-meta,
 .situation-perspectives {
-  font-size: 11px;
+  font: var(--type-small);
 }
 
 .situation-verification {
@@ -245,7 +262,7 @@
 
 .situation-subhead {
   color: var(--panel-surface-title);
-  font: 600 10px/1.4 var(--font-mono);
+  font: var(--type-label);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -300,8 +317,8 @@
   border-top: 1px solid var(--glass-border);
 }
 
-/* Frame theater sits between the theater selector and Refresh. */
-.situation-row > select {
+/* The full-width theater label sits above its existing action buttons. */
+.situation-row:has(> .situation-theater) > button {
   min-width: 0;
 }
 
@@ -445,7 +462,7 @@
 .situation-brief-coverage,
 .situation-brief-age,
 .situation-cited-note {
-  font-size: 11px;
+  font: var(--type-small);
 }
 
 .situation-brief-coverage {
@@ -453,14 +470,13 @@
 }
 
 .situation-brief-coverage-details li {
-  font-size: 11px;
+  font: var(--type-small);
   color: var(--text-secondary);
 }
 
 .situation-brief-meta {
   color: var(--text-secondary);
-  font: 10px/1.4 var(--font-mono);
-  letter-spacing: 0.04em;
+  font: var(--type-small);
 }
 
 .situation-brief-retry {

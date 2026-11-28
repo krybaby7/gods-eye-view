@@ -118,6 +118,31 @@ export default async function phase8({
         .map(([name, element]) => ({ name, ...box(element) }));
       const panel = section && document.getElementById(`frame-menu-${section}`);
       const list = document.getElementById('frame-menu-list');
+      const sources =
+        section === 'display' && shown(panel)
+          ? [...panel.querySelectorAll('.map-stack-chip')]
+              .filter(shown)
+              .map((button) => {
+                const label = button.querySelector('.map-stack-chip-label');
+                const requirement = button.querySelector('.map-stack-chip-req');
+                const textBoxes = (element) => {
+                  if (!element) return [];
+                  const range = document.createRange();
+                  range.selectNodeContents(element);
+                  return Array.from(range.getClientRects(), (rect) =>
+                    rect.toJSON(),
+                  );
+                };
+                return {
+                  name: label.textContent,
+                  font: Number.parseFloat(getComputedStyle(label).fontSize),
+                  pressed: button.getAttribute('aria-pressed') === 'true',
+                  box: box(button),
+                  lines: textBoxes(label),
+                  requirement: textBoxes(requirement),
+                };
+              })
+          : [];
       return {
         width: innerWidth,
         height: innerHeight,
@@ -126,6 +151,7 @@ export default async function phase8({
         regions,
         panel: shown(panel) ? box(panel) : null,
         list: shown(list) ? box(list) : null,
+        sources,
       };
     }, section);
   const meet = (a, b) =>
@@ -155,6 +181,41 @@ export default async function phase8({
       [],
       `The ${section} panel meets a region: ${where}`,
     );
+    if (section === 'display') {
+      assert.ok(
+        data.sources.length >= 2,
+        `Map source buttons are drawn: ${where}`,
+      );
+      assert.equal(data.sources.filter(({ pressed }) => pressed).length, 1);
+      for (const [index, source] of data.sources.entries()) {
+        const { box, lines, font, name, requirement } = source;
+        assert.ok(
+          font >= 13 && box.bottom - box.top >= 28,
+          `Readable Map source button: ${name}, ${where}`,
+        );
+        assert.ok(
+          lines.length &&
+            [...lines, ...requirement].every(
+              (line) =>
+                line.left >= box.left - 1 &&
+                line.right <= box.right + 1 &&
+                line.top >= box.top - 1 &&
+                line.bottom <= box.bottom + 1,
+            ),
+          `Map source labels stay within their button: ${name}, ${where}`,
+        );
+        assert.ok(
+          requirement.length <= 1 &&
+            requirement.every((tag) => !lines.some((line) => meet(line, tag))),
+          `Map source requirement stays on one line, clear of its label: ${name}, ${where}`,
+        );
+        assert.equal(
+          data.sources.slice(index + 1).some((other) => meet(box, other.box)),
+          false,
+          `Map source buttons stay separate: ${name}, ${where}`,
+        );
+      }
+    }
     return data;
   };
 

@@ -714,6 +714,61 @@ async function main() {
     );
 
     await step(
+      'Search Layers with Claude title and count stay separate before asking',
+      async () => {
+        try {
+          for (const [width, height] of [
+            [1280, 720],
+            [1440, 900],
+            [1920, 1080],
+          ]) {
+            await page.setViewport({ width, height });
+            const header = await page.$eval(
+              `${PANEL} [data-panel-header]`,
+              (node) => {
+                const title = node.querySelector('h2');
+                const count = node.querySelector('#searches-panel-count');
+                const toggle = node.querySelector(
+                  '[data-collapse-target="searches-panel"]',
+                );
+                const range = document.createRange();
+                range.selectNodeContents(title);
+                return {
+                  label: title.textContent,
+                  font: Number.parseFloat(getComputedStyle(title).fontSize),
+                  lines: Array.from(range.getClientRects(), (rect) =>
+                    rect.toJSON(),
+                  ),
+                  title: title.getBoundingClientRect().toJSON(),
+                  count: count.getBoundingClientRect().toJSON(),
+                  toggle: toggle.getBoundingClientRect().toJSON(),
+                };
+              },
+            );
+            assert.equal(header.label, 'Search Layers with Claude');
+            assert.ok(header.font >= 13);
+            assert.ok(
+              header.lines.length &&
+                header.lines.every(
+                  (line) =>
+                    line.right <= header.title.right + 1 &&
+                    line.right + 6 <= header.count.left,
+                ),
+              `Readable title and count at ${width}×${height}: ${JSON.stringify(header)}`,
+            );
+            assert.ok(
+              header.count.width > 0 &&
+                header.count.right + 6 <= header.toggle.left,
+            );
+          }
+          assert.equal(writes().length, 0);
+        } finally {
+          await page.setViewport(VIEWPORT);
+        }
+      },
+    );
+
+    await step(
       'Ask shows both running stages and polls with the current revision',
       async () => {
         await page.type(question, QUESTION);

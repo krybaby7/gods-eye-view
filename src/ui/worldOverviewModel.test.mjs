@@ -40,12 +40,12 @@ const countryIndex = [
   { iso3: 'USA', name: 'United States' },
 ];
 
-test('the Condition line names the weakest bar and keeps unknown bars unknown', () => {
+test('the Condition line explains the lowest score rating and preserves the unknown areas', () => {
   const line = conditionLine(sheet);
   assert.equal(line.target, 'condition');
   assert.equal(
     line.text,
-    'Weakest bar: Society, weak at 24. 5 of 6 bars have a figure.',
+    'Society is rated weak. Scores available for 5 of 6 condition areas.',
   );
   assert.equal(line.bars.length, 6);
   assert.deepEqual(line.bars[4], {
@@ -59,7 +59,7 @@ test('the Condition line names the weakest bar and keeps unknown bars unknown', 
   assert.equal(
     conditionLine({ ...sheet, condition: { score: null, label: 'Condition' } })
       .text,
-    '5 of 6 bars have a figure, too few to name a weakest bar.',
+    'Lowest condition score is unknown. Scores available for 5 of 6 condition areas.',
   );
 });
 
@@ -473,7 +473,7 @@ test('the largest dependency is modelled and says so', () => {
   );
 });
 
-test('a band word in the Overview follows the rounded score it is shown with', () => {
+test('the Overview rating follows the rounded Condition score', () => {
   const rounded = {
     ...sheet,
     condition: { score: 19.6, label: 'Society' },
@@ -483,7 +483,7 @@ test('a band word in the Overview follows the rounded score it is shown with', (
   assert.equal(line.bars[0].band, 'Weak');
   assert.equal(
     line.text,
-    'Weakest bar: Society, weak at 20. 1 of 1 bars have a figure.',
+    'Society is rated weak. Scores available for 1 of 1 condition area.',
   );
 });
 
