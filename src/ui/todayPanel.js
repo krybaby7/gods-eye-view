@@ -35,7 +35,9 @@ function when(date) {
 
 function readingContext(row) {
   const turn = row.turn ? `Turn ${row.turn}` : null;
-  return [row.place, when(row.date), turn].filter(Boolean).join(' · ');
+  const date = when(row.date);
+  const dated = date && row.dateLabel ? `${row.dateLabel} ${date}` : date;
+  return [row.place, dated, turn].filter(Boolean).join(' · ');
 }
 
 function outletLine(sources) {
@@ -81,6 +83,9 @@ export function createTodayPanel({
   let openId = null;
   // The news story Today selected, so closing clears only its own choice.
   let selectedByToday = null;
+  // The story the map selected for Today's opened story; when the map's
+  // selection moves elsewhere, Today's view closes to match it.
+  let openedSelected = null;
   let countryOpener = null;
   let rendered = null;
   let renderedStory = null;
@@ -150,6 +155,7 @@ export function createTodayPanel({
     if (!openId) return;
     const previousId = openId;
     openId = null;
+    openedSelected = null;
     renderedStory = null;
     story.hidden = true;
     buttons.get(previousId)?.setAttribute('aria-expanded', 'false');
@@ -181,7 +187,15 @@ export function createTodayPanel({
     buttons.get(openId)?.setAttribute('aria-expanded', 'true');
     // The news layer flies to a story it pins; one it does not pin but placed
     // in a country frames that country; anything else leaves the view alone.
-    selectedByToday = selectStory?.(row.target.id) ? row.target.id : null;
+    // The selection is Today's only if Today changed it: closing must not
+    // clear a story the viewer had already selected elsewhere.
+    const before = news?.getSnapshot()?.selectedStoryId ?? null;
+    // The layer notifies while selecting; nothing is followed until it has.
+    openedSelected = null;
+    const selected = Boolean(selectStory?.(row.target.id));
+    selectedByToday =
+      selected && before !== row.target.id ? row.target.id : null;
+    openedSelected = selected ? row.target.id : null;
     if (!row.target.mapped && row.target.iso3) frameCountry?.(row.target.iso3);
     queueMicrotask(() => {
       if (openId === row.id) storyTitle.focus({ preventScroll: true });
@@ -273,6 +287,14 @@ export function createTodayPanel({
 
   const updateNews = () => {
     newsSnapshot = news.getSnapshot();
+    if (
+      openedSelected &&
+      (newsSnapshot?.selectedStoryId ?? null) !== openedSelected
+    ) {
+      // Another pin, or a cleared selection: follow the map, keep focus put.
+      selectedByToday = null;
+      closeStory({ restoreFocus: false });
+    }
     render();
   };
 

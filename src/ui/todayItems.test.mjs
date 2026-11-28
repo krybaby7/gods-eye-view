@@ -165,6 +165,8 @@ test('no open story is dropped for its kind, category, words, location or place'
   assert.equal(byId.ambiguous.target.iso3, undefined);
   assert.equal(byId.development.place, 'World affairs');
   assert.equal(byId.old.date, '2026-11-01T00:00:00.000Z');
+  assert.equal(byId.old.dateLabel, 'event');
+  assert.equal(byId.city.dateLabel, 'updated');
   // A development is never pinned, even with a location.
   assert.equal(byId.located.target.mapped, false);
 });
@@ -291,6 +293,7 @@ test('every alert feed the gauge counts can produce a Today item', () => {
   for (const row of rows) {
     assert.equal(row.place, 'India');
     assert.deepEqual(row.target, { kind: 'country', iso3: 'IND' });
+    if (row.id === 'alert:live-electionguide:flag') continue;
     assert.match(row.title, /^India has an active .+ alert\.$/);
     assert.match(row.reason, /^Active .+ alert$/);
     assert.equal(row.sources.length, 1);
@@ -304,7 +307,8 @@ test('every alert feed the gauge counts can produce a Today item', () => {
   assert.deepEqual(byFeed['live-ucdp-token'].sources, ['UCDP']);
 });
 
-test('an alert shows the text its flag carries and the publisher it names', () => {
+test('alert titles are plain sentences that say no more than the flag supports', () => {
+  const label = 'CPI up 25.0% year over year (draft 20% threshold)';
   const rows = buildTodayItems(
     board({
       'live-ucdp-token': {
@@ -321,12 +325,23 @@ test('an alert shows the text its flag carries and the publisher it names', () =
       },
       'live-gdelt': {
         flags: [
-          flag('live-gdelt', {
-            id: 'gdelt',
-            slot: 'C6',
-            label: '4 protest events in sampled 15-minute files',
-          }),
+          flag('live-gdelt', { id: 'gdelt-c2', slot: 'C2', label }),
+          flag('live-gdelt', { id: 'gdelt-c6', slot: 'C6', label }),
+          flag('live-gdelt', { id: 'gdelt-other', slot: 'C9', label }),
         ],
+      },
+      'live-hdx': {
+        flags: [
+          flag('live-hdx', { id: 'ipc', key: 'ipc', label }),
+          flag('live-hdx', { id: 'price', key: 'price:maize', label }),
+          flag('live-hdx', { id: 'hdx-other', label }),
+        ],
+      },
+      'live-electionguide': {
+        flags: [flag('live-electionguide', { id: 'vote', label })],
+      },
+      'live-imf-cpi': {
+        flags: [flag('live-imf-cpi', { id: 'cpi', date: '2026-09', label })],
       },
       'live-unhcr': {
         flags: [flag('live-unhcr', { id: 'unhcr', date: '2025' })],
@@ -334,16 +349,36 @@ test('an alert shows the text its flag carries and the publisher it names', () =
     }),
     null,
   );
-  const byId = Object.fromEntries(rows.map((row) => [row.id, row]));
-  assert.equal(
-    byId['alert:ucdp'].title,
-    'UCDP Candidate recorded fatalities: 40 (draft threshold: 25)',
+  const byId = Object.fromEntries(
+    rows.map((row) => [row.id.replace('alert:', ''), row]),
   );
-  assert.deepEqual(byId['alert:ucdp'].sources, ['UCDP Candidate']);
-  assert.equal(byId['alert:ucdp'].date, '2026-10');
-  assert.equal(byId['alert:gdelt'].reason, 'Active protest alert');
+  const words = (id) => [byId[id].title, byId[id].reason];
+  assert.deepEqual(words('ucdp'), [
+    'India has an active armed conflict alert.',
+    'Active armed conflict alert',
+  ]);
+  assert.deepEqual(byId.ucdp.sources, ['UCDP Candidate']);
+  assert.equal(byId.ucdp.date, '2026-10');
+  assert.deepEqual(words('gdelt-c2'), [
+    'India has an active reported armed conflict alert.',
+    'Active reported armed conflict alert',
+  ]);
+  assert.equal(byId['gdelt-c6'].reason, 'Active reported protest alert');
+  assert.equal(byId['gdelt-other'].reason, 'Active reported unrest alert');
+  assert.equal(byId.ipc.reason, 'Active food crisis alert');
+  assert.equal(byId.price.reason, 'Active food price rise alert');
+  assert.equal(byId['hdx-other'].reason, 'Active food security alert');
+  assert.deepEqual(words('vote'), [
+    'India has an election coming up.',
+    'Upcoming election',
+  ]);
+  assert.equal(byId.cpi.title, 'India has an active inflation alert.');
   // A yearly figure keeps its year rather than being dropped.
-  assert.equal(byId['alert:unhcr'].date, '2025');
+  assert.equal(byId.unhcr.date, '2025');
+  for (const row of rows) {
+    assert.ok(!row.title.includes('threshold'), row.title);
+    assert.ok(!row.title.includes('CPI up'), row.title);
+  }
 });
 
 test('alerts keep their rules: active, a known country, a date and an id', () => {

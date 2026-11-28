@@ -177,7 +177,7 @@ test('a row shows the headline, place and time, outlets and reason', () => {
   const parts = firstRow(f).children.map((node) => node.textContent);
   assert.deepEqual(parts, [
     'A strike hit a fixture depot.',
-    'Fixture City · 9 Nov 2026, 08:05 UTC',
+    'Fixture City · updated 9 Nov 2026, 08:05 UTC',
     'Fixture Courier · Fixture Herald · Fixture Ledger and 2 more',
     'Reported by 5 outlets',
   ]);
@@ -197,7 +197,10 @@ test('opening a located story shows its text and every outlet, and selects it on
   assert.equal(f.story.hidden, false);
   assert.equal(row.getAttribute('aria-expanded'), 'true');
   assert.equal(f.storyTitle.textContent, 'A strike hit a fixture depot.');
-  assert.equal(f.context.textContent, 'Fixture City · 9 Nov 2026, 08:05 UTC');
+  assert.equal(
+    f.context.textContent,
+    'Fixture City · updated 9 Nov 2026, 08:05 UTC',
+  );
   assert.equal(f.summary.textContent, 'Fixture summary of the depot strike.');
   assert.equal(f.whatsNew.hidden, false);
   assert.equal(
@@ -271,14 +274,59 @@ test('Escape closes the story and clears the selection Today made', () => {
   assert.equal(f.calls.at(-1), 'clear-story');
 });
 
-test('closing leaves a selection someone else made since', () => {
+test('a map selection elsewhere closes the opened story without moving focus', () => {
   const f = fixture({ digest: digest() });
   firstRow(f).click();
+  const elsewhere = f.document.createElement('button');
+  f.document.body.append(elsewhere);
+  elsewhere.focus();
   f.news.update({ ...f.news.getSnapshot(), selectedStoryId: 'another' });
+  assert.equal(f.story.hidden, true);
+  assert.equal(f.document.activeElement, elsewhere);
+  assert.equal(f.news.getSnapshot().selectedStoryId, 'another');
+  assert.ok(!f.calls.includes('clear-story'));
+
+  firstRow(f).click();
+  f.news.update({ ...f.news.getSnapshot(), selectedStoryId: null });
+  assert.equal(f.story.hidden, true);
+  assert.equal(f.document.activeElement, elsewhere);
+  assert.ok(!f.calls.includes('clear-story'));
+});
+
+test('closing leaves a selection the viewer made before Today opened it', () => {
+  const f = fixture({ digest: { ...digest(), selectedStoryId: 'depot' } });
+  firstRow(f).click();
+  assert.equal(f.story.hidden, false);
   f.close.click();
   assert.equal(f.story.hidden, true);
   assert.ok(!f.calls.includes('clear-story'));
-  assert.equal(f.news.getSnapshot().selectedStoryId, 'another');
+  assert.equal(f.news.getSnapshot().selectedStoryId, 'depot');
+});
+
+test('opening a second story from Today keeps the second one open', () => {
+  const f = fixture({
+    digest: digest(
+      {},
+      {
+        id: 'second',
+        title: 'A second fixture story.',
+        summary: '',
+        whatsNew: '',
+        kind: 'development',
+        place: null,
+        status: 'open',
+        updatedAt: '2026-11-08T08:05:00.000Z',
+        itemIds: ['c'],
+      },
+    ),
+  });
+  firstRow(f).click();
+  f.list.children[1].children[0].click();
+  assert.equal(f.story.hidden, false);
+  assert.equal(f.storyTitle.textContent, 'A second fixture story.');
+  assert.equal(f.news.getSnapshot().selectedStoryId, 'second');
+  f.close.click();
+  assert.equal(f.news.getSnapshot().selectedStoryId, null);
 });
 
 test('an unlocated story in a country frames that country', () => {
@@ -304,7 +352,7 @@ test('a story placed only in its theater leaves the view where it is', () => {
   const f = fixture({ digest: digest({ location: null, place: null }) });
   firstRow(f).click();
   assert.equal(f.story.hidden, false);
-  assert.match(f.context.textContent, /^World affairs · /);
+  assert.match(f.context.textContent, /^World affairs · updated /);
   assert.deepEqual(f.calls, ['clear-selection', ['select-story', 'depot']]);
 });
 

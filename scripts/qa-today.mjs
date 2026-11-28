@@ -148,6 +148,8 @@ const world = {
               sourceId: 'live-gdacs',
               date: '2026-11-09',
               status: 'active',
+              label: 'Red GDACS fixture alert (internal wording)',
+              sourceName: 'GDACS',
             },
           ],
         },
@@ -312,7 +314,7 @@ try {
     ),
     [
       located.title,
-      'Fixture Harbour · 9 Nov 2026, 10:00 UTC',
+      'Fixture Harbour · updated 9 Nov 2026, 10:00 UTC',
       'Example Ledger · Fixture Gazette · Sample Courier',
       'Reported by 3 outlets',
     ],
@@ -338,6 +340,17 @@ try {
   await page.click('#frame-today-more');
   assert.equal(await rowCount(), 7);
   assert.equal((await rowIds()).at(-1), 'alert:fixture-country-alert');
+  assert.deepEqual(
+    await page.$eval(alertRow, (row) =>
+      [...row.children].map((part) => part.textContent),
+    ),
+    [
+      'India has an active natural disaster alert.',
+      'India · 9 Nov 2026',
+      'GDACS',
+      'Active natural disaster alert',
+    ],
+  );
   await page.click('#frame-today-more');
   assert.equal(await rowCount(), 5);
   // The alert ranks seventh; keep the list open so the steps below reach it.

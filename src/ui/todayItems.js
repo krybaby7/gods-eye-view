@@ -3,15 +3,21 @@ import { activeAlerts, ALERT_FEEDS } from './frameGauges.js';
 import { citedItems } from './situationPanelModel.js';
 
 /**
- * What each alert feed's flag means, in the words of its rule in
- * server/providers/world/conditionEvents.js. GDELT codes two kinds, told
- * apart by the score slot the flag sets.
+ * What each alert feed's flag means, no more than its rule in
+ * server/providers/world/conditionEvents.js supports. GDELT is coded from
+ * news, so its kinds stay "reported"; it tells them apart by the score slot
+ * the flag sets. HDX sets an IPC flag (key 'ipc') or a market price flag
+ * (key 'price:...').
  */
 const ALERT_KINDS = Object.freeze({
   'live-coups': () => 'coup',
   'live-gdacs': () => 'natural disaster',
   'live-gdelt': ({ slot }) =>
-    slot === 'C6' ? 'protest' : slot === 'C2' ? 'armed conflict' : 'unrest',
+    slot === 'C6'
+      ? 'reported protest'
+      : slot === 'C2'
+        ? 'reported armed conflict'
+        : 'reported unrest',
   'live-fx': () => 'currency',
   'live-imf-cpi': () => 'inflation',
   'live-unhcr': () => 'displacement',
@@ -19,9 +25,31 @@ const ALERT_KINDS = Object.freeze({
   'live-ucdp-token': () => 'armed conflict',
   'live-debt-dsa': () => 'debt distress',
   'live-electionguide': () => 'election',
-  'live-hdx': () => 'food crisis',
+  'live-hdx': ({ key }) =>
+    key === 'ipc'
+      ? 'food crisis'
+      : String(key ?? '').startsWith('price:')
+        ? 'food price rise'
+        : 'food security',
   'live-ioda': () => 'internet outage',
 });
+
+/**
+ * One plain sentence and reason per alert. Flag labels carry the feed's
+ * working notes (thresholds, sampling), so they are never shown here.
+ */
+function alertWords(sourceId, place, kind) {
+  // ElectionGuide's rule is an election scheduled within 30 days: not a hazard.
+  if (sourceId === 'live-electionguide')
+    return {
+      title: `${place} has an election coming up.`,
+      reason: 'Upcoming election',
+    };
+  return {
+    title: `${place} has an active ${kind} alert.`,
+    reason: `Active ${kind} alert`,
+  };
+}
 
 /** A day for the board's own dates: turns are recorded per day. */
 function asDate(value) {
@@ -70,15 +98,12 @@ function boardItems(world) {
     const place = countryName(world.countries, flag.iso3);
     const date = asPeriod(flag.date);
     if (!kindOf || !place || !date || !flag.id) continue;
-    const kind = kindOf(flag);
     rows.push({
       id: `alert:${flag.id}`,
-      // The feed wrote what it measured; the generic line is only a fallback.
-      title: plain(flag.label) || `${place} has an active ${kind} alert.`,
+      ...alertWords(flag.sourceId, place, kindOf(flag)),
       place,
       date,
       sources: [plain(flag.sourceName) || ALERT_FEEDS[flag.sourceId]],
-      reason: `Active ${kind} alert`,
       target: { kind: 'country', iso3: flag.iso3 },
       order: 1,
     });
@@ -140,7 +165,8 @@ function storyItems(world, news) {
   // actor and place filters narrow that panel, not Today.
   for (const story of news.stories ?? news.visibleStories ?? []) {
     const title = plain(story.title);
-    const date = asMoment(story.updatedAt) ?? asMoment(story.eventAt);
+    const updated = asMoment(story.updatedAt);
+    const date = updated ?? asMoment(story.eventAt);
     if (!story.id || !title || story.status !== 'open' || !date) continue;
 
     // One link per outlet, the first it was cited with; the outlets named
@@ -152,7 +178,9 @@ function storyItems(world, news) {
         byOutlet.set(citation.outlet, citation);
     }
     if (!byOutlet.size) continue;
-    const sources = [...byOutlet.keys()].sort();
+    const sources = [...byOutlet.keys()].sort((a, b) =>
+      a.localeCompare(b, 'en'),
+    );
     const place = plain(story.place);
     const iso3 = countryCodes.get(place.toLocaleLowerCase('en'));
     rows.push({
@@ -160,6 +188,8 @@ function storyItems(world, news) {
       title,
       place: place || news.theater.name,
       date,
+      // Which moment the time is, so the row says what it dates.
+      dateLabel: updated ? 'updated' : 'event',
       sources,
       citations: sources.map((outlet) => byOutlet.get(outlet)),
       reason: `Reported by ${sources.length} ${sources.length === 1 ? 'outlet' : 'outlets'}`,
@@ -186,7 +216,8 @@ function compare(a, b) {
       Date.parse(b.date) - Date.parse(a.date) ||
       a.id.localeCompare(b.id)
     );
-  return b.date.localeCompare(a.date) || a.id.localeCompare(b.id);
+  if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+  return a.id.localeCompare(b.id);
 }
 
 /**
